@@ -2,8 +2,8 @@ import type { WhatsNewDocument } from "./whats-new";
 
 /** What the demo's integration answers to whats_new_get: a frozen copy of four real releases'
  * highlights from custom_components/crop_steering/WHATS_NEW.md. Frozen on purpose: the dashboard
- * bundle must not read that file, or every release pull request, which adds a section to it, would
- * have to rebuild the bundle, and a release pull request may not. */
+ * bundle must not read that file, or every release, which dates a section in it, would have to
+ * rebuild the bundle, and the release command does not. */
 export const DEMO_WHATS_NEW: Omit<WhatsNewDocument, "seen"> = {
   version: "2.24.0",
   releases: [

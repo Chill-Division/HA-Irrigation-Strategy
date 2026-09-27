@@ -1,5 +1,5 @@
 <!--
-One change per pull request, into `testing` (never `main`). See CONTRIBUTING.md.
+One change per pull request, into `main`. See CONTRIBUTING.md.
 If describing it needs the word "and", it is two pull requests.
 -->
 
@@ -11,15 +11,6 @@ If describing it needs the word "and", it is two pull requests.
 
 <!-- What changed in the code and why this way. Anything a reviewer would otherwise have to work out. -->
 
-## Change class
-
-<!-- docs/RELEASING.md. When in doubt, the higher one. -->
-
-- [ ] **C0** docs, tests, CI only
-- [ ] **C1** dashboard, translations, tooltips: nothing the controller reads
-- [ ] **C2** integration behaviour: config flow, entities, setup rules, fused sensors
-- [ ] **C3** controller, engine, state file, setup adoption, descriptor, entity ids, add-on options
-
 ## How it was tested
 
 <!-- Which suites, and the new tests that fail without this change. -->
@@ -30,8 +21,9 @@ If describing it needs the word "and", it is two pull requests.
 ## Checklist
 
 - [ ] One change. No unrelated fixes, no drive-by reformatting.
-- [ ] Targets `testing`.
-- [ ] Does **not** change a version number (only a `release/x.y.z` pull request does).
+- [ ] Targets `main`.
+- [ ] Does **not** change a version number (only `scripts/release.py` does).
+- [ ] Its notes are under **Unreleased** in `CHANGELOG.md` (🌱 and 🔧), in `addons/f2_control/CHANGELOG.md` if the controller or the dashboard it serves changed, and in `WHATS_NEW.md` if a grower would notice.
 - [ ] Generated files (dashboard bundle, vendored engine copy) changed only together with their source.
 - [ ] Nothing under `.github/`, no dependency or Dockerfile change, unless that is the whole pull request.
-- [ ] C2/C3: proven in `tests_ha/`, not only against the stubs.
+- [ ] Config flow, entity ids or what the integration tells the controller: proven in `tests_ha/`, not only against the stubs.

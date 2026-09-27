@@ -121,29 +121,24 @@ the shot. Lives in the f2-control add-on (`addons/f2_control/`).
   (`tests/test_state_migration.py`), and **version consistency** (`tests/test_version_consistency.py`).
   Any change to persisted state, add-on options, or entities needs a test proving an OLD install still loads.
 - **Branches and pull requests:** follow `CONTRIBUTING.md`. **One change, one branch, one pull
-  request, into `testing`.** `main` is what production rooms run: never open a pull request into
-  it, never push to it, never push to `testing`, never merge a pull request, never promote a
-  release. Those are a person's decisions. Do not bundle unrelated fixes, do not reformat what
-  you did not change, and do not change a version number outside a `release/x.y.z` branch. A
-  feature that crosses layers is built as one commit per layer. Generated files (the dashboard
+  request, into `main`**, the only long-lived branch. Never push to `main`, never merge a pull
+  request, never run the release command unless the owner asks for that release. Those are a
+  person's decisions. Do not bundle unrelated fixes, do not reformat what you did not change, and
+  never change a version number: only `scripts/release.py` does. Each pull request writes its own
+  notes under **Unreleased** in `CHANGELOG.md`, `addons/f2_control/CHANGELOG.md` and `WHATS_NEW.md`.
+  A feature that crosses layers is built as one commit per layer. Generated files (the dashboard
   bundle, the vendored engine copy) change only together with their source; CI proves they match.
-- **Releasing:** follow `docs/RELEASING.md`. The controller is built on each box from the git
-  branch that box tracks, and a box installed from the plain repository address tracks `main`
-  for life, so for the part that drives the pump **a push that changes `version:` on `main` IS a
-  release to production**. Candidates are cut as pre-releases from `testing`, soak on a staging
-  room on real plumbing, and only then is `main` fast-forwarded to that exact commit. A version
-  number is never reused for different code, and from 2.21.0 the integration and the controller
-  app carry one number (`manifest.json`, `const.py` and the app's `config.yaml` move together).
-  The **Promote** workflow must be dispatched from `main`; default to its read-only dry run. The
-  local equivalent is
-  `python .github/scripts/promotion.py --repo <owner>/HA-Irrigation-Strategy --tag vX.Y.Z`.
-  It requires exact-candidate `Validate` success, `testing` still at the tag, fast-forward
-  ancestry and version-specific approved audit assets. Do not infer readiness or promotion
-  authorization from CI or a rehearsal. The writing job uses trusted `main` code and rechecks
-  all gates before advancing `main`, then flips the matching pre-release. If that flip fails,
-  report that `main` already advanced and retry through the workflow; never rewind production.
-- **Deploying changes:** publish a versioned integration release and matching controller
-  app release. The controller app is installed only from this repository
+- **Releasing:** follow `docs/RELEASING.md`. `python scripts/release.py X.Y.Z` releases `main`
+  once Validate has passed on it: it dates the Unreleased notes, sets the one version number
+  (`manifest.json`, `const.py`, the app's `config.yaml`, the README badge), commits, tags, pushes
+  and publishes the GitHub release on this repository, whose rooms are the test.
+  `--public` then fast-forwards `Chill-Division/HA-Irrigation-Strategy`'s `main` to that same
+  tagged commit and publishes the release there, for everyone else. `--dry-run` changes nothing.
+  The controller is built on each box from the branch it tracks, so **a push that changes
+  `version:` on `main` IS a release** of the part that drives the pump. A version number is never
+  reused for different code; a bad one is never made public, and its fix takes the next number.
+- **Deploying changes:** release both halves together with `scripts/release.py`. The
+  controller app is installed only from this repository
   (`addons/f2_control`); the old `JakeTheRabbit/f2-control` mirror is retired and gets
   nothing. Existing app installations update in place to preserve their Supervisor
   identity and `/data`; one still installed from the mirror moves once, carrying
@@ -152,17 +147,18 @@ the shot. Lives in the f2-control add-on (`addons/f2_control/`).
   release (or Rebuild for local source), then verify the running image and modules.
   Restart HA after integration updates; see `docs/INSTALL.md` for the current path.
 - **Commit style:** conventional commits (`feat:`/`fix:`/`docs:`/`chore:`) with a
-  `Co-Authored-By: Claude` trailer when written via Claude Code. Two long-lived branches:
-  `main` (production) and `testing` (staging); everything else is a short-lived proposal.
-  Short-lived branches are deleted once their pull request is merged or closed.
+  `Co-Authored-By: Claude` trailer when written via Claude Code. One long-lived branch, `main`;
+  everything else is a short-lived proposal. Short-lived branches are deleted once their pull
+  request is merged or closed.
 - **Changelog = dual view.** Every release in `CHANGELOG.md` leads with **🌱 In plain English** (anyone
-  can follow it) then **🔧 Technical notes** (entity/code detail). Keep both when adding a release.
-- **What's new = for growers.** Every release also adds its section at the top of
-  `custom_components/crop_steering/WHATS_NEW.md`, which the dashboard shows once after an update: two
-  to five short lines a grower would notice, in plain words (what they can now do or see, not how),
-  with no entity ids, error codes, file names or pull request numbers, and the small things as one
+  can follow it) then **🔧 Technical notes** (entity/code detail). Each pull request adds its lines
+  to both, under `## [Unreleased]`.
+- **What's new = for growers.** A change a grower would notice also adds one line under
+  `## Unreleased` in `custom_components/crop_steering/WHATS_NEW.md`, which the dashboard shows once
+  after an update: plain words (what they can now do or see, not how), with no entity ids, error
+  codes, file names or pull request numbers. At most five lines a release, the small things as one
   last line, "Bug fixes and improvements." The release notes keep the detail; the window links to
-  them. `tests/test_whats_new.py` fails until the release's section is there.
+  them. `tests/test_whats_new.py` holds each release's section to those rules.
 
 ## Compatibility & data — never break a live install
 

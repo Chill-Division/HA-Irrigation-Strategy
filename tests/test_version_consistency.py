@@ -104,8 +104,8 @@ ONE_NUMBER_FROM = (2, 21, 0)
 
 
 def test_from_2_21_the_controller_carries_the_integration_number():
-    """One number for the pair. Every release changes both halves anyway (the release guard
-    refuses a controller-only release), so a second number only hid a mismatched pair.
+    """One number for the pair. Every release changes both halves anyway (scripts/release.py
+    sets both), so a second number only hid a mismatched pair.
     """
     manifest = _manifest_version()
     if tuple(int(part) for part in manifest.split(".")) < ONE_NUMBER_FROM:

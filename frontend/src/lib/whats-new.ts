@@ -1,8 +1,8 @@
 /** What's new: the release highlights the dashboard shows once after an update.
  *
  * The highlights come from the integration (crop_steering.whats_new_get), which ships them as
- * WHATS_NEW.md, not from this bundle: a release adds its section in its release pull request,
- * which may not rebuild the dashboard. The integration also keeps, for the whole installation, the
+ * WHATS_NEW.md, not from this bundle: the release command dates its section there and does not
+ * rebuild the dashboard. The integration also keeps, for the whole installation, the
  * last release the window showed: null when it cannot know (an installation that was running
  * before this existed). */
 export interface WhatsNewRelease {
