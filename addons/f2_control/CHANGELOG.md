@@ -1,4 +1,6 @@
-# Unreleased
+# 2.26.1
+
+Pair with integration 2.26.1.
 
 - **The dashboard the app serves:** Stock tanks can put each tank on the Reservoir doser it feeds. No change to the controller.
 - **The dashboard the app serves:** a dryback target reads "% below peak". No change to the controller.
