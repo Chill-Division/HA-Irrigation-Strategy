@@ -174,7 +174,8 @@ test("candidate existence, units, duplicate zones and foreign zones are checked 
   const ha = await mockHa(t),
     { client } = await stdio(t, ha);
   for (const [changes, pattern] of [
-    [{ hardware: { tank_ec_sensor: "sensor.veg_vwc" } }, /Incompatible ec/],
+    [{ hardware: { tank_temperature_sensor: "sensor.veg_vwc" } }, /Incompatible temperature/],
+    [{ hardware: { tank_ec_sensor: "sensor.veg_vwc" } }, /Unrecognized key/], // gone in 2.26.0
     [{ hardware: { pump_switch: "switch.missing" } }, /existing switch/],
     [{ zones: [{ id: 2, plant_count: 20 }] }, /existing zone IDs/],
     [{ zones: [{ id: 1 }, { id: 1 }] }, /Duplicate/],
