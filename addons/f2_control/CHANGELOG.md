@@ -1,4 +1,6 @@
-# Unreleased
+# 2.26.0
+
+Pair with integration 2.26.0.
 
 Two options are removed, `feed_ec_sensor` and `feed_ph_sensor`: Supervisor drops them from an old configuration. No change to the state file.
 
