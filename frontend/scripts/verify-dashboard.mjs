@@ -77,6 +77,11 @@ async function go(route, room = "f2") {
   });
 }
 async function noOverflow() {
+  // A window just resized reaches the page's layout a frame or two later: measured at once, the
+  // top bar can still be as wide as before (seen in CI on the Reservoir check, after 390 px).
+  await page.evaluate(
+    () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+  );
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
     true,
