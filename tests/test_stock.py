@@ -118,3 +118,48 @@ def test_each_fill_counts_once_and_the_first_only_sets_the_start():
     assert stock.new_batch(data, first) is False
     assert data["last_batch"] == (first + timedelta(days=1)).isoformat()
     assert stock.new_batch(data, None) is False
+
+
+def test_a_tank_on_a_doser_takes_no_dose_entity_and_the_doser_is_checked():
+    [balance] = tanks({"name": "Balance", "capacity_l": 20, "doser": "3"})
+    assert balance["doser"] == 3 and balance["dose_entity"] is None
+    assert tanks({"name": "pH down", "capacity_l": 5})[0]["doser"] is None
+    with pytest.raises(stock.StockError, match="numbered 1 to 6"):
+        tanks({"name": "Balance", "capacity_l": 20, "doser": 7})
+    with pytest.raises(stock.StockError, match="clear its dose entity"):
+        tanks(
+            {
+                "name": "Balance",
+                "capacity_l": 20,
+                "doser": 3,
+                "dose_entity": "sensor.gr1_abd_motor_3_dosed_amount",
+            }
+        )
+
+
+def test_a_batch_draws_what_each_doser_gave_from_the_tank_on_it():
+    stock_tanks = tanks(
+        {"name": "Core", "capacity_l": 20, "doser": 1},
+        {"name": "Balance", "capacity_l": 20, "doser": 3},
+        {"name": "pH down", "capacity_l": 5},
+    )
+    draws = stock.reservoir_draws(
+        stock_tanks, {"1": 450.0, "3": 150.0, "4": 75.0, "2": 0}, {}
+    )
+    # Doser 4 has no tank here; pH down is on no doser: neither is drawn.
+    assert draws == {"core": 450.0, "balance": 150.0}
+
+
+def test_with_bottles_swapped_the_recipes_nutrient_picks_the_tank():
+    stock_tanks = tanks(
+        {"name": "Grow", "capacity_l": 20, "doser": 2},
+        {"name": "Bloom", "capacity_l": 20, "doser": 2},
+    )
+    assert stock.reservoir_draws(stock_tanks, {"2": 750}, {2: "bloom"}) == {
+        "bloom": 750.0
+    }
+    assert stock.reservoir_draws(stock_tanks, {"2": 600}, {2: "Grow"}) == {
+        "grow": 600.0
+    }
+    # Two tanks on the doser and no nutrient to tell them apart: neither is guessed at.
+    assert stock.reservoir_draws(stock_tanks, {"2": 600}, {}) == {}

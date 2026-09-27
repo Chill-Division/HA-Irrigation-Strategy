@@ -341,6 +341,7 @@ class CropSteeringStockSensor(SensorEntity):
                     "percent": round(tank["level_l"] / tank["capacity_l"] * 100, 1),
                     "low_l": tank["low_l"],
                     "dose_ml": doses.get(tank["id"]),
+                    "doser": tank.get("doser"),
                     "batches_left": stock.batches_left(tank, doses.get(tank["id"], 0)),
                     "low": tank["level_l"] <= tank["low_l"],
                 }
@@ -353,13 +354,19 @@ class CropSteeringStockSensor(SensorEntity):
     async def async_added_to_hass(self) -> None:
         from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
+        from .feed_api import SIGNAL as FEED_SIGNAL
         from .stock_api import SIGNAL
 
-        self.async_on_remove(
-            async_dispatcher_connect(
-                self.hass, f"{SIGNAL}_{self._entry.entry_id}", self.async_write_ha_state
+        # A tank on a doser takes what the feed stage in use doses from it: a new stage or recipe
+        # changes its dose per batch and batches left.
+        for signal in (SIGNAL, FEED_SIGNAL):
+            self.async_on_remove(
+                async_dispatcher_connect(
+                    self.hass,
+                    f"{signal}_{self._entry.entry_id}",
+                    self.async_write_ha_state,
+                )
             )
-        )
 
 
 class CropSteeringSensor(SensorEntity):
