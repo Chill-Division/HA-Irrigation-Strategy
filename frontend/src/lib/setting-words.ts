@@ -292,7 +292,6 @@ const DETAILS: Record<string, SettingDetail> = {
     when: "Every maintenance shot. Watchdog and daily-minimum shots use it as it is; dilution and high-EC flushes are 1.5 times it or more.",
     affects:
       "Maintenance shots are sized by substrate EC against the P2 target, from half to twice this. Bigger shots make more runoff and lower substrate EC.",
-    auto: "With the optional judge set up, the controller nudges it at most one step a day, within 1 to 4%. Auto setpoints is off by default.",
     athena:
       "“Decrease Substrate EC: Increase shot size”; “Increase Substrate EC: Decrease shot size” (p. 38).",
   },

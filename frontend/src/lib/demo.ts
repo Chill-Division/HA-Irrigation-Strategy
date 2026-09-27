@@ -201,7 +201,6 @@ export function createDemo(now = Date.now()): States {
             : supervisor === "frozen"
               ? "P2 threshold 56.0 → 54.0 % (demo)"
               : "",
-        jev: index ? "disabled" : supervisor === "frozen" ? "unavailable" : "ok",
         hold_days: supervisor === "tracking" ? 3 : 0,
         frozen_reason:
           supervisor === "frozen" ? "probe response looks suspect after a sensor dropout" : null,

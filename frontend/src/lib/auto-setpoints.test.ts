@@ -21,7 +21,6 @@ describe("auto setpoint status", () => {
         night_rate: 0.37,
         p1_outcome: "plateau",
         last_change: "P1 target 38.0 → 36.5 %",
-        jev: "ok",
         managed: [
           "number.crop_steering_zone_1_p1_target_vwc",
           "number.crop_steering_zone_1_p2_vwc_threshold",
@@ -40,9 +39,6 @@ describe("auto setpoint status", () => {
       nightRate: 0.37,
       p1Outcome: "plateau",
       lastChange: "P1 target 38.0 → 36.5 %",
-      jev: "ok",
-      jevLast: null,
-      jevChangedToday: null,
       managed: [
         "number.crop_steering_zone_1_p1_target_vwc",
         "number.crop_steering_zone_1_p2_vwc_threshold",
@@ -87,7 +83,6 @@ describe("auto setpoint status", () => {
         gain: Number.NaN,
         p1_outcome: "exploded",
         last_change: "",
-        jev: 7,
         managed: ["number.crop_steering_zone_1_p1_target_vwc", 5, "switch.pump", null],
         updated: 12,
       }),
@@ -97,7 +92,6 @@ describe("auto setpoint status", () => {
     expect(status.gain).toBeNull();
     expect(status.p1Outcome).toBeNull();
     expect(status.lastChange).toBeNull();
-    expect(status.jev).toBeNull();
     expect(status.managed).toEqual(["number.crop_steering_zone_1_p1_target_vwc"]);
     expect(status.updated).toBeNull();
     expect(parseAutoSetpoints(entity("something-new"))!.state).toBe("unavailable");
@@ -108,24 +102,35 @@ describe("auto setpoint status", () => {
       36.25,
     );
   });
-  it("describes state, learned peak, last change and Jev in one line", () => {
+  it("describes state, learned peak and last change in one line", () => {
     const status = parseAutoSetpoints(
-      entity("tracking", { learned_peak: 35.9, last_change: "P1 target → 36.5 %", jev: "ok" }),
+      entity("tracking", { learned_peak: 35.9, last_change: "P1 target → 36.5 %" }),
     )!;
     expect(autoStatusText(status)).toBe(
-      "Tracking · learned peak 35.9% · last change: P1 target → 36.5 % · Jev: ok",
+      "Tracking · learned peak 35.9% · last change: P1 target → 36.5 %",
     );
-    expect(autoStatusText(parseAutoSetpoints(entity("learning", { jev: "unavailable" }))!)).toBe(
-      "Learning · learned peak not yet known · no changes yet · Jev: unavailable",
+    expect(autoStatusText(parseAutoSetpoints(entity("learning"))!)).toBe(
+      "Learning · learned peak not yet known · no changes yet",
     );
     expect(autoStatusText(parseAutoSetpoints(entity("off"))!)).toBe(
-      "Off · learned peak not yet known · no changes yet · Jev: not reported",
+      "Off · learned peak not yet known · no changes yet",
     );
+  });
+  it("says nothing of a judge an older controller still reports", () => {
+    const older = parseAutoSetpoints(
+      entity("tracking", {
+        jev: "ok",
+        jev_last: "14:00 no change (ec_steer level 2 (0.84))",
+        jev_changed_today: "12:00 p2_shot_size 3 -> 4",
+      }),
+    )!;
+    expect(autoStatusText(older)).toBe("Tracking · learned peak not yet known · no changes yet");
+    expect(older).not.toHaveProperty("jev");
   });
   it("adds hold days while a learned peak is held, and why a supervisor is frozen", () => {
     const held = parseAutoSetpoints(entity("tracking", { learned_peak: 35.9, hold_days: 3 }))!;
     expect(autoStatusText(held)).toBe(
-      "Tracking · learned peak 35.9%, held 3 days · no changes yet · Jev: not reported",
+      "Tracking · learned peak 35.9%, held 3 days · no changes yet",
     );
     const oneDay = parseAutoSetpoints(entity("tracking", { learned_peak: 35.9, hold_days: 1 }))!;
     expect(autoStatusText(oneDay)).toMatch(/held 1 day ·/);
@@ -135,10 +140,10 @@ describe("auto setpoint status", () => {
     const idle = parseAutoSetpoints(entity("frozen", { learned_peak: 35.9, hold_days: 0 }))!;
     expect(autoStatusText(idle)).toMatch(/learned peak 35.9% ·/);
     const frozen = parseAutoSetpoints(
-      entity("frozen", { frozen_reason: "probe response looks suspect", jev: "unavailable" }),
+      entity("frozen", { frozen_reason: "probe response looks suspect" }),
     )!;
     expect(autoStatusText(frozen)).toBe(
-      "Frozen: probe response looks suspect · learned peak not yet known · no changes yet · Jev: unavailable",
+      "Frozen: probe response looks suspect · learned peak not yet known · no changes yet",
     );
     // A reason left over from an earlier freeze is not shown once the supervisor runs again.
     const recovered = parseAutoSetpoints(entity("tracking", { frozen_reason: "old reason" }))!;
@@ -154,29 +159,5 @@ describe("auto setpoint status", () => {
     expect(managedBy([off], "number.crop_steering_zone_1_p1_target_vwc")).toBe(false);
     expect(managedBy([tracking], "number.crop_steering_zone_1_p2_vwc_threshold")).toBe(false);
     expect(managedBy([null, tracking], "number.crop_steering_zone_1_p1_target_vwc")).toBe(true);
-  });
-});
-
-describe("what the judge said in P2", () => {
-  const entity = (attributes: Record<string, unknown>): EntityState => ({
-    entity_id: "sensor.crop_steering_zone_1_auto_setpoints",
-    state: "tracking",
-    attributes,
-    last_changed: "",
-    last_updated: "",
-  });
-  it("is shown in its own words, and left out when it has said nothing", () => {
-    const spoke = parseAutoSetpoints(
-      entity({
-        jev: "ok",
-        jev_last: "14:00 no change (ec_steer level 2 (0.84))",
-        jev_changed_today: "12:00 p2_shot_size 3 -> 4",
-      }),
-    )!;
-    expect(autoStatusText(spoke)).toContain("Jev changed today: 12:00 p2_shot_size 3 -> 4");
-    expect(autoStatusText(spoke)).toContain("Jev last said: 14:00 no change");
-    const silent = parseAutoSetpoints(entity({ jev: "disabled", jev_last: 7 }))!;
-    expect(silent.jevLast).toBeNull();
-    expect(autoStatusText(silent)).not.toContain("Jev last said");
   });
 });
