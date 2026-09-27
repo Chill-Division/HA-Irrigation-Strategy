@@ -1,9 +1,8 @@
 """What's new: the release highlights the dashboard shows once after an update.
 
-The highlights are WHATS_NEW.md, beside this file. It is a document, so a release pull request may
-add its section (.github/scripts/release_guards.py lets a release change documents and version
-numbers only), and HACS installs it with the integration: the dashboard reads it from here, not
-from its own bundle, which a release pull request may not rebuild.
+The highlights are WHATS_NEW.md, beside this file: each change adds its line under Unreleased, and
+scripts/release.py dates them as the release. HACS installs it with the integration, and the
+dashboard reads it from here, not from its own bundle, which a release does not rebuild.
 
 Which release the window last showed is kept for the whole installation, not per browser or per
 person, so it shows once, to the first person who opens the dashboard after an update. A new

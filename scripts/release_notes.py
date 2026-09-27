@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Print a release's GitHub notes from CHANGELOG.md.
 
-    gh release create v2.21.0 --prerelease --target testing --title "2.21.0 (candidate)" \\
-      --notes-file <(python scripts/release_notes.py 2.21.0)
+    python scripts/release_notes.py 2.25.0
 
-The notes are the entry's opening paragraph and its "🌱 In plain English" section, with a link to
-the technical notes at that tag. HACS shows a release's notes in its update dialog, so this is what
-the people updating read. Links in the changelog are relative to the repository; on a release page
-they would break, so they are rewritten to point at the files at that tag.
+scripts/release.py publishes every release with these notes: the entry's opening paragraph and
+its "🌱 In plain English" section, with a link to the technical notes at that tag. HACS shows a
+release's notes in its update dialog, so this is what the people updating read. Links in the
+changelog are relative to the repository; on a release page they would break, so they are
+rewritten to point at the files at that tag.
 """
 
 from __future__ import annotations

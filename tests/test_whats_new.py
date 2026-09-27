@@ -1,8 +1,9 @@
 """What's new: the release highlights the dashboard shows once after an update.
 
-They are custom_components/crop_steering/WHATS_NEW.md, which every release adds its section to in
-its release pull request. This reads them as the integration does, and holds the file to its own
-rules: the newest section is the version being released, and the lines are for growers.
+They are custom_components/crop_steering/WHATS_NEW.md, where each change adds its line under
+Unreleased and scripts/release.py dates them as the release. This reads them as the integration
+does, and holds the file to its own rules: the newest section is the version being released, and
+the lines are for growers.
 """
 
 import json

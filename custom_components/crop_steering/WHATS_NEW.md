@@ -5,16 +5,18 @@ an update: every release since the last one it showed there, newest first, at mo
 installation has nothing to catch up on and shows none. **Help & tools → What's new** opens it
 again at any time.
 
-Every release adds its section at the top, in its release pull request. Write it for growers, not
-for the people who build the system:
+A change a grower would notice adds one line under `## Unreleased` at the top, in its own pull
+request, and `scripts/release.py` dates them as the release. Write it for growers, not for the
+people who build the system:
 
-- **Two to five short lines**, one for each change a grower would notice: what they can now do or
-  see, in plain words, not how it was built.
+- **At most five short lines a release**, one for each change a grower would notice: what they can
+  now do or see, in plain words, not how it was built.
 - **No entity ids, error codes, file names, pull request numbers or code.** The release notes and
   the changelog keep the detail, and the window links to them.
 - **Put the small things together** as one last line: `Bug fixes and improvements.` A release with
   nothing a grower would notice has only that line.
-- The heading is `## <version> - <release date, YYYY-MM-DD>`, and each line starts with `- `.
+- Each line starts with `- `. The release command writes the heading,
+  `## <version> - <release date, YYYY-MM-DD>`, and puts the small things last.
 
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.

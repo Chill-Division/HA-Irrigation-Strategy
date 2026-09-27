@@ -1,7 +1,7 @@
 # Testing
 
 This repo ships an automated test suite plus a manual checklist for the live system. CI
-runs the automated suite on every push to `main` and `testing` and on every pull request
+runs the automated suite on every push to `main` and on every pull request
 (`.github/workflows/ci-validate.yml`); you can run the same thing locally before pushing.
 
 ## Prerequisites
@@ -96,7 +96,7 @@ something else cannot pass.
 
 | Leg (check name) | Python | Plugin release | Home Assistant | What it proves |
 | --- | --- | --- | --- | --- |
-| Production: `Real Home Assistant (setup wizard and entity ids)` | 3.14 | 0.13.366, from `requirements-test-ha.txt` | 2026.9.3 | What production runs. Branch protection requires this check on `testing` and `main`. |
+| Production: `Real Home Assistant (setup wizard and entity ids)` | 3.14 | 0.13.366, from `requirements-test-ha.txt` | 2026.9.3 | What production runs. Branch protection may require this check on `main`. |
 | Oldest supported: the same name followed by ` - oldest supported Home Assistant` | 3.12 | 0.13.171, with `josepy==1.14.0` | 2024.10.0 | The minimum in `hacs.json`, the README badge and [INSTALL.md](INSTALL.md). |
 
 The Python requirement follows Home Assistant: 2026.9 needs Python 3.14.2 or newer, and no plugin
@@ -245,8 +245,8 @@ The automated suite can't drive real hardware. Before trusting a change on the g
 ## Tests are not a release
 
 A green build says the code does what its tests expect. It says nothing about a pump on a
-smart plug at 3 am. What has to happen between a green build and a production room - the
-staging soak on the `testing` branch, the fault drills, promotion to `main`, rollback - is in
+smart plug at 3 am. What has to happen between a green build and everyone's rooms - a release
+run on the maintainer's own rooms first, then the same commit made public, and rollback - is in
 [RELEASING.md](RELEASING.md). How a change gets in to begin with - one change, one branch, one
 pull request - is in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
