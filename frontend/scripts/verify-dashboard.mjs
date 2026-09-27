@@ -625,6 +625,33 @@ try {
     for (const visuals of card)
       assert.deepEqual(visuals, [true, true, true], "moisture, water and dryback on every card");
   });
+  await check("zone details: a zone with two probes chooses how each reading combines them", async () => {
+    await go("zones");
+    await page.reload({ waitUntil: "networkidle" }); // the table view, whatever the last check left
+    await page.getByRole("button", { name: "View Zone 1", exact: true }).click();
+    const sheet = page.getByRole("dialog");
+    await expectVisible(sheet.getByRole("heading", { name: "Probes" }));
+    const moisture = sheet.getByLabel("Moisture from 2 probes");
+    assert.deepEqual(await moisture.locator("option").allInnerTexts(), [
+      "Average — 56%",
+      "Median — 56%",
+      "Lowest — 54% (Door End moisture)",
+      "Highest — 58% (AC End moisture)",
+    ]);
+    assert.match(await sheet.locator(".detail-metrics").innerText(), /Average of 2 probes: 54 · 58/);
+    await axe("zone details with probes");
+    await moisture.selectOption("Lowest");
+    const review = page.getByRole("dialog", { name: /as lowest\?/ });
+    await expectVisible(review);
+    assert.match(await review.innerText(), /Average \(56%\)\s*→\s*Lowest \(54%\)/);
+    await review.getByRole("button", { name: /Apply 1 change/ }).click();
+    await review.waitFor({ state: "hidden" });
+    await expectVisible(sheet.getByText(/Lowest of 2 probes: 54 · 58/));
+    assert.equal(await sheet.getByLabel("Moisture from 2 probes").inputValue(), "Lowest");
+    // EC is its own choice, still the average.
+    assert.equal(await sheet.getByLabel("EC from 2 probes").inputValue(), "Average");
+    await page.keyboard.press("Escape");
+  });
   await check(
     "zone details: readings as meters, water against its limit, dryback, state pills",
     async () => {

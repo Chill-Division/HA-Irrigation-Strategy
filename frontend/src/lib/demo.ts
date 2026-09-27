@@ -189,6 +189,7 @@ export function createDemo(now = Date.now()): States {
         friendly_name: `${name} Zone ${id} EC`,
         unit_of_measurement: "mS/cm",
       });
+      if (!index && id === 1) demoProbes(put, base, key, 54 + id * 2, 2.6 + id * 0.2);
       put(`${base}${key}phase`, id === 1 ? "P1" : "P2");
       put(
         `${base}${key}status`,
@@ -303,6 +304,39 @@ export function createDemo(now = Date.now()): States {
   }
   return states;
 }
+/** A demo zone with two probes of each kind, one each end, their average its reading, and the
+ * zone's choice of how to read them, as the integration publishes them (sensor.py, select.py). */
+function demoProbes(
+  put: (id: string, state: string | number, attributes?: Record<string, unknown>) => void,
+  base: string,
+  key: string,
+  vwc: number,
+  ec: number,
+) {
+  const round = (value: number) => Math.round(value * 100) / 100;
+  for (const [metric, value, spread, unit, label] of [
+    ["vwc", vwc, 2, "%", "moisture"],
+    ["ec", ec, 0.15, "mS/cm", "EC"],
+  ] as const) {
+    const door = `sensor.demo_door_end_${metric}`,
+      ac = `sensor.demo_ac_end_${metric}`;
+    const low = round(value - spread),
+      high = round(value + spread);
+    put(door, low, { friendly_name: `Door End ${label}`, unit_of_measurement: unit });
+    put(ac, high, { friendly_name: `AC End ${label}`, unit_of_measurement: unit });
+    const sensor = `${base}${metric}_zone_${key.match(/\d+/)![0]}`;
+    put(sensor, round(value), {
+      friendly_name: `Flower 2 Zone 1 ${metric === "vwc" ? "VWC" : "EC"}`,
+      unit_of_measurement: unit,
+      method: "Average",
+      probes: { [door]: low, [ac]: high },
+      combined: { Average: round(value), Median: round(value), Lowest: low, Highest: high },
+    });
+    put(`select.crop_steering_${key}${metric}_method`, "Average", {
+      options: ["Average", "Median", "Lowest", "Highest"],
+    });
+  }
+}
 /** The demo controller reports in like a running one, so it never reads as stopped. */
 export function demoBeat(states: States, now = Date.now()): States {
   const stamp = new Date(now).toISOString();
@@ -407,6 +441,21 @@ export function demoReact(states: States, entityId: string, value: unknown): Sta
       [entityId]: { ...states[entityId], state: "Keep" },
       ...(states[phase] ? { [phase]: { ...states[phase], state: value } } : {}),
     };
+  }
+  // A zone's choice of how its probes are read: its sensor takes that choice's reading at once.
+  const method = entityId.match(/^select\.crop_steering_(.*)zone_(\d+)_(vwc|ec)_method$/);
+  if (method && typeof value === "string") {
+    const sensor = `sensor.crop_steering_${method[1]}${method[3]}_zone_${method[2]}`;
+    const combined = states[sensor]?.attributes.combined as Record<string, number> | undefined;
+    if (combined && typeof combined[value] === "number")
+      return {
+        ...states,
+        [sensor]: {
+          ...states[sensor],
+          state: String(combined[value]),
+          attributes: { ...states[sensor].attributes, method: value },
+        },
+      };
   }
   // The controller reports the room's Automatic batches switch in its batch status.
   const batches = entityId.match(/^switch\.crop_steering_(.*)auto_batches$/);

@@ -18,6 +18,7 @@ import {
   YAxis,
 } from "recharts";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import type { Change, Controller, LogEvent, Metric, Series, Zone } from "@/lib/types";
+import { choiceLabel, type ProbeChoice } from "@/lib/probes";
 import { errorText } from "@/lib/utils";
 import { budgetShare, DRYBACK_WINDOW_H, drybackTrend, type DrybackTrend } from "@/lib/dryback";
 import { useRecentHistory } from "@/lib/use-recent-moisture";
@@ -1088,6 +1090,70 @@ export function ReviewDialog({
   );
 }
 
+/** The zone's readings that its probes are combined into: metric, words, unit. */
+const PROBE_READINGS = [
+  ["vwc", "Moisture", "%"],
+  ["ec", "EC", " mS/cm"],
+] as const;
+
+/** "Lowest of 2 probes" under a reading combined from several probes. */
+function ProbeNote({ choice }: { choice: ProbeChoice | null }) {
+  if (!choice || choice.readings.length < 2) return null;
+  return (
+    <small className="probe-note">
+      {choice.method} of {choice.readings.length} probes:{" "}
+      {choice.readings.map((reading) => number(reading.value, 2)).join(" · ")}
+    </small>
+  );
+}
+
+/** Review a new choice of how the zone's probes are read, with the reading before and after. */
+function ProbeReview({
+  controller,
+  zone,
+  metric,
+  option,
+  onClose,
+}: {
+  controller: Controller;
+  zone: Zone;
+  metric: "vwc" | "ec";
+  option: string;
+  onClose: () => void;
+}) {
+  const [, label, unit] = PROBE_READINGS.find(([m]) => m === metric)!;
+  const choice = zone.probes[metric]!;
+  const value = (method: string) => {
+    const reading = choice.combined[method];
+    return reading === null || reading === undefined
+      ? method
+      : `${method} (${number(reading, 2)}${unit})`;
+  };
+  return (
+    <ReviewDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      controller={controller}
+      title={`Read ${zone.name}\u2019s ${label.toLowerCase()} as ${option.toLowerCase()}?`}
+      items={[
+        {
+          change: { entityId: choice.entityId!, value: option },
+          label: `${zone.name} ${label.toLowerCase()} from probes`,
+          before: value(choice.method),
+          after: value(option),
+        },
+      ]}
+      note={
+        metric === "vwc"
+          ? "The zone's moisture changes at once, and the controller steers on it from its next check: a lower reading can bring the next shot sooner, a higher one later."
+          : "The zone's EC changes at once, and the controller steers on it from its next check."
+      }
+    />
+  );
+}
+
 export function ZoneDetails({
   controller,
   zone,
@@ -1102,9 +1168,13 @@ export function ZoneDetails({
   const { view } = useWaterView();
   const [review, setReview] = useState(false);
   const [phaseChoice, setPhaseChoice] = useState<string | null>(null);
+  const [probeChoice, setProbeChoice] = useState<{ metric: "vwc" | "ec"; option: string } | null>(
+    null,
+  );
   useEffect(() => {
     setReview(false);
     setPhaseChoice(null);
+    setProbeChoice(null);
   }, [zone?.id]);
   // Only an open sheet reads its zone's moisture: one small request, for the dryback line.
   const moisture = useRecentHistory(
@@ -1155,6 +1225,7 @@ export function ZoneDetails({
                   <small>
                     {zone.target.label} <MetricValue metric={zone.target} />
                   </small>
+                  <ProbeNote choice={zone.probes.vwc} />
                 </div>
                 <div>
                   <span>Root-zone EC</span>
@@ -1173,6 +1244,7 @@ export function ZoneDetails({
                   <small>
                     {zone.ecTarget.label} <MetricValue metric={zone.ecTarget} />
                   </small>
+                  <ProbeNote choice={zone.probes.ec} />
                 </div>
                 <div>
                   <span>{waterTodayLabel(view)}</span>
@@ -1248,6 +1320,45 @@ export function ZoneDetails({
                   </div>
                 </>
               )}
+              {PROBE_READINGS.some(
+                ([metric]) => (zone.probes[metric]?.readings.length ?? 0) > 1,
+              ) && (
+                <>
+                  <h3>Probes</h3>
+                  <p className="muted">
+                    Choose how {zone.name}&rsquo;s probes become its one moisture reading and its
+                    one EC reading. The controller steers on those.
+                  </p>
+                  <div className="probe-choices">
+                    {PROBE_READINGS.map(([metric, label, unit]) => {
+                      const choice = zone.probes[metric];
+                      if (!choice?.entityId || choice.readings.length < 2) return null;
+                      return (
+                        <div key={metric}>
+                          <Label htmlFor={`probe-${zone.id}-${metric}`}>
+                            {label} from {choice.readings.length} probes
+                          </Label>
+                          <select
+                            id={`probe-${zone.id}-${metric}`}
+                            value={choice.method}
+                            disabled={!["live", "demo"].includes(controller.connection)}
+                            onChange={(event) =>
+                              event.target.value !== choice.method &&
+                              setProbeChoice({ metric, option: event.target.value })
+                            }
+                          >
+                            {choice.options.map((option) => (
+                              <option key={option} value={option}>
+                                {choiceLabel(choice, option, unit, (value) => number(value, 2))}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
               <h3>Reporting sensors</h3>
               {zone.sensors.length ? (
                 <div className="sensor-mini-list">
@@ -1293,6 +1404,15 @@ export function ZoneDetails({
               ? "Paused, the zone gets no water, not even a rescue shot, and a shot already running in it stops within a few seconds."
               : "The controller waters the zone again from its next check."
           }
+        />
+      )}
+      {zone && probeChoice && zone.probes[probeChoice.metric]?.entityId && (
+        <ProbeReview
+          controller={controller}
+          zone={zone}
+          metric={probeChoice.metric}
+          option={probeChoice.option}
+          onClose={() => setProbeChoice(null)}
         />
       )}
       {zone?.setPhaseEntity && (
