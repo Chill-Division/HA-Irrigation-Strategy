@@ -25,6 +25,8 @@ version being released.
 
 - When the controller app stops for an update or a restart, the dashboard says so, and that it starts again by itself.
 - The tank's EC and pH, and the feed-water limits that could hold watering, are gone.
+- A new Reservoir page mixes your nutrient batches: it refills the reservoir, then runs each doser in turn, in the order you drag them into.
+- Keep a feed recipe for each growth stage, with its ratio off the nutrient chart, and pick the stage each room is on.
 - Bug fixes and improvements.
 
 ## 2.25.0 - 2026-09-27

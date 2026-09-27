@@ -164,6 +164,24 @@ An HA administrator uses **Rooms & setup**. Pair devices and expose their entiti
 
 Zone and room removal archives stable IDs. **Restore zone** or **Restore room** reactivates the same identity after review; archived slots are not silently reused for different hardware. Adding/archiving a zone may require updating a draft grow plan's assignments.
 
+## Mix nutrient batches (Reservoir)
+
+The **Reservoir** page runs a room's nutrient batches: the controller app refills the room's reservoir with fresh water, mixes it and doses each nutrient in turn. Each room has its own reservoir and dosers.
+
+1. In **Rooms & setup**, map the room's **Reservoir & dosers**: the level sensor (an ultrasonic sensor on the lid, reading the distance down to the water), the fresh-water solenoid, the recirculation solenoid and each doser's power switch, up to six. The room's pump mixes the batch.
+2. On **Reservoir**, set the **batch**: how long the fresh water runs (**Fresh-water fill**), the litres the doses are worked out for (**Batch size**), the level sensor's reading when the reservoir is almost empty (**Almost empty at**; **Use the reading now** takes the current one), how long the pump and recirculation run before the first dose (20 s to start with), a pause between dosers and how long it mixes after the last dose.
+3. Put the **dosers** in the order they dose, by dragging a doser by its handle or with its arrows. The order is the room's, whatever the stage. Each doser's flow, 600 mL/min unless you change it, is only used to work out how long it runs for its dose; its speed and calibration stay on the doser.
+4. Add a **feed recipe** for each growth stage. Give each doser the nutrient on it in that stage and its **parts**, the ratio off the nutrient chart: Athena Flower is 3 Core : 5 Bloom : 1 Balance : 0.5 Cleanse. The **mL per litre per part** is the strength. Each doser then gives parts × strength × batch litres: at 1 mL per litre per part in 150 L, Bloom is 750 mL and runs 75 s at 600 mL/min. A new recipe starts with the nutrients the last one had, since the bottles usually stay on their dosers. A recipe coming to more than 60 mL per litre is refused as a likely typo.
+5. Choose the **stage in use** and **Save**. The stage is also a select in Home Assistant, so an automation or a dashboard card can change it.
+
+A batch runs: fresh water for its fill time; then the recirculation solenoid opens and the pump starts; after the settle time each doser runs for its dose, one after another; then it keeps mixing, and the pump stops before the recirculation line closes. The page shows each step as it happens, with the time left, the dose in progress and what the last batch gave.
+
+- **Mix a batch now** asks for one; the controller app starts it at its next pass, within a minute, or says why it cannot. When the room has a level sensor and an almost-empty mark, a batch is refused unless the reservoir reads almost empty, so the fill cannot overflow it. A request the app first sees more than 30 minutes later (it was stopped) is not acted on.
+- **Automatic batches** (off until you turn them on) start one by itself once the reservoir has read almost empty for three passes in a row, and not again until it has read fuller.
+- A batch starts only while the room's watering switch is on, the room is on, no hardware fault is latched and everything it uses reads off: its solenoids, its dosers, the pump, the main line and every zone valve. Otherwise nothing is switched on and a notice says why (CS-703).
+- While a batch runs, the room waters nothing; while one fills or doses, no other room starts a shot either.
+- If the reservoir still reads almost empty after the fill, nothing is dosed (CS-702). If anything stops a batch part-way (the watering switch, the room switched off, a switch that went off or offline, the app stopping), everything it had on is switched off, within seconds while it fills or doses, and a notice says what went in (CS-701); a switch that will not read off latches the hardware hold. Dose what is missing by hand, or empty the reservoir and mix a new batch.
+
 ## Connection, appearance and supporting pages
 
 The native HA sidebar normally uses your existing HA session. **Settings → Home Assistant connection** also supports an explicit URL and a long-lived access token for a standalone tab; the token is kept for that tab session and is never put in the URL. A hosted HTTPS page may be unable to access a local HTTP HA server because of browser origin/security rules; use the native sidebar for the normal installation.

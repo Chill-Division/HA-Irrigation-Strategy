@@ -66,6 +66,12 @@ The **Zones** page shows every zone's water today, this week, since the grow sta
 
 ![Water use per zone: today, this week, this grow and an estimate for the whole grow](https://raw.githubusercontent.com/JakeTheRabbit/HA-Irrigation-Strategy/main/img/water-use.png)
 
+### Mix your nutrient batches
+
+The **Reservoir** page runs the room's nutrient batches with your own dosers. When the reservoir reads almost empty with automatic batches on, or when you ask for a batch, the controller refills it with fresh water for your fill time, starts the pump and the recirculation line, then runs each doser in turn for its dose, in the order you drag them into, and keeps mixing. Keep a feed recipe for each growth stage, with its ratio off the nutrient chart (Athena Flower is 3 Core : 5 Bloom : 1 Balance : 0.5 Cleanse), and the page works out each doser's millilitres and run time for your batch size. Watering waits while a batch runs, and anything that goes wrong switches everything off and tells you what went in.
+
+![The Reservoir page: a batch's steps, the reservoir level, automatic batches and the feed stage in use](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/reservoir.png)
+
 ### Keep the nutrient stock topped up
 
 The **Stock tanks** page tracks the concentrates each batch tank is dosed from. Tell it each tank's size and how much goes into one batch; every batch you make takes its dose off each stock tank. When one runs low you get a Repairs card and an Overview notice saying roughly how many batches are left, and a sensor you can use for a phone alert. Press **Refilled** when you top it up.

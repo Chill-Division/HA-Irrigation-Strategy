@@ -16,6 +16,10 @@ Captured on 25 September 2026 from the compiled application with isolated demo d
 
 ![Today, this week, this grow and an estimate for the whole grow, with litres per grow week](../img/water-use.png)
 
+## Reservoir
+
+![Nutrient batches: a batch's steps, the reservoir level, automatic batches and the feed stage in use](../img/reservoir.png)
+
 ## Stock tanks
 
 ![Nutrient stock tanks with their levels, low marks and batches left](../img/stock-tanks.png)
