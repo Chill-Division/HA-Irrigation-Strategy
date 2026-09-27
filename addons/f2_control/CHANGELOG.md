@@ -1,3 +1,9 @@
+# Unreleased
+
+No change to add-on options or the state file.
+
+- **Waits for its settings.** A setting `_zone_num` has to fill in with a built-in value holds the room's shots (`_blocked`: "waiting for its settings to load") until it has been missing for `SETTINGS_WAIT_PASSES` (3) passes, when CS-402 is raised and the built-in value is used, as before. While Home Assistant starts or the integration reloads, the numbers are missing for a moment.
+
 # 2.25.0
 
 Pair with integration 2.25.0.

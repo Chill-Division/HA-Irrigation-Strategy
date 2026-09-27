@@ -9,6 +9,26 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **The controller waits for its settings before it waters.** While Home Assistant starts, or the
+  Crop Steering integration reloads, a room's settings are missing for a moment. The controller used
+  to fill them in with its own built-in values and could water on those; now the zone waits up to
+  three passes (about three minutes) for them. A setting still missing after that is watered on its
+  built-in value, as before, and the "settings missing" notice (CS-402) says which.
+
+### 🔧 Technical notes
+
+- **Settings wait (controller).** `_zone_num` records each setting it fills in with a built-in value
+  in `room._settings_missing` (reset at the start of `_loop_room`). `_blocked` holds a shot, after the
+  engine switch, while any of them has been missing for fewer than `SETTINGS_WAIT_PASSES` (3) passes:
+  "waiting for its settings to load (…)". CS-402 still fires after three passes, when the wait ends.
+  Settings read later in a pass (the pot volume, in shot sizing) are not waited for. The controller
+  tests see settings as loaded at once (`conftest._settings_load_at_once`) except
+  `test_settings_wait.py`.
+
 ## [2.25.0] - 2026-09-27
 
 Integration and controller **2.25.0**.
