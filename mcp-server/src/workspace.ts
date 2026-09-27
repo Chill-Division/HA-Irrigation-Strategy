@@ -383,6 +383,7 @@ export class Workspace {
         vwc: ["%"],
         ec: ["ms/cm", "ds/m"],
         temperature: ["°c", "°f", "k"],
+        distance: ["mm", "cm", "m"],
       };
       if (kind && !units[kind]?.includes(unit))
         throw new SafeError(`Incompatible ${kind} unit on ${entity}.`);
@@ -392,7 +393,11 @@ export class Workspace {
         validate(
           entity,
           hardwareDomains[key]!,
-          key === "tank_temperature_sensor" ? "temperature" : undefined,
+          key === "tank_temperature_sensor"
+            ? "temperature"
+            : key === "reservoir_distance_sensor"
+              ? "distance"
+              : undefined,
         );
     }
     for (const patch of changes.zones ?? []) {
