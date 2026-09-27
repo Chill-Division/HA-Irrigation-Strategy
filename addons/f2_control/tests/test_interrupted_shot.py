@@ -468,6 +468,18 @@ def test_stopping_the_app_with_no_shot_in_flight_switches_nothing_off(rig):
     assert saved(c)["default"]["1"]["daily_vol"] == 7.5  # state is still saved on the way out
 
 
+def test_stopping_the_app_says_so_on_the_heartbeat(rig):
+    """An update, a restart or a stop by hand: the dashboard shows a stopped controller, not a missing one."""
+    c, fake, _ = rig
+    with pytest.raises(SystemExit):
+        c._safe_exit()
+    state, attrs = fake.sets["sensor.crop_steering_ai_heartbeat"]
+    assert state == "stopped" and attrs["stopped_at"] == attrs["last_beat"]
+    assert attrs["controller_version"] == controller.CONTROLLER_VERSION
+    assert attrs["enable_flag"] == "input_boolean.kill"  # the integration still finds the engine switch
+    assert "strategy_snapshot_version" not in attrs  # and arms no grow plan on a stopped controller
+
+
 def test_stopping_the_app_mid_shot_leaves_the_pump_to_a_hold_that_came_on_meanwhile(rig, monkeypatch):
     c, fake, clock = rig
     c.hold_entities = ["input_boolean.tank_circulation"]
