@@ -1,7 +1,11 @@
 """Unit tests for Crop Steering System calculations."""
 
 import pytest
-from custom_components.crop_steering.calculations import ShotCalculator
+from custom_components.crop_steering.calculations import (
+    ShotCalculator,
+    combine_probes,
+    combined_readings,
+)
 from custom_components.crop_steering.const import (
     SECONDS_PER_HOUR,
     PERCENTAGE_TO_RATIO,
@@ -279,3 +283,20 @@ class TestEdgeCases:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_probes_combine_by_average_median_lowest_or_highest():
+    assert combine_probes([83.5, 87.7]) == 85.6  # the default, as before
+    assert combine_probes([83.5, 87.7], "Lowest") == 83.5
+    assert combine_probes([83.5, 87.7], "Highest") == 87.7
+    # Median differs from the average only with three probes or more: one odd probe is ignored.
+    assert combine_probes([60, 61, 90], "Median") == 61
+    assert combine_probes([60, 61, 90], "Average") == 70.33
+    assert combine_probes([60, 61, 90], "Something else") == 70.33
+    assert combine_probes([], "Lowest") is None
+    assert combined_readings([83.5, 87.7]) == {
+        "Average": 85.6,
+        "Median": 85.6,
+        "Lowest": 83.5,
+        "Highest": 87.7,
+    }

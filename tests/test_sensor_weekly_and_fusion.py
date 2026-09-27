@@ -10,6 +10,11 @@ from types import SimpleNamespace
 import pytest
 
 from custom_components.crop_steering import units
+from custom_components.crop_steering.calculations import (
+    combine_probes,
+    combined_readings,
+)
+from custom_components.crop_steering.const import DOMAIN, PROBE_METHODS
 
 SOURCE = (
     Path(__file__).resolve().parents[1] / "custom_components/crop_steering/sensor.py"
@@ -29,6 +34,14 @@ def sensor(states, prefix=""):
         "_get_zone_last_irrigation",
         "extra_state_attributes",
         "_average_sensor_values",
+        "_probe_values",
+        "_probe_metric",
+        "_zone_probe_ids",
+        "_probe_method_entity",
+        "_probe_method",
+        "_zone_reading",
+        "_get_zone_vwc",
+        "_get_zone_ec",
     }
     methods = [
         node
@@ -43,6 +56,10 @@ def sensor(states, prefix=""):
         "math": math,
         "_LOGGER": logging.getLogger(__name__),
         "to_native": units.to_native,
+        "combine_probes": combine_probes,
+        "combined_readings": combined_readings,
+        "DOMAIN": DOMAIN,
+        "PROBE_METHODS": PROBE_METHODS,
         "dt_util": SimpleNamespace(
             parse_datetime=datetime.fromisoformat,
             as_local=lambda value: value.replace(tzinfo=timezone.utc),
@@ -253,3 +270,54 @@ def test_a_probe_with_no_unit_or_an_unknown_one_reads_exactly_as_before():
     )
     assert entity._average_sensor_values(["sensor.a", "sensor.b"], "vwc") == 51.0
     assert entity._average_sensor_values(["sensor.a", "sensor.b"]) == 51.0
+
+
+# ------------------------------------------------ how a zone's probes become its one reading
+DOOR, AC = "sensor.thc_s_door_end_humidity", "sensor.thc_s_ac_end_humidity"
+DOOR_EC, AC_EC = (
+    "sensor.thc_s_door_end_conductivity",
+    "sensor.thc_s_ac_end_conductivity",
+)
+
+
+def zone(states, **zone_config):
+    entity = sensor(states)
+    entity._zones_config = {
+        1: {"vwc_sensors": [DOOR, AC], "ec_sensors": [DOOR_EC, AC_EC], **zone_config}
+    }
+    return entity
+
+
+def test_a_zone_reads_its_probes_as_its_selects_say_moisture_and_ec_apart():
+    states = {
+        DOOR: _probe(83.5, "%"),
+        AC: _probe(87.7, "%"),
+        DOOR_EC: _probe(525, "µS/cm"),
+        AC_EC: _probe(832, "µS/cm"),
+    }
+    # No choice made (and an install from before there was one): the average, as always.
+    assert zone(states)._get_zone_vwc(1) == 85.6
+    states["select.crop_steering_zone_1_vwc_method"] = SimpleNamespace(state="Lowest")
+    states["select.crop_steering_zone_1_ec_method"] = SimpleNamespace(state="Average")
+    entity = zone(states)
+    assert entity._get_zone_vwc(1) == 83.5
+    assert entity._get_zone_ec(1) == 0.68  # 525 and 832 µS/cm, averaged in mS/cm
+    entity.entity_description = SimpleNamespace(key="vwc_zone_1")
+    assert entity.extra_state_attributes == {
+        "method": "Lowest",
+        "probes": {DOOR: 83.5, AC: 87.7},
+        "combined": {"Average": 85.6, "Median": 85.6, "Lowest": 83.5, "Highest": 87.7},
+    }
+
+
+def test_an_unknown_choice_or_a_dead_probe_leaves_a_sensible_reading():
+    states = {
+        DOOR: _probe(83.5, "%"),
+        AC: SimpleNamespace(state="unavailable", attributes={}),
+        "select.crop_steering_zone_1_vwc_method": SimpleNamespace(state="unknown"),
+    }
+    entity = zone(states)
+    assert (
+        entity._get_zone_vwc(1) == 83.5
+    )  # the one probe left; Average for a choice it lacks
+    assert zone({})._get_zone_vwc(1) is None

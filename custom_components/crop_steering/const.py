@@ -31,6 +31,9 @@ SET_PHASE_OPTIONS = ["Keep", *PHASES]
 # How Water today reads, in the dashboard and the controller's vitals notification: each zone's
 # total, or what each of its plants got. The controller matches "Per plant" by these words.
 WATER_TODAY_VIEWS = ["Zone total", "Per plant"]
+# How a zone's probes become its one moisture reading, and separately its one EC reading
+# (select.crop_steering_<prefix>zone_N_vwc_method / _ec_method): Average until someone chooses.
+PROBE_METHODS = ["Average", "Median", "Lowest", "Highest"]
 STEERING_MODES = ["Vegetative", "Generative"]
 
 # Growth stages (for growth_stage select entity)

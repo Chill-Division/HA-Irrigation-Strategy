@@ -30,6 +30,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.helpers.entity import DeviceInfo
 
 from .const import (
+    PROBE_METHODS,
     DOMAIN,
     CONF_NUM_ZONES,
     DEFAULT_EC_RATIO,
@@ -39,7 +40,7 @@ from .const import (
 )
 from .room import room_prefix, build_engine_config
 from . import stock
-from .calculations import ShotCalculator
+from .calculations import ShotCalculator, combine_probes, combined_readings
 from .units import to_native
 from .zone_status import mirrored_status, status_app_entity
 
@@ -531,12 +532,9 @@ class CropSteeringSensor(SensorEntity):
         except Exception:
             return self._get_number_value("p2_vwc_threshold")
 
-    def _get_zone_vwc(self, zone_num: int) -> float | None:
-        """Get VWC value for specific zone from configured sensors.
-
-        Supports N sensors per zone (new vwc_sensors list) with
-        fallback to legacy vwc_front/vwc_back pair.
-        """
+    def _zone_probe_ids(self, zone_num: int, metric: str) -> list[str]:
+        """The probes mapped to a zone for `metric` ("vwc" or "ec"): the N-probe list, or the
+        legacy front/back pair."""
         # _zones_config keys can be int OR str ('1','2','3') depending on how the config
         # entry was (re)loaded — JSON serialises dict keys as strings, so after a config
         # reload the int lookup misses and every zone reads None ('unknown'). Accept both.
@@ -545,38 +543,38 @@ class CropSteeringSensor(SensorEntity):
             or self._zones_config.get(str(zone_num))
             or {}
         )
+        sensors = list(zone_config.get(f"{metric}_sensors", []))
+        if not sensors:
+            for end in ("front", "back"):
+                if zone_config.get(f"{metric}_{end}"):
+                    sensors.append(zone_config[f"{metric}_{end}"])
+        return sensors
 
-        # Prefer new list format
-        vwc_sensors = list(zone_config.get("vwc_sensors", []))
-        if not vwc_sensors:
-            # Legacy fallback
-            if zone_config.get("vwc_front"):
-                vwc_sensors.append(zone_config["vwc_front"])
-            if zone_config.get("vwc_back"):
-                vwc_sensors.append(zone_config["vwc_back"])
+    def _probe_method_entity(self, zone_num: int, metric: str) -> str:
+        return f"select.{DOMAIN}_{self._prefix}zone_{zone_num}_{metric}_method"
 
-        return self._average_sensor_values(vwc_sensors, "vwc")
-
-    def _get_zone_ec(self, zone_num: int) -> float | None:
-        """Get EC value for specific zone from configured sensors.
-
-        Supports N sensors per zone (new ec_sensors list) with
-        fallback to legacy ec_front/ec_back pair.
-        """
-        zone_config = (
-            self._zones_config.get(zone_num)
-            or self._zones_config.get(str(zone_num))
-            or {}
+    def _probe_method(self, zone_num: int, metric: str) -> str:
+        """How the zone's probes become its one reading: the zone's select, Average without it."""
+        state = self.hass.states.get(self._probe_method_entity(zone_num, metric))
+        return (
+            state.state
+            if state is not None and state.state in PROBE_METHODS
+            else "Average"
         )
 
-        ec_sensors = list(zone_config.get("ec_sensors", []))
-        if not ec_sensors:
-            if zone_config.get("ec_front"):
-                ec_sensors.append(zone_config["ec_front"])
-            if zone_config.get("ec_back"):
-                ec_sensors.append(zone_config["ec_back"])
+    def _zone_reading(self, zone_num: int, metric: str) -> float | None:
+        readings = self._probe_values(self._zone_probe_ids(zone_num, metric), metric)
+        return combine_probes(readings.values(), self._probe_method(zone_num, metric))
 
-        return self._average_sensor_values(ec_sensors, "ec")
+    def _get_zone_vwc(self, zone_num: int) -> float | None:
+        """The zone's moisture from its probes, combined as its select says (Average unless
+        chosen otherwise)."""
+        return self._zone_reading(zone_num, "vwc")
+
+    def _get_zone_ec(self, zone_num: int) -> float | None:
+        """The zone's EC from its probes, combined as its select says (Average unless chosen
+        otherwise)."""
+        return self._zone_reading(zone_num, "ec")
 
     def _get_zone_last_irrigation(self, zone_num: int):
         """Return zone last-irrigation as a tz-aware datetime (or None).
@@ -623,9 +621,51 @@ class CropSteeringSensor(SensorEntity):
                 pass
         return None
 
+    def _probe_metric(self) -> str | None:
+        """ "vwc" or "ec" for a zone's moisture or EC sensor; None for any other sensor."""
+        if self._zone_number is None:
+            return None
+        for metric in ("vwc", "ec"):
+            if self.entity_description.key == f"{metric}_zone_{self._zone_number}":
+                return metric
+        return None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        metric = self._probe_metric()
+        if metric is None:
+            return
+
+        @callback
+        def _method_changed(_event) -> None:
+            self.async_write_ha_state()
+
+        # A new choice of method shows at once, not at the next poll.
+        self.async_on_remove(
+            async_track_state_change_event(
+                self.hass,
+                [self._probe_method_entity(self._zone_number, metric)],
+                _method_changed,
+            )
+        )
+
     @property
     def extra_state_attributes(self) -> dict | None:
-        """Expose the weekly producer's coverage so partial history stays visible."""
+        """A zone's moisture or EC sensor: each probe's reading, what each method gives from them
+        and the method in use. The weekly water sensor: its producer's coverage, so partial history
+        stays visible."""
+        metric = self._probe_metric()
+        if metric is not None:
+            readings = self._probe_values(
+                self._zone_probe_ids(self._zone_number, metric), metric
+            )
+            return {
+                "method": self._probe_method(self._zone_number, metric),
+                "probes": {
+                    entity: round(value, 2) for entity, value in readings.items()
+                },
+                "combined": combined_readings(readings.values()),
+            }
         if self._zone_number and self.entity_description.key == (
             f"zone_{self._zone_number}_weekly_water_usage"
         ):
@@ -668,15 +708,21 @@ class CropSteeringSensor(SensorEntity):
     def _average_sensor_values(
         self, sensor_ids: list[str], kind: str | None = None
     ) -> float | None:
-        """Average values from multiple sensors, each first converted to the unit the room steers
+        """Average values from multiple sensors (see _probe_values)."""
+        return combine_probes(self._probe_values(sensor_ids, kind).values())
+
+    def _probe_values(
+        self, sensor_ids: list[str], kind: str | None = None
+    ) -> dict[str, float]:
+        """Each sensor's usable reading, by entity id, first converted to the unit the room steers
         in (`kind` "ec" -> mS/cm, "vwc" -> %). Mixed probes are common: one Atlas in uS/cm beside
         one TEROS in mS/cm would otherwise average to nonsense far over any EC target.
         """
         if not sensor_ids:
             _LOGGER.debug("No sensor IDs provided for averaging")
-            return None
+            return {}
 
-        values = []
+        values = {}
         for sensor_id in sensor_ids:
             if not sensor_id:
                 continue
@@ -691,16 +737,16 @@ class CropSteeringSensor(SensorEntity):
                         unit = (getattr(state, "attributes", None) or {}).get(
                             "unit_of_measurement"
                         )
-                        values.append(to_native(kind, unit, value))
+                        values[sensor_id] = to_native(kind, unit, value)
             except (ValueError, TypeError) as e:
                 _LOGGER.debug(f"Could not parse sensor value for {sensor_id}: {e}")
                 continue
 
-        if values:
-            return round(sum(values) / len(values), 2)
-
-        _LOGGER.debug(f"No valid sensor values found from {len(sensor_ids)} sensors")
-        return None
+        if not values:
+            _LOGGER.debug(
+                f"No valid sensor values found from {len(sensor_ids)} sensors"
+            )
+        return values
 
     def _calculate_avg_vwc(self) -> float | None:
         """Calculate average VWC from all configured zone sensors."""
