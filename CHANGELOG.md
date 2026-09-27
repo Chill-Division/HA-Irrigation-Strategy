@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   takes only what went in. Each tank's per batch and batches left follow the feed stage in use. If you
   swap bottles between stages, put both tanks on that doser: each batch takes from the one named like
   the nutrient its recipe puts there. A tank on no doser works as before.
+- **A dryback target says it is below the peak.** The dashboard shows every dryback target as
+  "% below peak", where the Today settings showed a bare "%": 40 means drying back by 40% of the
+  day's peak (an 87% peak dries back to 52%), not to 40% VWC.
 
 ### 🔧 Technical notes
 
@@ -35,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   settings change. Tanks stored before this load with no doser. The Stock tanks editor offers a Doser
   per tank in a room with dosers, and shows the dose entity only in a room without, or on a tank
   that has one.
+- **Dryback unit (dashboard).** `DRYBACK_UNIT` ("% below peak", `setting-words.ts`) is the unit of
+  every dryback target: the room model uses it for `number.crop_steering_*dryback_target` whatever
+  unit Home Assistant gives the entity (`%`), and the plan views, the planning curve and the demo
+  use it too. The entities are unchanged.
 
 ## [2.26.0] - 2026-09-27
 

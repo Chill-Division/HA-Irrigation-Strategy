@@ -159,7 +159,7 @@ export class OperatorDemo {
     for (const zone of roomSetup.zones.filter((z) => z.active)) {
       const limits: Record<string, ParameterLimit> = {};
       const sample: Record<string, [number, number, number, number, string]> = {
-        dryback_target: [8, 1, 30, 0.5, "% of peak"],
+        dryback_target: [8, 1, 30, 0.5, "% below peak"],
         p1_target_vwc: [64, 20, 90, 0.5, "%"],
         p2_vwc_threshold: [54, 10, 90, 0.5, "%"],
         p1_initial_shot_size: [6, 0.5, 20, 0.5, "%"],

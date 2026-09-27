@@ -10,6 +10,11 @@
 
 /** Which way a level acts, shown as a small tag before its name. */
 export type SettingTag = "fills" | "waters" | "dries" | "rescues" | "ceiling" | "time";
+/** A dryback target's unit, wherever it is shown. It is a drop relative to the day's peak: 40 means
+ * 40% below it (an 87% peak dries back to 52%), not 40% VWC and not 40 points. Home Assistant's
+ * entity says only "%". */
+export const DRYBACK_UNIT = "% below peak";
+
 export const TAG_TEXT: Record<SettingTag, string> = {
   fills: "fills up to",
   waters: "waters below",
