@@ -98,18 +98,6 @@ def test_unknown_ec_delivers_full_base_shot(rig):
     assert c._water_usage(room, 1, FixedDateTime.now())[0] == 5.0
 
 
-@pytest.mark.parametrize("metric", ["ec", "ph"])
-@pytest.mark.parametrize("value,stamp", [("NaN", "current"), ("inf", "current"),
-                                         ("3", None), ("3", "broken")])
-def test_invalid_feed_holds_without_last_good_grace(rig, metric, value, stamp):
-    c, fake, room, _ = rig
-    setattr(room, f"feed_{metric}_sensor", f"sensor.feed_{metric}")
-    fake.set_state(f"number.crop_steering_irrigation_{metric}_min", "2")
-    fake.set_state(f"number.crop_steering_irrigation_{metric}_max", "7")
-    probe(fake, f"sensor.feed_{metric}", value, stamp)
-    assert "fail-closed" in c._blocked(room, 1)
-
-
 def test_sensor_accepts_valid_aware_time_and_small_clock_skew(rig):
     c, fake, _, _ = rig
     for stamp in ("2026-09-08T12:00:59+00:00", "2026-09-09T00:00:00+12:00"):
@@ -166,7 +154,7 @@ def test_weekly_restart_old_state_unattributed_volume_and_missing_days(rig):
 def test_weekly_rooms_and_disabled_blind_rollover_are_isolated(rig):
     c, fake, room, _ = rig
     other = controller.Room("veg", "veg_", room.zones.copy(), room.hw.copy(),
-                            "input_boolean.veg_enabled", "", "", 18, 6)
+                            "input_boolean.veg_enabled", 18, 6)
     other.state = {1: c._fresh_zone()}
     c.rooms.append(other)
     c._advance_shot_counters(room, 1, 2)

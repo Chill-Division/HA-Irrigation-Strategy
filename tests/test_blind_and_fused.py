@@ -117,9 +117,7 @@ def _blind_ctrl_and_room(phase):
     c._save_state = _save
     z = {1: {"vwc": "sensor.x_vwc_1", "ec": "sensor.x_ec_1"}}
     hw = {"pump": "switch.p", "mainline": "switch.m", "valves": {1: "switch.v1"}}
-    room = C.Room(
-        "default", "", z, hw, "input_boolean.f2_control_enabled", "", "", 10.0, 22.0
-    )
+    room = C.Room("default", "", z, hw, "input_boolean.f2_control_enabled", 10.0, 22.0)
     room.state = {
         1: {
             "phase": phase,

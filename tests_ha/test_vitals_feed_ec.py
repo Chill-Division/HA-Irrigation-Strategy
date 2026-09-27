@@ -1,5 +1,5 @@
-"""The vitals notification, from the real controller looking at a real install: feed EC only for a room
-whose feed EC probe is mapped. The wizard's room maps none, so its line says nothing about it."""
+"""The vitals notification, from the real controller looking at a real install, says nothing about feed EC:
+the source-water gate and its probes were removed in 2.26.0."""
 
 from datetime import datetime
 
@@ -8,8 +8,7 @@ from test_setup_entry import _install
 
 async def test_a_room_with_no_feed_ec_probe_says_nothing_about_feed_ec(hass, controller_for):
     await _install(hass)
-    c, fake, _clock = controller_for({})
-    assert not c.rooms[0].feed_ec_sensor
+    c, fake, _clock = controller_for({"feed_ec_sensor": "sensor.tank_ec"})  # an old option: ignored
     c.loop_once(datetime.now())  # the first pass sends the vitals
     (message,) = [
         d["message"]

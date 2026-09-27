@@ -119,5 +119,7 @@ async def test_the_new_attribute_does_not_move_an_upgraded_rooms_fingerprint(has
     attrs = json.loads(json.dumps(dict(hass.states.get(DESCRIPTOR).attributes), default=str))
     room = type("R", (), {"enable_flag": KILL})()
     now = controller_module.Controller._setup_fingerprint(attrs, room)
-    assert now == seed["controller_saved"]["default"]["_setup"]["fingerprint"]
+    saved = seed["controller_saved"]["default"]["_setup"]["fingerprint"]
+    # saved with the feed EC/pH sensors (gone in 2.26.0), which the controller compares it without
+    assert controller_module.Controller._without_feed(saved) == now
     assert fixture("entry_2_18_one_switch_tent.json")["data"] == seed["data"]

@@ -30,8 +30,6 @@ options:
   notify_service: ""
   notify_min: 30
   instance_name: Crop Steering
-  feed_ec_sensor: ""
-  feed_ph_sensor: ""
   hold_entities: []
   substrate_l: 5
   flow_lps: 0.02
@@ -45,8 +43,6 @@ schema:
   notify_service: str?
   notify_min: float
   instance_name: str?
-  feed_ec_sensor: str?
-  feed_ph_sensor: str?
   hold_entities:
     - str
   substrate_l: float

@@ -10,7 +10,7 @@ Multi-room (Stage 2): the engine drives EVERY configured room. The default room 
 un-prefixed (entity ids exactly as a single-room install) and is built from the add-on
 options. Additional rooms are discovered from the integration's published
 `sensor.crop_steering_<prefix>engine_config` descriptors; each is a fully self-contained
-control loop — own zones, hardware (pump/mainline/valves), kill switch, feed gate,
+control loop — own zones, hardware (pump/mainline/valves), kill switch,
 photoperiod and durable state, namespaced `crop_steering_<slug>_*`. New rooms are
 fail-safe OFF until their per-room kill switch is turned on. The rooms share only this
 one process (one shot fires at a time) and the notify service.
@@ -42,7 +42,6 @@ from crop_steering_engine import (
     ZoneSnapshot,
     validate_params,
     pick_sibling,
-    feed_grace_ok,
     ec_pid,
     cross_zone_outliers,
     detect_vmax,
@@ -370,8 +369,6 @@ class Room:
         zones,
         hardware,
         enable_flag,
-        feed_ec_sensor,
-        feed_ph_sensor,
         opt_lon,
         opt_loff,
     ):
@@ -382,8 +379,6 @@ class Room:
         self.enable_flag = (
             enable_flag  # the per-room KILL SWITCH (must be ON to actuate)
         )
-        self.feed_ec_sensor = (feed_ec_sensor or "").strip()
-        self.feed_ph_sensor = (feed_ph_sensor or "").strip()
         # lights: fall back to these option values until the integration entity is read
         self.opt_lon = opt_lon
         self.opt_loff = opt_loff
@@ -402,10 +397,6 @@ class Room:
         self._blind_zones = set()
         self._blind_since = {}  # z -> when its probe was first seen unreadable in this run of it
         self._was_lights_on = None
-        self._feed_last_good_value = None
-        self._feed_last_good_time = None
-        self._feed_ph_last_good = None
-        self._feed_ph_last_good_time = None
         # when this room was seen switched off (see _room_switched_on); durable, None when not known
         self._off_since = None
         # what the room last reported, repeated while a shot holds the loop (Controller._keep_alive)
@@ -428,7 +419,6 @@ class Controller:
         # they are an OPTION with an empty default — an install without them never holds on
         # them. Configure your own input_boolean/switch ids to enable.
         self.hold_entities = [e for e in (o.get("hold_entities") or []) if e]
-        self.feed_grace_min = float(o.get("feed_grace_min", 30))
         self.blind_fallback_min = float(o.get("blind_fallback_min", 90))
         self.loop_seconds = float(o.get("loop_seconds", 60))
         self.flow_lps = float(
@@ -495,21 +485,12 @@ class Controller:
                 # unmapped — _blocked() holds every zone and alerts until it's configured
                 hw = {"pump": None, "mainline": None, "valves": {}}
         hw["valves"] = {int(k): v for k, v in hw["valves"].items()}
-        # Source-water feed gate sensors are OPTIONAL and have NO facility default — an empty
-        # (or unset) value disables that half of the source-water gate so the add-on works on
-        # any install out of the box. Option wins, else the integration descriptor's value.
         default_room = Room(
             slug="default",
             prefix="",
             zones=zones,
             hardware=hw,
             enable_flag=self._default_enable_flag(o, desc),
-            feed_ec_sensor=(
-                o.get("feed_ec_sensor") or desc.get("feed_ec_sensor") or ""
-            ).strip(),
-            feed_ph_sensor=(
-                o.get("feed_ph_sensor") or desc.get("feed_ph_sensor") or ""
-            ).strip(),
             opt_lon=self._opt_lon,
             opt_loff=self._opt_loff,
         )
@@ -530,8 +511,6 @@ class Controller:
         # ---- additional rooms: discovered from the integration's published descriptors ----
         self.rooms.extend(self._discover_rooms())
 
-        for room in self.rooms:
-            self._log_feed_config(room)
         if len(self.rooms) > 1:
             log(
                 "rooms:",
@@ -546,26 +525,6 @@ class Controller:
         self._apply_setup_descriptors()  # Gate tombstones/revisions before the very first shot.
         signal.signal(signal.SIGTERM, self._safe_exit)
         signal.signal(signal.SIGINT, self._safe_exit)
-
-    def _log_feed_config(self, room):
-        tag = "" if room.prefix == "" else f"[{room.slug}] "
-        if not room.feed_ec_sensor and not room.feed_ph_sensor:
-            log(
-                f"config: {tag}no feed_ec_sensor/feed_ph_sensor set — source-water pH/EC gate "
-                "disabled (dosing/fill holds still apply); set them to enable feed gating"
-            )
-        elif not room.feed_ec_sensor:
-            log(
-                f"config: {tag}no feed_ec_sensor set — source-water EC gate disabled (pH gate active)"
-            )
-        elif not room.feed_ph_sensor:
-            log(
-                f"config: {tag}no feed_ph_sensor set — source-water pH gate disabled (EC gate active)"
-            )
-        else:
-            log(
-                f"config: {tag}feed gate EC={room.feed_ec_sensor} pH={room.feed_ph_sensor}"
-            )
 
     @staticmethod
     def _default_zone_map(zone_ids):
@@ -687,8 +646,6 @@ class Controller:
                         hardware=hw,
                         enable_flag=a.get("enable_flag")
                         or f"switch.crop_steering_{prefix}engine_enabled",
-                        feed_ec_sensor=a.get("feed_ec_sensor", ""),
-                        feed_ph_sensor=a.get("feed_ph_sensor", ""),
                         opt_lon=self._opt_lon,
                         opt_loff=self._opt_loff,
                     )
@@ -872,12 +829,6 @@ class Controller:
                 log(f"config: default room zones resolved: {was or 'none'} -> {sorted(zone_ids) or 'none'}")
             if desc:
                 default.enable_flag = self._default_enable_flag(self._options, desc)
-                default.feed_ec_sensor = (
-                    self._options.get("feed_ec_sensor") or desc.get("feed_ec_sensor") or ""
-                ).strip()
-                default.feed_ph_sensor = (
-                    self._options.get("feed_ph_sensor") or desc.get("feed_ph_sensor") or ""
-                ).strip()
         if default.slug == "default" and not default.hw.get("valves"):
             desc = self._default_descriptor()
             valves = {int(k): v for k, v in (desc.get("valves") or {}).items() if v}
@@ -909,7 +860,6 @@ class Controller:
                 continue
             self._load_room_state(room)
             self.rooms.append(room)
-            self._log_feed_config(room)
             log(f"room '{room.slug}' discovered live — joined fail-safe OFF")
         self._apply_setup_descriptors()
 
@@ -928,14 +878,27 @@ class Controller:
             "mainline": attrs.get("mainline"),
             "valves": {str(k): v for k, v in (attrs.get("valves") or {}).items()},
             "enable_flag": attrs.get("enable_flag") or room.enable_flag,
-            "feed_ec_sensor": attrs.get("feed_ec_sensor") or "",
-            "feed_ph_sensor": attrs.get("feed_ph_sensor") or "",
         }
         # Only when declared: a room that never declared its plumbing must keep the fingerprint
         # it saved before this field existed, or the update would strand it behind a disarm cycle.
         if attrs.get("plumbing"):
             adopted["plumbing"] = attrs["plumbing"]
         return json.dumps(adopted, sort_keys=True)
+
+    @staticmethod
+    def _without_feed(fingerprint):
+        """A fingerprint saved before 2.26.0 names the room's feed EC and pH sensors, which the setup no
+        longer has: compared without them, the same room resumes after the update instead of waiting
+        for its engine switch to be cycled."""
+        try:
+            saved = json.loads(fingerprint)
+        except (TypeError, ValueError):
+            return fingerprint
+        if not isinstance(saved, dict):
+            return fingerprint
+        saved.pop("feed_ec_sensor", None)
+        saved.pop("feed_ph_sensor", None)
+        return json.dumps(saved, sort_keys=True)
 
     @staticmethod
     def _entry_id(attrs):
@@ -1022,7 +985,7 @@ class Controller:
                     and isinstance(saved, dict)
                     and type(saved.get("revision")) is int
                     and saved["revision"] == revision
-                    and saved.get("fingerprint") == fingerprint
+                    and self._without_feed(saved.get("fingerprint")) == fingerprint
                 )
                 active = attrs.get("active", True)
                 zone_ids = attrs.get(
@@ -1100,8 +1063,6 @@ class Controller:
                             self._fresh_zone(), saved
                         )
                 room.zones, room.hw, room.enable_flag = zones, desired_hw, desired_flag
-                room.feed_ec_sensor = attrs.get("feed_ec_sensor") or ""
-                room.feed_ph_sensor = attrs.get("feed_ph_sensor") or ""
                 room.setup_active, room.setup_revision = active, revision
                 room._setup_fingerprint_adopted = fingerprint
                 room._setup_entry_id = self._entry_id(attrs) or getattr(room, "_setup_entry_id", None)
@@ -1342,34 +1303,6 @@ class Controller:
             return None
         return f
 
-    def _read_feed_ec(self, room):
-        if not room.feed_ec_sensor:
-            return None
-        feed = self._read_sensor(room.feed_ec_sensor, lo=0, hi=20, to_ms_cm=True)
-        if feed is not None:
-            lo = self._num(f"number.crop_steering_{room.prefix}irrigation_ec_min", 0)
-            hi = self._num(f"number.crop_steering_{room.prefix}irrigation_ec_max", 0)
-            if (lo <= 0 or feed >= lo) and (hi <= 0 or feed <= hi):
-                room._feed_last_good_value, room._feed_last_good_time = (
-                    feed,
-                    datetime.now(),
-                )
-        return feed
-
-    def _read_feed_ph(self, room):
-        if not room.feed_ph_sensor:
-            return None
-        ph = self._read_sensor(room.feed_ph_sensor, lo=0, hi=14)
-        if ph is not None:
-            lo = self._num(f"number.crop_steering_{room.prefix}irrigation_ph_min", 0)
-            hi = self._num(f"number.crop_steering_{room.prefix}irrigation_ph_max", 0)
-            if (lo <= 0 or ph >= lo) and (hi <= 0 or ph <= hi):
-                room._feed_ph_last_good, room._feed_ph_last_good_time = (
-                    ph,
-                    datetime.now(),
-                )
-        return ph
-
     def _veg(self, room, zone):
         v, _, _ = ha_get(f"select.crop_steering_{room.prefix}zone_{zone}_steering_mode")
         if v in (None, "unknown", "unavailable", ""):
@@ -1552,21 +1485,6 @@ class Controller:
             if dt_h > 0:
                 rate = max(0.0, (v0 - vwc) / dt_h)
         ec_settled = self._settled_ec(st, ec, now)
-        feed_live = self._read_feed_ec(room)
-        if feed_live is not None:
-            feed_ec = feed_live
-        elif feed_grace_ok(
-            now.timestamp(),
-            (
-                room._feed_last_good_time.timestamp()
-                if room._feed_last_good_time
-                else None
-            ),
-            self.feed_grace_min,
-        ):
-            feed_ec = room._feed_last_good_value
-        else:
-            feed_ec = None
         new_grow_day = self._new_grow_day(room, st, now, lights_on)
         snap = ZoneSnapshot(
             vwc=vwc,
@@ -1591,7 +1509,6 @@ class Controller:
             hours_to_lights_on=self._hours_to(now, room.lights_on_hour),
             hours_to_lights_off=self._hours_to(now, room.lights_off_hour),
             uptime_min=(now - self._start).total_seconds() / 60.0,
-            feed_ec=(feed_ec if feed_ec is not None else 3.0),
             new_grow_day=new_grow_day,
             ec_settled=ec_settled,
             # a held plan holds the steering; decide() then fires only the rescues (PLAN_HOLD_EXEMPT)
@@ -1962,50 +1879,6 @@ class Controller:
         for f in self.hold_entities:
             if self._on(f, False):
                 return f"external hold ({f.split('.')[-1]})"
-        # Source-water EC gate — only when a feed-EC sensor is configured. With no feed sensor
-        # the gate is disabled (the dosing/fill holds above still apply) so the add-on is safe
-        # out of the box on installs without a reservoir probe.
-        if room.feed_ec_sensor:
-            feed = self._read_feed_ec(room)
-            lo = self._num(f"number.crop_steering_{room.prefix}irrigation_ec_min", 0)
-            hi = self._num(f"number.crop_steering_{room.prefix}irrigation_ec_max", 0)
-            if lo > 0 or hi > 0:
-                if feed is None:
-                    if not feed_grace_ok(
-                        datetime.now().timestamp(),
-                        (
-                            room._feed_last_good_time.timestamp()
-                            if room._feed_last_good_time
-                            else None
-                        ),
-                        self.feed_grace_min,
-                    ):
-                        return f"source-water EC dead >{self.feed_grace_min:.0f}min — holding (fail-closed)"
-                    # Inside the grace window we skip the EC band check only — fall through
-                    # so the pH gate below still runs. Returning None here would report the
-                    # zone as unblocked and silently bypass pH entirely.
-                elif (lo > 0 and feed < lo) or (hi > 0 and feed > hi):
-                    return f"source-water EC {feed:.1f} out of [{lo:g},{hi:g}]"
-        # pH half of the source-water gate — bad-pH feed locks out nutrients / burns roots, so
-        # gate it too, but only when a feed-pH sensor is configured.
-        if room.feed_ph_sensor:
-            ph_lo = self._num(f"number.crop_steering_{room.prefix}irrigation_ph_min", 0)
-            ph_hi = self._num(f"number.crop_steering_{room.prefix}irrigation_ph_max", 0)
-            if ph_lo > 0 or ph_hi > 0:
-                ph = self._read_feed_ph(room)
-                if ph is None:
-                    if not feed_grace_ok(
-                        datetime.now().timestamp(),
-                        (
-                            room._feed_ph_last_good_time.timestamp()
-                            if room._feed_ph_last_good_time
-                            else None
-                        ),
-                        self.feed_grace_min,
-                    ):
-                        return f"source-water pH probe dead >{self.feed_grace_min:.0f}min — holding (fail-closed)"
-                elif (ph_lo > 0 and ph < ph_lo) or (ph_hi > 0 and ph > ph_hi):
-                    return f"source-water pH {ph:.2f} out of [{ph_lo:g},{ph_hi:g}]"
         # Last, once nothing else holds the zone: a switch that reads neither on nor off (its device
         # offline, Home Assistant still starting) accepts a command without switching and cannot be read
         # back after the shot. On 25 Sep 2026 a shot opened onto an offline pump, could not be confirmed
@@ -3733,11 +3606,6 @@ class Controller:
             head = (room.slug if room.prefix else self.instance_name) + (
                 " LIVE" if on else " HELD"
             )
-            # Only a room with a feed EC probe says anything about feed EC. One that reads nothing
-            # usable holds watering (the source-water gate), so it is named, not dropped.
-            if room.feed_ec_sensor:
-                feed = self._read_feed_ec(room)
-                head += f" | feed EC {feed if feed is not None else 'unreadable'}"
             lines = [head]
             per_plant = ha_get(f"select.crop_steering_{room.prefix}water_today_view")[0] == PER_PLANT
             for z in sorted(pub):

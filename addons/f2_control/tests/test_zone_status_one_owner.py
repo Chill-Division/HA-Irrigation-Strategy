@@ -42,7 +42,7 @@ def test_an_off_room_says_so_on_the_same_entity():
 
 def test_the_publisher_names_the_rooms_prefix():
     room = controller.Room("f1", "f1_", {1: {}}, {"pump": None, "mainline": None, "valves": {1: "switch.f1_v1"}},
-                           "switch.crop_steering_f1_engine_enabled", "", "", 10, 22)
+                           "switch.crop_steering_f1_engine_enabled", 10, 22)
     published = {}
     original = controller.ha_set
     controller.ha_set = lambda entity, state, attributes=None: published.update({entity: state})
