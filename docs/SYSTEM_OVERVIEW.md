@@ -6,6 +6,6 @@ The frontend reads HA state and Recorder history. Its setup and strategy actions
 
 P0 waits for morning dryback, P1 ramps toward the moisture target, P2 maintains moisture with EC-sensitive thresholds, and P3 ends scheduled irrigation with emergency-floor rescue behavior. Controller dryback is a relative percentage of the detected peak; VWC itself is an absolute percentage and measured drying rate is percentage points/hour.
 
-The live loop applies source-water, sensor, enable/interlock, volume and duration gates before hardware sequencing. Readback failures latch shared equipment out. Local tests exercise these branches with fake HA; production hardware behavior still requires site verification.
+The live loop applies sensor, enable/interlock, volume and duration gates before hardware sequencing. Readback failures latch shared equipment out. Local tests exercise these branches with fake HA; production hardware behavior still requires site verification.
 
 See [repository map](REPOSITORY_MAP.md), [installation](INSTALL.md), [grow plans](GROW_PLANS.md) and [validated feature matrix](FEATURE_MATRIX.md).

@@ -382,7 +382,6 @@ export class Workspace {
       const units: Record<string, string[]> = {
         vwc: ["%"],
         ec: ["ms/cm", "ds/m"],
-        ph: ["ph", ""],
         temperature: ["°c", "°f", "k"],
       };
       if (kind && !units[kind]?.includes(unit))
@@ -393,13 +392,7 @@ export class Workspace {
         validate(
           entity,
           hardwareDomains[key]!,
-          key.includes("_ec_")
-            ? "ec"
-            : key.includes("_ph_")
-              ? "ph"
-              : key === "tank_temperature_sensor"
-                ? "temperature"
-                : undefined,
+          key === "tank_temperature_sensor" ? "temperature" : undefined,
         );
     }
     for (const patch of changes.zones ?? []) {

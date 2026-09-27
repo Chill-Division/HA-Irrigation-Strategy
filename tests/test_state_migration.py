@@ -44,9 +44,7 @@ def _room(zones, slug="default", prefix=""):
         "mainline": "switch.m",
         "valves": {int(k): f"switch.v{k}" for k in zones},
     }
-    return C.Room(
-        slug, prefix, z, hw, "input_boolean.f2_control_enabled", "", "", 10.0, 22.0
-    )
+    return C.Room(slug, prefix, z, hw, "input_boolean.f2_control_enabled", 10.0, 22.0)
 
 
 def _make(zones, state_path, rooms=None):
@@ -197,10 +195,9 @@ def test_nested_file_loads_per_room(tmp_path):
 
 
 # --------------------------------------------------------------------------- options compat
-# An old /data/options.json predates the feed_ec_sensor / feed_ph_sensor keys and may carry
-# the old facility-specific substrate_l / flow_lps numbers. Loading it must still work, must
-# NOT resurrect any F2-specific default entity id, and an unset feed sensor must DISABLE that
-# half of the source-water gate (generic, zero-config-safe) rather than poll a dead entity.
+# An old /data/options.json may carry the old facility-specific substrate_l / flow_lps numbers,
+# and, up to 2.25.0, the feed_ec_sensor / feed_ph_sensor of the source-water gate that is gone.
+# Loading it must still work and must NOT resurrect any F2-specific default entity id.
 
 
 def _init(opts, monkeypatch):
@@ -212,39 +209,22 @@ def _init(opts, monkeypatch):
     return c, c.rooms[0]
 
 
-def test_old_options_without_feed_keys_disables_gate(monkeypatch):
-    # an "old" file: no feed_* keys at all
-    c, room = _init({"num_zones": 2, "substrate_l": 6, "flow_lps": 0.067}, monkeypatch)
-    assert room.feed_ec_sensor == ""  # no F2 atlas/aquaponics fallback
-    assert room.feed_ph_sensor == ""
-    assert (
-        c._read_feed_ec(room) is None
-    )  # gate reader short-circuits, never polls an entity
-    assert c._read_feed_ph(room) is None
-
-
-def test_blank_or_whitespace_feed_sensor_is_disabled(monkeypatch):
-    c, room = _init({"feed_ec_sensor": "   ", "feed_ph_sensor": ""}, monkeypatch)
-    assert room.feed_ec_sensor == ""
-    assert room.feed_ph_sensor == ""
-    assert c._read_feed_ec(room) is None
-
-
-def test_feed_sensors_honored_when_explicitly_set(monkeypatch):
-    # F2 (and any operator) keeps its behavior by setting these explicitly
+def test_old_options_with_the_feed_sensors_still_load(monkeypatch):
+    """Up to 2.25.0 the source-water gate had two options. Supervisor drops an option its schema no
+    longer has; the controller must not need them, and never reads a feed probe again.
+    """
     opts = {
+        "num_zones": 2,
         "feed_ec_sensor": "sensor.tank_probe_1_ec",
         "feed_ph_sensor": "sensor.my_ph",
     }
     c, room = _init(opts, monkeypatch)
-    assert room.feed_ec_sensor == "sensor.tank_probe_1_ec"
-    assert room.feed_ph_sensor == "sensor.my_ph"
+    assert room.slug == "default" and not hasattr(room, "feed_ec_sensor")
 
 
 def test_substrate_flow_defaults_are_generic_not_f2(monkeypatch):
     # empty options -> code fallbacks; must be generic placeholders, not F2's real numbers
     c, room = _init({}, monkeypatch)
-    assert room.feed_ec_sensor == "" and room.feed_ph_sensor == ""
     assert c.substrate_l == 5.0
     assert c.flow_lps == 0.02  # NOT F2's real 0.04
 

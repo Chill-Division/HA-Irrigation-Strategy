@@ -59,14 +59,12 @@ To move a zone to another phase, open it from **Zones** or **Overview** and pick
 
 ### Tank and pump display
 
-Choose **Map sensors** on the tank panel, or open **Rooms & setup → Shared room hardware**. These are explicit mappings; the dashboard does not guess that a room-temperature or feed-water probe is a tank probe.
+Choose **Map sensors** on the tank panel, or open **Rooms & setup → Shared room hardware**. These are explicit mappings; the dashboard does not guess that a room-temperature probe is a tank probe.
 
 | Setup label             | Configuration key         | Select                                                                                                                |
 | ----------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | Room pump               | `pump_switch`             | The room pump's actual HA switch. The controller descriptor publishes this as `pump`.                                 |
 | Tank fill level (%)     | `water_level_sensor`      | A percentage sensor, 0-100. A litres value is not a percentage.                                                       |
-| Tank EC (display)       | `tank_ec_sensor`          | A tank conductivity sensor in mS/cm or dS/m accepted by setup.                                                        |
-| Tank pH (display)       | `tank_ph_sensor`          | A pH sensor.                                                                                                          |
 | Tank temperature        | `tank_temperature_sensor` | A tank-water temperature sensor in °C, °F or K; its unit is retained.                                                 |
 | Tank filling status     | `tank_fill_entity`        | A fill-valve switch or binary sensor whose on/off state represents fill activity.                                     |
 | Last recorded tank fill | `tank_last_fill_sensor`   | A timestamp sensor with a dated, timezone-aware state, or an `input_datetime` helper with both date and time enabled. |
@@ -160,7 +158,7 @@ An HA administrator uses **Rooms & setup**. Pair devices and expose their entiti
 2. Map **Room pump** and **Mainline valve**, then each active zone's valve. Search by friendly name or exact entity ID; inspect the displayed value/unit before selecting.
 3. Select one or more VWC and EC probes per zone. **Clear mapping** removes the selected mapping; **Done** closes the picker. Multiple valid readings are combined by the integration; automatic outlier rejection is not provided.
 4. Enter plant count, substrate litres **per plant**, drippers **per plant**, and flow in litres/hour **per dripper**. Review existing values instead of replacing them with generic defaults.
-5. Map optional room equipment, tank displays and any feed-water safety probes as separate roles. Explicitly map shared equipment only where appropriate; never reuse a zone valve accidentally.
+5. Map optional room equipment and tank displays as separate roles. Explicitly map shared equipment only where appropriate; never reuse a zone valve accidentally.
 6. Stop affected engines and verify the implicated irrigation equipment is OFF. **Review configuration** shows the changes and blockers; **Save configuration** persists the setup after backend validation.
 7. Wait for controller acknowledgement of the saved setup revision. A saved configuration and an adopted configuration are different states. Then verify **Overview**, **Zones** and **Sensors** before restoring the prior scheduling state.
 

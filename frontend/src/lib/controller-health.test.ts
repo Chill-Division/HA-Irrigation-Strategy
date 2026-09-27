@@ -399,10 +399,14 @@ describe("room status line", () => {
       "a fail-closed gate holds",
       [
         entity("sensor.crop_steering_app_status", "error"),
-        entity(DECISION, "Z1 P2 source-water EC dead >30min — holding (fail-closed)", {
-          fired: [],
-          blocked: ["Z1 P2 source-water EC dead >30min — holding (fail-closed)"],
-        }),
+        entity(
+          DECISION,
+          "Z1 P2 switch.p offline (reads neither on nor off) — holding (fail-closed)",
+          {
+            fired: [],
+            blocked: ["Z1 P2 switch.p offline (reads neither on nor off) — holding (fail-closed)"],
+          },
+        ),
       ],
       /fail-closed/,
     ],

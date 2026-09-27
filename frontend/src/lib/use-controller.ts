@@ -6,14 +6,7 @@ import { OperatorDemo } from "./operator-demo";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Change, Controller, EntityState, States, WriteResult } from "./types";
 import { applyChanges, asStates, findSession, HaClient, haSessionToken } from "./client";
-import {
-  buildRoom,
-  descriptor,
-  discoverRooms,
-  emptyRoom,
-  resolveRequestedRoom,
-  validateChange,
-} from "./model";
+import { buildRoom, discoverRooms, emptyRoom, resolveRequestedRoom, validateChange } from "./model";
 import {
   createDemo,
   demoBeat,
@@ -519,14 +512,8 @@ export class ControllerStore {
   history = async (entityIds: string[], hours: number, signal?: AbortSignal) => {
     if (!Number.isFinite(hours) || hours <= 0 || hours > 720)
       throw new Error("History range must be between 0 and 720 hours.");
-    // The room's own entities, and the tank probes its descriptor maps for display.
-    const mapped = descriptor(this.states, this.snapshot.room.room)?.attributes;
-    const allowed = new Set([
-      ...this.snapshot.room.entities.map((e) => e.entity_id),
-      ...[mapped?.tank_ec_sensor, mapped?.tank_ph_sensor].filter(
-        (id): id is string => typeof id === "string" && !!id,
-      ),
-    ]);
+    // The room's own entities.
+    const allowed = new Set(this.snapshot.room.entities.map((e) => e.entity_id));
     if (entityIds.some((id) => !allowed.has(id)))
       throw new Error("History is limited to entities in the selected room.");
     if (this.demo) return demoHistory(this.states, entityIds, hours);

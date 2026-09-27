@@ -24,6 +24,7 @@ version being released.
 ## Unreleased
 
 - When the controller app stops for an update or a restart, the dashboard says so, and that it starts again by itself.
+- The tank's EC and pH, and the feed-water limits that could hold watering, are gone.
 - Bug fixes and improvements.
 
 ## 2.25.0 - 2026-09-27

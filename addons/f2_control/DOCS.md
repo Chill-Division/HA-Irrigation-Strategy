@@ -12,7 +12,7 @@ Use **Rooms & setup** for mapping and per-zone sizing. Keep engines off while co
 
 **Irrigation plan → Schedule** supports per-zone day/week schedules and explicit vegetative/generative profiles. Saving is draft-only; arming makes a plan eligible at the next local lights-on boundary. It does not enable the engine. Active plans supply atomic versioned targets. Missing or expired required plans hold irrigation, including after restart.
 
-The controller retains source-water/interlock gates, duration/daily-volume caps and hardware state readback. Shared-hardware faults latch until implicated engines and hardware are off. State readback is not proof of physical delivery; verify sensors and actual flow on site.
+The controller retains interlock holds, duration/daily-volume caps and hardware state readback. Shared-hardware faults latch until implicated engines and hardware are off. State readback is not proof of physical delivery; verify sensors and actual flow on site.
 
 ## Visible targets and water
 

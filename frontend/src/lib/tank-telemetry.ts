@@ -60,8 +60,6 @@ export function tankTelemetry(states: States, room: Room, now = Date.now()) {
         : null;
   return {
     level: reading("water_level_sensor", ["%"], 0, 100),
-    ec: reading("tank_ec_sensor", ["ms/cm", "ds/m", "µs/cm", "μs/cm", "us/cm"], 0),
-    ph: reading("tank_ph_sensor", ["ph", ""], 0, 14),
     temperature: reading("tank_temperature_sensor", ["°c", "°f", "k"]),
     pump: binary("pump"),
     fill: binary("tank_fill_entity"),

@@ -173,19 +173,32 @@ def test_declaring_the_layout_is_a_setup_change_adopted_the_usual_way():
 
 # --------------------------------------------------------------------------- upgrade in place
 def test_an_install_that_never_declared_keeps_its_saved_fingerprint_and_resumes():
-    """The exact string a 0.15.x controller saved. If this fingerprint moved, every existing room
-    would come back from the update blocked behind a disarm cycle (the 2026-09-20 outage)."""
+    """What an undeclared room's fingerprint holds. If it moved, every existing room would come back
+    from the update blocked behind a disarm cycle (the 2026-09-20 outage)."""
     attrs = _states()["sensor.crop_steering_engine_config"][1]
     room = type("R", (), {"enable_flag": RESUME_KILL})()
     assert json.loads(controller.Controller._setup_fingerprint(attrs, room)) == {
         "active": True, "zones": [1], "pump": "switch.p", "mainline": "switch.m",
         "valves": {"1": "switch.v1"}, "enable_flag": RESUME_KILL,
-        "feed_ec_sensor": "", "feed_ph_sensor": "",
     }
     first, _ = _start(_states(kill="off"))
     c, fake = _start(_states(kill="on"), state_path=first._state_path)
     assert c.rooms[0].setup_revision == 4 and c.rooms[0]._setup_pending is None
     assert "plumbing" not in c.rooms[0].hw
+
+
+@pytest.mark.parametrize("feed_ec", ["", "sensor.tank_probe_1_ec"])
+def test_a_room_saved_with_the_feed_sensors_resumes_after_the_update(feed_ec):
+    """Up to 2.25.0 the fingerprint named the room's feed EC and pH sensors, which the setup no longer
+    has. A room saved then, with or without a feed probe, resumes: it is compared without them."""
+    first, _ = _start(_states(kill="off"))
+    state = json.loads(pathlib.Path(first._state_path).read_text())
+    old = json.loads(state["default"]["_setup"]["fingerprint"])
+    old.update(feed_ec_sensor=feed_ec, feed_ph_sensor="")
+    state["default"]["_setup"]["fingerprint"] = json.dumps(old, sort_keys=True)  # as 2.25.0 saved it
+    pathlib.Path(first._state_path).write_text(json.dumps(state))
+    c, _fake = _start(_states(kill="on"), state_path=first._state_path)
+    assert c.rooms[0].setup_revision == 4 and c.rooms[0]._setup_pending is None
 
 
 def test_a_declared_room_resumes_after_a_restart_and_a_changed_declaration_does_not():

@@ -155,7 +155,6 @@ describe("setpoint to metric mapping", () => {
       "substrate_volume",
       "plant_count",
       "lights_on_hour",
-      "irrigation_ec_max",
       "watchdog_hours",
     ])
       expect(setpointMetric(key)).toBeNull();

@@ -283,7 +283,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **Suggested fixes**
 
-- Check the feed EC in the tank (the sensor in the controller app's feed_ec_sensor option) and bring it down if it is high; a feed probe that reads high has the same effect.
+- Check the feed EC in the tank with a hand-held meter, and bring it down if it is high.
 - Check the EC probe against a hand-held meter.
 - Check the zone's maximum EC setting is what you intend.
 
@@ -301,7 +301,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 - The engine switch is off. On a new install this is expected: the reminder is that nothing will be watered until it is on.
 - Auto irrigation or the zone is switched off, or manual override is on.
-- A hold: a setup change waiting (CS-201), plumbing that disagrees (CS-202), a hardware fault (CS-301), an external hold (dosing, a fill, a flush), or the source-water EC or pH out of range. A grow plan's hold (CS-606) does not stop this safety shot.
+- A hold: a setup change waiting (CS-201), plumbing that disagrees (CS-202), a hardware fault (CS-301), or an external hold (dosing, a fill, a flush). A grow plan's hold (CS-606) does not stop this safety shot.
 
 **Suggested fixes**
 

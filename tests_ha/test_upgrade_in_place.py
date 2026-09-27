@@ -98,6 +98,11 @@ async def test_the_upgrade_removes_the_entities_nothing_uses_and_keeps_the_rest(
         "sensor.crop_steering_next_irrigation_time": "next_irrigation_time",
         "switch.crop_steering_intelligence_llm_report_enabled": "intelligence_llm_report_enabled",
         "switch.crop_steering_zone_1_dripper_protection": "zone_1_dripper_protection",
+        # the source-water gate's limits, gone with the gate in 2.26.0
+        "number.crop_steering_irrigation_ph_min": "irrigation_ph_min",
+        "number.crop_steering_irrigation_ph_max": "irrigation_ph_max",
+        "number.crop_steering_irrigation_ec_min": "irrigation_ec_min",
+        "number.crop_steering_irrigation_ec_max": "irrigation_ec_max",
     }
     kept = {
         **_known_numbers(seed),

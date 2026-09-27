@@ -103,7 +103,6 @@ describe("watched entities", () => {
         valves: { 1: "switch.valve_1", 2: "switch.valve_2" },
         water_level_sensor: "sensor.tank_level",
         zone_names: { 1: "Front" },
-        feed_ec_sensor: "sensor.not_created_yet",
       }),
       entity("sensor.crop_steering_f1_engine_config", "ready", { prefix: "f1_", num_zones: 1 }),
       entity("sensor.crop_steering_f1_ai_heartbeat", "healthy", {

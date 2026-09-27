@@ -41,23 +41,6 @@ configuration:
     description: >-
       The title of the controller's vitals notifications, for example
       "Crop Steering vitals". Change it to tell two installations apart.
-  feed_ec_sensor:
-    name: Source-water EC sensor (optional)
-    description: >-
-      Entity id of your reservoir / source-water EC probe, e.g.
-      sensor.my_reservoir_ec. When set, the engine gates irrigation on the feed
-      EC being inside number.crop_steering_irrigation_ec_min / _max (fail-closed
-      if the probe dies). LEAVE BLANK if you have no feed-EC probe - the
-      source-water EC gate is then disabled, but dosing / tank-fill holds still
-      apply.
-  feed_ph_sensor:
-    name: Source-water pH sensor (optional)
-    description: >-
-      Entity id of your reservoir / source-water pH probe, e.g.
-      sensor.my_reservoir_ph. When set, the engine gates irrigation on the feed
-      pH being inside number.crop_steering_irrigation_ph_min / _max (fail-closed
-      if the probe dies). LEAVE BLANK if you have no feed-pH probe - the
-      source-water pH gate is then disabled.
   hold_entities:
     name: Hold entities (optional)
     description: >-

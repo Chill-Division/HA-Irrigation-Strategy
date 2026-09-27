@@ -82,6 +82,11 @@ _RETIRED = {
         "zone_ec_target_veg_p3",
         "zone_ec_target_gen_p3",
         "zone_shot_size_multiplier",
+        # the source-water gate's limits (2.26.0: the gate is gone)
+        "irrigation_ph_min",
+        "irrigation_ph_max",
+        "irrigation_ec_min",
+        "irrigation_ec_max",
     },
     "select": {
         "crop_type",

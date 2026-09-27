@@ -45,10 +45,6 @@ export const ROOM_PARAMETERS = new Set([
   "dripper_flow_rate",
   "lights_on_hour",
   "lights_off_hour",
-  "irrigation_ec_min",
-  "irrigation_ec_max",
-  "irrigation_ph_min",
-  "irrigation_ph_max",
   "max_shot_duration",
   "maximum_shot_duration",
 ]);

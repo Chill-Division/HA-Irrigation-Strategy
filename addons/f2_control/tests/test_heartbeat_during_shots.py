@@ -118,7 +118,7 @@ def test_every_room_is_repeated_the_quietest_first(rig):
     c, clock, writes = rig
     default = c.rooms[0]
     f1 = controller.Room("f1", "f1_", {1: {}}, {"pump": None, "mainline": None, "valves": {1: "switch.f1_v1"}},
-                         "switch.crop_steering_f1_engine_enabled", "", "", 10, 22)
+                         "switch.crop_steering_f1_engine_enabled", 10, 22)
     c.rooms.append(f1)
     c._heartbeat(f1, datetime(2026, 9, 25, 10, 1, 1), None, room_active=False)  # an OFF room reports too
     clock.seconds += 5
@@ -149,7 +149,7 @@ def test_a_round_repeats_at_most_two_reports_so_the_kill_switch_is_read_again_so
     zones = range(1, 25)
     big = controller.Room("big", "big_", {z: {} for z in zones},
                           {"pump": None, "mainline": None, "valves": {z: f"switch.big_v{z}" for z in zones}},
-                          "switch.crop_steering_big_engine_enabled", "", "", 10, 22)
+                          "switch.crop_steering_big_engine_enabled", 10, 22)
     c.rooms.append(big)
     for zone in zones:
         c._publish_zone_status(big, zone, "Optimal", "in band")

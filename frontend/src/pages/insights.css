@@ -304,12 +304,6 @@
   font-weight: 500;
   color: var(--muted-foreground);
 }
-.insight-feed-map {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 22px;
-}
 .insight-mapping-note {
   color: var(--muted-foreground);
   font-size: var(--text-xs);
@@ -406,9 +400,5 @@
   }
   .insight-shared-map > svg {
     transform: rotate(90deg);
-  }
-  .insight-feed-map {
-    grid-template-columns: 1fr;
-    gap: 12px;
   }
 }

@@ -151,26 +151,6 @@ const WORDS: Record<string, SettingWords> = {
     short: "Daily minimum stops at",
     help: "Shots that make up a zone’s daily minimum water only fire while moisture reads below this.",
   },
-  irrigation_ec_min: {
-    label: "Feed EC, lowest",
-    short: "Feed EC, lowest",
-    help: "Shots wait while the feed (tank) EC reads below this; 0 means no lower limit. It needs a feed EC sensor set in the controller app.",
-  },
-  irrigation_ec_max: {
-    label: "Feed EC, highest",
-    short: "Feed EC, highest",
-    help: "Shots wait while the feed (tank) EC reads above this; 0 means no upper limit. It needs a feed EC sensor set in the controller app.",
-  },
-  irrigation_ph_min: {
-    label: "Feed pH, lowest",
-    short: "Feed pH, lowest",
-    help: "Shots wait while the feed (tank) pH reads below this; 0 means no lower limit. It needs a feed pH sensor set in the controller app.",
-  },
-  irrigation_ph_max: {
-    label: "Feed pH, highest",
-    short: "Feed pH, highest",
-    help: "Shots wait while the feed (tank) pH reads above this; 0 means no upper limit. It needs a feed pH sensor set in the controller app.",
-  },
   max_shot_duration: {
     label: "Longest shot",
     short: "Longest shot",

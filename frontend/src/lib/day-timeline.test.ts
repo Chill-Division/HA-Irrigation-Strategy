@@ -313,7 +313,7 @@ describe("blocks and holds", () => {
         [],
         [
           "Z1 P2 BLOCK high EC 9.1 — feed not dilutive (self-clears)",
-          "Z2 P2 source-water EC 3.6 out of [1,3.5]",
+          "Z2 P2 external hold (tank_fill)",
         ],
       ),
     ];
@@ -604,17 +604,17 @@ describe("the demo's day", () => {
   it("shows a hold, the change that ended it, and a supervisor's setpoint move", () => {
     const { day, rows, decisions } = load("");
     const [hold] = zoneBlocks(decisions, 2, day.start, now);
-    expect(hold).toMatchObject({ kind: "hold", open: false });
-    expect(hold.text).toMatch(/^source-water EC/);
+    expect(hold).toMatchObject({ kind: "block", open: false });
+    expect(hold.text).toMatch(/^BLOCK high EC/);
     const changes = setpointChanges(
       rows,
-      ["number.crop_steering_irrigation_ec_max", "number.crop_steering_zone_1_p1_target_vwc"],
+      ["number.crop_steering_zone_2_maximum_ec", "number.crop_steering_zone_1_p1_target_vwc"],
       day.start,
       now,
     );
     expect(changes.map(({ entityId, from, to }) => [entityId, from, to])).toEqual([
       ["number.crop_steering_zone_1_p1_target_vwc", 66, 64],
-      ["number.crop_steering_irrigation_ec_max", 3.4, 3.5],
+      ["number.crop_steering_zone_2_maximum_ec", 8.5, 9],
     ]);
     expect(Math.abs(changes[1].time - hold.end)).toBeLessThan(60_000);
     // Flower 1's zone 3, disabled for inspection, is held from then on.

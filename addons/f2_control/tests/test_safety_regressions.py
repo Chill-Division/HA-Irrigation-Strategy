@@ -236,7 +236,7 @@ def test_fault_blocks_other_room_sharing_pump_but_not_independent_room(rig, monk
         room = controller.Room(slug, slug + "_", {1: {}},
                                {"pump": pump, "mainline": "switch." + slug + "_main",
                                 "valves": {1: "switch." + slug + "_valve"}},
-                               "input_boolean." + slug, "", "", 10, 22)
+                               "input_boolean." + slug, 10, 22)
         c.rooms.append(room)
         c._load_room_state(room, {})
         for eid in (room.enable_flag, "switch.crop_steering_" + slug + "_system_enabled",
@@ -326,7 +326,7 @@ def test_absent_room_fault_survives_save_and_blocks_shared_hardware_until_redisc
     independent = controller.Room("independent", "independent_", {1: {}},
                                   {"pump": "switch.other", "mainline": "switch.other_m",
                                    "valves": {1: "switch.other_v"}},
-                                  "input_boolean.independent", "", "", 10, 22)
+                                  "input_boolean.independent", 10, 22)
     c.rooms.append(independent)
     c._load_room_state(independent, {})
     assert c._hardware_fault_block(independent) is None

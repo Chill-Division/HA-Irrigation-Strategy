@@ -1,9 +1,10 @@
 # Unreleased
 
-No change to add-on options or the state file.
+Two options are removed, `feed_ec_sensor` and `feed_ph_sensor`: Supervisor drops them from an old configuration. No change to the state file.
 
 - **Waits for its settings.** A setting `_zone_num` has to fill in with a built-in value holds the room's shots (`_blocked`: "waiting for its settings to load") until it has been missing for `SETTINGS_WAIT_PASSES` (3) passes, when CS-402 is raised and the built-in value is used, as before. While Home Assistant starts or the integration reloads, the numbers are missing for a moment.
 - **Says when it stops.** On SIGTERM (an update, a restart or a stop), after closing a shot in flight and saving state, each room's heartbeat is set to `stopped` with `stopped_at`, without `strategy_snapshot_version`. The dashboard the app serves shows it.
+- **No source-water gate.** The controller no longer reads a feed EC or pH probe or holds watering on one. A setup fingerprint saved with the feed sensors is compared without them, so an adopted room resumes. The dashboard the app serves has no tank EC or pH.
 
 # 2.25.0
 

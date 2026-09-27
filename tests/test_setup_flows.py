@@ -143,8 +143,6 @@ def test_native_hardware_schema_retains_explicit_tank_telemetry(
 ):
     mappings = {
         "tank_temperature_sensor": "sensor.tank_temp",
-        "tank_ec_sensor": "sensor.tank_ec",
-        "tank_ph_sensor": "sensor.tank_ph",
         "tank_last_fill_sensor": "sensor.tank_last_fill",
         "tank_fill_entity": "binary_sensor.tank_filling",
     }
@@ -170,6 +168,13 @@ def test_native_hardware_schema_retains_explicit_tank_telemetry(
     for key, value in mappings.items():
         assert key in fields
         assert defaults[key] == value
+    for gone in (
+        "tank_ec_sensor",
+        "tank_ph_sensor",
+        "feed_ec_sensor",
+        "feed_ph_sensor",
+    ):
+        assert gone not in fields  # removed in 2.26.0
     assert fields["tank_temperature_sensor"][1]["domain"] == "sensor"
     assert set(fields["tank_last_fill_sensor"][1]["domain"]) == {
         "sensor",

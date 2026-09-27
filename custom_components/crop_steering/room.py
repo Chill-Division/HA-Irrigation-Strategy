@@ -149,13 +149,9 @@ def build_engine_config(
         "mainline": hw.get("main_line_switch", ""),
         "valves": valves,
         "enable_flag": setup.get("enable_flag") or enable_flag,
-        "feed_ec_sensor": hw.get("feed_ec_sensor", ""),
-        "feed_ph_sensor": hw.get("feed_ph_sensor", ""),
-        # Read-only overview mappings. No ambient-temperature or feed-probe fallback.
+        # Read-only overview mappings. No ambient-temperature fallback.
         "water_level_sensor": hw.get("water_level_sensor", ""),
         "tank_temperature_sensor": hw.get("tank_temperature_sensor", ""),
-        "tank_ec_sensor": hw.get("tank_ec_sensor", ""),
-        "tank_ph_sensor": hw.get("tank_ph_sensor", ""),
         "tank_last_fill_sensor": hw.get("tank_last_fill_sensor", ""),
         "tank_fill_entity": hw.get("tank_fill_entity", ""),
     }

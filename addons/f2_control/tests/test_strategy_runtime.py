@@ -40,8 +40,6 @@ def rig(monkeypatch, tmp_path):
         {1: {}},
         {"pump": "switch.p", "mainline": "switch.m", "valves": {1: "switch.v"}},
         "switch.engine",
-        "",
-        "",
         10,
         22,
     )

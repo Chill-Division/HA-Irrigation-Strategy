@@ -335,49 +335,6 @@ NUMBER_DESCRIPTIONS = [
         native_unit_of_measurement="mS/cm",
         mode="box",
     ),
-    # Source-Water Quality Gate (global; the veg batch tank feeds every row).
-    # The engine blocks irrigation while the live tank pH/EC sit outside
-    # these limits. Set an EC limit to 0 to disable that half of the check.
-    NumberEntityDescription(
-        key="irrigation_ph_min",
-        name="Irrigation pH Min",
-        icon="mdi:ph",
-        native_min_value=3.0,
-        native_max_value=9.0,
-        native_step=0.05,
-        native_unit_of_measurement="pH",
-        mode="box",
-    ),
-    NumberEntityDescription(
-        key="irrigation_ph_max",
-        name="Irrigation pH Max",
-        icon="mdi:ph",
-        native_min_value=3.0,
-        native_max_value=9.0,
-        native_step=0.05,
-        native_unit_of_measurement="pH",
-        mode="box",
-    ),
-    NumberEntityDescription(
-        key="irrigation_ec_min",
-        name="Irrigation EC Min",
-        icon="mdi:lightning-bolt-outline",
-        native_min_value=0.0,
-        native_max_value=20.0,
-        native_step=0.1,
-        native_unit_of_measurement="mS/cm",
-        mode="box",
-    ),
-    NumberEntityDescription(
-        key="irrigation_ec_max",
-        name="Irrigation EC Max",
-        icon="mdi:lightning-bolt",
-        native_min_value=0.0,
-        native_max_value=20.0,
-        native_step=0.1,
-        native_unit_of_measurement="mS/cm",
-        mode="box",
-    ),
     # System-wide Light Schedule (NOT per-zone)
     NumberEntityDescription(
         key="lights_on_hour",
@@ -434,10 +391,6 @@ DEFAULT_VALUES = {
     "ec_target_gen_p1": 5.0,
     "ec_target_gen_p2": 6.0,
     "ec_target_gen_p3": 4.5,
-    "irrigation_ph_min": 5.8,
-    "irrigation_ph_max": 6.2,
-    "irrigation_ec_min": 0.0,
-    "irrigation_ec_max": 0.0,
     "lights_on_hour": 12,
     "lights_off_hour": 0,
 }
