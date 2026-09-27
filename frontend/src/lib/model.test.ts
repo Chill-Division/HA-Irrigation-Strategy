@@ -494,3 +494,25 @@ it("does not offer a shadowed legacy cap as an effective room setting", () => {
   expect(room.settings.find((s) => s.entityId === canonical)?.value).toBeNull();
   expect(room.settings.some((s) => s.entityId === legacy)).toBe(false);
 });
+
+describe("a dryback target's unit", () => {
+  it("says it is a drop below the day's peak, whatever unit Home Assistant gives the entity", () => {
+    const states = createDemo();
+    for (const id of [
+      "number.crop_steering_zone_1_vegetative_dryback_target",
+      "number.crop_steering_zone_1_generative_dryback_target",
+    ])
+      states[id] = {
+        ...states[id],
+        attributes: { ...states[id].attributes, unit_of_measurement: "%" },
+      };
+    const room = discoverRooms(states).find((r) => r.id === "room:")!;
+    const units = buildRoom(states, room)
+      .settings.filter((s) => s.entityId.endsWith("dryback_target"))
+      .map((s) => s.unit);
+    expect(units.length).toBeGreaterThan(0);
+    expect(new Set(units)).toEqual(new Set(["% below peak"]));
+    const shot = buildRoom(states, room).settings.find((s) => s.entityId.endsWith("p2_shot_size"));
+    expect(shot?.unit).toBe("%"); // other settings keep the entity's own unit
+  });
+});

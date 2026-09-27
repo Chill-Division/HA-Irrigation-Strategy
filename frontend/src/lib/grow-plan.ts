@@ -5,7 +5,7 @@ import type {
   SteeringProfile,
   ZonePlan,
 } from "./operator-types";
-import { settingWords } from "./setting-words";
+import { DRYBACK_UNIT, settingWords } from "./setting-words";
 
 // The Schedule names and explains each target in the same words as the Irrigation plan.
 const planKeys = [
@@ -125,7 +125,7 @@ const shotKeys = [
 ];
 /** VWC is absolute water content; dryback is a relative drop from the detected peak. */
 function setpointUnit(key: string, unit = ""): string {
-  if (key === "dryback_target") return "% of peak";
+  if (key === "dryback_target") return DRYBACK_UNIT;
   if (vwcKeys.includes(key)) return "% VWC";
   if (shotKeys.includes(key)) return "% of substrate";
   return key === "p1_maximum_shots" ? "shots" : unit;

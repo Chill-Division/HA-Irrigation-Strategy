@@ -313,7 +313,7 @@ try {
       const p1 = panel.locator("tr").filter({ hasText: "Peak VWC target" });
       assert.equal((await p1.locator(".plan-cell-at").innerText()).trim(), "62");
       assert.match(await p1.innerText(), /% VWC\s+64\s+61\s+62\s+60/);
-      assert.match(await panel.innerText(), /P3 dryback target % of peak/);
+      assert.match(await panel.innerText(), /P3 dryback target % below peak/);
       assert.match(await panel.innerText(), /Week 4 → week 5: 70% → 55% \(−15 points\)/);
       assert.match(
         await panel.locator(".plan-cell-live").innerText(),

@@ -14,7 +14,7 @@ import type {
 } from "./types";
 import { parseAutoSetpoints } from "./auto-setpoints";
 import { readWaiting } from "./waiting-for";
-import { PHASE_GROUPS, settingWords } from "./setting-words";
+import { DRYBACK_UNIT, PHASE_GROUPS, settingWords } from "./setting-words";
 import { ageText, controllerZoneLabel, readHeartbeat, RESTING } from "./controller-health";
 import { BATCH_SWITCH_KEYS } from "./feed";
 
@@ -329,7 +329,9 @@ function setting(entity: EntityState, room: Room): Setting | null {
     min: Number(min),
     max: Number(max),
     step: Number(step),
-    unit: String(entity.attributes.unit_of_measurement || ""),
+    unit: /(^|_)dryback_target$/.test(param)
+      ? DRYBACK_UNIT
+      : String(entity.attributes.unit_of_measurement || ""),
     group: group(param),
     ...(match ? { zoneId: Number(match[1]) } : {}),
   };

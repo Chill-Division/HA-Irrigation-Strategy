@@ -24,7 +24,13 @@ import {
   setpointParam,
   suggestedDraft,
 } from "@/lib/sensor-context";
-import { GROUP_HELP, PHASE_GROUPS, TAG_TEXT, settingWords } from "@/lib/setting-words";
+import {
+  DRYBACK_UNIT,
+  GROUP_HELP,
+  PHASE_GROUPS,
+  TAG_TEXT,
+  settingWords,
+} from "@/lib/setting-words";
 import "./setpoint-preview.css";
 
 function fieldGroup(setting: Setting) {
@@ -311,7 +317,7 @@ export function Strategy({
                         settingWords(key)?.label ?? field?.label ?? key.replaceAll("_", " ");
                       const unit =
                         key === "dryback_target"
-                          ? "% of peak"
+                          ? DRYBACK_UNIT
                           : ecPhase
                             ? "mS/cm"
                             : (field?.unit ?? "");

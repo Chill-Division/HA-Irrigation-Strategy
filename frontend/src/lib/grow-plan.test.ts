@@ -173,7 +173,7 @@ describe("grow planner", () => {
     const catalog = {
       p1_target_vwc: limit(0.5, "%"),
       p2_vwc_threshold: limit(0.5, "%"),
-      dryback_target: limit(0.5, "% of peak"),
+      dryback_target: limit(0.5, "% below peak"),
       ec_target_p2: limit(0.1, "mS/cm"),
       max_daily_volume: limit(0.5, "L"),
     };
@@ -181,7 +181,7 @@ describe("grow planner", () => {
     // Catalog order first, then keys only the profile has; a catalog key it lacks is skipped.
     expect(rows.map((r) => [r.key, r.unit])).toEqual([
       ["p1_target_vwc", "% VWC"],
-      ["dryback_target", "% of peak"],
+      ["dryback_target", "% below peak"],
       ["ec_target_p2", "mS/cm"],
       ["max_daily_volume", "L"],
       ["p2_shot_size", "% of substrate"],

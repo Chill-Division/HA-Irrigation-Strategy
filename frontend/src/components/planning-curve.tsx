@@ -20,7 +20,7 @@ import {
   type RecordedPoint,
   type RecordedReading,
 } from "@/lib/planning-curve";
-import { settingWords } from "@/lib/setting-words";
+import { DRYBACK_UNIT, settingWords } from "@/lib/setting-words";
 
 export interface PlanningCurveProps {
   parameters: Record<string, number>;
@@ -49,7 +49,7 @@ const extremes = (points: readonly RecordedPoint[]) =>
 const editors = [
   { key: "p1_target_vwc", unit: "% VWC", max: 100, step: 1 },
   { key: "p2_vwc_threshold", unit: "% VWC", max: 100, step: 1 },
-  { key: "dryback_target", unit: "% of peak drop", max: 100, step: 1 },
+  { key: "dryback_target", unit: DRYBACK_UNIT, max: 100, step: 1 },
   { key: "ec_target_p0", unit: "mS/cm", max: 20, step: 0.1 },
   { key: "ec_target_p1", unit: "mS/cm", max: 20, step: 0.1 },
   { key: "ec_target_p2", unit: "mS/cm", max: 20, step: 0.1 },

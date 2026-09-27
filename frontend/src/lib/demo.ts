@@ -226,7 +226,7 @@ export function createDemo(now = Date.now()): States {
         options: ["Keep", "P0", "P1", "P2", "P3"],
       });
       number(prefix, `${key}p0_maximum_wait_time`, 60, 5, 240, 1, "min");
-      number(prefix, `${key}generative_dryback_target`, 14, 2, 60, 0.5, "% of peak");
+      number(prefix, `${key}generative_dryback_target`, 14, 2, 60, 0.5, "% below peak");
       number(prefix, `${key}p1_target_vwc`, 64 + index * 2, 20, 90, 0.5, "%");
       number(prefix, `${key}p2_vwc_threshold`, 61 + index * 2, 10, 90, 0.5, "%");
       number(prefix, `${key}p1_initial_shot_size`, 6, 0.5, 20, 0.5, "%");
@@ -234,7 +234,7 @@ export function createDemo(now = Date.now()): States {
       number(prefix, `${key}p1_maximum_shots`, 6, 1, 30, 1);
       number(prefix, `${key}p1_time_between_shots`, 15, 5, 120, 1, "min");
       number(prefix, `${key}p2_shot_size`, 4, 0.5, 20, 0.5, "%");
-      number(prefix, `${key}vegetative_dryback_target`, 8, 1, 30, 0.5, "% of peak");
+      number(prefix, `${key}vegetative_dryback_target`, 8, 1, 30, 0.5, "% below peak");
       number(prefix, `${key}p3_emergency_vwc_threshold`, 35, 10, 70, 0.5, "%");
       number(prefix, `${key}max_daily_volume`, 40, 1, 200, 1, "L");
       number(prefix, `${key}substrate_volume`, 6, 0.5, 50, 0.5, "L/plant");
