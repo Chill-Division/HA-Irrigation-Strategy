@@ -20,7 +20,7 @@ A more vegetative irrigation approach generally keeps water more available; gene
 
 Each new day is applied at lights-on. If it cannot be applied then (Home Assistant restarting, the controller's heartbeat or a probe a few minutes late), the plan keeps the previous day's targets and applies the day at the first minute it can; Settings → Repairs shows *has not moved on to today* with the reason meanwhile.
 
-The calendar supports grow days 1–366 per zone, distinct start dates and complete contiguous schedule ranges. Missing/finished/invalid schedules are visible and hold managed zones rather than inventing targets. A hold stops the plan's steering, never the zone's water safety: the overnight emergency shot, the lights-on watchdog and the minimum daily volume still water a held zone, and Repairs shows *holding irrigation* with the reason. Each room stores its plan in HA persistent storage with optimistic revision checks. Restart recovery uses the stored plan and controller latch.
+The calendar supports grow days 1-366 per zone, distinct start dates and complete contiguous schedule ranges. Missing/finished/invalid schedules are visible and hold managed zones rather than inventing targets. A hold stops the plan's steering, never the zone's water safety: the overnight emergency shot, the lights-on watchdog and the minimum daily volume still water a held zone, and Repairs shows *holding irrigation* with the reason. Each room stores its plan in HA persistent storage with optimistic revision checks. Restart recovery uses the stored plan and controller latch.
 
 ## Read the combined graph
 
@@ -69,4 +69,4 @@ The P1 maximum-shot budget is conditional. P2 maintenance and P3 emergency shots
 
 For reusable copies of your own schedules, use **Recipe library**. It stores named plans in the current browser and room, supports export/import and loads only into the local draft while retaining current zone start dates. See the [library guide and reference sources](RECIPE_LIBRARY.md).
 
-Plans steer irrigation targets, not tank dosing or environmental equipment. Legacy manual shot and phase override services may emit events without being consumed by this controller; the workspace does not advertise them as working actuator commands. Closed-loop crop-response learning, measured flow reconciliation and automatic recipe optimisation remain future work. See the [feature matrix](FEATURE_MATRIX.md).
+Plans steer irrigation targets, not tank dosing or environmental equipment. Closed-loop crop-response learning, measured flow reconciliation and automatic recipe optimisation remain future work. See the [feature matrix](FEATURE_MATRIX.md).

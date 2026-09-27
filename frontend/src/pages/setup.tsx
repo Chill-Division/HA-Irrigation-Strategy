@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Heading, Empty } from "@/components/dashboard";
+import { Pill } from "@/components/mini-visuals";
 import {
   CatchTestCalculator,
   SizingField,
@@ -64,9 +65,26 @@ function MappingPicker({
     (c.name + " " + c.entity_id + " " + c.unit).toLowerCase().includes(search.toLowerCase()),
   );
   const selected = values.filter(Boolean);
+  // A mapped entity Home Assistant reports no state for is mapped, but not usable.
+  const silent = selected.filter((id) =>
+    ["unavailable", "unknown"].includes(
+      candidates.find((c) => c.entity_id === id)?.state.toLowerCase() ?? "",
+    ),
+  ).length;
   return (
     <div className="mapping-picker">
-      <span className="mapping-label">{label}</span>
+      <div className="mapping-head">
+        <span className="mapping-label">{label}</span>
+        {!selected.length ? (
+          <Pill tone="neutral">Not mapped</Pill>
+        ) : silent ? (
+          <Pill tone="warn">
+            {selected.length === 1 ? "Unavailable" : `${silent} of ${selected.length} unavailable`}
+          </Pill>
+        ) : (
+          <Pill tone="on">{selected.length === 1 ? "Mapped" : `${selected.length} mapped`}</Pill>
+        )}
+      </div>
       <Button
         type="button"
         variant="outline"
@@ -360,7 +378,7 @@ export function Setup({
       setNotice(
         review === "remove"
           ? "Room archived. Its identifiers and stored configuration are retained."
-          : "Configuration saved in Home Assistant. Controller discovery and acknowledgement may follow on its next refresh; keep the engine off until verified.",
+          : "Configuration saved in Home Assistant. Controller discovery and acknowledgement may follow on its next refresh; keep watering off until verified.",
       );
     } catch (e) {
       setError(errorText(e));
@@ -426,7 +444,7 @@ export function Setup({
             <h3>Install the controller app</h3>
             <p>
               For Home Assistant OS/Supervised, add the repository and install Crop Steering. Keep
-              every engine disabled while mapping hardware.
+              watering off in every room while mapping hardware.
             </p>
             <Button asChild variant="outline">
               <a
@@ -445,8 +463,8 @@ export function Setup({
             <h3>Map, verify and start</h3>
             <p>
               Use Rooms & setup to select valves and probes, enter pot/dripper measurements, confirm
-              the controller acknowledges the mapping, then review your grow plan. Enable the engine
-              deliberately in Settings.
+              the controller acknowledges the mapping, then review your grow plan. Switch watering
+              on deliberately in Settings.
             </p>
             <Button
               variant="outline"
@@ -593,11 +611,11 @@ export function Setup({
                     </p>
                   </div>
                   {!isNew && (
-                    <span className={"status-pill " + (mappingConfirmed ? "enabled" : "unknown")}>
+                    <Pill dot tone={mappingConfirmed ? "on" : "warn"}>
                       {mappingConfirmed
                         ? "Mapping acknowledged"
                         : "Controller acknowledgement pending"}
-                    </span>
+                    </Pill>
                   )}
                 </div>
                 <div className="workspace-form-grid">
@@ -618,9 +636,9 @@ export function Setup({
                         ? "New namespace generated on creation"
                         : "Revision " + draft.revision + " · " + (draft.prefix || "Default room")}
                     </p>
-                    <small className="muted">
+                    <Pill dot tone={engineConfig ? "on" : "warn"}>
                       {engineConfig ? "Room descriptor discovered" : "Awaiting room descriptor"}
-                    </small>
+                    </Pill>
                   </div>
                 </div>
                 {!isNew && !draft.safety.ready && (
@@ -629,11 +647,11 @@ export function Setup({
                       <p key={b}>{b}</p>
                     ))}
                     <p>
-                      Mapping writes are checked again on the server. Turn the engine off and verify
+                      Mapping writes are checked again on the server. Switch watering off and verify
                       the mapped hardware is off before saving.
                     </p>
                     <Button asChild variant="outline">
-                      <a href="#/settings">Engine settings</a>
+                      <a href="#/settings">Watering settings</a>
                     </Button>
                   </div>
                 )}
@@ -900,8 +918,8 @@ export function Setup({
                   <div>
                     <h2>Remove this room</h2>
                     <p className="muted">
-                      Archive the room while retaining its identifiers and configuration. The engine
-                      and hardware must be off.
+                      Archive the room while retaining its identifiers and configuration. Watering
+                      and the hardware must be off.
                     </p>
                   </div>
                   <Button
@@ -937,7 +955,7 @@ export function Setup({
             <DialogDescription>
               {review === "remove"
                 ? "This removes the room from active control while preserving its identifiers and stored configuration."
-                : "Only the selected room configuration is changed. No engine is enabled and no valve is actuated."}
+                : "Only the selected room configuration is changed. Watering is not switched on and no valve is actuated."}
             </DialogDescription>
           </DialogHeader>
           {review === "remove" ? (

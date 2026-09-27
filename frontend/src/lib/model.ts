@@ -13,10 +13,11 @@ import type {
   Zone,
 } from "./types";
 import { parseAutoSetpoints } from "./auto-setpoints";
+import { PHASE_GROUPS, settingWords } from "./setting-words";
 import { ageText, controllerZoneLabel, readHeartbeat, RESTING } from "./controller-health";
 
 const ROOT = "crop_steering_";
-const ZONE_PARAMETERS = new Set([
+export const ZONE_PARAMETERS = new Set([
   "p1_target_vwc",
   "p2_vwc_threshold",
   "p2_shot_size",
@@ -39,7 +40,7 @@ const ZONE_PARAMETERS = new Set([
   "dripper_flow_rate",
   "min_floor_drown_ceiling",
 ]);
-const ROOM_PARAMETERS = new Set([
+export const ROOM_PARAMETERS = new Set([
   "dripper_flow_rate",
   "lights_on_hour",
   "lights_off_hour",
@@ -287,14 +288,16 @@ function readingMetric(
   return telemetryIssue(entity, maxAgeS, now) ? { ...result, value: null } : result;
 }
 function group(key: string) {
-  if (/^p0_|dryback/.test(key)) return "P0 · Morning dryback";
-  if (/^p1_/.test(key)) return "P1 · Ramp-up";
-  if (/^p2_/.test(key)) return "P2 · Maintenance";
-  if (/^p3_/.test(key)) return "P3 · Overnight";
+  if (/^p0_/.test(key)) return PHASE_GROUPS[0];
+  if (/^p1_/.test(key)) return PHASE_GROUPS[1];
+  if (/^p2_/.test(key)) return PHASE_GROUPS[2];
+  // The dryback targets are where Athena puts them: what the substrate dries by overnight.
+  if (/^p3_|dryback/.test(key)) return PHASE_GROUPS[3];
   if (/^ec_target/.test(key)) return "EC targets";
+  if (key === "field_capacity") return "Substrate";
   if (/substrate|plant_count|dripper/.test(key)) return "Hardware sizing";
   if (/light.*hour/.test(key)) return "Schedule";
-  if (/max_|maximum_shot_duration|maximum_ec|watchdog|irrigation_(ec|ph)/.test(key))
+  if (/max_|maximum_shot_duration|maximum_ec|watchdog|irrigation_(ec|ph)|drown/.test(key))
     return "Safety";
   return "General";
 }
@@ -315,18 +318,15 @@ function setting(entity: EntityState, room: Room): Setting | null {
     Number(step) <= 0
   )
     return null;
+  const words = settingWords(param);
   return {
     entityId: entity.entity_id,
-    label: title(param),
-    description: ["max_shot_duration", "maximum_shot_duration"].includes(param)
-      ? "Maximum valve-open runtime for every zone in this room."
-      : /dryback/.test(param)
-        ? "Relative drop as a percentage of peak VWC. Example: 60% peak with a 10% target means 54% VWC."
-        : param === "substrate_volume"
-          ? "Substrate volume per plant; the engine scales by plant count."
-          : match
-            ? `Zone ${match[1]} configuration.`
-            : "Room default; an available zone-specific value takes precedence.",
+    label: words?.label ?? title(param),
+    description:
+      words?.help ??
+      (match
+        ? `Zone ${match[1]} configuration.`
+        : "Room default; an available zone-specific value takes precedence."),
     value: numeric(entity),
     min: Number(min),
     max: Number(max),
@@ -391,6 +391,26 @@ const SEVERITY_RANK: Record<Notice["severity"], number> = { critical: 0, warning
  * `buildRoom` order (most severe first). */
 export function leadingNotices(alerts: Notice[], limit = 3): Notice[] {
   return alerts.filter((notice, index) => notice.severity === "critical" || index < limit);
+}
+
+/** The zone whose valve a running shot holds open, or null. A shot holds the controller's loop, so
+ * a controller that does not report during one goes quiet until it ends. Only a valve that opened
+ * no longer ago than the room's maximum shot length counts: a valve open longer is not a shot, and
+ * a controller that stopped mid-shot must never read as watering. */
+export function shotRunning(states: States, room: Room, now: number): string | null {
+  const valves = descriptor(states, room)?.attributes.valves;
+  const cap = Number(
+    resolve(states, room, "number", "max_shot_duration", "maximum_shot_duration")?.state,
+  );
+  // The controller's own fallback when the room has no cap entity.
+  const longest = (Number.isFinite(cap) && cap >= 5 ? cap : 900) * 1000;
+  if (!valves || typeof valves !== "object" || Array.isArray(valves)) return null;
+  for (const [zone, id] of Object.entries(valves as Record<string, unknown>)) {
+    const valve = typeof id === "string" ? states[id] : undefined;
+    if (valve?.state !== "on") continue;
+    if (now - Date.parse(valve.last_changed ?? valve.last_updated ?? "") <= longest) return zone;
+  }
+  return null;
 }
 
 export function buildRoom(states: States, room: Room): RoomView {
@@ -469,6 +489,7 @@ export function buildRoom(states: States, room: Room): RoomView {
   const zones: Zone[] = activeIds.map((id) => {
     const z = `zone_${id}_`;
     const phase = resolve(states, room, "sensor", `${z}phase`);
+    const setPhase = resolve(states, room, "select", `${z}set_phase`);
     const enabled = resolve(states, room, "switch", `${z}enabled`);
     const status = resolve(states, room, "sensor", `${z}status`, `${z}safety_status`);
     const mappedValve =
@@ -528,6 +549,7 @@ export function buildRoom(states: States, room: Room): RoomView {
       name: typeof names?.[id] === "string" ? String(names[id]) : "Zone " + id,
       enabledEntity: enabled?.entity_id || null,
       enabled: boolean(enabled),
+      setPhaseEntity: setPhase?.entity_id || null,
       valveEntity,
       valveOn: valveEntity ? boolean(states[valveEntity]) : null,
       lastIrrigation: lastIrrigation(
@@ -614,6 +636,7 @@ export function buildRoom(states: States, room: Room): RoomView {
       entityId: null,
       label,
       unit,
+      key,
       value:
         values.length && values.every((v) => v !== null)
           ? values.reduce<number>((a, b) => a + b!, 0) / (average ? values.length : 1)
@@ -672,7 +695,7 @@ export function buildRoom(states: States, room: Room): RoomView {
       id: `${room.id}-hardware-fault`,
       severity: "critical",
       title: "Hardware fault — irrigation inhibited",
-      detail: `${heartbeat.attributes.hardware_fault}. Disarm the engine, physically resolve the stuck hardware, verify all recorded devices are off, then re-arm.`,
+      detail: `${heartbeat.attributes.hardware_fault}. Switch watering off, physically resolve the stuck hardware, verify all recorded devices are off, then switch watering back on.`,
     });
   if (strategyEngaged)
     alerts.unshift({
@@ -683,7 +706,15 @@ export function buildRoom(states: States, room: Room): RoomView {
         ? "Displayed VWC and EC references come from the active plan. Manual setpoints are retained for use after the plan is disarmed."
         : "The controller requires a valid plan snapshot. Targets are unavailable until plan status is restored; do not treat legacy number values as active targets.",
     });
-  if (config && !live)
+  const shot = config && beat.health === "stale" ? shotRunning(states, room, now) : null;
+  if (shot)
+    alerts.push({
+      id: `${room.id}-controller`,
+      severity: "info",
+      title: "Watering",
+      detail: `Zone ${shot}'s valve is open: a shot is running, and the controller reports again when it ends (last report ${ageText(now - beat.at!)} ago). Zone phases and statuses are its last report, not live.`,
+    });
+  else if (config && !live)
     alerts.push({
       id: `${room.id}-controller`,
       severity: "critical",
@@ -700,9 +731,33 @@ export function buildRoom(states: States, room: Room): RoomView {
     alerts.unshift({
       id: `${room.id}-engine-unavailable`,
       severity: "warning",
-      title: "Engine control unavailable",
+      title: "Watering switch unavailable",
       detail:
-        "No readable configured engine control was found. Check the room descriptor and engine heartbeat.",
+        typeof flag === "string" && flag
+          ? `This room's engine switch, ${flag}, is missing or unavailable in Home Assistant, so the controller treats watering as off.`
+          : "The controller has not said which switch lets it water this room. Check the controller app and its log.",
+    });
+  // The integration's stock sensor lists every stock tank; the low ones get one notice.
+  const stockTanks = resolve(states, room, "sensor", "stock_low")?.attributes.tanks;
+  const lowStock = (Array.isArray(stockTanks) ? stockTanks : []).filter(
+    (tank): tank is { name: string; level_l: number; batches_left: number | null } =>
+      !!tank && typeof tank === "object" && (tank as { low?: unknown }).low === true,
+  );
+  if (lowStock.length)
+    alerts.push({
+      id: `${room.id}-stock-low`,
+      severity: "warning",
+      title: `Stock ${lowStock.length === 1 ? "tank" : "tanks"} running low`,
+      detail:
+        lowStock
+          .map(
+            (tank) =>
+              `${tank.name}: ${tank.level_l} L` +
+              (typeof tank.batches_left === "number"
+                ? `, about ${tank.batches_left} batch${tank.batches_left === 1 ? "" : "es"} left`
+                : ""),
+          )
+          .join("; ") + ". Refill, then press Refilled on the Stock tanks page.",
     });
   return {
     room,
@@ -745,12 +800,18 @@ export function buildRoom(states: States, room: Room): RoomView {
  * and what to do, or how old the data is once the controller has stopped reporting. */
 export function roomStatus(states: States, room: Room, now = Date.now()): RoomStatus {
   const beat = readHeartbeat(resolve(states, room, "sensor", "ai_heartbeat"), now);
-  const say = (tone: RoomStatus["tone"], text: string, detail: string): RoomStatus => ({
+  const say = (
+    tone: RoomStatus["tone"],
+    text: string,
+    detail: string,
+    action?: RoomStatus["action"],
+  ): RoomStatus => ({
     room,
     tone,
     text,
     detail,
     reportedAt: beat.at,
+    ...(action ? { action } : {}),
   });
   const note = (key: string) => {
     const value = beat.attributes[key];
@@ -761,7 +822,7 @@ export function roomStatus(states: States, room: Room, now = Date.now()): RoomSt
     return say(
       "stopped",
       "Not watering",
-      `Hardware fault: ${fault}. Disarm the engine, fix the stuck hardware and check it is off, then re-arm.`,
+      `Hardware fault: ${fault}. Switch watering off, fix the stuck hardware and check it is off, then switch watering back on.`,
     );
   if (!roomIsActive(states, room))
     return say("off", "Room off", "Nothing growing: no irrigation, no alerts.");
@@ -770,6 +831,13 @@ export function roomStatus(states: States, room: Room, now = Date.now()): RoomSt
       "stopped",
       "Not watering",
       "The controller is not running. Start the controller app and check its log.",
+    );
+  const shot = beat.health === "stale" ? shotRunning(states, room, now) : null;
+  if (shot)
+    return say(
+      "watering",
+      "Watering",
+      `Zone ${shot}'s valve is open. The controller reports again when the shot ends.`,
     );
   if (beat.health === "stale")
     return say(
@@ -783,22 +851,44 @@ export function roomStatus(states: States, room: Room, now = Date.now()): RoomSt
       "stopped",
       "Not watering",
       pending.startsWith("Setup changed")
-        ? `${pending}. Turn the engine off, wait up to 5 minutes for the controller to adopt the setup, then turn it back on.`
+        ? `${pending}. Switch watering off, wait up to 5 minutes for the controller to adopt the setup, then switch it back on.`
         : `${pending}. Correct the room in Rooms & setup.`,
     );
+  // The switches the controller checks before every shot, in its order (_blocked): the room's
+  // engine switch (the "watering" switch here), then Home Assistant's System Enabled and Auto
+  // Irrigation Enabled. Off, or unreadable, stops every shot in the room.
   const flag = beat.attributes.enable_flag ?? descriptor(states, room)?.attributes.enable_flag;
-  const engine =
-    typeof flag === "string" && /^(switch|input_boolean)\./.test(flag)
-      ? states[flag]?.state
-      : undefined;
+  const flagId = typeof flag === "string" && /^(switch|input_boolean)\./.test(flag) ? flag : null;
+  const engine = flagId ? states[flagId]?.state : undefined;
+  if (engine === "off")
+    return say(
+      "stopped",
+      "Not watering",
+      "Watering is switched off for this room (its engine switch), so the controller opens no valve. It still reads the probes and follows the phases. A new room starts with watering off, so nothing is watered before its hardware has been checked.",
+      { label: "Switch it on in Settings", route: "settings" },
+    );
   if (engine !== "on")
     return say(
       "stopped",
       "Not watering",
-      engine === "off"
-        ? "The engine switch is off. Turn it on to resume automatic irrigation."
-        : "The engine switch is unavailable. Check this room's kill switch in Home Assistant.",
+      `This room's engine switch${flagId ? `, ${flagId},` : ""} is missing or unavailable in Home Assistant. The controller treats that as off, so nothing is watered until it reads on.`,
     );
+  for (const [key, fallback] of [
+    ["system_enabled", "System Enabled"],
+    ["auto_irrigation_enabled", "Auto Irrigation Enabled"],
+  ]) {
+    const id = `switch.${ROOT}${room.prefix}${key}`;
+    const entity = states[id];
+    // Only a switch Home Assistant has: the integration always makes both, and a controller that
+    // is blocked by a missing one still says so in its decision below.
+    if (!entity || entity.state === "on") continue;
+    const name = String(entity.attributes.friendly_name || fallback);
+    return say(
+      "stopped",
+      "Not watering",
+      `Home Assistant's “${name}” switch (${id}) is ${entity.state === "off" ? "off" : "unavailable"}, and the controller waters nothing in this room until it is on. Switch it on in Home Assistant; this dashboard has no control for it.`,
+    );
+  }
   const plan = note("strategy_error");
   if (plan)
     return say(
@@ -862,9 +952,13 @@ export function validateChange(room: RoomView, states: States, change: Change): 
       return otherFlag === change.entityId;
     })
   )
-    return "This engine control is shared with another room; a room-local write cannot be guaranteed.";
+    return "This watering switch is shared with another room: switching it here would switch that room too.";
   const entity = states[change.entityId];
   if (!entity || !readable(entity)) return "Entity is missing or unavailable.";
+  if (room.zones.some((z) => z.setPhaseEntity === change.entityId))
+    return typeof change.value === "string" && /^P[0-3]$/.test(change.value)
+      ? null
+      : "Choose a phase from P0 to P3.";
   const choice = room.choices.find((c) => c.entityId === change.entityId);
   if (choice)
     return typeof change.value === "string" && choice.options.includes(change.value)

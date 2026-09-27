@@ -63,6 +63,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 | [CS-605](#cs-605) | Settings not where the controller looks for them | Warning | Repairs card |
 | [CS-606](#cs-606) | Grow strategy plan is holding irrigation | Critical | Repairs card |
 | [CS-607](#cs-607) | Grow strategy plan has not moved on to today | Warning | Repairs card |
+| [CS-608](#cs-608) | Stock tanks running low | Warning | Repairs card |
 
 ## Sensors (CS-1xx)
 
@@ -98,12 +99,12 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **What it means.** The zone's moisture sensor reads 'unavailable' or 'unknown', isn't a number, can't be found in Home Assistant at all, or carries a time in the future. The notification says which.
 
-**Watering meanwhile.** Carries on without the probe while the engine is on: the same shots as a zone whose probe is working, or one shot every 90 minutes (the app's blind_fallback_min option) within the daily water limit if there is none. Phase changes that go by moisture wait for the probe.
+**Watering meanwhile.** For its first 15 minutes out the zone waits: a probe back within that is a blip (Home Assistant restarting, a sensor reconnecting), so nothing is watered or notified. Then it carries on without the probe while the engine is on: the same shots as a zone whose probe is working, or one shot every 90 minutes (the app's blind_fallback_min option) within the daily water limit if there is none. Phase changes that go by moisture wait for the probe.
 
 **Likely causes**
 
 - The probe is offline: no power, a flat battery, or out of Wi-Fi or Zigbee range.
-- Home Assistant has just restarted and the probe's integration hasn't loaded yet.
+- Home Assistant restarted and the probe's integration took more than 15 minutes to load.
 - The probe was renamed or removed, so the sensor mapped to the zone no longer exists.
 - Home Assistant's clock is ahead of the controller app's, so the reading looks as if it comes from the future (the notification says so).
 
@@ -346,7 +347,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 **Likely causes**
 
 - Home Assistant could not be reached (restarting, or a network fault), or returned an error for the command.
-- A switch that only reads 'unavailable' doesn't raise this: Home Assistant accepts the command and nothing switches, and the controller catches it when the switch doesn't read OFF after the shot (CS-301).
+- A switch that reads 'unavailable' doesn't raise this: no shot starts while any switch on its feed path reads neither on nor off. The zone's status names the offline switch, and the zone is watered once it reads again.
 
 **Suggested fixes**
 
@@ -367,7 +368,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 **Likely causes**
 
 - Home Assistant could not be reached (restarting, or a network fault), or returned an error for the command.
-- A switch that only reads 'unavailable' doesn't raise this: Home Assistant accepts the command and nothing switches, and the controller catches it when the switch doesn't read OFF after the shot (CS-301).
+- A switch that reads 'unavailable' doesn't raise this: no shot starts while any switch on its feed path reads neither on nor off. The zone's status names the offline switch, and the zone is watered once it reads again.
 
 **Suggested fixes**
 
@@ -388,7 +389,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 **Likely causes**
 
 - Home Assistant could not be reached (restarting, or a network fault), or returned an error for the command.
-- A switch that only reads 'unavailable' doesn't raise this: Home Assistant accepts the command and nothing switches, and the controller catches it when the switch doesn't read OFF after the shot (CS-301).
+- A switch that reads 'unavailable' doesn't raise this: no shot starts while any switch on its feed path reads neither on nor off. The zone's status names the offline switch, and the zone is watered once it reads again.
 
 **Suggested fixes**
 
@@ -768,3 +769,23 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 - Usually nothing: it clears by itself once the cause is fixed.
 - If it stays, check the controller app is running and the probes are reporting.
+
+<a id="cs-608"></a>
+
+### CS-608: Stock tanks running low
+
+*Warning · Repairs card*
+
+**What it means.** One or more of the room's stock tanks is at or below its low mark. Each batch tank the room makes takes its dose from every stock tank.
+
+**Watering meanwhile.** Carries on. Batches made from an empty stock tank will be short of that nutrient.
+
+**Likely causes**
+
+- Batches have drawn the stock down to its low mark.
+- A tank was refilled but Refilled was not pressed, so its level is still the old one.
+
+**Suggested fixes**
+
+- Refill the tank, then press Refilled on Crop Steering → Stock tanks.
+- Or set the level you read off the tank. The card clears itself once every tank is above its low mark.

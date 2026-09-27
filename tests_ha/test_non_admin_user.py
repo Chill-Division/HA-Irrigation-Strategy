@@ -30,12 +30,12 @@ CHANGES = {
     "runs_save": {"room_id": ROOM, "expected_revision": 0, "record": {}},
     "runs_archive": {"room_id": ROOM, "expected_revision": 0, "id": "r", "archived": True},
     "runs_import": {"room_id": ROOM, "expected_revision": 0, "runs": []},
+    "stock_save": {"room_id": ROOM, "expected_revision": 0, "tanks": []},
+    "stock_refill": {"room_id": ROOM, "expected_revision": 0, "id": "bloom"},
+    "stock_record_batch": {"room_id": ROOM, "expected_revision": 0},
     "save_recipe": {"recipe": {}},
     "apply_recipe": {},
     "set_manual_override": {"zone": 1},
-    "transition_phase": {"target_phase": "P3"},
-    "execute_irrigation_shot": {"zone": 1, "duration_seconds": 5},
-    "custom_shot": {"target_zone": 1, "volume_ml": 100},
     "setup_read": {},
     "setup_create": {},
     "setup_save": {},
@@ -45,14 +45,9 @@ READS = {
     "strategy_get": {"room_id": ROOM},
     "strategy_preview": {"room_id": ROOM},
     "runs_get": {"room_id": ROOM},
-    "check_transition_conditions": {},
+    "stock_get": {"room_id": ROOM},
 }
-EVENTS = (
-    "crop_steering_phase_transition",
-    "crop_steering_irrigation_shot",
-    "crop_steering_custom_shot",
-    "crop_steering_manual_override",
-)
+EVENTS = ("crop_steering_manual_override",)
 
 
 async def _staff(hass):

@@ -38,6 +38,7 @@ from .const import (
     SOFTWARE_VERSION,
 )
 from .room import room_prefix, build_engine_config
+from . import stock
 from .calculations import ShotCalculator
 from .units import to_native
 from .zone_status import mirrored_status, status_app_entity
@@ -52,28 +53,11 @@ BASE_SENSOR_DESCRIPTIONS = [
         name="Current Phase",
         icon="mdi:water-circle",
     ),
-    # irrigation_efficiency was a descriptor with no native_value implementation —
-    # permanently 'unknown' on every install. Removed (nothing computes it), same
-    # pattern as the dryback_percentage removal below.
-    SensorEntityDescription(
-        key="water_usage_daily",
-        name="Daily Water Usage",
-        device_class=SensorDeviceClass.VOLUME,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        native_unit_of_measurement=UnitOfVolume.LITERS,
-        icon="mdi:water",
-    ),
     # dryback_percentage is OWNED BY THE ENGINE (the add-on set_state from
     # _update_dryback_entities — computed per-zone from peak vs current VWC). It was a
     # coordinator-backed descriptor here whose native_value was always None, so it
     # perpetually re-asserted `unknown` and clobbered the engine's publish. Removed so
     # the engine owns it (same pattern as the fused_vwc/fused_ec sensors).
-    SensorEntityDescription(
-        key="next_irrigation_time",
-        name="Next Irrigation Time",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        icon="mdi:clock-outline",
-    ),
     # Critical Template Calculations - Ported from packages
     SensorEntityDescription(
         key="p1_shot_duration_seconds",
@@ -245,6 +229,7 @@ async def async_setup_entry(
     sensors.append(
         CropSteeringEngineConfigSensor(entry, num_zones, zones_config, hardware_config)
     )
+    sensors.append(CropSteeringStockSensor(entry))
 
     async_add_entities(sensors)
 
@@ -298,6 +283,80 @@ class CropSteeringEngineConfigSensor(SensorEntity):
             {**self._entry.data, **self._entry.options},
             integration_version=SOFTWARE_VERSION,
             entry_id=self._entry.entry_id,
+        )
+
+
+class CropSteeringStockSensor(SensorEntity):
+    """How many of the room's stock tanks are at or below their low mark (0 when none), with every
+    tank's level as attributes, so an automation can push a phone alert. The tanks live in the
+    integration's store (stock_api.py); this is rewritten whenever they change."""
+
+    _attr_should_poll = False
+    _attr_icon = "mdi:flask-outline"
+
+    def __init__(self, entry):
+        self._entry = entry
+        self._prefix = room_prefix(entry)
+        self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_stock_low"
+        self._attr_name = "Stock tanks low"
+        self._attr_object_id = f"{DOMAIN}_{self._prefix}stock_low"
+        self.entity_id = f"sensor.{self._attr_object_id}"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._entry.entry_id)},
+            name="Crop Steering System",
+            manufacturer="Home Assistant Community",
+            model="Professional Irrigation Controller",
+            sw_version=SOFTWARE_VERSION,
+        )
+
+    def _manager(self):
+        return (
+            self.hass.data.get(DOMAIN, {}).get("_stock", {}).get(self._entry.entry_id)
+        )
+
+    @property
+    def native_value(self) -> Any:
+        manager = self._manager()
+        if manager is None or manager.error:
+            return None
+        return len(stock.low_tanks(manager.data))
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        manager = self._manager()
+        if manager is None:
+            return {}
+        doses = manager.doses()
+        return {
+            "tanks": [
+                {
+                    "name": tank["name"],
+                    "level_l": tank["level_l"],
+                    "capacity_l": tank["capacity_l"],
+                    "percent": round(tank["level_l"] / tank["capacity_l"] * 100, 1),
+                    "low_l": tank["low_l"],
+                    "dose_ml": doses.get(tank["id"]),
+                    "batches_left": stock.batches_left(tank, doses.get(tank["id"], 0)),
+                    "low": tank["level_l"] <= tank["low_l"],
+                }
+                for tank in manager.data["tanks"]
+            ],
+            "last_batch": manager.data["last_batch"],
+            "error": manager.error,
+        }
+
+    async def async_added_to_hass(self) -> None:
+        from homeassistant.helpers.dispatcher import async_dispatcher_connect
+
+        from .stock_api import SIGNAL
+
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, f"{SIGNAL}_{self._entry.entry_id}", self.async_write_ha_state
+            )
         )
 
 
@@ -397,8 +456,6 @@ class CropSteeringSensor(SensorEntity):
             return self._calculate_avg_ec()
         elif self.entity_description.key == "current_phase":
             return self._get_current_phase()
-        elif self.entity_description.key == "next_irrigation_time":
-            return self._get_next_irrigation_time()
         else:
             # Other sensors return None (placeholder)
             return None
@@ -513,8 +570,11 @@ class CropSteeringSensor(SensorEntity):
         return self._average_sensor_values(ec_sensors, "ec")
 
     def _get_zone_last_irrigation(self, zone_num: int):
-        """Return zone last-irrigation as a tz-aware datetime (or None) — see
-        _get_next_irrigation_time: a naive string crashes the TIMESTAMP sensor."""
+        """Return zone last-irrigation as a tz-aware datetime (or None).
+
+        device_class=TIMESTAMP requires a tz-aware datetime. A naive ISO string makes HA raise
+        inside the platform's shared asyncio.gather, which freezes the other sensors too.
+        """
         s = self.hass.states.get(
             f"sensor.crop_steering_{self._prefix}zone_{zone_num}_last_irrigation_app"
         )
@@ -739,26 +799,6 @@ class CropSteeringSensor(SensorEntity):
             return "P2"  # Default to maintenance phase
         except Exception:
             return "P2"
-
-    def _get_next_irrigation_time(self):
-        """Return next-irrigation time as a tz-aware datetime (or None).
-
-        device_class=TIMESTAMP requires a tz-aware datetime. Returning the raw naive ISO
-        *string* makes HA raise ('str' has no attribute 'tzinfo') inside the platform's
-        shared asyncio.gather, which cascades and freezes the other coordinator sensors
-        (the per-zone VWC/EC went 'unknown' from exactly this)."""
-        try:
-            s = self.hass.states.get(
-                f"sensor.crop_steering_{self._prefix}app_next_irrigation"
-            )
-            if not s or s.state in ("unknown", "unavailable", "", None):
-                return None
-            dt = dt_util.parse_datetime(s.state)
-            if dt is None:
-                return None
-            return dt if dt.tzinfo else dt_util.as_local(dt)
-        except Exception:
-            return None
 
     @property
     def available(self) -> bool:

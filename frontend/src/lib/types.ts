@@ -2,6 +2,7 @@ import type { HistoryRequest, HistoryWindow } from "./comparison-types";
 import type { TimelineRequest, TimelineRows } from "./day-timeline";
 import type { OperatorAction } from "./operator-types";
 import type { AutoSetpointStatus } from "./auto-setpoints";
+import type { WaterRecord, WaterRecordRequest } from "./water-use";
 export interface EntityState {
   entity_id: string;
   state: string;
@@ -20,6 +21,8 @@ export interface Metric {
   label: string;
   value: number | null;
   unit: string;
+  /** A room metric: the zone reading it totals or averages. */
+  key?: "vwc" | "ec" | "water" | "shots";
 }
 export interface Setting {
   entityId: string;
@@ -45,6 +48,9 @@ export interface Zone {
   name: string;
   enabledEntity: string | null;
   enabled: boolean | null;
+  /** The zone's Set Phase select: the controller moves the zone to a phase picked there, once.
+   * Null when the integration has none. */
+  setPhaseEntity: string | null;
   valveEntity: string | null;
   valveOn: boolean | null;
   lastIrrigation: {
@@ -107,6 +113,8 @@ export interface RoomStatus {
   detail: string;
   /** When the controller last reported (epoch ms); null when it has not. */
   reportedAt: number | null;
+  /** Where to fix it, when that is a page of this dashboard: a link after the detail. */
+  action?: { label: string; route: string };
 }
 export interface Change {
   entityId: string;
@@ -136,8 +144,11 @@ export interface Controller {
   disconnect: () => void;
   write: (changes: Change[]) => Promise<WriteResult>;
   historyWindow: (request: HistoryRequest) => Promise<HistoryWindow>;
-  history: (entityIds: string[], hours: number) => Promise<Series[]>;
+  /** `signal` stops a long read between its day-sized requests. */
+  history: (entityIds: string[], hours: number, signal?: AbortSignal) => Promise<Series[]>;
   /** One grow-day of recorder history for the selected room's day timeline. */
   timeline: (request: TimelineRequest) => Promise<TimelineRows>;
+  /** The selected room's water-today counters over a span of grow-days (the Water use panel). */
+  waterRecord: (request: WaterRecordRequest) => Promise<WaterRecord>;
   operator: <T>(action: OperatorAction, data?: Record<string, unknown>) => Promise<T>;
 }

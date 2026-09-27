@@ -24,6 +24,7 @@ from custom_components.crop_steering import (  # noqa: E402
     run_api,
     services,
     setup_api,
+    stock_api,
     strategy_api,
 )
 from custom_components.crop_steering.const import DOMAIN  # noqa: E402
@@ -32,17 +33,14 @@ from homeassistant.exceptions import HomeAssistantError  # noqa: E402
 ADMIN, STAFF, GHOST = "admin-user", "staff-user", "deleted-user"
 ROOM = "room:"
 READ_ONLY = {
-    "check_transition_conditions",
     "strategy_get",
     "strategy_preview",
     "runs_get",
+    "stock_get",
 }
 SETUP = {"setup_read", "setup_create", "setup_save", "setup_remove"}
 # Every other service changes something. What each is called with:
 CHANGES = {
-    "transition_phase": {"target_phase": "P1"},
-    "execute_irrigation_shot": {"zone": 1, "duration_seconds": 5},
-    "custom_shot": {"target_zone": 1, "volume_ml": 100},
     "set_manual_override": {"zone": 1},
     "apply_recipe": {"stage": "Bulk"},
     "save_recipe": {"recipe": {"stages": {}}},
@@ -57,6 +55,9 @@ CHANGES = {
         "archived": True,
     },
     "runs_import": {"room_id": ROOM, "expected_revision": 0, "runs": []},
+    "stock_save": {"room_id": ROOM, "expected_revision": 0, "tanks": []},
+    "stock_refill": {"room_id": ROOM, "expected_revision": 0, "id": "bloom"},
+    "stock_record_batch": {"room_id": ROOM, "expected_revision": 0},
 }
 
 
@@ -106,6 +107,14 @@ def rig(monkeypatch):
         mutate=AsyncMock(return_value={"runs": []}),
     )
     monkeypatch.setattr(run_api, "RunStore", lambda hass, entry: runs)
+    tanks = SimpleNamespace(
+        room_id=ROOM,
+        async_init=AsyncMock(),
+        start=MagicMock(return_value=None),
+        response=MagicMock(return_value={"tanks": []}),
+        mutate=AsyncMock(return_value={"tanks": []}),
+    )
+    monkeypatch.setattr(stock_api, "StockStore", lambda hass, entry: tanks)
     setup = {
         "read_setup": MagicMock(return_value={}),
         "create_setup": AsyncMock(return_value={}),
@@ -133,6 +142,7 @@ def rig(monkeypatch):
     asyncio.run(services.async_setup_services(hass))
     asyncio.run(strategy_api.async_setup_strategy_services(hass))
     asyncio.run(run_api.async_setup_runs(hass, ha_stubs.FakeEntry()))
+    asyncio.run(stock_api.async_setup_stock(hass, ha_stubs.FakeEntry()))
     asyncio.run(setup_api.async_setup_setup_services(hass))
 
     def effects():
@@ -145,6 +155,7 @@ def rig(monkeypatch):
             strategy.activate,
             strategy.disarm,
             runs.mutate,
+            tanks.mutate,
             setup["create_setup"],
             setup["save_setup"],
             setup["remove_setup"],
