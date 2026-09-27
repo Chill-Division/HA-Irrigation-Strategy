@@ -8,16 +8,18 @@ python scripts/release.py 2.26.0            # released here: the rooms that trac
 python scripts/release.py 2.26.0 --public   # later, the same commit for everyone else
 ```
 
-## Two repositories, one branch each
+## Two repositories
 
 | Repository | Who installs from it | What moves its `main` |
 | --- | --- | --- |
-| `ChillingSilence/HA-Irrigation-Strategy` (this one) | The maintainer's own rooms. They are the test. | Every merged pull request, and `release.py <version>` |
+| `ChillingSilence/HA-Irrigation-Strategy` (this one) | The maintainer's own rooms. They are the test. | A release: a fast-forward to `testing`, then `release.py <version>` |
 | `Chill-Division/HA-Irrigation-Strategy` | Everyone else | Only `release.py <version> --public`, which fast-forwards it to a version already released here |
 
-Both have only `main`. Pull requests go into this repository's `main` ([CONTRIBUTING.md](../CONTRIBUTING.md)).
-The public repository takes no pull requests and no commits of its own: everything on it was
-released here first, byte for byte.
+This repository has a second long-lived branch, `testing`. **`testing` holds what is waiting;
+`main` holds what is released.** Every pull request is merged into `testing`
+([CONTRIBUTING.md](../CONTRIBUTING.md)), and what is merged waits there until the owner releases it.
+The public repository has only `main`, and takes no pull requests and no commits of its own:
+everything on it was released here first, byte for byte.
 
 ## How an update reaches a box
 
@@ -33,10 +35,12 @@ What follows from that (checked against the Supervisor source):
 - **The repository address is the controller's identity.** The same controller installed from the
   other repository is a different app with an empty `/data`: phase, counters, water history and
   learned peaks start again. Moving a box is a migration ([INSTALL.md](INSTALL.md)), not an edit.
-- **Between releases, this repository's `main` carries merged changes under the last version.**
-  Nothing offers them to a box. Rebuilding the controller or reinstalling it on a box that tracks
-  this repository builds that newer code under the old number. The public repository never has
-  this: its `main` only ever moves to a released commit.
+- **Between releases, `main` is the last release.** Merged changes wait on `testing`, so rebuilding
+  or reinstalling the controller on a box that tracks this repository builds the released code.
+  A box added with the repository address followed by `#testing` tracks `testing` instead: a
+  Rebuild builds whatever is waiting, under the last released number, since only a release changes
+  the number. Keep that to a staging room. The public repository's `main` likewise only ever moves
+  to a released commit.
 
 ## Writing the notes
 
@@ -57,16 +61,25 @@ No pull request changes a version number. The release command is the only thing 
 
 ## Releasing here
 
-When the changes for a release are merged and **Validate** has passed on `main`:
+When the changes for a release are merged into `testing`:
 
 ```bash
 git checkout main && git pull --ff-only
+git merge --ff-only origin/testing           # main takes what is waiting
+git push origin main                         # Validate runs on it; wait for it to pass
 python scripts/release.py 2.26.0 --dry-run   # the files it changes, and the release notes
 python scripts/release.py 2.26.0
+git push origin main:testing                 # testing takes the release commit
 ```
 
-It refuses unless `main` is checked out, clean, the same as `origin/main` and green in Validate,
-the number is new and higher, and `CHANGELOG.md` has its Unreleased notes. Then it:
+The fast-forward works only while `testing` has everything `main` has. The last line keeps it so:
+after every release, `testing` takes the release commit. If a pull request was merged into
+`testing` while the release was being made, that push is refused; merge `main` into `testing`
+instead.
+
+The release command refuses unless `main` is checked out, clean, the same as `origin/main` and
+green in Validate, the number is new and higher, and `CHANGELOG.md` has its Unreleased notes. Then
+it:
 
 1. dates the three Unreleased sections as `2.26.0` and today (with nothing written for the
    controller, its entry only names the pair; with nothing for growers, What's new says
@@ -112,7 +125,7 @@ number here. **A version number is never reused for different code.**
 - **Controller:** restore the app's backup taken before the update. A backup of a locally built
   app holds its image beside `/data`, so the code and the state go back together; confirm yours
   does before you rely on it. Take one before every update.
-- Neither repository's `main` is ever moved backwards. The fix is the next release.
+- No branch of either repository is ever moved backwards. The fix is the next release.
 
 ## Setting up the public repository (once)
 
