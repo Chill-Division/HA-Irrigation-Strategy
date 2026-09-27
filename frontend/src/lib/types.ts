@@ -106,6 +106,8 @@ export interface RoomView {
   /** Null when the controller has no room switch: the room is on and the control is hidden. */
   roomActiveEntity: string | null;
   autoSetpoints: { entityId: string | null; enabled: boolean | null };
+  /** The room's Automatic nutrient batches switch; entityId null on an integration without it. */
+  autoBatches: { entityId: string | null; enabled: boolean | null };
   /** How Water today reads in this room, from its select (entityId null: an integration without it,
    * the zone total). */
   waterView: { entityId: string | null; view: "zone" | "plant" };

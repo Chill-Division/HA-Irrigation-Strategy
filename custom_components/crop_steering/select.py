@@ -114,6 +114,9 @@ async def async_setup_entry(
             )
         )
 
+    # The feed stage in use for the room's nutrient batches: one of its feed recipes (feed_api.py).
+    selects.append(CropSteeringFeedStageSelect(entry))
+
     async_add_entities(selects)
 
 
@@ -226,3 +229,77 @@ class CropSteeringSelect(SelectEntity, RestoreEntity):
     def available(self) -> bool:
         """Return if select is available."""
         return True
+
+
+class CropSteeringFeedStageSelect(SelectEntity):
+    """The feed stage in use: the name of one of the room's feed recipes. The recipes and the stage
+    live in the room's feed store; choosing here saves it there, and the controller doses that
+    recipe in the next batch. Unavailable until the room has a feed recipe."""
+
+    _attr_should_poll = False
+    _attr_icon = "mdi:flask-round-bottom-outline"
+
+    def __init__(self, entry: ConfigEntry) -> None:
+        self._entry = entry
+        self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_feed_stage"
+        self._attr_name = "Feed Stage"
+        self._attr_object_id = f"{DOMAIN}_{room_prefix(entry)}feed_stage"
+        self.entity_id = f"select.{self._attr_object_id}"
+
+    def _manager(self):
+        from .feed_api import get_feed
+
+        return get_feed(self.hass, self._entry)
+
+    @property
+    def options(self) -> list[str]:
+        manager = self._manager()
+        if manager is None or manager.error:
+            return []
+        return [recipe["name"] for recipe in manager.data["recipes"]]
+
+    @property
+    def current_option(self) -> str | None:
+        manager = self._manager()
+        if manager is None or manager.error:
+            return None
+        from .feed import recipe
+
+        chosen = recipe(manager.data)
+        return chosen["name"] if chosen else None
+
+    @property
+    def available(self) -> bool:
+        return bool(self.options)
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._entry.entry_id)},
+            name="Crop Steering",
+            manufacturer="Home Assistant Community",
+            model="Professional Irrigation Controller",
+            sw_version=SOFTWARE_VERSION,
+        )
+
+    async def async_select_option(self, option: str) -> None:
+        manager = self._manager()
+        if manager is None:
+            return
+        try:
+            await manager.set_stage(option)
+        except ValueError as error:
+            from homeassistant.exceptions import HomeAssistantError
+
+            raise HomeAssistantError(str(error)) from error
+
+    async def async_added_to_hass(self) -> None:
+        from homeassistant.helpers.dispatcher import async_dispatcher_connect
+
+        from .feed_api import SIGNAL
+
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, f"{SIGNAL}_{self._entry.entry_id}", self.async_write_ha_state
+            )
+        )

@@ -108,12 +108,18 @@ for that zone. (3 zones × 23 = 69 entities on a 3-zone system.)
 | `system_enabled` / `auto_irrigation_enabled` | **Retired**, hidden, named "(retired)". `engine_enabled` is the one switch that stops watering. They stay for controllers from 2.24.0 or before, which hold every shot while one reads off and treat a missing one as off. A newer controller switches the room's kill switch off while one of them reads off, and says so (CS-208). |
 | `ec_stacking_enabled` | When on, the system builds EC when below target instead of diluting (push EC up intentionally). |
 | `engine_enabled` | The room's kill switch ("Watering" in the dashboard's Settings), created off. Off = the controller waters nothing in this room, and a shot already running stops within a few seconds. Created for named rooms and new default rooms; an older default room keeps the helper its setup names. |
+| `auto_batches` | Automatic nutrient batches (default off). On = the controller app mixes a batch by itself once the room's reservoir has read almost empty for three passes in a row, once each time it runs low. Off = a batch only when one is asked for (`mix_batch`). Per room: `switch.crop_steering_<prefix>auto_batches`. |
 
 ### Per-zone (`switch.crop_steering_zone_N_*`)
 | Entity | What it does |
 |---|---|
 | `zone_N_enabled` | The zone's own switch ("zone scheduling" on the dashboard). Off = the controller waters nothing in this zone, not even a rescue shot, and a shot already running in it stops within a few seconds. |
 | `zone_N_manual_override` | Absolute lockout: **nothing** opens that valve (auto, emergency, manual). For maintenance. |
+
+### Button (`button.crop_steering_*`)
+| Entity | What it does |
+|---|---|
+| `mix_batch` | "Mix a Batch Now": asks the controller app for one nutrient batch. Its state is when it was last pressed; the controller starts the batch at its next pass, or says why it cannot (CS-703). With a level sensor and an almost-empty mark, a batch is refused unless the reservoir reads almost empty, so the fill cannot overflow it; a press the controller first sees more than 30 minutes later is not acted on. The dashboard's Mix a batch now presses it (`feed_mix`). Per room: `button.crop_steering_<prefix>mix_batch`. |
 
 ---
 
@@ -127,6 +133,7 @@ for that zone. (3 zones × 23 = 69 entities on a 3-zone system.)
 | `irrigation_phase` | P0 · P1 · P2 · P3 | A manual phase indicator, read by `current_phase` and `ec_ratio`. The controller keeps each zone's phase itself and does not read it. |
 | `recipe_stage` | Veg · Transition · Bulk · Ripen · Custom | Picking a stage applies its setpoints to the zones. |
 | `water_today_view` | Zone total · Per plant | How Water today reads for the room: each zone's total, or its water and daily limit divided by its plant count. The dashboard shows it that way for everyone (Settings → Appearance), and the controller's vitals notification follows it. Zone total by default. |
+| `feed_stage` | The room's feed recipes | The feed recipe the next nutrient batch mixes (Reservoir page). Unavailable until the room has a feed recipe. |
 
 ### Per-zone (`select.crop_steering_zone_N_*`)
 | Entity | Options | What it does |
@@ -154,6 +161,8 @@ for that zone. (3 zones × 23 = 69 entities on a 3-zone system.)
 | `p1_shot_duration_seconds` / `p2_shot_duration_seconds` / `p3_shot_duration_seconds` | s | Computed valve seconds for each shot type. |
 | `p2_vwc_threshold_adjusted` | % | P2 threshold after EC-ratio adjustment. |
 | `stock_low` | - | How many of the room's stock tanks are at or below their low mark (0 when none). Attribute `tanks`: each tank's `name`, `level_l`, `capacity_l`, `percent`, `low_l`, `dose_ml` (what one batch takes now), `batches_left` and `low`. Attribute `last_batch`: the newest batch counted. The tanks are kept by the integration (Crop Steering → Stock tanks, or the `stock_*` services); a room with a tank last-fill entity mapped loses one batch's dose from every tank at each newer fill time. Automate a phone alert on it going above 0. |
+| `feed_plan` | - | What the room's next nutrient batch runs, from the Reservoir page: the stage's recipe name, or `none`. Attributes: `stage`, `stage_id`, `fill_s`, `batch_l`, `empty_mm` (the almost-empty distance; 0 = not set), `settle_s`, `pause_s`, `mix_s`, `doses` (each `doser`, `label`, `ml` and `seconds`, in the room's order) and `problem` (why no batch can run, or null), with the settings' `revision`. The integration keeps the settings (`feed_get` / `feed_save`); the controller app runs batches from this. |
+| `batch_status` | - | Published by the controller app for a room with a reservoir mapped: `idle`, or the step of the batch running (`filling`, `settling`, `dosing`, `pausing`, `mixing`). Attributes: `stage`, `until` (when the step ends), `doser` and `nutrient` (while dosing), `doses` (the plan's doses, each with `dosed`: the mL it gave), `level_mm`, `empty_mm`, `auto`, `armed` (false after an automatic batch until the reservoir reads fuller), `last` (`at`, `result`: `done` or `stopped: <why>`, `stage`, `dosed`), `blocked` (why no batch could start now) and `updated`. |
 
 The controller also publishes `sensor.f2_control_vitals`: the time of its last vitals report, with the report in the `vitals` attribute.
 
@@ -187,3 +196,10 @@ existing HA entities. Map them in the Crop Steering sidebar under
 it holds every zone and says so. (The controller also reads a `hardware` map from its options
 file, for tests and hand-built development setups only: the app's Configuration tab doesn't
 offer it, and Supervisor rejects it as an unknown option.)
+
+For nutrient batches, the room's **Reservoir & dosers** card maps the reservoir's level sensor (an
+ultrasonic distance sensor on the lid: the distance down to the water, in mm, cm or m), the
+fresh-water solenoid, the recirculation solenoid and up to six dosers (each doser's power switch).
+Each needs a switch of its own, which is not the pump, the main line, the waste valve or a zone's
+valve; the controller app switches them only in a batch, and the dashboard never switches them
+directly. A batch also runs the room's pump.

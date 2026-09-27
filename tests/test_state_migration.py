@@ -357,3 +357,29 @@ def test_an_old_file_with_the_judges_keys_keeps_what_the_zone_learned(tmp_path):
     assert (
         C.auto_setpoints.working_peak(learn) == 33.8
     )  # the peak the zone learned, nothing added
+
+
+def test_a_file_from_before_nutrient_batches_or_a_damaged_batch_loads_as_no_batch(
+    tmp_path,
+):
+    """A room's `_batch` block (2.26.0) is absent from every older file. Missing or damaged, the room
+    loads with no batch and nothing to switch off; a batch saved in progress is recognised.
+    """
+    p = tmp_path / "state.json"
+    p.write_text(json.dumps({"default": {"1": {"phase": "P2", "peak": 60.0}}}))
+    c = _make([1], p)
+    c._load_state()
+    room = c.rooms[0]
+    assert room.batch == C.fresh_batch() and not getattr(room, "_batch_crashed", False)
+    assert room.state[1]["phase"] == "P2"
+
+    p.write_text(json.dumps({"default": {"1": {"phase": "P2"}, "_batch": "garbage"}}))
+    c = _make([1], p)
+    c._load_state()
+    assert c.rooms[0].batch == C.fresh_batch()
+
+    c.rooms[0].batch.update(step="dosing", index=1, switches={"fresh": "switch.fresh"})
+    c._save_state()
+    again = _make([1], p)
+    again._load_state()
+    assert again.rooms[0].batch["step"] == "dosing" and again.rooms[0]._batch_crashed

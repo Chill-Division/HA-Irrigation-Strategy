@@ -179,6 +179,9 @@ export class HaClient {
       "stock_save",
       "stock_refill",
       "stock_record_batch",
+      "feed_get",
+      "feed_save",
+      "feed_mix",
       "whats_new_get",
       "whats_new_seen",
     ];

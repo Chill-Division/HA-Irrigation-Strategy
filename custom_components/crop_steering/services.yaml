@@ -355,6 +355,40 @@ stock_record_batch:
         number:
           min: 0
           mode: box
+feed_get:
+  name: Read nutrient batch settings
+  description: Read this room's reservoir and doser settings, its feed recipes, the feed stage in use and what the next batch would dose. Does not change anything.
+  fields:
+    room_id:
+      required: true
+      selector:
+        text:
+feed_save:
+  name: Save nutrient batch settings
+  description: Replace this room's reservoir and doser settings, its feed recipes and the feed stage in use. Needs a Home Assistant administrator when a signed-in user calls it, directly or through a script they start; automations are unaffected.
+  fields:
+    room_id:
+      required: true
+      selector:
+        text:
+    expected_revision:
+      required: true
+      selector:
+        number:
+          min: 0
+          mode: box
+    document:
+      required: true
+      selector:
+        object:
+feed_mix:
+  name: Mix a nutrient batch now
+  description: Ask the controller app for one nutrient batch in this room now, as the room's Mix a Batch Now button does. Refused while the feed plan could not run. Needs a Home Assistant administrator when a signed-in user calls it, directly or through a script they start; automations are unaffected.
+  fields:
+    room_id:
+      required: true
+      selector:
+        text:
 whats_new_get:
   name: Read what's new
   description: The release highlights shipped with this integration, the installed version and the last release the dashboard's What's new window showed. Changes nothing.

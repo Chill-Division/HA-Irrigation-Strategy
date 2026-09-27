@@ -27,6 +27,7 @@ except ImportError:  # pragma: no cover - enables non-HA unit tests
         SWITCH = "switch"
         SELECT = "select"
         NUMBER = "number"
+        BUTTON = "button"
 
 
 from .const import DOMAIN
@@ -54,6 +55,7 @@ PLATFORMS: list[Platform] = [
     Platform.SWITCH,
     Platform.SELECT,
     Platform.NUMBER,
+    Platform.BUTTON,
 ]
 
 # Entities earlier versions created that nothing reads or sets any more, by platform and key. A key
@@ -157,6 +159,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await async_setup_stock(hass, entry)
     except Exception as err:  # pragma: no cover - never block setup on the stock store
         _LOGGER.warning("Stock tanks unavailable: %s", err)
+
+    # Nutrient batches: the room's feed settings and recipes, which the feed plan sensor and the
+    # feed stage select read, and the controller app runs.
+    try:
+        from .feed_api import async_setup_feed
+
+        await async_setup_feed(hass, entry)
+    except Exception as err:  # pragma: no cover - never block setup on the feed store
+        _LOGGER.warning("Feed settings unavailable: %s", err)
 
     _remove_retired_entities(hass, entry)
     _hide_retired_switches(hass, entry)
@@ -300,6 +311,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from .stock_api import async_unload_stock
 
     await async_unload_stock(hass, entry)
+    from .feed_api import async_unload_feed
+
+    await async_unload_feed(hass, entry)
     from .whats_new import async_unload_whats_new
 
     await async_unload_whats_new(hass, entry)

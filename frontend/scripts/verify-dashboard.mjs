@@ -173,6 +173,7 @@ try {
     ["insights", "Insights"],
     ["activity", "Activity"],
     ["sensors", "Sensors"],
+    ["reservoir", "Reservoir"],
     ["stock", "Stock tanks"],
     ["settings", "Settings"],
     ["help", "Help & tools"],
@@ -329,6 +330,85 @@ try {
     await expectVisible(card("silica"));
     await axe("stock tanks after edits");
     await noOverflow();
+  });
+  await check("reservoir: a batch waits for an almost empty reservoir, then mixes in the room's order", async () => {
+    await go("reservoir");
+    const batch = page.locator("[data-batch-status]");
+    await expectVisible(batch);
+    assert.equal(await batch.getAttribute("data-batch-status"), "idle");
+    // Fill, circulate, one chip per dose in the room's order, mix.
+    const steps = () => batch.locator(".res-step-label").allInnerTexts();
+    assert.deepEqual(await steps(), ["Fill", "Circulate", "Core", "Bloom", "Balance", "Cleanse", "Mix"]);
+    await page.screenshot({ path: img("reservoir.png") });
+
+    // The demo reservoir reads 640 mm, short of its 800 mm mark: asking for a batch says why not.
+    await page.getByRole("button", { name: "Mix a batch now" }).click();
+    let dialog = page.getByRole("dialog");
+    await expectVisible(dialog.getByText(/short of its almost-empty mark \(800 mm\)/));
+    const confirm = dialog.getByRole("button", { name: "Mix a batch", exact: true });
+    assert.equal(await confirm.isDisabled(), true);
+    await axe("reservoir mix refused");
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await dialog.waitFor({ state: "hidden" });
+
+    // Drag Core's doser below Balance's by its handle, as with a finger or a mouse.
+    const rows = page.locator(".res-doser");
+    const names = () => rows.locator(".res-doser-name strong").allInnerTexts();
+    await rows.nth(1).scrollIntoViewIfNeeded(); // the mouse only reaches what is on screen
+    const from = await rows.nth(0).locator(".res-grip").boundingBox();
+    const target = await rows.nth(2).boundingBox();
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(from.x + from.width / 2, target.y + target.height * 0.75, { steps: 8 });
+    await page.mouse.up();
+    assert.deepEqual(await names(), ["Doser 2", "Doser 3", "Doser 1", "Doser 4"]);
+    // The arrows move one too: Cleanse's doser first.
+    for (let i = 0; i < 3; i++)
+      await page.getByRole("button", { name: "Move doser 4 earlier" }).click();
+    assert.deepEqual(await names(), ["Doser 4", "Doser 2", "Doser 3", "Doser 1"]);
+
+    // A new recipe takes the bottles the last one had, and the next stage name.
+    await page.getByRole("button", { name: "Add a feed recipe" }).click();
+    const vege = page.locator('[data-recipe="Vege"]');
+    await expectVisible(vege);
+    assert.equal(await vege.getByLabel("Doser 1 nutrient").inputValue(), "Core");
+    await vege.getByLabel("Doser 1 parts").fill("4");
+    // Almost empty at 600 mm: the 640 mm reading is past it now.
+    await page.getByLabel("Almost empty at (mm)").fill("600");
+    const bar = page.getByRole("region", { name: "Unsaved changes" });
+    await expectVisible(bar);
+    await axe("reservoir with unsaved changes");
+    await bar.getByRole("button", { name: "Save" }).click();
+    await expectVisible(page.getByText("Saved. The controller app runs the next batch"));
+    assert.equal(await bar.count(), 0);
+    const stages = await page.getByLabel("Stage in use").locator("option").allInnerTexts();
+    assert.deepEqual(stages, ["None: no batches", "Flower", "Vege"]);
+    assert.deepEqual(await steps(), ["Fill", "Circulate", "Cleanse", "Bloom", "Balance", "Core", "Mix"]);
+
+    await page.getByRole("button", { name: "Mix a batch now" }).click();
+    dialog = page.getByRole("dialog");
+    await dialog.getByRole("button", { name: "Mix a batch", exact: true }).click();
+    await expectVisible(page.getByText(/Batch asked for at .*within a minute/));
+    assert.equal(await batch.getAttribute("data-batch-status"), "filling");
+    await expectVisible(batch.getByText(/s left$/));
+    assert.equal(await page.getByRole("button", { name: "Mix a batch now" }).isDisabled(), true);
+    await axe("reservoir while a batch fills");
+    await noOverflow();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await noOverflow();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+  });
+  await check("reservoir: a room without one points to Rooms & setup, which maps it", async () => {
+    await go("reservoir", "f1");
+    await expectVisible(page.getByRole("heading", { name: "No reservoir mapped" }));
+    await page.getByRole("button", { name: "Map them in Rooms & setup" }).click();
+    const card = page.locator("[data-setup-reservoir]");
+    await expectVisible(card);
+    assert.equal(await card.locator(".mapping-picker").count(), 9);
+    await inBothThemes("rooms & setup reservoir card", async () => {
+      await go("setup", "f1");
+      await expectVisible(page.locator("[data-setup-reservoir]"));
+    });
   });
   await check("overview: every zone and room metric has its mini visual", async () => {
     await go("overview");

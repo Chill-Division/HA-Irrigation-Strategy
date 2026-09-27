@@ -21,6 +21,19 @@ describe("workspace response transport", () => {
     );
     expect(callService).not.toHaveBeenCalled();
   });
+  it("sends the nutrient batch actions to the integration", async () => {
+    const callApi = vi
+      .fn()
+      .mockResolvedValue({ changed_states: [], service_response: { revision: 1 } });
+    const client = new HaClient("http://ha.test", "", { callApi, callService: vi.fn() } as never);
+    for (const action of ["feed_get", "feed_save", "feed_mix"] as OperatorAction[])
+      expect(await client.operator(action, { room_id: "room:f1_" })).toEqual({ revision: 1 });
+    expect(callApi).toHaveBeenLastCalledWith(
+      "POST",
+      "services/crop_steering/feed_mix?return_response",
+      { room_id: "room:f1_" },
+    );
+  });
   it("rejects ordinary acknowledgements and unrecognized operations", async () => {
     const callApi = vi.fn().mockResolvedValue([]),
       callService = vi.fn();

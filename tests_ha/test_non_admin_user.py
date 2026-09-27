@@ -33,6 +33,8 @@ CHANGES = {
     "stock_save": {"room_id": ROOM, "expected_revision": 0, "tanks": []},
     "stock_refill": {"room_id": ROOM, "expected_revision": 0, "id": "bloom"},
     "stock_record_batch": {"room_id": ROOM, "expected_revision": 0},
+    "feed_save": {"room_id": ROOM, "expected_revision": 0, "document": {}},
+    "feed_mix": {"room_id": ROOM},
     "save_recipe": {"recipe": {}},
     "apply_recipe": {},
     "set_manual_override": {"zone": 1},
@@ -46,6 +48,7 @@ READS = {
     "strategy_preview": {"room_id": ROOM},
     "runs_get": {"room_id": ROOM},
     "stock_get": {"room_id": ROOM},
+    "feed_get": {"room_id": ROOM},
     "whats_new_get": {},
 }
 # Changes nothing but whether the dashboard's What's new window shows again: whoever opens the

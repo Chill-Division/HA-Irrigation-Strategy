@@ -1,5 +1,6 @@
 import { RunDemo } from "./comparison-demo";
 import { StockDemo } from "./stock-demo";
+import { FeedDemo } from "./feed-demo";
 import type {
   OperatorAction,
   StrategyDocument,
@@ -16,11 +17,13 @@ import { blockForDay, dateForDay, growDay, interpolate, localDate, planErrors } 
 import { inferPlumbing, plumbingErrors } from "./plumbing";
 import { DEMO_WHATS_NEW } from "./whats-new-demo";
 import { compareVersions } from "./whats-new";
+import { RESERVOIR_KEYS } from "./feed";
 
 const clone = <T>(value: T): T => structuredClone(value);
 export class OperatorDemo {
   private runDemo?: RunDemo;
   private stockDemo?: StockDemo;
+  private feedDemo?: FeedDemo;
   private plans = new Map<string, StrategyDocument>();
   private rooms: SetupRoom[] | null = null;
   /** The last release What's new showed: the demo's own unless the page asks otherwise. */
@@ -70,6 +73,7 @@ export class OperatorDemo {
               "tank_temperature_sensor",
               "tank_last_fill_sensor",
               "tank_fill_entity",
+              ...RESERVOIR_KEYS,
             ].map((key) => [
               key,
               String(
@@ -276,6 +280,10 @@ export class OperatorDemo {
     if (action.startsWith("stock_")) {
       this.stockDemo ||= new StockDemo(this.getStates);
       return this.stockDemo.call(action, data) as T;
+    }
+    if (action.startsWith("feed_")) {
+      this.feedDemo ||= new FeedDemo(this.getStates, this.updateStates);
+      return this.feedDemo.call(action, data) as T;
     }
     let result: unknown;
     if (action.startsWith("strategy_")) {

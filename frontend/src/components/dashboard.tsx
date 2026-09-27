@@ -70,6 +70,7 @@ export type Page =
   | "activity"
   | "sensors"
   | "settings"
+  | "reservoir"
   | "stock"
   | "help";
 export const number = (value: number | null, digits = 1) =>

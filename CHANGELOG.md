@@ -28,6 +28,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   limits, and the tank's EC and pH on the dashboard, with their History panel, are removed. Watering
   never waits on a feed probe now. A room that had one set carries on after the update, without
   having to be switched off and on.
+- **Nutrient batches: the controller mixes your reservoir.** A new **Reservoir** page runs a room's
+  batches with your own dosers. Map the reservoir's level sensor (an ultrasonic sensor on the lid,
+  reading the distance down to the water), the fresh-water and recirculation solenoids and up to six
+  dosers in Rooms & setup. When the reservoir reads almost empty with **Automatic batches** on (off
+  until you turn it on), or when you press **Mix a batch now**, the controller refills it with fresh
+  water for your fill time, starts the pump and the recirculation, waits 20 seconds, runs each doser
+  in turn for its dose, then keeps mixing. The room waters nothing while a batch runs.
+- **A feed recipe for each growth stage.** Give each doser its nutrient and its parts, the ratio off
+  the nutrient chart (Athena Flower is 3 Core : 5 Bloom : 1 Balance : 0.5 Cleanse), and a strength in
+  mL per litre per part; the page works out each doser's millilitres for your batch size and how long
+  it runs at 600 mL/min, or the flow you set. Pick the stage each room is on; it is also a select in
+  Home Assistant.
+- **Dosers dose in the order you set**, dragged into place (or moved with the arrows) on the
+  Reservoir page.
+- **Batches are careful.** One starts only with the room's watering switch on and everything it uses
+  reading off. With a level sensor and an almost-empty mark, one you ask for is refused unless the
+  reservoir reads almost empty, so the fill cannot overflow it. If the reservoir did not fill,
+  nothing is dosed. Anything that stops a batch part-way switches everything off and a notice says
+  what went in.
 
 ### 🔧 Technical notes
 
@@ -59,6 +78,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   join `_RETIRED`, removed from the registry at setup. The dashboard's tank EC/pH readings, sparklines
   and Tank History sheet (`tank-history.ts/.tsx/.css`) are removed. CS-206's and CS-207's catalog
   text no longer name the gate; the MCP server's hardware schema follows.
+- **Nutrient batches (integration).** Rooms & setup maps `reservoir_distance_sensor` (a sensor in
+  mm, cm or m), `fresh_water_switch`, `recirc_switch` and `doser_1_switch` … `doser_6_switch`
+  (`room.RESERVOIR_KEYS`): each a switch of its own, never the pump, main line, waste or a zone valve;
+  the descriptor carries them only when mapped. `feed.py` (pure) checks a room's feed document (the
+  batch settings `fill_s`, `batch_l`, `empty_mm`, `settle_s`, `pause_s`, `mix_s`; `dosers` with
+  `flow_ml_min`; the dosing `order`; up to 12 `recipes` with `strength` and per-doser `label` and
+  `parts`, at most 60 mL/L; the `stage`) and plans a batch: `ml = parts × strength × batch_l`,
+  `seconds = ml / flow × 60`, in the room's order. `feed_api.py` stores it
+  (`crop_steering.feed.<entry_id>`) with services `feed_get` (read), `feed_save` and `feed_mix`
+  (administrator; `feed_mix` presses the room's button and is refused while the plan has a
+  `problem`). New entities per room: `sensor.crop_steering_<prefix>feed_plan` (the plan the
+  controller runs), `select.crop_steering_<prefix>feed_stage`,
+  `switch.crop_steering_<prefix>auto_batches` (off) and `button.crop_steering_<prefix>mix_batch` (a
+  new button platform).
+- **Nutrient batches (controller).** `_batch_tick`, first in every pass for each room with a
+  reservoir: `idle` → `filling` (fresh water on for `fill_s`) → `settling` (recirculation on, then the
+  pump, for `settle_s`; then, with a level sensor and a mark, the level must read short of
+  `empty_mm`, else CS-702 and no dose) → `dosing` / `pausing` (each dose's doser for its seconds,
+  `pause_s` between; a plan with a dose over 1800 s is not run) → `mixing` (`mix_s`, then the pump
+  off before the recirculation). It starts on a new Mix a Batch Now
+  press (the first state seen is a baseline, a press seen more than 30 minutes late is ignored, and
+  with a level sensor and a mark the reservoir must read almost empty) or, with `auto_batches` on,
+  after `BATCH_LOW_PASSES` (3) almost-empty readings, once until the level reads fuller (`armed`).
+  `_batch_refusal` names why one cannot start (CS-703): the plan's `problem`, a missing mapping, the
+  watering switch or the room off, a latched fault, a pending setup, or anything it uses (its
+  solenoids and dosers, the pump, the main line, every zone valve) not reading off. While a batch
+  runs `_blocked` holds the room's shots, and every room's while one fills or doses
+  (`BATCH_TIMED`); `run()` sleeps only until the step is due, and while one fills or doses
+  `_wait_for_next_pass` checks it every `BATCH_WATCH_S` (5 s) and stops it at once when it must
+  stop (`_batch_watch`), so switching watering off stops the fresh water within seconds. Switches are read back; a stop part-way
+  (CS-701) switches off what was on and one that will not read off latches CS-301. The batch is kept
+  in `state.json` as a room's `_batch` (`restore_batch`: any missing or malformed key takes its
+  default), so a crash is switched off at the next start and SIGTERM (`_safe_off`) switches it off
+  and says so once. `sensor.crop_steering_<prefix>batch_status` reports it, with times carrying their
+  UTC offset. The setup fingerprint names `reservoir` only when one is mapped, so an existing room
+  keeps its adoption.
+- **Nutrient batches (dashboard, MCP).** The Reservoir page (`pages/reservoir.tsx`; `lib/feed.ts`
+  mirrors `feed.py`'s plan and checks, `lib/feed-status.ts` reads the batch status, `lib/feed-demo.ts`
+  serves the demo), with a pointer-events drag list for the order; a Reservoir & dosers card in Rooms
+  & setup; `feed_*` calls are room-scoped; `autoBatches` joins the room view, and the reservoir's
+  switches are never written directly. CS-701, CS-702 and CS-703 join the catalog. The MCP server's
+  hardware schema takes the new keys.
 
 ## [2.25.0] - 2026-09-27
 

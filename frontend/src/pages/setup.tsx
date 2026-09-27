@@ -42,6 +42,7 @@ import {
   type PlumbingLayout,
 } from "@/lib/plumbing";
 import { errorText } from "@/lib/utils";
+import { BATCH_SWITCH_KEYS, DOSER_KEYS } from "@/lib/feed";
 import type { SetupCandidate, SetupDocument, SetupRoom, SetupZone } from "@/lib/operator-types";
 
 function MappingPicker({
@@ -197,6 +198,14 @@ const hardwareFields = [
   ["tank_last_fill_sensor", "Last recorded tank fill", "timestamp"],
   ["tank_fill_entity", "Tank filling status", "binary"],
 ] as const;
+/** The reservoir and dosers a room's nutrient batches use (Reservoir page); the controller app
+ * switches these. */
+const reservoirFields: [string, string, string][] = [
+  ["reservoir_distance_sensor", "Reservoir level sensor (distance)", "distance"],
+  ["fresh_water_switch", "Fresh-water solenoid", "switch"],
+  ["recirc_switch", "Recirculation solenoid", "switch"],
+  ...DOSER_KEYS.map((key, i): [string, string, string] => [key, `Doser ${i + 1} power`, "switch"]),
+];
 export function Setup({
   controller,
   onDirtyChange,
@@ -291,12 +300,15 @@ export function Setup({
       )
       .sort((a, b) => {
         const preferred = (c: SetupCandidate) =>
-          kind === "vwc"
-            ? (c.unit === "%" ? 2 : 0) + (/vwc|moisture|water.content/i.test(c.name) ? 1 : 0)
-            : kind === "ec"
-              ? (/mS\/cm|dS\/m|µS\/cm|uS\/cm/i.test(c.unit) ? 2 : 0) +
-                (/conductivity|\bec\b/i.test(c.name) ? 1 : 0)
-              : 0;
+          kind === "distance"
+            ? (/^(mm|cm|m)$/i.test(c.unit) ? 2 : 0) +
+              (/distance|ultrasonic|level/i.test(c.name) ? 1 : 0)
+            : kind === "vwc"
+              ? (c.unit === "%" ? 2 : 0) + (/vwc|moisture|water.content/i.test(c.name) ? 1 : 0)
+              : kind === "ec"
+                ? (/mS\/cm|dS\/m|µS\/cm|uS\/cm/i.test(c.unit) ? 2 : 0) +
+                  (/conductivity|\bec\b/i.test(c.name) ? 1 : 0)
+                : 0;
         return preferred(b) - preferred(a) || a.name.localeCompare(b.name);
       });
   }
@@ -324,6 +336,24 @@ export function Setup({
     const valves = activeZones.map((z) => z.valve).filter(Boolean);
     if (new Set(valves).size !== valves.length)
       errors.push("Each active zone must use a distinct valve.");
+    // As the integration checks them (setup_api.py): every batch switch is its own.
+    const batch = BATCH_SWITCH_KEYS.map((key) => draft.hardware[key]).filter(
+      (id): id is string => typeof id === "string" && !!id,
+    );
+    if (new Set(batch).size !== batch.length)
+      errors.push(
+        "Each doser and the fresh-water and recirculation solenoids need a switch of their own.",
+      );
+    const watering = new Set([
+      draft.hardware.pump_switch,
+      draft.hardware.main_line_switch,
+      draft.hardware.waste_switch,
+      ...draft.zones.map((z) => z.valve),
+    ]);
+    if (batch.some((id) => watering.has(id)))
+      errors.push(
+        "A doser or reservoir solenoid cannot also be the pump, mainline, waste or a zone valve.",
+      );
     if (
       activeZones.some(
         (z) =>
@@ -731,6 +761,37 @@ export function Setup({
                     ))}
                 </div>
               </section>
+              <section className="panel workspace-card" data-setup-reservoir>
+                <div className="workspace-section-heading">
+                  <div>
+                    <h2>Reservoir & dosers</h2>
+                    <p className="muted">
+                      For nutrient batches, run from the Reservoir page. The level sensor reads the
+                      distance down to the water; each doser is the switch that powers it. Leave
+                      them empty if the controller app does not mix this room's feed.
+                    </p>
+                  </div>
+                </div>
+                <div className="workspace-form-grid">
+                  {reservoirFields.map(([key, label, kind]) => (
+                    <MappingPicker
+                      key={key}
+                      label={label}
+                      values={
+                        typeof draft.hardware[key] === "string" ? [String(draft.hardware[key])] : []
+                      }
+                      candidates={candidates(kind)}
+                      disabled={busy}
+                      onChange={(values) =>
+                        setDraft({
+                          ...draft,
+                          hardware: { ...draft.hardware, [key]: values[0] || "" },
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+              </section>
               <section className="panel workspace-card">
                 <div className="workspace-section-heading">
                   <div>
@@ -970,6 +1031,17 @@ export function Setup({
                     {[draft?.hardware.pump_switch, draft?.hardware.main_line_switch]
                       .filter(Boolean)
                       .join(" → ") || "No pump or main-line valve: each zone is its one switch."}
+                  </p>
+                </div>
+              )}
+              {reservoirFields.some(([key]) => draft?.hardware[key]) && (
+                <div className="workspace-message">
+                  <strong>Reservoir & dosers</strong>
+                  <p className="mapping-id">
+                    {reservoirFields
+                      .filter(([key]) => draft?.hardware[key])
+                      .map(([key, label]) => `${label}: ${draft?.hardware[key]}`)
+                      .join(" · ")}
                   </p>
                 </div>
               )}

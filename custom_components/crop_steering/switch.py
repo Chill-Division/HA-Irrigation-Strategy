@@ -43,6 +43,13 @@ BASE_SWITCH_DESCRIPTIONS = [
         name="EC Stacking Enabled",
         icon="mdi:chemistry-bottle",
     ),
+    # Opt-in. ON lets the controller mix a nutrient batch by itself when the reservoir reads almost
+    # empty: fill, mix and dose (feed.py). "Mix a Batch Now" works either way. Off until chosen.
+    SwitchEntityDescription(
+        key="auto_batches",
+        name="Automatic Nutrient Batches",
+        icon="mdi:beaker-sync-outline",
+    ),
     # Retired: the room's engine switch ("Watering" on the dashboard) is the one switch that stops
     # watering. A controller from 2.24.0 or before still stops every shot while one of these reads
     # off, and treats a missing one as off, so they stay, hidden, until no such controller is left;

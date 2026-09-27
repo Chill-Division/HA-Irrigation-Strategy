@@ -50,7 +50,7 @@ local Python installs. CI is unaffected.
 ### 1. HA integration — `custom_components/crop_steering/`
 - About 90 entities for a one-zone room (numbers, switches, selects, sensors) via a config-flow UI; no YAML.
 - Services: `set_manual_override`, `apply_recipe`, `save_recipe`, and the `setup_*`, `strategy_*`,
-  `runs_*`, `stock_*` and `whats_new_*` families the dashboard calls.
+  `runs_*`, `stock_*`, `feed_*` and `whats_new_*` families the dashboard calls.
 - Pure, testable helpers in `calculations.py`.
 
 ### 2. f2-control add-on — `addons/f2_control/` (live engine)
@@ -60,7 +60,9 @@ local Python installs. CI is unaffected.
 - Responsibilities: phase transitions, hardware sequencing, dryback detection,
   fail-closed hardware writes (aborts shot on valve/pump fault), P2 EC-correction min-interval (anti-short-cycle),
   optional PID EC loop (`input_boolean.crop_steering_ec_pid_enabled`), daily caps,
-  sensor-fusion republish, 30-min operator vitals.
+  sensor-fusion republish, 30-min operator vitals, and nutrient batches for a room with a
+  reservoir mapped (refill, circulate, dose each doser in order, mix: `_batch_tick`, from the
+  integration's `sensor.crop_steering_<prefix>feed_plan`).
 - Shot volume is substrate litres per plant x plants x shot fraction. Duration is shot litres divided by total flow L/s (plants x drippers/plant x L/h/dripper / 3600), followed by the explicit safety cap. Validate positive flow without a hidden clamp.
 - Add-on config: `addons/f2_control/config.yaml`. Options set via Supervisor UI.
 

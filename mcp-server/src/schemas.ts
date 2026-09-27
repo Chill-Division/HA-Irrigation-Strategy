@@ -22,6 +22,16 @@ export const hardwareDomains: Record<string, string[]> = {
   tank_temperature_sensor: ["sensor"],
   tank_last_fill_sensor: ["sensor", "input_datetime"],
   tank_fill_entity: ["switch", "binary_sensor"],
+  // The reservoir and its dosers, for nutrient batches: the controller drives these.
+  reservoir_distance_sensor: ["sensor"],
+  fresh_water_switch: ["switch"],
+  recirc_switch: ["switch"],
+  doser_1_switch: ["switch"],
+  doser_2_switch: ["switch"],
+  doser_3_switch: ["switch"],
+  doser_4_switch: ["switch"],
+  doser_5_switch: ["switch"],
+  doser_6_switch: ["switch"],
 };
 export const hardware = z.strictObject(
   Object.fromEntries(

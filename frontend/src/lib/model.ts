@@ -16,6 +16,7 @@ import { parseAutoSetpoints } from "./auto-setpoints";
 import { readWaiting } from "./waiting-for";
 import { PHASE_GROUPS, settingWords } from "./setting-words";
 import { ageText, controllerZoneLabel, readHeartbeat, RESTING } from "./controller-health";
+import { BATCH_SWITCH_KEYS } from "./feed";
 
 const ROOT = "crop_steering_";
 export const ZONE_PARAMETERS = new Set([
@@ -483,6 +484,7 @@ export function buildRoom(states: States, room: Room): RoomView {
   const activeSwitch = room.id ? states[roomActiveId(room)] : undefined;
   const roomActive = !room.id || roomIsActive(states, room);
   const autoSwitch = room.id ? resolve(states, room, "switch", "auto_setpoints") : undefined;
+  const batchSwitch = room.id ? resolve(states, room, "switch", "auto_batches") : undefined;
   const waterSelect = room.id ? resolve(states, room, "select", "water_today_view") : undefined;
   const zones: Zone[] = activeIds.map((id) => {
     const z = `zone_${id}_`;
@@ -805,6 +807,10 @@ export function buildRoom(states: States, room: Room): RoomView {
       entityId: autoSwitch?.entity_id ?? null,
       enabled: boolean(autoSwitch),
     },
+    autoBatches: {
+      entityId: batchSwitch?.entity_id ?? null,
+      enabled: boolean(batchSwitch),
+    },
     waterView: {
       entityId: waterSelect?.entity_id ?? null,
       view: waterSelect?.state === "Per plant" ? "plant" : "zone",
@@ -983,6 +989,8 @@ export function validateChange(room: RoomView, states: States, change: Change): 
       ...Object.values(
         typeof attributes.valves === "object" && attributes.valves ? attributes.valves : {},
       ),
+      // The reservoir's solenoids and dosers: only the controller app switches them, in a batch.
+      ...BATCH_SWITCH_KEYS.map((key) => attributes[key]),
     ];
   });
   if (hardware.includes(change.entityId))
@@ -1023,6 +1031,7 @@ export function validateChange(room: RoomView, states: States, change: Change): 
     room.engine.entityId,
     room.roomActiveEntity,
     room.autoSetpoints.entityId,
+    room.autoBatches.entityId,
     ...room.zones.flatMap((z) => [
       z.enabledEntity,
       `switch.${ROOT}${room.room.prefix}zone_${z.id}_manual_override`,
