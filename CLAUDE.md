@@ -58,8 +58,7 @@ local Python installs. CI is unaffected.
 - Imports `crop-steering-engine` (pure Python package at `crop-steering-engine/src/`);
   no external runtime dependency.
 - Responsibilities: phase transitions, hardware sequencing, dryback detection,
-  source-water gate (pH + EC, fail-closed on dead probe), fail-closed hardware writes
-  (aborts shot on valve/pump fault), P2 EC-correction min-interval (anti-short-cycle),
+  fail-closed hardware writes (aborts shot on valve/pump fault), P2 EC-correction min-interval (anti-short-cycle),
   optional PID EC loop (`input_boolean.crop_steering_ec_pid_enabled`), daily caps,
   sensor-fusion republish, 30-min operator vitals.
 - Shot volume is substrate litres per plant x plants x shot fraction. Duration is shot litres divided by total flow L/s (plants x drippers/plant x L/h/dripper / 3600), followed by the explicit safety cap. Validate positive flow without a hidden clamp.
@@ -188,10 +187,10 @@ config entry. There is no schema to migrate by hand.
 required post-install migration. Defaults sane out of the box.
 
 **Stay generic.** Site values are **defaults or overrides, never hardcoded assumptions**: entity ids,
-plant counts, block sizes, dripper flow, lights hours, feed EC and pH bands. A change that only works
-because of one site's exact names or numbers is a bug. The add-on's `feed_ec_sensor` / `feed_ph_sensor`
-options default to empty (that half of the source-water gate is off, never a fallback to a site's
-entity id), and `substrate_l` / `flow_lps` default to generic placeholders (5 L / 0.02 L/s).
+plant counts, block sizes, dripper flow, lights hours. A change that only works because of one site's
+exact names or numbers is a bug. The add-on's `substrate_l` / `flow_lps` default to generic placeholders
+(5 L / 0.02 L/s). (The source-water gate and its `feed_ec_sensor` / `feed_ph_sensor` options were
+removed in 2.26.0.)
 
 **Prove it.** `tests/test_state_migration.py` locks the backward-compatible load and
 `tests/test_version_consistency.py` keeps versions aligned. Run `bash tests/run_ci.sh`; detail

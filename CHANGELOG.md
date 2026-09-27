@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ago", adding that it starts again by itself, which can take a few minutes. With no word from the
   controller at all, as just after Home Assistant restarts, it now says that this lasts a few
   minutes, instead of only that the controller is not running.
+- **Feed EC and pH are gone.** The controller's source-water check (it held watering while a feed EC
+  or pH probe read outside your limits), its two controller settings, the room's feed EC and pH
+  limits, and the tank's EC and pH on the dashboard, with their History panel, are removed. Watering
+  never waits on a feed probe now. A room that had one set carries on after the update, without
+  having to be switched off and on.
 
 ### 🔧 Technical notes
 
@@ -41,6 +46,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   minutes. The dashboard's `readHeartbeat` gains a `stopped` health: a "Controller stopped" warning
   and "The controller app stopped … ago" on the status line. A missing heartbeat's texts add that it
   lasts a few minutes after a restart or an update.
+
+- **Feed EC/pH removed (controller, integration, dashboard, MCP).** The controller no longer reads
+  `feed_ec_sensor`/`feed_ph_sensor` (app options or descriptor): `_read_feed_ec`, `_read_feed_ph`,
+  `feed_grace_min` and the gate in `_blocked` are gone, the vitals never mention feed EC, and
+  `ZoneSnapshot.feed_ec` takes the engine's default (3.0, as every install without a probe had).
+  `Room()` loses its two feed arguments. The setup fingerprint no longer names the feed sensors, and
+  `_without_feed` compares one saved before this without them, so an adopted room resumes. The
+  integration drops `feed_ec_sensor`, `feed_ph_sensor`, `tank_ec_sensor` and `tank_ph_sensor` from
+  the wizard, setup (`RETIRED_HARDWARE`: gone from a stored setup on its next save, refused if sent)
+  and the `engine_config` descriptor, and `number.crop_steering_<prefix>irrigation_{ec,ph}_{min,max}`
+  join `_RETIRED`, removed from the registry at setup. The dashboard's tank EC/pH readings, sparklines
+  and Tank History sheet (`tank-history.ts/.tsx/.css`) are removed. CS-206's and CS-207's catalog
+  text no longer name the gate; the MCP server's hardware schema follows.
 
 ## [2.25.0] - 2026-09-27
 

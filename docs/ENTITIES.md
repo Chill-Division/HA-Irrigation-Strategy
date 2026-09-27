@@ -58,10 +58,6 @@ The active EC target = the row for the current phase **and** the zone's steering
 ### EC & safety limits
 | Entity | Range | Default | Unit | What it does |
 |---|---|---|---|---|
-| `irrigation_ec_min` | 0-20 | 2.3 | mS/cm | Source-water EC gate (low bound). Irrigation blocked below it. `0` disables. |
-| `irrigation_ec_max` | 0-20 | 3.5 | mS/cm | Source-water EC gate (high bound). |
-| `irrigation_ph_min` | 3.0-9.0 | 5.8 | pH | Source-water pH gate (low bound). |
-| `irrigation_ph_max` | 3.0-9.0 | 6.2 | pH | Source-water pH gate (high bound). |
 | `maximum_ec` | 1-20 | 9.0 | mS/cm | Hard substrate-EC cutoff: no shot above it (salt-burn guard). |
 | `max_shot_duration` | 5-3600 | 900 | s | Longest a single shot may run. The controller refuses to water a room whose cap is missing or below 5 s (CS-203). |
 | `watchdog_hours` | 0-12 | 3 | h | Lights-on backstop: a zone below its P2 trigger that has had no water for this long gets a watchdog shot, or an urgent alert (CS-207) when watering is blocked. `0` turns it off. |
@@ -185,8 +181,8 @@ The controller also publishes `sensor.f2_control_vitals`: the time of its last v
 
 ## 6. Hardware (your own switches/sensors: mapped in Rooms & setup, not created here)
 
-The pump, mainline solenoid, per-zone valve switches, and the raw VWC/EC + source-water
-sensors are **your** existing HA entities. Map them in the Crop Steering sidebar under
+The pump, mainline solenoid, per-zone valve switches, and the raw VWC/EC sensors are **your**
+existing HA entities. Map them in the Crop Steering sidebar under
 **Rooms & setup**: the controller drives what the room's setup maps, and with nothing mapped
 it holds every zone and says so. (The controller also reads a `hardware` map from its options
 file, for tests and hand-built development setups only: the app's Configuration tab doesn't

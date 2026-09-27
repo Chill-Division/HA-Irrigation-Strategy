@@ -36,7 +36,6 @@ It runs inside [Home Assistant](https://www.home-assistant.io/) and works with t
 - **A daily water limit per zone** and a **maximum shot length**, so a stuck sensor can never keep a valve open all day.
 - **It checks every switch it turns off actually went off.** If a valve or pump does not, it holds that equipment, stops watering and alerts you.
 - **If a moisture probe dies**, the zone is still watered, by copying a working zone or on a cautious timed schedule, until the probe reads again.
-- **Optional feed-water checks:** it can refuse to water when the feed water's EC or pH is out of range.
 - **Clear alerts.** Every problem shows up as a Home Assistant Repairs card or notification with a code (such as CS-601) that the built-in Help page explains: what it means, what happens to watering meanwhile, and what to do.
 
 ## See it in action
@@ -46,8 +45,6 @@ It runs inside [Home Assistant](https://www.home-assistant.io/) and works with t
 The **Overview** draws today's grow day for every zone, from lights-on to the next lights-on: the phase each zone was in, every shot, what held a zone back and for how long, and every setting change. On top of that it shows the **target** each phase was aiming for, **yesterday's line** for comparison, and a dashed **projection** of the rest of the day. One line per zone sums it up in numbers, for example "58% now, +0.4 points vs yesterday, P1 target reached 11:16".
 
 Under it, **Zones at a glance** shows each zone's moisture against its target, how fast it is drying, today's water against its daily limit, and whether its valve is open, all as small visual bars and coloured pills. The **tank card** shows the batch tank's level, EC, pH and temperature, with a 24-hour line for EC and pH and a History view going back 30 days.
-
-![The tank card with its EC and pH history](https://raw.githubusercontent.com/JakeTheRabbit/HA-Irrigation-Strategy/main/img/tank-history.png)
 
 ### Set targets against what the zone actually does
 
