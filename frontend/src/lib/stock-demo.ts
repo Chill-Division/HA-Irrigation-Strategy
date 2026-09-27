@@ -1,5 +1,13 @@
 import type { OperatorAction } from "./operator-types";
-import { draftErrors, type StockDocument, type StockTank, type StockTankDraft } from "./stock";
+import {
+  draftErrors,
+  onDoser,
+  type StockDocument,
+  type StockTank,
+  type StockTankDraft,
+} from "./stock";
+import { mappedNumbers, planOf } from "./feed";
+import { sampleFeed } from "./feed-demo";
 import type { States } from "./types";
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
@@ -21,6 +29,7 @@ function sample(roomId: string, fillEntity: string | null): StockDocument {
     level_l: level,
     dose_ml: dose,
     dose_entity: null,
+    doser: null,
     low_l: low,
     refilled_at: hoursAgo(24 * 9),
     updated_at: hoursAgo(20),
@@ -40,6 +49,8 @@ function sample(roomId: string, fillEntity: string | null): StockDocument {
     last_batch: hoursAgo(20),
     history: [20, 44, 68].map((hours) => ({ at: hoursAgo(hours), source: "fill", draw_ml: draw })),
     fill_entity: fillEntity,
+    dosers: {},
+    reservoir_batch: null,
     doses: draw,
     low: [],
     max_tanks: 12,
@@ -53,18 +64,48 @@ export class StockDemo {
   constructor(private getStates: () => States) {}
 
   private doc(roomId: string) {
+    const prefix = roomId.startsWith("room:") ? roomId.slice(5) : "";
+    const descriptor = this.getStates()[`sensor.crop_steering_${prefix}engine_config`];
     if (!this.docs.has(roomId)) {
-      const prefix = roomId.startsWith("room:") ? roomId.slice(5) : "";
-      const descriptor = this.getStates()[`sensor.crop_steering_${prefix}engine_config`];
       const fill = descriptor?.attributes.tank_last_fill_sensor;
       this.docs.set(roomId, sample(roomId, typeof fill === "string" && fill ? fill : null));
     }
-    return this.docs.get(roomId)!;
+    const doc = this.docs.get(roomId)!;
+    // The room's Reservoir dosers, with what the demo's feed stage puts on each (stock_api dosers).
+    const mapped: Record<string, string> = {};
+    for (let n = 1; n <= 6; n++) {
+      const entity = descriptor?.attributes[`doser_${n}_switch`];
+      if (typeof entity === "string" && entity) mapped[String(n)] = entity;
+    }
+    const feed = sampleFeed();
+    const nutrients = feed.recipes.find((r) => r.id === feed.stage)?.doses ?? {};
+    doc.dosers = Object.fromEntries(
+      Object.entries(mapped).map(([n, entity]) => [
+        n,
+        { switch: entity, nutrient: nutrients[n]?.label || null },
+      ]),
+    );
+    this.plan = planOf(feed, mappedNumbers(mapped)).doses;
+    doc.doses = this.doses(doc);
+    return doc;
+  }
+
+  private plan: { doser: number; label: string; ml: number }[] = [];
+
+  /** stock_api doses: a tank on a doser takes what the stage in use gives from it; any other its
+   * fixed dose. */
+  private doses(doc: StockDocument) {
+    const doses = Object.fromEntries(doc.tanks.map((t) => [t.id, t.doser ? 0 : t.dose_ml]));
+    for (const dose of this.plan) {
+      const owner = onDoser(doc.tanks, dose.doser, dose.label);
+      if (owner) doses[owner.id] = dose.ml;
+    }
+    return doses;
   }
 
   private finish(doc: StockDocument) {
     doc.revision++;
-    doc.doses = Object.fromEntries(doc.tanks.map((t) => [t.id, t.dose_ml]));
+    doc.doses = this.doses(doc);
     doc.low = doc.tanks.filter((t) => t.level_l <= t.low_l).map((t) => t.id);
     return clone(doc);
   }
@@ -99,7 +140,8 @@ export class StockDemo {
           capacity_l: draft.capacity_l,
           level_l: Math.min(draft.level_l, draft.capacity_l),
           dose_ml: draft.dose_ml,
-          dose_entity: draft.dose_entity || null,
+          dose_entity: draft.doser ? null : draft.dose_entity || null,
+          doser: draft.doser ?? null,
           low_l: Math.min(draft.low_l, draft.capacity_l),
           refilled_at: old?.refilled_at ?? null,
           updated_at: now,
@@ -118,7 +160,8 @@ export class StockDemo {
       tank.updated_at = now;
     } else if (action === "stock_record_batch") {
       const draw: Record<string, number> = {};
-      for (const tank of doc.tanks) {
+      // A batch made by hand leaves the tanks on dosers alone: they lose what their doser gives.
+      for (const tank of doc.tanks.filter((t) => !t.doser)) {
         const before = tank.level_l;
         tank.level_l = Math.round(Math.max(0, before - tank.dose_ml / 1000) * 1e4) / 1e4;
         draw[tank.id] = Math.round((before - tank.level_l) * 1e4) / 10;

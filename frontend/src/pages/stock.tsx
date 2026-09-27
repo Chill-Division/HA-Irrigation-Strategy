@@ -40,6 +40,7 @@ const blank = (): StockTankDraft => ({
   level_l: 20,
   dose_ml: 0,
   dose_entity: null,
+  doser: null,
   low_l: 4,
 });
 
@@ -124,7 +125,13 @@ function TankCard({
               {number(dose ?? tank.dose_ml, 0)}
               <span className="unit"> mL</span>
             </dd>
-            {tank.dose_entity && <small title="Read at each batch">from {tank.dose_entity}</small>}
+            {tank.doser ? (
+              <small title="What this doser gives in each Reservoir batch">
+                from doser {tank.doser}
+              </small>
+            ) : (
+              tank.dose_entity && <small title="Read at each batch">from {tank.dose_entity}</small>
+            )}
           </div>
           <div>
             <dt>Batches left</dt>
@@ -196,6 +203,7 @@ function Editor({
   initial,
   busy,
   max,
+  dosers,
   onSave,
   onClose,
 }: {
@@ -203,6 +211,8 @@ function Editor({
   initial: StockTankDraft[];
   busy: boolean;
   max: number;
+  /** The room's Reservoir dosers (stock_get), each with its nutrient in the stage in use. */
+  dosers: NonNullable<StockDocument["dosers"]>;
   onSave: (drafts: StockTankDraft[]) => void;
   onClose: () => void;
 }) {
@@ -220,32 +230,42 @@ function Editor({
     .sort();
   const update = (index: number, change: Partial<StockTankDraft>) =>
     setDrafts(drafts.map((draft, i) => (i === index ? { ...draft, ...change } : draft)));
-  const numeric = (index: number, key: keyof StockTankDraft, label: string, unit: string) => (
-    <div>
-      <Label htmlFor={`${listId}-${index}-${key}`}>
-        {label} ({unit})
-      </Label>
-      <Input
-        id={`${listId}-${index}-${key}`}
-        type="number"
-        min={0}
-        step={unit === "mL" ? 1 : 0.1}
-        value={String(drafts[index][key] ?? "")}
-        onChange={(event) =>
-          update(index, { [key]: event.target.value === "" ? NaN : Number(event.target.value) })
-        }
-      />
-    </div>
-  );
+  const doserNumbers = Object.keys(dosers)
+    .map(Number)
+    .sort((a, b) => a - b);
+  const numeric = (index: number, key: keyof StockTankDraft, label: string, unit: string) => {
+    // A tank on a doser loses what that doser gives: its fixed dose does not apply.
+    const fromDoser = key === "dose_ml" && !!drafts[index].doser;
+    return (
+      <div>
+        <Label htmlFor={`${listId}-${index}-${key}`}>
+          {label} ({unit})
+        </Label>
+        <Input
+          id={`${listId}-${index}-${key}`}
+          type="number"
+          min={0}
+          step={unit === "mL" ? 1 : 0.1}
+          disabled={fromDoser}
+          placeholder={fromDoser ? `Doser ${drafts[index].doser}` : undefined}
+          title={fromDoser ? "What its doser gives in each Reservoir batch" : undefined}
+          value={fromDoser ? "" : String(drafts[index][key] ?? "")}
+          onChange={(event) =>
+            update(index, { [key]: event.target.value === "" ? NaN : Number(event.target.value) })
+          }
+        />
+      </div>
+    );
+  };
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="stock-editor">
         <DialogHeader>
           <DialogTitle>Stock tanks</DialogTitle>
           <DialogDescription>
-            Each batch tank takes its dose from every stock tank. A dose entity, such as a doser's
-            dose-volume number, is read at each batch; the fixed dose stands in when it reads
-            nothing.
+            {doserNumbers.length
+              ? "Put each tank on the doser its bottle feeds: every batch the Reservoir mixes takes what that doser gave. A tank on no doser loses its fixed dose at each batch recorded by hand or counted from the tank's fill entity."
+              : "Each batch tank takes its dose from every stock tank. A dose entity, such as a doser's dose-volume number, is read at each batch; the fixed dose stands in when it reads nothing."}
           </DialogDescription>
         </DialogHeader>
         <datalist id={`${listId}-entities`}>
@@ -271,14 +291,43 @@ function Editor({
               {numeric(index, "dose_ml", "Per batch", "mL")}
               {numeric(index, "low_l", "Low mark", "L")}
               <div className="stock-editor-entity">
-                <Label htmlFor={`${listId}-${index}-entity`}>Dose entity (optional)</Label>
-                <Input
-                  id={`${listId}-${index}-entity`}
-                  list={`${listId}-entities`}
-                  placeholder="None"
-                  value={draft.dose_entity ?? ""}
-                  onChange={(event) => update(index, { dose_entity: event.target.value || null })}
-                />
+                {!!doserNumbers.length && (
+                  <>
+                    <Label htmlFor={`${listId}-${index}-doser`}>Doser</Label>
+                    <select
+                      id={`${listId}-${index}-doser`}
+                      className="stock-editor-doser"
+                      value={draft.doser ? String(draft.doser) : ""}
+                      onChange={(event) =>
+                        update(index, {
+                          doser: event.target.value ? Number(event.target.value) : null,
+                          // What a doser gives is the record: a dose entity no longer applies.
+                          ...(event.target.value ? { dose_entity: null } : {}),
+                        })
+                      }
+                    >
+                      <option value="">Not on a doser</option>
+                      {doserNumbers.map((n) => (
+                        <option key={n} value={String(n)}>
+                          Doser {n}
+                          {dosers[String(n)]?.nutrient ? ` · ${dosers[String(n)].nutrient}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                )}
+                {(!doserNumbers.length || (!draft.doser && !!draft.dose_entity)) && (
+                  <>
+                    <Label htmlFor={`${listId}-${index}-entity`}>Dose entity (optional)</Label>
+                    <Input
+                      id={`${listId}-${index}-entity`}
+                      list={`${listId}-entities`}
+                      placeholder="None"
+                      value={draft.dose_entity ?? ""}
+                      onChange={(event) => update(index, { dose_entity: event.target.value || null })}
+                    />
+                  </>
+                )}
               </div>
               <Button
                 type="button"
@@ -397,6 +446,13 @@ export function StockTanks({
           {doc.error}
         </p>
       )}
+      {doc && !!Object.keys(doc.dosers ?? {}).length && (
+        <p className="stock-source" data-stock-dosers>
+          A tank on a doser loses what that doser gives in each batch the Reservoir mixes. Last
+          Reservoir batch counted:{" "}
+          {when(doc.history.find((batch) => batch.source === "reservoir")?.at ?? null)}.
+        </p>
+      )}
       {doc && (
         <p className="stock-source" data-stock-source>
           {doc.fill_entity ? (
@@ -463,7 +519,11 @@ export function StockTanks({
                     <td>{when(batch.at)}</td>
                     <td>
                       <span className="pill" data-tone="unknown">
-                        {batch.source === "fill" ? "Tank fill" : "By hand"}
+                        {batch.source === "fill"
+                          ? "Tank fill"
+                          : batch.source === "reservoir"
+                            ? "Reservoir"
+                            : "By hand"}
                       </span>
                     </td>
                     {doc.tanks.map((tank) => (
@@ -485,6 +545,7 @@ export function StockTanks({
           initial={editing}
           busy={busy}
           max={doc.max_tanks}
+          dosers={doc.dosers ?? {}}
           onClose={() => setEditing(null)}
           onSave={async (drafts) => {
             if (await act("stock_save", { tanks: drafts })) setEditing(null);

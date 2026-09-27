@@ -336,6 +336,32 @@ try {
     await axe("stock tanks after edits");
     await noOverflow();
   });
+  await check("stock tanks: a tank on a Reservoir doser takes what the stage in use gives from it", async () => {
+    await go("stock");
+    await page.getByRole("button", { name: "Edit stock tanks" }).click();
+    const editor = page.getByRole("dialog");
+    await editor.getByRole("button", { name: "Add a stock tank" }).click();
+    await editor.getByLabel("Name").last().fill("Bloom");
+    const doser = editor.getByLabel("Doser", { exact: true }).last();
+    assert.deepEqual(await doser.locator("option").allInnerTexts(), [
+      "Not on a doser",
+      "Doser 1 · Core",
+      "Doser 2 · Bloom",
+      "Doser 3 · Balance",
+      "Doser 4 · Cleanse",
+    ]);
+    await doser.selectOption("2");
+    assert.equal(await editor.getByLabel("Per batch (mL)").last().isDisabled(), true);
+    await axe("stock tank editor with dosers");
+    await editor.getByRole("button", { name: "Save stock tanks" }).click();
+    const card = page.locator('[data-stock-tank="bloom"]');
+    await expectVisible(card);
+    const text = await card.innerText();
+    assert.match(text, /750\s*mL/, "Flower gives 750 mL from doser 2");
+    assert.match(text, /from doser 2/);
+    await expectVisible(page.locator("[data-stock-dosers]"));
+    await noOverflow();
+  });
   await check("reservoir: a batch waits for an almost empty reservoir, then mixes in the room's order", async () => {
     await go("reservoir");
     const batch = page.locator("[data-batch-status]");

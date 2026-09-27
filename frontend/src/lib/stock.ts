@@ -9,13 +9,16 @@ export interface StockTank {
   /** The fixed dose per batch; a dose entity's reading takes over while it reads a number. */
   dose_ml: number;
   dose_entity: string | null;
+  /** The Reservoir doser the tank is on (1 to 6): it then loses what that doser gives in each
+   * batch the controller mixes, and neither its fixed dose nor a dose entity applies. */
+  doser: number | null;
   low_l: number;
   refilled_at: string | null;
   updated_at: string;
 }
 export interface StockBatch {
   at: string;
-  source: "fill" | "manual";
+  source: "fill" | "manual" | "reservoir";
   draw_ml: Record<string, number>;
 }
 export interface StockDocument {
@@ -27,6 +30,10 @@ export interface StockDocument {
   history: StockBatch[];
   /** The tank last-fill entity batches are counted from; null means batches are recorded by hand. */
   fill_entity: string | null;
+  /** The room's Reservoir dosers, each with the nutrient the feed stage in use puts on it. */
+  dosers?: Record<string, { switch: string; nutrient: string | null }>;
+  /** When the last Reservoir batch counted ended. */
+  reservoir_batch?: string | null;
   /** What one batch takes from each tank right now, in mL. */
   doses: Record<string, number>;
   low: string[];
@@ -71,6 +78,27 @@ export function draftErrors(drafts: StockTankDraft[], max = 12): string[] {
       errors.push(`${label}: the low mark must be between 0 L and its capacity.`);
     if (tank.dose_entity && !/^(number|input_number|sensor)\.[a-z0-9_]+$/.test(tank.dose_entity))
       errors.push(`${label}: the dose entity must be a number, input_number or sensor.`);
+    if (tank.doser !== null && tank.doser !== undefined) {
+      if (!(Number.isInteger(tank.doser) && tank.doser >= 1 && tank.doser <= 6))
+        errors.push(`${label}: a doser is numbered 1 to 6.`);
+      else if (tank.dose_entity)
+        errors.push(
+          `${label} is on doser ${tank.doser}, so it loses what that doser gives: clear its dose entity.`,
+        );
+    }
   }
   return errors;
+}
+
+/** As stock.py on_doser: the tank a doser draws from, the one on it or, when several share it
+ * (bottles swapped between stages), the one named like the nutrient on it. */
+export function onDoser<T extends Pick<StockTank, "name" | "doser">>(
+  tanks: T[],
+  doser: number,
+  nutrient: string | null | undefined,
+): T | undefined {
+  const on = tanks.filter((tank) => tank.doser === doser);
+  if (on.length === 1) return on[0];
+  const wanted = (nutrient ?? "").trim().toLowerCase();
+  return on.find((tank) => tank.name.trim().toLowerCase() === wanted);
 }
