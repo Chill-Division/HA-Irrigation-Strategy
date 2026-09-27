@@ -70,7 +70,7 @@ def version_tuple(version: str) -> tuple[int, int, int]:
 # --------------------------------------------------------------------------- the edits
 def _replace_one(text: str, pattern: str, new: str, where: str) -> str:
     """Replace the one match of `pattern`'s group 1 with `new`, leaving the rest of the file
-    byte for byte (const.py and README.md end their lines with CRLF)."""
+    byte for byte, its line endings included."""
     matches = list(re.finditer(pattern, text, re.M))
     if len(matches) != 1:
         raise Refused(f"{where}: expected one version to set, found {len(matches)}")
@@ -252,7 +252,7 @@ def release_exists(slug: str, tag: str) -> bool:
 
 
 def read_files() -> dict[str, str]:
-    # newline="" keeps CRLF files CRLF
+    # newline="" keeps every file's line endings as they are (LF; tests/test_line_endings.py)
     return {
         path: (ROOT / path).open(encoding="utf-8", newline="").read() for path in FILES
     }

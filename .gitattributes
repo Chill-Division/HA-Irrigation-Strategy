@@ -1,0 +1,14 @@
+# Every text file is stored and checked out with LF line endings, on Windows too, so no editor or
+# tool turns a whole file into a diff by switching its line endings. Binary files are left alone.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
