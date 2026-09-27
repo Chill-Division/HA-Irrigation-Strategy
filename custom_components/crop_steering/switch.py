@@ -50,6 +50,13 @@ BASE_SWITCH_DESCRIPTIONS = [
         name="Automatic Nutrient Batches",
         icon="mdi:beaker-sync-outline",
     ),
+    # ON: the controller's vitals notification says, under each zone, what it will do next (the
+    # dashboard's "Next:"). On until switched off.
+    SwitchEntityDescription(
+        key="notify_predictions",
+        name="Include Predictions in Notifications",
+        icon="mdi:crystal-ball",
+    ),
     # Retired: the room's engine switch ("Watering" on the dashboard) is the one switch that stops
     # watering. A controller from 2.24.0 or before still stops every shot while one of these reads
     # off, and treats a missing one as off, so they stay, hidden, until no such controller is left;
@@ -174,6 +181,8 @@ class CropSteeringSwitch(SwitchEntity, RestoreEntity):
             self._attr_is_on = True  # System enabled by default
         elif description.key == "auto_irrigation_enabled":
             self._attr_is_on = True  # Auto irrigation enabled by default
+        elif description.key == "notify_predictions":
+            self._attr_is_on = True  # the vitals say what comes next until switched off
         elif "zone_" in description.key and "_enabled" in description.key:
             self._attr_is_on = True  # Zones enabled by default
         else:
