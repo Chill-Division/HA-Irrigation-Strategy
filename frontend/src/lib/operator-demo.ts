@@ -67,8 +67,6 @@ export class OperatorDemo {
           ...Object.fromEntries(
             [
               "water_level_sensor",
-              "tank_ec_sensor",
-              "tank_ph_sensor",
               "tank_temperature_sensor",
               "tank_last_fill_sensor",
               "tank_fill_entity",

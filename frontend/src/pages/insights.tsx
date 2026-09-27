@@ -512,10 +512,6 @@ export function Insights({
                       );
                     })}
                   </div>
-                  <div className="insight-feed-map">
-                    {mappedEntity("Feed-water EC", hardware("feed_ec_sensor", "feed_ec_sensor"))}
-                    {mappedEntity("Feed-water pH", hardware("feed_ph_sensor", "feed_ph_sensor"))}
-                  </div>
                 </div>
                 {mappingError && (
                   <p className="insight-mapping-note">

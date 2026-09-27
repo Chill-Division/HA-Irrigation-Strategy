@@ -191,12 +191,8 @@ function newZone(id: number): SetupZone {
 const hardwareFields = [
   ["pump_switch", "Room pump", "switch"],
   ["main_line_switch", "Mainline valve", "switch"],
-  ["feed_ec_sensor", "Feed-water EC", "ec"],
-  ["feed_ph_sensor", "Feed-water pH", "ph"],
   ["light_entity", "Room lights", "light"],
   ["water_level_sensor", "Tank fill level (%)", "level"],
-  ["tank_ec_sensor", "Tank EC (display)", "ec"],
-  ["tank_ph_sensor", "Tank pH (display)", "ph"],
   ["tank_temperature_sensor", "Tank temperature", "temperature"],
   ["tank_last_fill_sensor", "Last recorded tank fill", "timestamp"],
   ["tank_fill_entity", "Tank filling status", "binary"],
@@ -300,11 +296,7 @@ export function Setup({
             : kind === "ec"
               ? (/mS\/cm|dS\/m|µS\/cm|uS\/cm/i.test(c.unit) ? 2 : 0) +
                 (/conductivity|\bec\b/i.test(c.name) ? 1 : 0)
-              : kind === "ph"
-                ? /\bph\b/i.test(c.name)
-                  ? 2
-                  : 0
-                : 0;
+              : 0;
         return preferred(b) - preferred(a) || a.name.localeCompare(b.name);
       });
   }
@@ -661,10 +653,8 @@ export function Setup({
                   <div>
                     <h2>Shared room hardware</h2>
                     <p className="muted">
-                      How the room is plumbed, then the switches and source-water probes that go
-                      with it. Empty feed mappings leave that source-water gate disabled. Tank
-                      display mappings show readings in Overview; they do not change feed-water
-                      gates or operate the fill valve.
+                      How the room is plumbed, then the switches that go with it. Tank display
+                      mappings show readings in Overview; they do not operate the fill valve.
                     </p>
                   </div>
                 </div>

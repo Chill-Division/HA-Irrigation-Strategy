@@ -58,22 +58,14 @@ export function createDemo(now = Date.now()): States {
         3: `switch.demo_${prefix}valve_3`,
       },
       water_level_sensor: `sensor.demo_${prefix}tank_level`,
-      tank_ec_sensor: `sensor.demo_${prefix}tank_ec`,
-      tank_ph_sensor: `sensor.demo_${prefix}tank_ph`,
       tank_temperature_sensor: `sensor.demo_${prefix}tank_temperature`,
       tank_last_fill_sensor: `sensor.demo_${prefix}tank_last_fill`,
       tank_fill_entity: `binary_sensor.demo_${prefix}tank_filling`,
-      // Flower 2 checks its feed water on the tank probes (the source-water gate); Flower 1 maps
-      // no feed-water probe, so its gate is off. Both have been saved in Rooms & setup.
-      ...(index
-        ? {}
-        : { feed_ec_sensor: "sensor.demo_tank_ec", feed_ph_sensor: "sensor.demo_tank_ph" }),
+      // Both rooms have been saved in Rooms & setup.
       setup_revision: 1,
     });
     put(`switch.demo_${prefix}pump`, index ? "off" : "on");
     put(`sensor.demo_${prefix}tank_level`, index ? 72 : 42, { unit_of_measurement: "%" });
-    put(`sensor.demo_${prefix}tank_ec`, index ? 2.8 : 3.06, { unit_of_measurement: "mS/cm" });
-    put(`sensor.demo_${prefix}tank_ph`, index ? 5.8 : 5.66, { unit_of_measurement: "pH" });
     put(`sensor.demo_${prefix}tank_temperature`, index ? 19.2 : 17.6, {
       unit_of_measurement: "°C",
     });
@@ -110,10 +102,6 @@ export function createDemo(now = Date.now()): States {
     number(prefix, "max_shot_duration", 120, 5, 3600, 1, "s");
     number(prefix, "lights_on_hour", index ? 8 : 10, 0, 23, 1, "h");
     number(prefix, "lights_off_hour", index ? 20 : 22, 0, 23, 1, "h");
-    number(prefix, "irrigation_ec_min", 2.3, 0, 6, 0.1, "mS/cm");
-    number(prefix, "irrigation_ec_max", 3.5, 0, 8, 0.1, "mS/cm");
-    number(prefix, "irrigation_ph_min", 5.5, 3, 9, 0.05, "pH");
-    number(prefix, "irrigation_ph_max", 6.5, 3, 9, 0.05, "pH");
     for (let id = 1; id <= 3; id++) {
       put(`switch.demo_${prefix}valve_${id}`, !index && id === 1 ? "on" : "off");
       put(
@@ -420,49 +408,10 @@ function cycleHistory(
     };
   });
 }
-/** Plausible batch-tank chemistry: each refill (the recorded last fill, and every three days
- * before it) starts a fresh mix, a step down. Then EC creeps up steadily as water evaporates, and
- * pH climbs, fastest in the first day. Each batch mixes a little differently; EC follows the
- * day's temperature a little. Ends at the live reading. */
-function tankHistory(
-  states: States,
-  match: RegExpMatchArray,
-  base: number,
-  hours: number,
-  now: number,
-) {
-  const [entityId, prefix, kind] = match;
-  const filled = Date.parse(states[`sensor.demo_${prefix}tank_last_fill`]?.state ?? "");
-  const last = Number.isFinite(filled) ? filled : now;
-  const batch = 72 * 3_600_000;
-  const seed = seedOf(entityId);
-  const raw = (time: number) => {
-    const index = Math.floor((time - last) / batch);
-    const hoursIn = (time - last - index * batch) / 3_600_000;
-    return kind === "ec"
-      ? 0.004 * hoursIn +
-          0.05 * Math.sin(index * 2.1 + seed) +
-          0.012 * Math.sin((time / 86_400_000) * 2 * Math.PI)
-      : 0.3 * (1 - Math.exp(-hoursIn / 18)) +
-          0.003 * hoursIn +
-          0.04 * Math.sin(index * 1.7 + seed) +
-          0.008 * Math.sin(time / 2.5e7);
-  };
-  const step = (hours <= 24 ? 5 : hours <= 168 ? 15 : 60) * 60_000;
-  const count = Math.floor((hours * 3_600_000) / step);
-  const offset = base - raw(now);
-  return Array.from({ length: count + 1 }, (_, index) => {
-    const time = now - (count - index) * step;
-    return {
-      time: new Date(time).toISOString(),
-      value: Number((offset + raw(time)).toFixed(kind === "ec" ? 3 : 2)),
-    };
-  });
-}
 /** A recorded grow-day for the day timeline, on the demo probes' own day shape (P0 dryback, a
  * six-shot P1 ramp, P2 top-ups every 75 minutes, P3 two hours before lights-off), each zone shifted
- * like its probe so its shots land where its readings jump. Flower 2's zone 2 waits out a feed-EC
- * hold that ends when the feed band is widened; Flower 1's zone 3 is held since it was disabled.
+ * like its probe so its shots land where its readings jump. Flower 2's zone 2 waits out a high-EC
+ * block that ends when its maximum EC is raised; Flower 1's zone 3 is held since it was disabled.
  * Earlier grow-days, to compare today with, come from the same curve. */
 export function demoDay(states: States, request: TimelineRequest, now = Date.now()): TimelineRows {
   const end = Math.min(now, request.end);
@@ -547,11 +496,11 @@ export function demoDay(states: States, request: TimelineRequest, now = Date.now
             time: at(hold[0]),
             zone,
             list: "blocked",
-            text: "P1 source-water EC 3.45 out of [2.3,3.4]",
+            text: "P1 BLOCK high EC 8.7 — slab saturated (self-clears)",
           },
           { time: at(hold[1]), zone, list: "blocked", text: null },
         );
-        moved(`number.crop_steering_${prefix}irrigation_ec_max`, 3.4, at(hold[1]) - 30_000);
+        moved(`number.crop_steering_${prefix}zone_${zone}_maximum_ec`, 8.5, at(hold[1]) - 30_000);
       }
       if (disabled < p3)
         events.push(
@@ -678,13 +627,6 @@ export function demoHistory(
           entityId,
           label: String(state.attributes.friendly_name || entityId),
           points: cycleHistory(states, probe, base, hours, now),
-        };
-      const tank = entityId.match(/^sensor\.demo_(.*?)tank_(ec|ph)$/);
-      if (tank && base !== null)
-        return {
-          entityId,
-          label: String(state.attributes.friendly_name || entityId),
-          points: tankHistory(states, tank, base, hours, now),
         };
       return {
         entityId,
