@@ -721,6 +721,13 @@ export function buildRoom(states: States, room: Room): RoomView {
       title: "Watering",
       detail: `Zone ${shot}'s valve is open: a shot is running, and the controller reports again when it ends (last report ${ageText(now - beat.at!)} ago). Zone phases and statuses are its last report, not live.`,
     });
+  else if (config && beat.health === "stopped")
+    alerts.push({
+      id: `${room.id}-controller`,
+      severity: "warning",
+      title: "Controller stopped",
+      detail: `${stoppedText(beat, now)} After an update or a restart it starts again by itself, which can take a few minutes; if it doesn't, start the controller app and check its log. Zone phases and statuses are its last report, not live.`,
+    });
   else if (config && !live)
     alerts.push({
       id: `${room.id}-controller`,
@@ -732,7 +739,9 @@ export function buildRoom(states: States, room: Room): RoomView {
           : beat.health === "missing"
             ? `There is no controller heartbeat (sensor.${ROOT}${room.prefix}ai_heartbeat is missing)`
             : `The controller heartbeat has no readable time`) +
-        ", so nothing confirms this room is being watered. Start or restart the controller app and check its log. Zone phases and statuses are its last report, not live.",
+        ", so nothing confirms this room is being watered." +
+        (beat.health === "missing" ? ` ${JUST_STARTED} If it lasts longer, start` : " Start") +
+        " or restart the controller app and check its log. Zone phases and statuses are its last report, not live.",
     });
   if (config && boolean(engineEntity) === null)
     alerts.unshift({
@@ -807,6 +816,16 @@ export function buildRoom(states: States, room: Room): RoomView {
   };
 }
 
+/** A heartbeat is missing until the controller's first pass after Home Assistant or the controller app
+ * starts: the controller posts it over REST, and a restart of Home Assistant forgets it. */
+const JUST_STARTED =
+  "Just after Home Assistant or the controller app starts, or while the app updates, that lasts a few minutes.";
+/** When the controller said it was stopping. */
+const stoppedText = (beat: { at: number | null }, now: number) =>
+  beat.at === null
+    ? "The controller app has stopped."
+    : `The controller app stopped ${ageText(now - beat.at)} ago.`;
+
 /** One line per room from what the controller publishes: watering, holding and why, not watering
  * and what to do, or how old the data is once the controller has stopped reporting. */
 export function roomStatus(states: States, room: Room, now = Date.now()): RoomStatus {
@@ -837,7 +856,19 @@ export function roomStatus(states: States, room: Room, now = Date.now()): RoomSt
     );
   if (!roomIsActive(states, room))
     return say("off", "Room off", "Nothing growing: no irrigation, no alerts.");
-  if (beat.health === "missing" || beat.health === "unreadable")
+  if (beat.health === "stopped")
+    return say(
+      "stopped",
+      "Not watering",
+      `${stoppedText(beat, now)} After an update or a restart it starts again by itself, which can take a few minutes. If it doesn't, start the controller app and check its log.`,
+    );
+  if (beat.health === "missing")
+    return say(
+      "stopped",
+      "Not watering",
+      `No word from the controller. ${JUST_STARTED} If it lasts longer, start the controller app and check its log.`,
+    );
+  if (beat.health === "unreadable")
     return say(
       "stopped",
       "Not watering",

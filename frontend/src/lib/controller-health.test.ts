@@ -63,6 +63,10 @@ describe("controller heartbeat", () => {
       title: "Controller not running",
     });
     expect(room.alerts[0].detail).toMatch(/sensor\.crop_steering_ai_heartbeat is missing/);
+    // Normal for a few minutes after a restart: the controller posts it again on its first pass.
+    expect(room.alerts[0].detail).toMatch(
+      /that lasts a few minutes\. If it lasts longer, start or restart/,
+    );
     expect(room.zones.map((zone) => zone.stale)).toEqual([true, true]);
     // Only an active room: an off room is empty and raises nothing but stuck hardware.
     states["switch.crop_steering_room_active"] = entity("switch.crop_steering_room_active", "off");
@@ -70,6 +74,35 @@ describe("controller heartbeat", () => {
     expect(view(states).zones.every((zone) => !zone.stale && zone.status === "Room off")).toBe(
       true,
     );
+  });
+  it("says the controller app stopped, and when, once the controller has said so", () => {
+    // SIGTERM: an update, a restart or a stop by hand. It starts again by itself after the first two.
+    const stopped = entity(HEARTBEAT, "stopped", { stopped_at: ago(3 * 60_000) }, ago(3 * 60_000));
+    const room = view(fixture([stopped]));
+    expect(room.alerts[0]).toMatchObject({ severity: "warning", title: "Controller stopped" });
+    expect(room.alerts[0].detail).toMatch(
+      /^The controller app stopped 3 min ago\. After an update or a restart it starts again by itself/,
+    );
+    expect(room.zones.map((zone) => zone.stale)).toEqual([true, true]);
+    expect(status(fixture([stopped]))).toMatchObject({
+      tone: "stopped",
+      text: "Not watering",
+      reportedAt: NOW - 3 * 60_000,
+    });
+    expect(status(fixture([stopped])).detail).toMatch(/^The controller app stopped 3 min ago\. /);
+  });
+  it("reads when it stopped from the controller, then from Home Assistant", () => {
+    const at = (attributes: Record<string, unknown>, updated?: string) =>
+      readHeartbeat({ ...entity(HEARTBEAT, "stopped", attributes), last_updated: updated }, NOW);
+    expect(at({ stopped_at: ago(60_000) }, ago(30_000))).toMatchObject({
+      health: "stopped",
+      at: NOW - 60_000,
+    });
+    expect(at({ stopped_at: "soon" }, ago(30_000)).at).toBe(NOW - 30_000);
+    expect(at({}).at).toBeNull();
+    expect(
+      status(fixture([{ ...entity(HEARTBEAT, "stopped"), last_updated: undefined }])).detail,
+    ).toMatch(/^The controller app has stopped\. /);
   });
   it.each([
     ["no time at all", { ...entity(HEARTBEAT, "healthy"), last_updated: undefined }],
@@ -403,13 +436,14 @@ describe("room status line", () => {
     ];
     expect(status(fixture(on))).toMatchObject({ tone: "holding", detail: "all zones in band" });
   });
-  it("says the controller is not running when its heartbeat is missing", () => {
+  it("says there is no word from the controller when its heartbeat is missing", () => {
     const states = fixture();
     delete states[HEARTBEAT];
     expect(status(states)).toMatchObject({
       tone: "stopped",
       text: "Not watering",
-      detail: "The controller is not running. Start the controller app and check its log.",
+      detail:
+        "No word from the controller. Just after Home Assistant or the controller app starts, or while the app updates, that lasts a few minutes. If it lasts longer, start the controller app and check its log.",
       reportedAt: null,
     });
   });
