@@ -997,6 +997,24 @@ try {
       ["Room descriptor discovered", "on"],
     ]);
   });
+  await check("settings: the vitals notification's predictions can be left out and put back", async () => {
+    await go("settings");
+    const group = page.getByRole("group", {
+      name: "Include room predictions in informational notifications",
+    });
+    await expectVisible(group);
+    const option = (name) => group.getByRole("button", { name, exact: true });
+    assert.equal(await option("Included").getAttribute("aria-pressed"), "true");
+    await option("Left out").click();
+    await page.waitForFunction(() =>
+      [...document.querySelectorAll('[aria-pressed="true"]')].some((b) => b.textContent.includes("Left out")),
+    );
+    await option("Included").click();
+    await page.waitForFunction(() =>
+      [...document.querySelectorAll('[aria-pressed="true"]')].some((b) => b.textContent.includes("Included")),
+    );
+    await axe("settings notifications");
+  });
   await check("settings: the connection, the room and its watering are state pills", async () => {
     await inBothThemes("settings", async () => {
       await go("settings");

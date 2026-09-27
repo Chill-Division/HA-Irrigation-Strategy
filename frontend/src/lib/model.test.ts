@@ -516,3 +516,20 @@ describe("a dryback target's unit", () => {
     expect(shot?.unit).toBe("%"); // other settings keep the entity's own unit
   });
 });
+
+describe("the Include Predictions in Notifications switch", () => {
+  it("is the room's, and can be switched from the dashboard", () => {
+    const states = createDemo();
+    const room = discoverRooms(states).find((r) => r.id === "room:f1_")!;
+    const view = buildRoom(states, room);
+    expect(view.notifyPredictions).toEqual({
+      entityId: "switch.crop_steering_f1_notify_predictions",
+      enabled: true,
+    });
+    const change = { entityId: "switch.crop_steering_f1_notify_predictions", value: false };
+    expect(validateChange(view, states, change)).toBeNull();
+    expect(validateChange(view, states, { ...change, value: "off" })).not.toBeNull();
+    delete states["switch.crop_steering_f1_notify_predictions"];
+    expect(buildRoom(states, room).notifyPredictions.entityId).toBeNull();
+  });
+});

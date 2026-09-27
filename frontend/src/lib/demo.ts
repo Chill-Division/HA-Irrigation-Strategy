@@ -114,6 +114,7 @@ export function createDemo(now = Date.now()): States {
     ))
       put(entity.entity_id, entity.state, entity.attributes);
     put(`switch.crop_steering_${prefix}auto_batches`, index ? "off" : "on");
+    put(`switch.crop_steering_${prefix}notify_predictions`, "on");
     put(`button.crop_steering_${prefix}mix_batch`, new Date(now - 20 * 3600_000).toISOString());
     if (!index) {
       put(DEMO_RESERVOIR.reservoir_distance_sensor, 640, { unit_of_measurement: "mm" });

@@ -15,5 +15,5 @@ async def test_a_room_with_no_feed_ec_probe_says_nothing_about_feed_ec(hass, con
         for dom, svc, d in fake.calls
         if (dom, svc) == ("persistent_notification", "create") and d.get("notification_id") == "f2_vitals"
     ]
-    assert "LIVE" in message or "HELD" in message
+    assert "Z1 " in message  # a zone's line, so these are the vitals
     assert "feed EC" not in message

@@ -487,6 +487,7 @@ export function buildRoom(states: States, room: Room): RoomView {
   const roomActive = !room.id || roomIsActive(states, room);
   const autoSwitch = room.id ? resolve(states, room, "switch", "auto_setpoints") : undefined;
   const batchSwitch = room.id ? resolve(states, room, "switch", "auto_batches") : undefined;
+  const predictSwitch = room.id ? resolve(states, room, "switch", "notify_predictions") : undefined;
   const waterSelect = room.id ? resolve(states, room, "select", "water_today_view") : undefined;
   const zones: Zone[] = activeIds.map((id) => {
     const z = `zone_${id}_`;
@@ -813,6 +814,10 @@ export function buildRoom(states: States, room: Room): RoomView {
       entityId: batchSwitch?.entity_id ?? null,
       enabled: boolean(batchSwitch),
     },
+    notifyPredictions: {
+      entityId: predictSwitch?.entity_id ?? null,
+      enabled: boolean(predictSwitch),
+    },
     waterView: {
       entityId: waterSelect?.entity_id ?? null,
       view: waterSelect?.state === "Per plant" ? "plant" : "zone",
@@ -1034,6 +1039,7 @@ export function validateChange(room: RoomView, states: States, change: Change): 
     room.roomActiveEntity,
     room.autoSetpoints.entityId,
     room.autoBatches.entityId,
+    room.notifyPredictions.entityId,
     ...room.zones.flatMap((z) => [
       z.enabledEntity,
       `switch.${ROOT}${room.room.prefix}zone_${z.id}_manual_override`,

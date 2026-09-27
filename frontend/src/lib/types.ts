@@ -108,6 +108,9 @@ export interface RoomView {
   autoSetpoints: { entityId: string | null; enabled: boolean | null };
   /** The room's Automatic nutrient batches switch; entityId null on an integration without it. */
   autoBatches: { entityId: string | null; enabled: boolean | null };
+  /** Whether the controller's vitals notification says what each zone will do next; entityId null
+   * on an integration without the switch (the controller then includes it). */
+  notifyPredictions: { entityId: string | null; enabled: boolean | null };
   /** How Water today reads in this room, from its select (entityId null: an integration without it,
    * the zone total). */
   waterView: { entityId: string | null; view: "zone" | "plant" };

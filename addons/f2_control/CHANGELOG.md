@@ -1,3 +1,7 @@
+# Unreleased
+
+- **Vitals: no clock, no LIVE, and what comes next.** The notification has no `HH:MM` line and no `LIVE`/`HELD`; a room's name heads its lines only when several rooms report, and watering switched off is said. Under each zone, while the room's `switch.crop_steering_<prefix>notify_predictions` is on (or cannot be read), a "Next:" line words the engine's `waiting_for` conditions as the dashboard does (`next_text`). The dashboard the app serves has the switch in Settings.
+
 # 2.26.1
 
 Pair with integration 2.26.1.

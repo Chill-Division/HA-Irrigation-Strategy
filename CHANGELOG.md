@@ -9,6 +9,30 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **Shorter vitals that say what comes next.** The controller's vitals notification no longer
+  starts with a clock (the notification shows when it came) or a "LIVE" line. A room's name heads
+  its lines only when there are several rooms, and watering switched off is still said. Under each
+  zone it now says what the controller will do next, as the zone's Next: line on the dashboard does,
+  for example "shot when VWC < 61% (now 58%) · P3 by 22:00". Settings → Notifications → Include
+  room predictions in informational notifications leaves that out; it is on until you switch it off.
+
+### 🔧 Technical notes
+
+- **Vitals (controller, integration, dashboard).** `_maybe_notify` sends no `HH:MM` head (the
+  missing-setpoint warning leads on a line of its own) and no `LIVE`/`HELD`: a room's name only when
+  more than one room reports, with "(watering off)", or a "Watering off" line in a single room, when
+  its engine switch is off. `next_text(conditions, at)` words the engine's `waiting_for` conditions
+  as the dashboard's `waitingText` does; `_publish_waiting_for` keeps each zone's for it, and a
+  zone's "Next:" line follows its own line. The new per-room
+  `switch.crop_steering_<prefix>notify_predictions` ("Include Predictions in Notifications", on by
+  default, also for an upgraded room) turns the "Next:" lines off; a controller that cannot read it
+  includes them. `sensor.f2_control_vitals` keeps its state, the report's time. The dashboard's
+  Settings has a Notifications section for the switch.
+
 ## [2.26.1] - 2026-09-28
 
 Integration and controller **2.26.1**.
