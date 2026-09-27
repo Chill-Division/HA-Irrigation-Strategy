@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Eight changes from JakeTheRabbit/HA-Irrigation-Strategy (#119 to #125 and #127), and What's new linking to
-this repository's releases. Checked by the lean, controller, engine, real-Home-Assistant (2026.9.3 and
+Eight changes from JakeTheRabbit/HA-Irrigation-Strategy (its pull requests 119 to 125 and 127), What's new
+linking to this repository's releases, and Auto Setpoints without the Cloudflare judge. Checked by the lean, controller, engine, real-Home-Assistant (2026.9.3 and
 2024.10.0) and browser suites; not run on hardware before release.
 
 ### 🌱 In plain English
@@ -37,6 +37,10 @@ this repository's releases. Checked by the lean, controller, engine, real-Home-A
 - **The vitals notification no longer says "feed EC —"** in a room with no feed EC probe.
 - **What's new.** After an update, the first person to open the dashboard sees the main changes, once;
   Help & tools shows them again. Its links go to this repository's release notes.
+- **Auto Setpoints works from each zone's own readings only.** The optional Cloudflare AI judge is gone,
+  with its three controller settings, so the same readings always give the same targets. If you had set it
+  up: the P2 shot size it adjusted stays where it is and is yours to set again, and each zone goes back to
+  the peak it learned itself.
 
 ### 🔧 Technical notes
 
@@ -69,9 +73,16 @@ this repository's releases. Checked by the lean, controller, engine, real-Home-A
   signed-in user. A new installation starts at its own version. `tests/test_whats_new.py` requires the
   release's section. `RELEASES_URL` (`lib/whats-new.ts`) is
   `https://github.com/ChillingSilence/HA-Irrigation-Strategy/releases`.
-- **Upgrade.** No change to the state file or the add-on options. Each room gains its Water today select
-  at "Zone total". The first start creates the What's new record as unknown, so the first dashboard visit
-  shows the last 30 days of releases once.
+- **No Cloudflare judge.** `jev_policy.py` and the `cf_account_id`, `cf_api_token` and `cf_gateway_id`
+  options are removed. `auto_setpoints.working_peak` is the learned peak (no `peak_adj`), `p2_shot_size` is
+  no longer managed or written, and `sensor.crop_steering_<prefix>zone_N_auto_setpoints` no longer has
+  `jev`, `jev_last`, `jev_changed_today` or `working_peak_adjust`. `setpoint_supervisor.desired` takes the
+  P2 shot size as a number; `Steer`, `evidence` and the `Supervisor` judge are gone.
+- **Upgrade.** Supervisor drops the three Cloudflare options from an old configuration, and a saved zone's
+  learned state loses the judge's keys (`peak_adj`, `jev`, `veto`) on load and keeps everything it learned
+  (`tests/test_state_migration.py`). Each room gains its Water today select at "Zone total". The first
+  start creates the What's new record as unknown, so the first dashboard visit shows the last 30 days of
+  releases once.
 
 ## [2.24.0] - 2026-09-26
 

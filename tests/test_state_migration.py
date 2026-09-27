@@ -249,6 +249,19 @@ def test_substrate_flow_defaults_are_generic_not_f2(monkeypatch):
     assert c.flow_lps == 0.02  # NOT F2's real 0.04
 
 
+def test_old_options_with_the_cloudflare_judge_still_load(monkeypatch):
+    """2.24.0 had three options for the Cloudflare judge. Supervisor drops an option its schema no
+    longer has; the controller must not need them either."""
+    opts = {
+        "num_zones": 1,
+        "cf_account_id": "acc",
+        "cf_api_token": "tok",
+        "cf_gateway_id": "gw",
+    }
+    c, room = _init(opts, monkeypatch)
+    assert room.slug == "default" and len(c.rooms) == 1
+
+
 def test_default_room_is_unprefixed(monkeypatch):
     """The default room must stay un-prefixed so a single-room install's entity ids are unchanged."""
     c, room = _init({"num_zones": 1}, monkeypatch)
@@ -315,3 +328,52 @@ def test_the_anchor_flag_round_trips_and_junk_is_tolerated(tmp_path):
     assert (
         third.rooms[0].state[1]["last_shot_is_anchor"] is False
     )  # invalid metadata cannot establish that an old timestamp was an anchor
+
+
+# ---------------------------------------------------------------------------
+# The Cloudflare judge (removed after 2.24.0) kept its own keys in each zone's learned state.
+# ---------------------------------------------------------------------------
+def test_an_old_file_with_the_judges_keys_keeps_what_the_zone_learned(tmp_path):
+    learned = {
+        "peak": 33.8,
+        "gain": 0.6,
+        "day_rate": 0.7,
+        "night_rate": 0.35,
+        "day_n": 3,
+        "night_n": 3,
+        "day_acc": [4.2, 60],
+        "night_acc": [2.1, 60],
+        "hold_days": 2,
+        "day": "2026-09-26T06:00:00",
+        "ramp_start": 30.0,
+        "ramp": [],
+        "pending": None,
+        "outcome": "plateau",
+        "stalled_at": None,
+        "last_change": "11:04 p1_target_vwc 34 -> 33.7",
+        "prev_peak": 33.1,
+        "prev_hold": 0,
+    }
+    judge = {
+        "peak_adj": 1.5,
+        "veto": None,
+        "jev": {
+            "day": "2026-09-26T06:00:00",
+            "nudged": ["ec", "peak"],
+            "asked": "2026-09-26T14",
+            "last": "14:00 no change",
+            "changed": "12:00 p2_shot_size 3 -> 4",
+        },
+    }
+    p = tmp_path / "state.json"
+    p.write_text(
+        json.dumps({"default": {"1": {"phase": "P2", "learn": {**learned, **judge}}}}),
+        encoding="utf-8",
+    )  # fmt: skip
+    c = _make([1], p)
+    c._load_state()
+    learn = c.rooms[0].state[1]["learn"]
+    assert learn == learned  # every learned value kept, the judge's keys gone
+    assert (
+        C.auto_setpoints.working_peak(learn) == 33.8
+    )  # the peak the zone learned, nothing added

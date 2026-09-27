@@ -194,7 +194,7 @@ const STATE_CLASS: Record<AutoSetpointStatus["state"], string> = {
   off: "status-neutral",
   unavailable: "status-neutral",
 };
-/** Per-zone supervisor status: state (and why it is frozen), learned peak, last change, Jev. */
+/** Per-zone supervisor status: state (and why it is frozen), learned peak, last change. */
 export function AutoZoneChip({ status, name }: { status: AutoSetpointStatus; name?: string }) {
   const hold = autoHoldText(status),
     reason = autoFrozenReason(status);
@@ -216,9 +216,6 @@ export function AutoZoneChip({ status, name }: { status: AutoSetpointStatus; nam
       </span>
       <span>
         Last change <b>{status.lastChange ?? "none yet"}</b>
-      </span>
-      <span>
-        Jev: <b>{status.jev ?? "not reported"}</b>
       </span>
     </div>
   );
