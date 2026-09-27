@@ -76,7 +76,7 @@ If an update is missing from the app store, refresh the repository information f
 The controller used to be mirrored to `JakeTheRabbit/f2-control`. That mirror is retired; this repository is the only source. Supervisor names an app after the repository it came from (`4d457e60_f2_control` from the mirror, `6db5faba_f2_control` from here), so the move is a one-time reinstall that carries the runtime state across:
 
 1. Add this repository to the app store and install **Crop Steering Controller** from it. Do not start it.
-2. Copy the old app's Configuration into the new app: every option, including the Cloudflare fields.
+2. Copy the old app's Configuration into the new app: every option.
 3. Turn every engine kill switch off and wait until the pump, mainline and valves read OFF.
 4. Stop the old app and turn off its Start on boot and Watchdog.
 5. Copy `state.json` from the old app's data folder to the new one. It holds each zone's phase, today's counters, the accepted setup revision and what Auto Setpoints has learned; without it the controller starts learning again and waits for setup to be accepted. On HA OS, from an SSH terminal with Docker access: `docker run --rm -v /mnt/data/supervisor/apps/data:/d alpine cp -p /d/4d457e60_f2_control/state.json /d/6db5faba_f2_control/state.json` (older Supervisor versions use `addons/data`).
