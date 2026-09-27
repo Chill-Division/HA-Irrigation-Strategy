@@ -119,3 +119,26 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+/* How a zone's probes are read: the tile's note, and the choices in the zone's sheet. */
+.probe-note {
+  display: block;
+  margin-top: 2px;
+}
+.probe-choices {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.probe-choices > div {
+  display: grid;
+  gap: 6px;
+}
+.probe-choices select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--input-background, var(--card));
+  color: var(--foreground);
+}

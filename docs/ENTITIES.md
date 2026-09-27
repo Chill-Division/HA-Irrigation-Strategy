@@ -141,6 +141,7 @@ for that zone. (3 zones × 23 = 69 entities on a 3-zone system.)
 |---|---|---|
 | `zone_N_set_phase` | Keep · P0 · P1 · P2 · P3 | Moves the zone to a phase by hand. The controller applies a pick once, within a minute, and sets it back to Keep; its own rules carry on from that phase. Today's water and shot counts stay; P1 ramps from its first shot, and P0 measures its dry-back from the moisture at the move. |
 | `zone_N_steering_mode` | Vegetative · Generative | Per-zone veg/gen bias. |
+| `zone_N_vwc_method` / `zone_N_ec_method` | Average · Median · Lowest · Highest | How the zone's probes become its one moisture reading (`vwc_zone_N`), and separately its one EC reading (`ec_zone_N`), which the controller steers on. Average until chosen. Median differs from the average only with three probes or more. |
 
 ---
 
@@ -170,8 +171,8 @@ The controller also publishes `sensor.f2_control_vitals`: the time of its last v
 ### Per-zone (`sensor.crop_steering_zone_N_*`)
 | Entity | Unit | What it reports |
 |---|---|---|
-| `vwc_zone_N` | % | Fused substrate moisture (`zone_N_vwc` on older installs). |
-| `ec_zone_N` | mS/cm | Fused pore-water EC (`zone_N_ec` on older installs). |
+| `vwc_zone_N` | % | The zone's substrate moisture from its probes, combined as `zone_N_vwc_method` says (`zone_N_vwc` on older installs). Attributes: `probes` (each probe's reading), `combined` (what Average, Median, Lowest and Highest give now) and `method`. |
+| `ec_zone_N` | mS/cm | The zone's pore-water EC from its probes, combined as `zone_N_ec_method` says (`zone_N_ec` on older installs), with the same attributes. |
 | `zone_N_phase` | - | The zone's current phase (P0-P3). |
 | `zone_N_auto_setpoints` | - | Published by the controller: `off` / `learning` / `tracking` / `frozen`. Attributes: `learned_peak`, `gain`, `day_rate`, `night_rate`, `p1_outcome` (`pending` / `reached` / `short` / `plateau` / `suspect`), `hold_days`, `frozen_reason`, `last_change`, `managed` (the number entities it may rewrite). |
 | `zone_N_status` / `_status_app` | - | The controller's label for the zone, published on `zone_N_status_app` with a `reason` attribute and shown by `zone_N_status`, its only writer: `Drying back` / `Ramping` / `Optimal` / `Overnight dryback` (P0-P3, holding), `Flushing` / `Refilling` / `Topping up` / `Emergency` (watering), `Blocked: <why>`, `Blocked — EC/cap`, `Probe dead — copying`, `Room off`. `Controller not reporting` when the controller has not reported for 10 minutes. |

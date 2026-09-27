@@ -22,6 +22,7 @@ from .const import (
     SOFTWARE_VERSION,
     SET_PHASE_OPTIONS,
     WATER_TODAY_VIEWS,
+    PROBE_METHODS,
 )
 from .room import restored_state_is_ours, room_prefix, zone_device_name
 from .recipe import get_manager
@@ -113,6 +114,26 @@ async def async_setup_entry(
                 zone_num=zone_num,
             )
         )
+
+        # How the zone's probes become its moisture reading, and separately its EC reading:
+        # Average (as before these existed), Median, Lowest or Highest. The zone's VWC and EC
+        # sensors apply it; the controller steers on those.
+        for metric, label, icon in (
+            ("vwc", "Moisture", "mdi:water-percent"),
+            ("ec", "EC", "mdi:lightning-bolt"),
+        ):
+            selects.append(
+                CropSteeringSelect(
+                    entry,
+                    SelectEntityDescription(
+                        key=f"zone_{zone_num}_{metric}_method",
+                        name=f"Zone {zone_num} {label} From Probes",
+                        options=PROBE_METHODS,
+                        icon=icon,
+                    ),
+                    zone_num=zone_num,
+                )
+            )
 
     # The feed stage in use for the room's nutrient batches: one of its feed recipes (feed_api.py).
     selects.append(CropSteeringFeedStageSelect(entry))

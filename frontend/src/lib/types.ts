@@ -4,6 +4,7 @@ import type { OperatorAction } from "./operator-types";
 import type { AutoSetpointStatus } from "./auto-setpoints";
 import type { Waiting } from "./waiting-for";
 import type { WaterRecord, WaterRecordRequest } from "./water-use";
+import type { ProbeChoice } from "./probes";
 export interface EntityState {
   entity_id: string;
   state: string;
@@ -75,6 +76,9 @@ export interface Zone {
   auto: AutoSetpointStatus | null;
   /** What would move the zone next, as the controller worked it out; null when it is not fresh. */
   waiting: Waiting | null;
+  /** How the zone's probes become its moisture and its EC reading; null where its sensor does not
+   * list them. */
+  probes: { vwc: ProbeChoice | null; ec: ProbeChoice | null };
 }
 export interface LogEvent {
   id: string;

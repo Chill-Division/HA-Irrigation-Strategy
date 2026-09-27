@@ -17,6 +17,7 @@ import { readWaiting } from "./waiting-for";
 import { DRYBACK_UNIT, PHASE_GROUPS, settingWords } from "./setting-words";
 import { ageText, controllerZoneLabel, readHeartbeat, RESTING } from "./controller-health";
 import { BATCH_SWITCH_KEYS } from "./feed";
+import { readProbes } from "./probes";
 
 const ROOT = "crop_steering_";
 export const ZONE_PARAMETERS = new Set([
@@ -493,6 +494,8 @@ export function buildRoom(states: States, room: Room): RoomView {
     const z = `zone_${id}_`;
     const phase = resolve(states, room, "sensor", `${z}phase`);
     const setPhase = resolve(states, room, "select", `${z}set_phase`);
+    const vwcSensor = resolve(states, room, "sensor", `vwc_zone_${id}`, `${z}vwc`);
+    const ecSensor = resolve(states, room, "sensor", `ec_zone_${id}`, `${z}ec`);
     const enabled = resolve(states, room, "switch", `${z}enabled`);
     const status = resolve(states, room, "sensor", `${z}status`, `${z}safety_status`);
     const mappedValve =
@@ -560,20 +563,12 @@ export function buildRoom(states: States, room: Room): RoomView {
         now,
       ),
       phase: readable(phase) ? phase!.state : "Unavailable",
-      vwc: readingMetric(
-        resolve(states, room, "sensor", `vwc_zone_${id}`, `${z}vwc`),
-        "VWC",
-        "%",
-        maxAgeS,
-        now,
-      ),
-      ec: readingMetric(
-        resolve(states, room, "sensor", `ec_zone_${id}`, `${z}ec`),
-        "EC",
-        "mS/cm",
-        maxAgeS,
-        now,
-      ),
+      vwc: readingMetric(vwcSensor, "VWC", "%", maxAgeS, now),
+      ec: readingMetric(ecSensor, "EC", "mS/cm", maxAgeS, now),
+      probes: {
+        vwc: readProbes(states, vwcSensor, resolve(states, room, "select", `${z}vwc_method`)),
+        ec: readProbes(states, ecSensor, resolve(states, room, "select", `${z}ec_method`)),
+      },
       target: plannedMetric(
         targetKey,
         metric(
@@ -986,6 +981,14 @@ export function validateChange(room: RoomView, states: States, change: Change): 
       ? null
       : "Choose Zone total or Per plant.";
   }
+  // How a zone's probes are read is not a target a plan owns.
+  const probeChoice = room.zones
+    .flatMap((z) => [z.probes.vwc, z.probes.ec])
+    .find((choice) => choice?.entityId === change.entityId);
+  if (probeChoice)
+    return typeof change.value === "string" && probeChoice.options.includes(change.value)
+      ? null
+      : "Choose Average, Median, Lowest or Highest.";
   if (room.strategy.engaged && /^(number|select)[.]/.test(change.entityId))
     return "An active grow plan owns these targets. Disarm the plan before editing manual setpoints.";
   const hardware = discoverRooms(states).flatMap((r) => {
