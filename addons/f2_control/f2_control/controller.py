@@ -312,12 +312,153 @@ PLUMBING_LAYOUTS = {
 
 
 def with_plumbing(hw, descriptor):
-    """Carry a declared layout into a room's hardware map. A room that never declared one keeps
-    exactly the map it always had, so an install from before declared plumbing behaves (and
-    fingerprints) as it did."""
+    """Carry a declared layout, and a mapped reservoir, into a room's hardware map. A room that never
+    declared one, or has no reservoir, keeps exactly the map it always had, so an install from before
+    either behaves (and fingerprints) as it did."""
     if (descriptor or {}).get("plumbing"):
         hw["plumbing"] = descriptor["plumbing"]
+    reservoir = reservoir_map(descriptor)
+    if reservoir:
+        hw["reservoir"] = reservoir
     return hw
+
+
+# ---------------------------------------------------------------- nutrient batches
+# A room's reservoir, refilled and dosed by this controller: the integration's feed.py says how
+# much, Rooms & setup maps the switches, and the descriptor carries them only when mapped.
+RESERVOIR_KEYS = (
+    "reservoir_distance_sensor",
+    "fresh_water_switch",
+    "recirc_switch",
+    *(f"doser_{number}_switch" for number in range(1, 7)),
+)
+# A batch's steps: filling (the fresh water runs), settling (pump and recirculation on before the
+# first dose), dosing (one doser on), pausing (between dosers) and mixing (after the last dose).
+BATCH_STEPS = ("filling", "settling", "dosing", "pausing", "mixing")
+# Steps that end by switching off something that must not run long: the fresh water, a doser. While
+# one runs in any room, no room starts a shot, which would hold this loop past the moment to stop it.
+BATCH_TIMED = ("filling", "dosing")
+BATCH_LOW_PASSES = 3  # passes the reservoir must read almost empty before an automatic batch
+# Between passes, while a batch fills or doses, how often it is checked for a reason to stop (the
+# room's watering switched off, a switch gone off): the fresh water stops within seconds, not a pass.
+BATCH_WATCH_S = 5.0
+MAX_DOSE_S = 1800.0  # a doser's longest run; a plan asking more is not run
+# A "Mix a Batch Now" press older than this when the controller first sees it is not acted on: it
+# waited while the controller was stopped, and a batch must not start hours after it was asked for.
+BATCH_REQUEST_S = 1800.0
+
+
+def reservoir_map(descriptor):
+    """The room's reservoir and dosers from its descriptor, or None when none is mapped."""
+    d = descriptor or {}
+    dosers = {n: d[f"doser_{n}_switch"] for n in range(1, 7) if d.get(f"doser_{n}_switch")}
+    parts = {
+        "distance": d.get("reservoir_distance_sensor") or None,
+        "fresh": d.get("fresh_water_switch") or None,
+        "recirc": d.get("recirc_switch") or None,
+    }
+    if not dosers and not any(parts.values()):
+        return None
+    return {**parts, "dosers": dosers}
+
+
+def fresh_batch():
+    return {
+        "step": "idle",
+        "started": None,
+        "until": None,  # when the step in progress ends
+        "index": 0,  # the dose in progress, or next after a pause
+        "on_at": None,  # when the doser in progress was switched on
+        "plan": None,  # what this batch runs: the feed plan as it was when it started
+        "dosed": {},  # doser -> mL it gave
+        "last_request": None,  # the "Mix a Batch Now" press last dealt with
+        "last": None,  # how the last batch ended
+        "low_seen": 0,  # passes in a row the reservoir read almost empty
+        "armed": True,  # an automatic batch may start: false after one, until the level reads fuller
+        "interrupted": None,  # stopped by the app stopping: said once when it starts again
+        "switches": None,  # what this batch drives, taken when it starts (so a restart can stop them)
+    }
+
+
+def restore_batch(saved):
+    """A saved batch record, or a fresh one; a value of the wrong kind falls back to its default."""
+    batch = fresh_batch()
+    if not isinstance(saved, dict):
+        return batch
+    kinds = {"step": str, "index": int, "dosed": dict, "low_seen": int, "armed": bool}
+    for key, default in batch.items():
+        value = saved.get(key, default)
+        wanted = kinds.get(key)
+        if wanted is not None and type(value) is not wanted:
+            continue
+        if key in ("plan", "last", "interrupted", "switches") and value is not None and not isinstance(
+            value, dict
+        ):
+            continue
+        batch[key] = value
+    if batch["step"] not in ("idle", *BATCH_STEPS):
+        batch["step"] = "idle"
+    return batch
+
+
+def feed_plan(attrs):
+    """The feed plan sensor's attributes as a batch runs them, or None when they cannot be. Every
+    dose is checked again here: a doser never runs on a number this cannot read."""
+    if not isinstance(attrs, dict):
+        return None
+    try:
+        plan = {
+            key: float(attrs[key])
+            for key in ("fill_s", "batch_l", "empty_mm", "settle_s", "pause_s", "mix_s")
+        }
+        doses = []
+        for dose in attrs.get("doses") or []:
+            number, ml, seconds = int(dose["doser"]), float(dose["ml"]), float(dose["seconds"])
+            if not 1 <= number <= 6 or not 0 <= ml < 1e6 or not 0 <= seconds <= MAX_DOSE_S:
+                return None
+            doses.append({"doser": number, "label": str(dose.get("label") or f"Doser {number}"),
+                          "ml": ml, "seconds": seconds})
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not all(math.isfinite(value) and value >= 0 for value in plan.values()):
+        return None
+    plan.update(stage=attrs.get("stage"), problem=attrs.get("problem"), doses=doses)
+    return plan
+
+
+def level_mm(reading):
+    """A distance sensor's reading in mm (it may report mm, cm or m), or None."""
+    state, attrs = reading[0], (reading[1] or {})
+    try:
+        value = float(state)
+    except (TypeError, ValueError):
+        return None
+    factor = {"mm": 1.0, "cm": 10.0, "m": 1000.0, "": 1.0}.get(
+        str(attrs.get("unit_of_measurement", "")).strip().lower()
+    )
+    return value * factor if factor is not None and math.isfinite(value) else None
+
+
+def _when(value):
+    try:
+        return datetime.fromisoformat(value) if value else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _shown(value):
+    """A time this process keeps (naive, local), with its UTC offset, for the dashboard: a browser in
+    another time zone then reads the same moment."""
+    at = _when(value) if isinstance(value, str) else value
+    return at.astimezone().isoformat(timespec="seconds") if at is not None else None
+
+
+def _local(value):
+    """A time Home Assistant reports (with its UTC offset) as this process's local time, or None."""
+    at = _when(value)
+    if at is not None and at.tzinfo is not None:
+        at = at.astimezone().replace(tzinfo=None)
+    return at
 
 
 def plumbing_hold(hw):
@@ -392,6 +533,7 @@ class Room:
         )
         # write-ahead record of the shot in flight: what it opened and when (see _execute_shot)
         self.shot_inflight = None
+        self.batch = fresh_batch()  # the room's nutrient batch (see Controller._batch_tick)
         self._vmax_wetup = {}  # z -> P1 wet-up VWC series (resets each P0)
         self._vmax = {}  # z -> (vmax, confidence) advisory
         self._blind_zones = set()
@@ -780,8 +922,13 @@ class Controller:
         room.strategy_required = False
         room._strategy_persisted = True
         room._off_since = None
+        running = getattr(room, "batch", None)
+        running = running if isinstance(running, dict) and running.get("step") != "idle" else None
+        room.batch = running or fresh_batch()  # a batch in progress is not reloaded under itself
         block = per_room.get(room.slug)
         if isinstance(block, dict):
+            if running is None:
+                room.batch = restore_batch(block.get("_batch"))
             room.strategy_required = bool(block.get("_strategy_required", False))
             try:
                 room._off_since = datetime.fromisoformat(block["_room_off_since"])
@@ -809,6 +956,9 @@ class Controller:
         self._saved_room_blocks = per_room
         for room in self.rooms:
             self._load_room_state(room, per_room)
+            # A batch saved in progress: this process died part-way (a crash, a power cut; a stop
+            # finishes it on the way out). Its first pass switches it off (_batch_tick).
+            room._batch_crashed = room.batch["step"] != "idle"
 
     def _rediscover(self, now):
         """Periodic re-scan so rooms added in the integration UI (or whose descriptor wasn't
@@ -883,6 +1033,11 @@ class Controller:
         # it saved before this field existed, or the update would strand it behind a disarm cycle.
         if attrs.get("plumbing"):
             adopted["plumbing"] = attrs["plumbing"]
+        # Likewise the reservoir and its dosers: this controller drives them, so a changed mapping
+        # is a changed setup; a room without one keeps the fingerprint it always had.
+        reservoir = {key: attrs[key] for key in RESERVOIR_KEYS if attrs.get(key)}
+        if reservoir:
+            adopted["reservoir"] = reservoir
         return json.dumps(adopted, sort_keys=True)
 
     @staticmethod
@@ -1140,6 +1295,8 @@ class Controller:
                 block["_room_off_since"] = room._off_since.isoformat()
             else:
                 block.pop("_room_off_since", None)
+            if getattr(room, "batch", None):
+                block["_batch"] = room.batch
             if getattr(room, "_setup_fingerprint_adopted", None):  # else keep whatever was saved
                 block["_setup"] = {
                     "revision": room.setup_revision,
@@ -1634,6 +1791,420 @@ class Controller:
         self._activity.insert(0, f"{now.strftime('%H:%M')} {tag}Z{zone} auto {suffix} {old:g} -> {value:g}"[:120])
         log(f"[{room.slug}] Z{zone} auto {suffix} {old:g} -> {value:g}")
 
+    # ---------- nutrient batches: the reservoir refilled, mixed and dosed ----------
+    def _batch_hold(self, room):
+        """Why a shot waits for a nutrient batch, or None. A room's batch holds its every shot (the
+        pump is mixing), and one filling or dosing in any room holds every room's (BATCH_TIMED)."""
+        if room.batch["step"] != "idle":
+            return f"mixing a nutrient batch ({room.batch['step']})"
+        for other in self.rooms:
+            if other is not room and other.batch["step"] in BATCH_TIMED:
+                name = getattr(other, "room_name", None) or other.slug
+                return f"waiting for {name}'s nutrient batch ({other.batch['step']})"
+        return None
+
+    def _batch_tick(self, room, now):
+        """Start, move on or stop this room's nutrient batch, and report it. First in every pass; the
+        loop wakes when a step is due (_sleep_for)."""
+        batch, res = room.batch, room.hw.get("reservoir")
+        if getattr(room, "_batch_crashed", False):
+            room._batch_crashed = False
+            self._batch_stop(room, now, "the controller app stopped without finishing it", every_switch=True)
+        elif batch.get("interrupted"):
+            was = batch["interrupted"]
+            batch["interrupted"] = None
+            self._save_state()
+            self._alert(
+                f"batch_{room.slug}",
+                "CS-701",
+                "nutrient batch stopped part-way",
+                f"The nutrient batch ({was.get('stage') or 'no stage'}) stopped part-way, while "
+                f"{was.get('step')}: the controller app was stopped. Everything it had switched on was "
+                "switched off. Check the reservoir: how full it is, and which nutrients went in (Reservoir "
+                "page, last batch). Dose what is missing by hand, or empty and refill it and mix a new "
+                "batch.",
+                room=room,
+            )
+        if batch["step"] != "idle":
+            if res is None:
+                self._batch_stop(room, now, "its reservoir is no longer mapped in Rooms & setup")
+            else:
+                self._batch_step(room, now, res)
+        elif res is not None:
+            self._batch_idle(room, now, res)
+        if res is not None:
+            self._batch_publish(room, now, res)
+
+    def _batch_idle(self, room, now, res):
+        """No batch running: start one when "Mix a Batch Now" was pressed, or, with automatic batches
+        on, when the reservoir has read almost empty for BATCH_LOW_PASSES passes in a row."""
+        batch = room.batch
+        plan = feed_plan(ha_get(f"sensor.crop_steering_{room.prefix}feed_plan")[1])
+        empty = plan["empty_mm"] if plan else 0.0
+        level = level_mm(ha_get(res["distance"])) if res.get("distance") else None
+        low = level is not None and empty > 0 and level >= empty
+        if level is not None and empty > 0 and not low and not batch["armed"]:
+            batch["armed"] = True  # it reads fuller again: the next time it runs low may start a batch
+            self._save_state()
+        requested = False
+        pressed = ha_get(f"button.crop_steering_{room.prefix}mix_batch")[0]
+        if pressed not in (None, "", "unavailable") and pressed != batch["last_request"]:
+            # The button's state is when it was last pressed. The first one this controller sees is a
+            # starting point, not a request: it may be from before the controller knew the button.
+            requested = batch["last_request"] is not None and pressed != "unknown"
+            batch["last_request"] = pressed
+            self._save_state()
+            at = _local(pressed)
+            if requested and (at is None or abs((now - at).total_seconds()) > BATCH_REQUEST_S):
+                requested = False
+                self._batch_note(
+                    room, now, f"Mix a Batch Now pressed at {pressed[:16]} was not acted on: too long ago"
+                )
+        auto = False
+        if low and batch["armed"] and self._on(f"switch.crop_steering_{room.prefix}auto_batches", False):
+            batch["low_seen"] += 1
+            auto = batch["low_seen"] >= BATCH_LOW_PASSES
+        else:
+            batch["low_seen"] = 0
+        if not (requested or auto):
+            return
+        why = self._batch_refusal(room, res, plan)
+        if not why and not low and res.get("distance") and empty > 0:
+            # Asked for by hand with the reservoir not yet almost empty: its fill time is for an
+            # almost empty one, and would overflow it.
+            why = (
+                f"the reservoir level ({res['distance']}) reads nothing"
+                if level is None
+                else f"the reservoir reads {level:.0f} mm from the top, short of its almost-empty mark "
+                f"({empty:.0f} mm), so its {plan['fill_s']:g} s fill could overflow it"
+            )
+        if why:
+            batch["low_seen"] = 0
+            self._alert(
+                f"batch_start_{room.slug}",
+                "CS-703",
+                "a nutrient batch could not start",
+                "A nutrient batch was "
+                + ("asked for" if requested else "due, the reservoir reading almost empty,")
+                + f" but could not start: {why}. Nothing was switched on. Once that is sorted, press "
+                "Mix a Batch Now"
+                + (", or wait for the next automatic one." if not requested else "."),
+                room=room,
+            )
+            return
+        self._batch_start(room, now, res, plan, "asked for" if requested else "the reservoir read almost empty")
+
+    def _batch_refusal(self, room, res, plan):
+        """Why a batch cannot start now, or None."""
+        if not res.get("fresh"):
+            return "no fresh-water switch is mapped in Rooms & setup"
+        if not res.get("recirc"):
+            return "no recirculation solenoid is mapped in Rooms & setup"
+        if not room.hw.get("pump"):
+            return "the room has no pump mapped, and a batch mixes with it"
+        if plan is None:
+            return (
+                f"its feed plan (sensor.crop_steering_{room.prefix}feed_plan) cannot be read: update the "
+                "Crop Steering integration"
+            )
+        if plan.get("problem"):
+            return str(plan["problem"]).rstrip(".")
+        if not plan["doses"]:
+            return "the feed plan doses nothing"
+        missing = [dose["doser"] for dose in plan["doses"] if dose["doser"] not in res["dosers"]]
+        if missing:
+            return f"doser {missing[0]} has no switch mapped in Rooms & setup"
+        if not self._on(room.enable_flag, False):
+            return f"the room's watering switch ({room.enable_flag}) is off"
+        if not self._room_active(room):
+            return "the room is switched off"
+        if self._hardware_fault_block(room):
+            return "a hardware fault is latched"
+        if getattr(room, "_setup_pending", None):
+            return "a setup change is waiting to be accepted"
+        # Everything the batch switches, and the room's watering line, must read OFF: nothing else is
+        # using the pump or the reservoir, and mixing cannot water a zone.
+        used = [
+            res["fresh"],
+            res["recirc"],
+            room.hw["pump"],
+            room.hw.get("mainline"),
+            *room.hw.get("valves", {}).values(),
+            *(res["dosers"][dose["doser"]] for dose in plan["doses"]),
+        ]
+        for entity in dict.fromkeys(e for e in used if e):
+            state = str(ha_get(entity)[0]).lower()
+            if state != "off":
+                return f"{entity} reads {'nothing' if state in ('none', '') else state}, not off"
+        return None
+
+    def _batch_start(self, room, now, res, plan, why):
+        batch = room.batch
+        batch.update(
+            step="filling",
+            started=now.isoformat(),
+            index=0,
+            on_at=None,
+            plan=plan,
+            dosed={},
+            low_seen=0,
+            armed=False,
+            switches={
+                "fresh": res["fresh"],
+                "recirc": res["recirc"],
+                "pump": room.hw["pump"],
+                "dosers": {str(n): entity for n, entity in res["dosers"].items()},
+            },
+        )
+        on_at = datetime.now()
+        batch["until"] = (on_at + timedelta(seconds=plan["fill_s"])).isoformat()
+        self._save_state()  # before anything opens: a crash from here on stops it at the next start
+        if not self._batch_switch(res["fresh"], "on"):
+            return self._batch_stop(room, now, f"the fresh water ({res['fresh']}) did not switch on")
+        self._batch_note(
+            room, now, f"nutrient batch {plan.get('stage')} started ({why}): filling for {plan['fill_s']:g} s"
+        )
+
+    def _batch_switch(self, entity, want):
+        ha_call("switch", "turn_on" if want == "on" else "turn_off", entity_id=entity)
+        return self._confirm_switches([entity], want)
+
+    def _batch_interrupted(self, room):
+        """Why a running batch must stop, or None: the room's watering switch or the room switched
+        off, a hardware fault, or a switch the step keeps on no longer reading on."""
+        if not self._on(room.enable_flag, False):
+            return f"the room's watering switch ({room.enable_flag}) was switched off"
+        if not self._room_active(room):
+            return "the room was switched off"
+        if room.hardware_fault:
+            return "a hardware fault was latched"
+        batch = room.batch
+        switches = batch.get("switches") or {}
+        need = [switches.get("fresh")] if batch["step"] == "filling" else [switches.get("recirc"), switches.get("pump")]
+        if batch["step"] == "dosing":
+            need.append(self._batch_doser(room))
+        for entity in (e for e in need if e):
+            state = str(ha_get(entity)[0]).lower()
+            if state != "on":
+                return f"{entity} was switched off" if state == "off" else f"{entity} went offline"
+        return None
+
+    def _batch_doser(self, room):
+        batch = room.batch
+        dose = batch["plan"]["doses"][batch["index"]]
+        return ((batch.get("switches") or {}).get("dosers") or {}).get(str(dose["doser"]))
+
+    def _batch_step(self, room, now, res):
+        batch = room.batch
+        plan, switches = batch.get("plan") or {}, batch.get("switches") or {}
+        why = self._batch_interrupted(room)
+        if why:
+            return self._batch_stop(room, now, why)
+        until = _when(batch["until"])
+        if until is not None and datetime.now() < until:
+            return
+        step = batch["step"]
+        if step == "filling":
+            if not self._switch_off_confirmed([switches["fresh"]]):
+                return self._batch_stop(room, now, f"the fresh water ({switches['fresh']}) did not switch off")
+            # the recirculation line first, then the pump: it never runs against a closed line
+            if not (self._batch_switch(switches["recirc"], "on") and self._batch_switch(switches["pump"], "on")):
+                return self._batch_stop(room, now, "the pump or the recirculation solenoid did not switch on")
+            batch.update(step="settling", until=(datetime.now() + timedelta(seconds=plan["settle_s"])).isoformat())
+        elif step == "settling":
+            if res.get("distance") and plan["empty_mm"] > 0:
+                level = level_mm(ha_get(res["distance"]))
+                if level is None or level >= plan["empty_mm"]:
+                    return self._batch_stop(room, now, level, did_not_fill=True)
+            self._batch_dose(room, now, 0)
+        elif step == "dosing":
+            self._batch_dose_done(room, now)
+        elif step == "pausing":
+            self._batch_dose(room, now, batch["index"])
+        elif step == "mixing":
+            if not self._switch_off_confirmed([switches["pump"], switches["recirc"]]):
+                return self._batch_stop(room, now, "the pump or the recirculation solenoid did not switch off")
+            return self._batch_finish(room, now, "done")
+        self._save_state()
+
+    def _batch_dose(self, room, now, index):
+        """Switch on the dose at `index` (after the settle or a pause), or go on to mixing after the
+        last. The doser is recorded before it is switched on."""
+        batch = room.batch
+        doses = batch["plan"]["doses"]
+        while index < len(doses) and doses[index]["seconds"] <= 0:
+            index += 1
+        if index >= len(doses):
+            mix = batch["plan"]["mix_s"]
+            batch.update(step="mixing", index=index, on_at=None, until=(datetime.now() + timedelta(seconds=mix)).isoformat())
+            return
+        on_at = datetime.now()
+        batch.update(
+            step="dosing",
+            index=index,
+            on_at=on_at.isoformat(),
+            until=(on_at + timedelta(seconds=doses[index]["seconds"])).isoformat(),
+        )
+        self._save_state()
+        doser = self._batch_doser(room)
+        if not doser or not self._batch_switch(doser, "on"):
+            return self._batch_stop(room, now, f"doser {doses[index]['doser']} ({doser}) did not switch on")
+
+    def _batch_given(self, room, off_at):
+        """What the dose in progress gave by `off_at`, in mL: its time on at its planned rate."""
+        batch = room.batch
+        dose = batch["plan"]["doses"][batch["index"]]
+        on_at = _when(batch["on_at"])
+        ran = max(0.0, (off_at - on_at).total_seconds()) if on_at else 0.0
+        given = dose["ml"] * min(ran, dose["seconds"] + 5) / dose["seconds"] if dose["seconds"] > 0 else 0.0
+        batch["dosed"][str(dose["doser"])] = round(given, 1)
+
+    def _batch_dose_done(self, room, now):
+        batch = room.batch
+        off_at = datetime.now()
+        confirmed = self._switch_off_confirmed([self._batch_doser(room)])
+        self._batch_given(room, off_at)
+        if not confirmed:
+            dose = batch["plan"]["doses"][batch["index"]]
+            return self._batch_stop(room, now, f"doser {dose['doser']} ({self._batch_doser(room)}) did not switch off")
+        following = batch["index"] + 1
+        if following < len(batch["plan"]["doses"]) and batch["plan"]["pause_s"] > 0:
+            pause = batch["plan"]["pause_s"]
+            batch.update(step="pausing", index=following, on_at=None, until=(datetime.now() + timedelta(seconds=pause)).isoformat())
+        else:
+            self._batch_dose(room, now, following)
+
+    def _batch_stop(self, room, now, why, *, did_not_fill=False, every_switch=False):
+        """End a batch before it finished: switch off what it had on (a doser and the fresh water
+        first, the pump before its line), record it, and say so. `why` is the level read after the
+        fill when it did not fill. A switch that will not read OFF latches the hardware hold."""
+        batch = room.batch
+        step, switches = batch["step"], batch.get("switches") or {}
+        if every_switch:
+            off = [*(switches.get("dosers") or {}).values(), switches.get("fresh"), switches.get("pump"), switches.get("recirc")]
+        elif step == "filling":
+            off = [switches.get("fresh")]
+        elif step == "dosing":
+            off = [self._batch_doser(room), switches.get("pump"), switches.get("recirc")]
+        else:
+            off = [switches.get("pump"), switches.get("recirc")]
+        off = [e for e in dict.fromkeys(off) if e]
+        off_at = datetime.now()
+        confirmed = not off or self._switch_off_confirmed(off)
+        if step == "dosing" and not every_switch:
+            self._batch_given(room, off_at)
+        stage = (batch.get("plan") or {}).get("stage") or "no stage"
+        where = {"filling": "filling", "settling": "starting to mix", "dosing": "dosing",
+                 "pausing": "dosing", "mixing": "mixing"}.get(step, step)
+        given = ", ".join(f"doser {n} {ml:g} mL" for n, ml in batch["dosed"].items()) or "nothing"
+        if did_not_fill:
+            self._batch_finish(room, now, "stopped: the reservoir did not fill")
+            self._alert(
+                f"batch_{room.slug}",
+                "CS-702",
+                "the reservoir did not fill",
+                "The fresh water ran for its fill time, but the reservoir still reads "
+                + ("nothing" if why is None else f"{why:.0f} mm")
+                + " from the top, at or past its almost-empty mark, so no nutrient was dosed into it "
+                f"(batch {stage}). Check the water supply, the fresh-water solenoid and the level sensor, "
+                "then press Mix a Batch Now.",
+                room=room,
+            )
+        else:
+            self._batch_finish(room, now, f"stopped: {why}")
+            self._alert(
+                f"batch_{room.slug}",
+                "CS-701",
+                "nutrient batch stopped part-way",
+                f"The nutrient batch ({stage}) stopped part-way, while {where}: {why}. Everything it had "
+                f"switched on was switched off. Given so far: {given}. Check the reservoir: how full it "
+                "is and which nutrients went in. Dose what is missing by hand, or empty and refill it "
+                "and mix a new batch.",
+                room=room,
+            )
+        if not confirmed:
+            self._latch_hardware_fault(
+                room, f"a nutrient batch switch did not read OFF ({', '.join(off)})"
+            )
+
+    def _batch_finish(self, room, now, result):
+        batch = room.batch
+        plan = batch.get("plan") or {}
+        batch["last"] = {"at": now.isoformat(), "result": result, "stage": plan.get("stage"), "dosed": dict(batch["dosed"])}
+        batch.update(step="idle", until=None, on_at=None, index=0)
+        self._save_state()
+        self._batch_note(room, now, f"nutrient batch {plan.get('stage')} {result}")
+
+    def _batch_note(self, room, now, text):
+        tag = "" if room.prefix == "" else f"{room.slug} "
+        self._activity.insert(0, f"{now.strftime('%H:%M')} {tag}{text}"[:120])
+        log(f"[{room.slug}] {text}")
+
+    def _batch_publish(self, room, now, res):
+        """sensor.crop_steering_<prefix>batch_status: the step (idle while none runs) and what the
+        dashboard shows of it."""
+        batch = room.batch
+        running = batch["step"] != "idle"
+        plan = (batch.get("plan") if running else feed_plan(ha_get(f"sensor.crop_steering_{room.prefix}feed_plan")[1])) or {}
+        dose = plan["doses"][batch["index"]] if running and batch["step"] == "dosing" else None
+        ha_set(
+            f"sensor.crop_steering_{room.prefix}batch_status",
+            batch["step"],
+            {
+                "friendly_name": "Nutrient batch",
+                "engine": "f2-control",
+                "stage": plan.get("stage"),
+                "until": _shown(batch["until"]),
+                "doser": dose["doser"] if dose else None,
+                "nutrient": dose["label"] if dose else None,
+                "doses": [{**d, "dosed": batch["dosed"].get(str(d["doser"]))} for d in plan.get("doses") or []],
+                "level_mm": level_mm(ha_get(res["distance"])) if res.get("distance") else None,
+                "empty_mm": plan.get("empty_mm"),
+                "auto": self._on(f"switch.crop_steering_{room.prefix}auto_batches", False),
+                "armed": batch["armed"],
+                "last": {**batch["last"], "at": _shown(batch["last"].get("at"))} if batch["last"] else None,
+                "blocked": None if running else self._batch_refusal(room, res, plan or None),
+                "updated": _shown(now),
+            },
+        )
+
+    def _batch_watch(self, room, now):
+        """Between passes, while this room's batch fills or doses: stop it at once when it must stop.
+        Its steps still move on in the passes (_sleep_for wakes the loop when one is due)."""
+        if room.batch["step"] not in BATCH_TIMED:
+            return
+        why = self._batch_interrupted(room)
+        if why:
+            self._batch_stop(room, now, why)
+            if room.hw.get("reservoir") is not None:
+                self._batch_publish(room, now, room.hw["reservoir"])
+
+    def _wait_for_next_pass(self):
+        """Sleep until the next pass (_sleep_for). While a batch fills or doses, wake every
+        BATCH_WATCH_S to watch it (_batch_watch)."""
+        deadline = time.monotonic() + self._sleep_for(datetime.now())
+        while True:
+            left = deadline - time.monotonic()
+            if left <= 0:
+                return
+            timed = [room for room in self.rooms if room.batch.get("step") in BATCH_TIMED]
+            time.sleep(min(left, BATCH_WATCH_S) if timed else left)
+            for room in timed:
+                try:
+                    self._batch_watch(room, datetime.now())
+                except Exception as e:
+                    log(f"[{room.slug}] batch error", e)
+
+    def _sleep_for(self, now):
+        """Until the next pass: the loop's own interval, or sooner when a batch step is due, so the
+        fresh water or a doser is switched off on time."""
+        wait = self.loop_seconds
+        for room in self.rooms:
+            until = _when(room.batch.get("until")) if room.batch.get("step") != "idle" else None
+            if until is not None:
+                wait = min(wait, max(0.2, (until - now).total_seconds()))
+        return wait
+
     # ---------- room status (On / Off) ----------
     def _room_active(self, room):
         """OFF = nothing growing: no irrigation and no alerts for this room. A switch that has never
@@ -1833,6 +2404,9 @@ class Controller:
             return "Room archived in integration setup"
         if not self._room_active(room):
             return "Room off (nothing growing)"
+        mixing = self._batch_hold(room)
+        if mixing:
+            return mixing
         planned_hold = strategy_block(getattr(room, "strategy_snapshot", None), zone)
         if planned_hold:
             if getattr(reason, "kind", None) not in PLAN_HOLD_EXEMPT:
@@ -2110,12 +2684,16 @@ class Controller:
     # ---------- hardware (sync; this process does one thing) ----------
     @staticmethod
     def _hardware_entities(room):
+        reservoir = room.hw.get("reservoir") or {}
         return {
             e
             for e in (
                 room.hw.get("pump"),
                 room.hw.get("mainline"),
                 *room.hw.get("valves", {}).values(),
+                reservoir.get("fresh"),
+                reservoir.get("recirc"),
+                *(reservoir.get("dosers") or {}).values(),
             )
             if e
         }
@@ -2725,7 +3303,29 @@ class Controller:
         heat it and zones are hand-watered with the valves and main line open, and stopping the app must
         end neither. The shot running NOW is closed whatever its kill switch reads (it is this process's
         own); an older interrupted shot is left to the operator while its kill switch is not ON, as in the
-        loop. Anything that cannot be closed and read back OFF stays recorded for the next start."""
+        loop. Anything that cannot be closed and read back OFF stays recorded for the next start.
+
+        A nutrient batch in progress is this process's own too: everything it switched on is switched
+        off, without waiting to read it back (Supervisor gives the app 10 s), and the next start says
+        it stopped part-way."""
+        for room in self.rooms:
+            batch = getattr(room, "batch", None)
+            if not batch or batch["step"] == "idle":
+                continue
+            switches = batch.get("switches") or {}
+            for entity in dict.fromkeys(
+                e
+                for e in (*(switches.get("dosers") or {}).values(), switches.get("fresh"),
+                          switches.get("pump"), switches.get("recirc"))
+                if e
+            ):
+                ha_call("switch", "turn_off", entity_id=entity)
+            now = datetime.now()
+            batch["interrupted"] = {"at": now.isoformat(), "step": batch["step"],
+                                    "stage": (batch.get("plan") or {}).get("stage")}
+            batch["last"] = {"at": now.isoformat(), "result": "stopped: the controller app stopped",
+                             "stage": (batch.get("plan") or {}).get("stage"), "dosed": dict(batch["dosed"])}
+            batch.update(step="idle", until=None, on_at=None, index=0)
         for room in self.rooms:
             rec = getattr(room, "shot_inflight", None)
             if not rec:
@@ -3027,6 +3627,11 @@ class Controller:
     def loop_once(self, now):
         if self._busy:
             return
+        for room in self.rooms:  # first, so a doser or the fresh water stops on time
+            try:  # a batch fault must never stop the room being watered
+                self._batch_tick(room, now)
+            except Exception as e:
+                log("batch error", room.slug, e)
         self._recover_hardware_faults()
         self._reconcile_inflight()
         self._defaulted_this_loop = set()
@@ -3703,7 +4308,7 @@ class Controller:
                 self.loop_once(datetime.now())
             except Exception as e:
                 log("loop error", e)
-            time.sleep(self.loop_seconds)
+            self._wait_for_next_pass()
 
 
 if __name__ == "__main__":

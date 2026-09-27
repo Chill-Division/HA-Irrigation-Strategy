@@ -25,6 +25,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 | CS-4xx | **Settings**: A setting is missing, out of range, or read from somewhere new. |
 | CS-5xx | **Checks across zones**: Advice from comparing a room's zones. |
 | CS-6xx | **Repairs cards**: Raised by the integration, under Settings → Repairs. |
+| CS-7xx | **Nutrient batches**: The room's reservoir refilled, mixed and dosed by the controller. |
 
 ## All codes
 
@@ -65,6 +66,9 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 | [CS-606](#cs-606) | Grow strategy plan is holding irrigation | Critical | Repairs card |
 | [CS-607](#cs-607) | Grow strategy plan has not moved on to today | Warning | Repairs card |
 | [CS-608](#cs-608) | Stock tanks running low | Warning | Repairs card |
+| [CS-701](#cs-701) | Nutrient batch stopped part-way | Warning | Notification |
+| [CS-702](#cs-702) | The reservoir did not fill | Warning | Notification |
+| [CS-703](#cs-703) | A nutrient batch could not start | Warning | Notification |
 
 ## Sensors (CS-1xx)
 
@@ -810,3 +814,73 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 - Refill the tank, then press Refilled on Crop Steering → Stock tanks.
 - Or set the level you read off the tank. The card clears itself once every tank is above its low mark.
+
+## Nutrient batches (CS-7xx)
+
+<a id="cs-701"></a>
+
+### CS-701: Nutrient batch stopped part-way
+
+*Warning · Notification*
+
+**What it means.** The room's nutrient batch stopped before it finished. The notification says where it was (filling, starting to mix, dosing or mixing), why it stopped, and what each doser had given so far.
+
+**Watering meanwhile.** The room's watering carries on as usual from the reservoir, which holds whatever the batch had reached.
+
+**Likely causes**
+
+- The room's watering switch, or the room, was switched off.
+- A switch the batch keeps on (the fresh water, the pump, the recirculation solenoid or a doser) was switched off or went offline.
+- A switch did not switch on or off when told; one that will not switch off also latches a hardware hold (CS-301).
+- The controller app was stopped or restarted part-way.
+
+**Suggested fixes**
+
+- Check the reservoir: how full it is, and which nutrients went in (the Reservoir page shows the last batch).
+- Dose what is missing by hand, or empty and refill the reservoir and press Mix a Batch Now.
+- If a switch failed, check that device before the next batch.
+
+<a id="cs-702"></a>
+
+### CS-702: The reservoir did not fill
+
+*Warning · Notification*
+
+**What it means.** The fresh water ran for its fill time, but the reservoir's level sensor still read at or past its almost-empty mark, so no nutrient was dosed.
+
+**Watering meanwhile.** The room's watering carries on from whatever is in the reservoir. No automatic batch starts again until the level reads fuller.
+
+**Likely causes**
+
+- The water supply is off, or its pressure is too low for the fill time.
+- The fresh-water solenoid, or its switch, did not open.
+- The level sensor is stuck, dirty or not reading the water surface.
+
+**Suggested fixes**
+
+- Check the water supply and the fresh-water solenoid.
+- Check that the level sensor's reading moves when the water level does.
+- Then press Mix a Batch Now.
+
+<a id="cs-703"></a>
+
+### CS-703: A nutrient batch could not start
+
+*Warning · Notification*
+
+**What it means.** A nutrient batch was asked for (Mix a Batch Now), or was due because the reservoir read almost empty with automatic batches on, but could not start. The notification names why. Nothing was switched on.
+
+**Watering meanwhile.** Unchanged.
+
+**Likely causes**
+
+- No feed stage is chosen, the stage's recipe doses nothing, or it uses a doser with no switch mapped.
+- The room's watering switch is off, the room is switched off, a hardware hold is latched or a setup change is waiting.
+- The pump, the main line, a zone valve, the fresh-water or recirculation solenoid or a doser reads on or offline: something else is using it.
+- The reservoir, its pump or its recirculation solenoid is not mapped in Rooms & setup.
+- Asked for by hand while the reservoir's level sensor read short of its almost-empty mark, or read nothing: its fill time could overflow it.
+
+**Suggested fixes**
+
+- Deal with the reason the notification names, then press Mix a Batch Now.
+- For a reservoir that is not yet almost empty, wait for it to run down, or drain it first.

@@ -30,6 +30,11 @@
       "prefix": "CS-6",
       "name": "Repairs cards",
       "detail": "Raised by the integration, under Settings → Repairs."
+    },
+    {
+      "prefix": "CS-7",
+      "name": "Nutrient batches",
+      "detail": "The room's reservoir refilled, mixed and dosed by the controller."
     }
   ],
   "codes": [
@@ -624,6 +629,62 @@
       "fixes": [
         "Refill the tank, then press Refilled on Crop Steering → Stock tanks.",
         "Or set the level you read off the tank. The card clears itself once every tank is above its low mark."
+      ]
+    },
+    {
+      "code": "CS-701",
+      "title": "Nutrient batch stopped part-way",
+      "source": "notification",
+      "severity": "warning",
+      "meaning": "The room's nutrient batch stopped before it finished. The notification says where it was (filling, starting to mix, dosing or mixing), why it stopped, and what each doser had given so far.",
+      "watering": "The room's watering carries on as usual from the reservoir, which holds whatever the batch had reached.",
+      "causes": [
+        "The room's watering switch, or the room, was switched off.",
+        "A switch the batch keeps on (the fresh water, the pump, the recirculation solenoid or a doser) was switched off or went offline.",
+        "A switch did not switch on or off when told; one that will not switch off also latches a hardware hold (CS-301).",
+        "The controller app was stopped or restarted part-way."
+      ],
+      "fixes": [
+        "Check the reservoir: how full it is, and which nutrients went in (the Reservoir page shows the last batch).",
+        "Dose what is missing by hand, or empty and refill the reservoir and press Mix a Batch Now.",
+        "If a switch failed, check that device before the next batch."
+      ]
+    },
+    {
+      "code": "CS-702",
+      "title": "The reservoir did not fill",
+      "source": "notification",
+      "severity": "warning",
+      "meaning": "The fresh water ran for its fill time, but the reservoir's level sensor still read at or past its almost-empty mark, so no nutrient was dosed.",
+      "watering": "The room's watering carries on from whatever is in the reservoir. No automatic batch starts again until the level reads fuller.",
+      "causes": [
+        "The water supply is off, or its pressure is too low for the fill time.",
+        "The fresh-water solenoid, or its switch, did not open.",
+        "The level sensor is stuck, dirty or not reading the water surface."
+      ],
+      "fixes": [
+        "Check the water supply and the fresh-water solenoid.",
+        "Check that the level sensor's reading moves when the water level does.",
+        "Then press Mix a Batch Now."
+      ]
+    },
+    {
+      "code": "CS-703",
+      "title": "A nutrient batch could not start",
+      "source": "notification",
+      "severity": "warning",
+      "meaning": "A nutrient batch was asked for (Mix a Batch Now), or was due because the reservoir read almost empty with automatic batches on, but could not start. The notification names why. Nothing was switched on.",
+      "watering": "Unchanged.",
+      "causes": [
+        "No feed stage is chosen, the stage's recipe doses nothing, or it uses a doser with no switch mapped.",
+        "The room's watering switch is off, the room is switched off, a hardware hold is latched or a setup change is waiting.",
+        "The pump, the main line, a zone valve, the fresh-water or recirculation solenoid or a doser reads on or offline: something else is using it.",
+        "The reservoir, its pump or its recirculation solenoid is not mapped in Rooms & setup.",
+        "Asked for by hand while the reservoir's level sensor read short of its almost-empty mark, or read nothing: its fill time could overflow it."
+      ],
+      "fixes": [
+        "Deal with the reason the notification names, then press Mix a Batch Now.",
+        "For a reservoir that is not yet almost empty, wait for it to run down, or drain it first."
       ]
     }
   ]
