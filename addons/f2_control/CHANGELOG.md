@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** a dryback target reads "% below peak". No change to the controller.
+
 # 2.26.0
 
 Pair with integration 2.26.0.

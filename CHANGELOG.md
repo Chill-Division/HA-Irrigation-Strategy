@@ -9,6 +9,21 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **A dryback target says it is below the peak.** The dashboard shows every dryback target as
+  "% below peak", where the Today settings showed a bare "%": 40 means drying back by 40% of the
+  day's peak (an 87% peak dries back to 52%), not to 40% VWC.
+
+### 🔧 Technical notes
+
+- **Dryback unit (dashboard).** `DRYBACK_UNIT` ("% below peak", `setting-words.ts`) is the unit of
+  every dryback target: the room model uses it for `number.crop_steering_*dryback_target` whatever
+  unit Home Assistant gives the entity (`%`), and the plan views, the planning curve and the demo
+  use it too. The entities are unchanged.
+
 ## [2.26.0] - 2026-09-27
 
 Integration and controller **2.26.0**.

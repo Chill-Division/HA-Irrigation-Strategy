@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- A dryback target now reads "% below peak", so it is clear the substrate dries back by that much, not to it.
+
 ## 2.26.0 - 2026-09-27
 
 - When the controller app stops for an update or a restart, the dashboard says so, and that it starts again by itself.
