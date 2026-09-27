@@ -99,11 +99,11 @@ def test_every_version_is_set_and_nothing_else_moves():
         assert after[path].replace("9.9.9", old) == before[path], path
 
 
-def test_crlf_files_stay_crlf():
-    """const.py and README.md end their lines with CRLF; a rewrite with LF changes every line."""
+def test_a_release_changes_no_line_endings():
+    """A rewrite that switched a file's line endings would change every line of it."""
     before = _files()
     after = release.prepare(before, "9.9.9", DAY)
-    for path in (release.CONST, release.README):
+    for path in before:
         assert after[path].count("\r\n") == before[path].count("\r\n"), path
 
 

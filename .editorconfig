@@ -1,0 +1,7 @@
+# For editors that read it: the repository's text files are UTF-8 with LF line endings
+# (.gitattributes keeps them that way in git).
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
