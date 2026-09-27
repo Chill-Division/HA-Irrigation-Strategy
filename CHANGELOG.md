@@ -47,6 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reservoir reads almost empty, so the fill cannot overflow it. If the reservoir did not fill,
   nothing is dosed. Anything that stops a batch part-way switches everything off and a notice says
   what went in.
+- **The controller app starts with Home Assistant's host.** Start on boot is now on by default, so
+  a box that restarts (a power cut, an update of the operating system) comes back watering instead
+  of waiting, stopped, for someone to notice. If you set Start on boot yourself, either way, your
+  setting stays.
 
 ### 🔧 Technical notes
 
@@ -120,6 +124,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   & setup; `feed_*` calls are room-scoped; `autoBatches` joins the room view, and the reservoir's
   switches are never written directly. CS-701, CS-702 and CS-703 join the catalog. The MCP server's
   hardware schema takes the new keys.
+- **Start on boot (controller app).** `addons/f2_control/config.yaml` `boot: manual` becomes
+  `boot: auto`. Supervisor uses an app's saved Start on boot when its owner has ever set one and the
+  app's default otherwise (`App.boot`: `persist.get(ATTR_BOOT, <default>)`; installing saves no
+  choice), so an existing install nobody switched starts with the host after this update and one
+  set by hand keeps its setting. `tests/test_controller_boot.py` holds the default. INSTALL.md's
+  move from the retired mirror now turns the new app's Start on boot off until the move is done.
 
 ## [2.25.0] - 2026-09-27
 
