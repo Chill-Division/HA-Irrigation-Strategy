@@ -232,6 +232,12 @@ MIN_SHOT_S = 5
 # A probe unreadable for less than this many minutes is a blip (Home Assistant restarting, a sensor
 # reconnecting): its zone gets no timer shot and no probe alert until it has been out this long.
 BLIND_GRACE_MIN = 15
+
+# A setting (a room's number) unreadable for fewer than this many passes is still loading: while Home
+# Assistant starts or the integration reloads, its numbers are missing for a moment, and a shot sized
+# on the engine's built-in values would be a guess. The zone waits instead: as long as CS-402 waits
+# before it says a setting is missing, after which the engine waters on its built-in value.
+SETTINGS_WAIT_PASSES = 3
 # System Enabled and Auto Irrigation Enabled each stopped every shot, as the room's engine switch
 # does, but less well: a shot already running carried on. The engine switch is the one switch now.
 # While either still exists and reads off, the controller switches the engine switch off in its
@@ -1225,6 +1231,7 @@ class Controller:
         # deliberately doesn't create (optional=True): those default by design, never alert.
         if not optional:
             self._defaulted_this_loop.add(glob)
+            room.__dict__.setdefault("_settings_missing", set()).add(glob)
         return float(default)
 
     def _room_duration_cap(self, room):
@@ -1941,6 +1948,9 @@ class Controller:
         retired = getattr(room, "_retired_off", None)
         if retired:  # switched off in their place this pass; the switch may not read OFF yet
             return f"{' and '.join(retired)} off: engine switch switched off in its place"
+        loading = self._settings_loading(room)
+        if loading:
+            return loading
         if not self._on(f"switch.crop_steering_{room.prefix}zone_{zone}_enabled", True):
             return "zone disabled"
         if self._on(
@@ -3074,6 +3084,18 @@ class Controller:
             zone=zone,
         )
 
+    def _settings_loading(self, room):
+        """Why the room waits for its settings, or None: a setting this pass could not read, missing
+        for fewer than SETTINGS_WAIT_PASSES passes (see there)."""
+        waiting = sorted(
+            e for e in getattr(room, "_settings_missing", ())
+            if self._defaulted.get(e, 0) < SETTINGS_WAIT_PASSES
+        )
+        if not waiting:
+            return None
+        more = f" and {len(waiting) - 2} more" if len(waiting) > 2 else ""
+        return f"waiting for its settings to load ({', '.join(waiting[:2])}{more})"
+
     def _check_defaulted_setpoints(self):
         """Turn the per-loop 'setpoint entity missing' set into a rate-limited alert once an
         entity has been missing for >=3 consecutive loops (ignores one-off read blips). Clears
@@ -3242,6 +3264,7 @@ class Controller:
         Reads/writes only this room's prefixed entities + its own state."""
         if getattr(room, "setup_active", True) is False:
             return {}
+        room._settings_missing = set()  # what this pass fills in with a built-in value (_zone_num)
         active, was = self._room_active(room), getattr(room, "_was_room_active", None)
         room._was_room_active = active
         if not active:

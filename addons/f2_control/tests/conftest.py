@@ -28,6 +28,24 @@ def _hermetic_state_file(tmp_path, monkeypatch):
     monkeypatch.setenv("F2_STATE_PATH", str(tmp_path / "constructor-state.json"))
 
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "settings_wait: keep controller.SETTINGS_WAIT_PASSES as shipped (see _settings_load_at_once)"
+    )
+
+
+@pytest.fixture(autouse=True)
+def _settings_load_at_once(request, monkeypatch):
+    """Most rigs create none of a room's numbers and run on the engine's built-in values: for them the
+    settings count as loaded at once. How long a missing one is waited for first
+    (controller.SETTINGS_WAIT_PASSES) is tested in test_settings_wait.py, which is marked settings_wait."""
+    if request.node.get_closest_marker("settings_wait"):
+        return
+    import controller
+
+    monkeypatch.setattr(controller, "SETTINGS_WAIT_PASSES", 0)
+
+
 @pytest.fixture
 def no_blind_grace(monkeypatch):
     """For tests of what happens once a probe is dead: it counts as dead at once. How long a probe
