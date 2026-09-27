@@ -1,12 +1,13 @@
 # Unreleased
 
-No change to add-on options or the state file.
+Three options are removed, `cf_account_id`, `cf_api_token` and `cf_gateway_id`: Supervisor drops them from an old configuration. The state file keeps what each zone learned and drops the Cloudflare judge's keys (`peak_adj`, `jev`, `veto`) on load.
 
 - **Retired switches.** `_carry_retired_switches` switches the room's engine switch off while System Enabled or Auto Irrigation Enabled reads off (CS-208), and `_blocked` no longer gates on them; a missing or unreadable one changes nothing.
 - **A zone switched off stops its running shot.** `_wait_shot` reads the zone's `switch.crop_steering_<prefix>zone_N_enabled` every round with the engine switch, Room Active and manual override; CS-305 names the switch that stopped the shot.
 - **Publishes what each zone waits for.** `sensor.crop_steering_<prefix>zone_N_waiting_for_app` every pass, from the engine's `waiting_for`: for the phase the zone is in after this pass, and an empty list for a zone with no usable probe or a room that is off.
 - **The vitals follow the room.** A room with no feed EC probe leaves feed EC out of its line, and one whose probe reads nothing usable says "unreadable". When the room's `select.crop_steering_<prefix>water_today_view` says `PER_PLANT`, each zone's water today is divided by its plant count: "344 mL/plant day".
-- **The dashboard the app serves** is this release's build: each zone's "Next:", the switch over every zone, Water today per plant and What's new.
+- **No Cloudflare judge.** Auto Setpoints is arithmetic only: `jev_policy.py` is gone, the working peak is the learned peak, and the P2 shot size is no longer managed or written. The `auto_setpoints` sensor no longer publishes `jev`, `jev_last`, `jev_changed_today` or `working_peak_adjust`.
+- **The dashboard the app serves** is this release's build: each zone's "Next:", the switch over every zone, Water today per plant and What's new, and no judge in the Auto status.
 
 # 2.24.0
 
