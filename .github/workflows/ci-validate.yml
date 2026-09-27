@@ -2,12 +2,10 @@ name: Validate
 
 on:
   push:
-    # `main` is what production rooms install from; `testing` is what staging rooms install
-    # from (docs/RELEASING.md). Both are checked on every push.
-    branches: [ main, testing ]
-  # Every pull request, whatever branch it targets. This used to be limited to pull requests
-  # into `main`, so a feature branch proposed into `testing`, or stacked on another feature
-  # branch, was merged with no checks at all.
+    # `main` is the only branch (docs/RELEASING.md): scripts/release.py releases only a commit
+    # this workflow has passed on it.
+    branches: [ main ]
+  # Every pull request, whatever branch it targets, so nothing is merged unchecked.
   pull_request:
   workflow_dispatch: {}
 
@@ -157,7 +155,7 @@ jobs:
     # brings exactly that Home Assistant, and each checking what it got. Unpinned, pip quietly fell
     # back to an older plugin whenever the runner's Python was too old for the newest one, and this
     # job tested 2026.2.3 while production ran 2026.9. The production leg keeps the exact check name
-    # that branch protection requires on `testing` and `main`: leave its suffix empty.
+    # that branch protection may require on `main`: leave its suffix empty.
     name: Real Home Assistant (setup wizard and entity ids)${{ matrix.suffix }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
