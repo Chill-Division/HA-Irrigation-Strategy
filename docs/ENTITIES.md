@@ -109,6 +109,7 @@ for that zone. (3 zones × 23 = 69 entities on a 3-zone system.)
 | `ec_stacking_enabled` | When on, the system builds EC when below target instead of diluting (push EC up intentionally). |
 | `engine_enabled` | The room's kill switch ("Watering" in the dashboard's Settings), created off. Off = the controller waters nothing in this room, and a shot already running stops within a few seconds. Created for named rooms and new default rooms; an older default room keeps the helper its setup names. |
 | `auto_batches` | Automatic nutrient batches (default off). On = the controller app mixes a batch by itself once the room's reservoir has read almost empty for three passes in a row, once each time it runs low. Off = a batch only when one is asked for (`mix_batch`). Per room: `switch.crop_steering_<prefix>auto_batches`. |
+| `notify_predictions` | Include Predictions in Notifications (default on). On = the controller's vitals notification says, under each zone, what it will do next (the dashboard's Next: line). Off = just the readings. Per room: `switch.crop_steering_<prefix>notify_predictions`; Settings → Notifications on the dashboard. |
 
 ### Per-zone (`switch.crop_steering_zone_N_*`)
 | Entity | What it does |
