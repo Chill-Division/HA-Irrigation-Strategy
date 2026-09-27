@@ -131,6 +131,23 @@
   border: 0;
   border-bottom: 1px solid var(--border);
 }
+.stock-editor-entity {
+  display: grid;
+  align-content: end;
+}
+/* The dose entity under the doser (a tank on no doser that has one): spaced like a new field. */
+.stock-editor-entity > label:not(:first-child) {
+  margin-top: 10px;
+}
+.stock-editor-doser {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--input-background, var(--card));
+  color: var(--foreground);
+}
 @media (max-width: 720px) {
   .stock-editor-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));

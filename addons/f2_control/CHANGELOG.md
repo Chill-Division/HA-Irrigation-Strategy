@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** Stock tanks can put each tank on the Reservoir doser it feeds. No change to the controller.
+
 # 2.26.0
 
 Pair with integration 2.26.0.

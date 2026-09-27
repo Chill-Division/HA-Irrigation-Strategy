@@ -9,6 +9,33 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **Each stock tank says which doser it is on.** In Stock tanks, put each bottle's tank on the
+  Reservoir doser it feeds (Doser 1 to 6), and every batch the Reservoir mixes takes what that doser
+  actually gave from it, by itself: no dose entity and no Record a batch. A batch stopped part-way
+  takes only what went in. Each tank's per batch and batches left follow the feed stage in use. If you
+  swap bottles between stages, put both tanks on that doser: each batch takes from the one named like
+  the nutrient its recipe puts there. A tank on no doser works as before.
+
+### 🔧 Technical notes
+
+- **Stock tanks on dosers (integration, dashboard).** A stock tank has `doser` (1 to 6, or none; a
+  tank on one takes no `dose_entity`). `stock_api.StockStore` listens to the room's
+  `sensor.crop_steering_<prefix>batch_status`; a `last` that ended after `reservoir_batch` (stored;
+  set to the first run's time, so a batch before it is not counted) draws each tank on a doser by
+  `last.dosed` (`stock.reservoir_draws`), logged with source `reservoir`. Several tanks on one doser
+  are told apart by the nutrient that `last.stage`'s recipe puts on it (`stock.on_doser`); none is
+  guessed at. `doses()` gives a tank on a doser what the stage in use doses from it; fills of the tank
+  last-fill entity and `stock_record_batch` draw only the tanks on no doser. `stock_get` adds
+  `dosers` (each mapped doser's switch and nutrient in the stage in use) and `reservoir_batch`;
+  `sensor.crop_steering_<prefix>stock_low` adds each tank's `doser` and is rewritten when the feed
+  settings change. Tanks stored before this load with no doser. The Stock tanks editor offers a Doser
+  per tank in a room with dosers, and shows the dose entity only in a room without, or on a tank
+  that has one.
+
 ## [2.26.0] - 2026-09-27
 
 Integration and controller **2.26.0**.

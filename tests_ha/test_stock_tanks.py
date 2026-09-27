@@ -1,6 +1,7 @@
 """Stock tanks in a real Home Assistant: the services through its registry and schemas, each batch
 counted once from the tank's last-fill entity (a reload of the room included), the low-stock
-Repairs card, and the room's stock sensor an automation can push a phone alert from."""
+Repairs card, the room's stock sensor an automation can push a phone alert from, and the tanks on
+the Reservoir's dosers drawn by what each doser gave in a batch the controller mixed."""
 
 from homeassistant.core import Context
 from homeassistant.helpers import issue_registry as ir
@@ -11,6 +12,7 @@ ROOM = "room:"
 FILL = "sensor.batch_tank_last_fill"
 DOSE = "number.doser_bloom_dose"
 SENSOR = "sensor.crop_steering_stock_low"
+BATCH = "sensor.crop_steering_batch_status"
 
 
 async def _service(hass, admin, name, **data):
@@ -83,7 +85,11 @@ async def test_each_batch_draws_once_warns_when_low_and_a_refill_clears_it(
     assert doc["tanks"][0]["level_l"] == 6.4
 
     doc = await _service(
-        hass, hass_admin_user, "stock_refill", expected_revision=doc["revision"], id="bloom"
+        hass,
+        hass_admin_user,
+        "stock_refill",
+        expected_revision=doc["revision"],
+        id="bloom",
     )
     assert doc["tanks"][0]["level_l"] == 10
     await hass.async_block_till_done()
@@ -109,3 +115,76 @@ async def test_a_room_without_a_fill_entity_records_batches_by_hand(
     )
     assert doc["tanks"][0]["level_l"] == 4.75
     assert doc["history"][0]["source"] == "manual"
+
+
+async def test_tanks_on_dosers_lose_what_each_doser_gave_in_the_reservoirs_batches(
+    hass, hass_admin_user
+):
+    """The owner's room: Athena's bottles on the Reservoir's four dosers, each stock tank naming its
+    doser. A batch the controller reports it finished draws what each doser gave, once.
+    """
+    from datetime import timedelta
+
+    from homeassistant.util import dt as dt_util
+    from test_feed_batches import FLOWER, RESERVOIR
+    from test_mcp_setup_contract import _payload, _room
+
+    hass.states.async_set("sensor.res_distance", "812", {"unit_of_measurement": "mm"})
+    for entity in list(RESERVOIR.values())[1:]:
+        hass.states.async_set(entity, "off")
+    entry = await _install(hass)
+    room = await _room(hass, hass_admin_user)
+    await hass.services.async_call(
+        DOMAIN,
+        "setup_save",
+        _payload(room, hardware=RESERVOIR),
+        blocking=True,
+        return_response=True,
+        context=Context(user_id=hass_admin_user.id),
+    )
+    await hass.async_block_till_done()
+    feed = await _service(hass, hass_admin_user, "feed_get")
+    # FLOWER puts Core on doser 4, Bloom on 3, Balance on 2 and Cleanse on 1.
+    await _service(
+        hass,
+        hass_admin_user,
+        "feed_save",
+        expected_revision=feed["revision"],
+        document={"batch_l": 145, "recipes": [FLOWER], "stage": "flower"},
+    )
+    doc = await _service(hass, hass_admin_user, "stock_get")
+    doc = await _service(
+        hass,
+        hass_admin_user,
+        "stock_save",
+        expected_revision=doc["revision"],
+        tanks=[
+            {"name": "Core", "capacity_l": 20, "doser": 4},
+            {"name": "Balance", "capacity_l": 20, "doser": 2},
+            {"name": "pH down", "capacity_l": 5, "dose_ml": 60},
+        ],
+    )
+    assert doc["dosers"]["4"] == {"switch": "switch.doser_4_power", "nutrient": "Core"}
+    assert doc["doses"] == {"core": 725.0, "balance": 241.7, "ph_down": 60.0}
+
+    # The controller reports the batch that just ended, as it does every pass.
+    ended = (dt_util.utcnow() + timedelta(minutes=1)).isoformat(timespec="seconds")
+    last = {"at": ended, "result": "done", "stage": "Flower",
+            "dosed": {"4": 725.0, "3": 1208.3, "2": 241.7, "1": 120.8}}  # fmt: skip
+    for _ in range(2):  # reported again the next pass: counted once
+        hass.states.async_set(BATCH, "idle", {"last": last})
+        await hass.async_block_till_done()
+    doc = await _service(hass, hass_admin_user, "stock_get")
+    levels = {tank["id"]: tank["level_l"] for tank in doc["tanks"]}
+    assert levels == {"core": 19.275, "balance": 19.7583, "ph_down": 5}
+    assert doc["history"][0]["source"] == "reservoir"
+
+    # A reload of the room (a setup change) counts nothing twice.
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    hass.states.async_set(BATCH, "mixing", {"last": last})
+    await hass.async_block_till_done()
+    doc = await _service(hass, hass_admin_user, "stock_get")
+    assert doc["tanks"][0]["level_l"] == 19.275
+    state = hass.states.get(SENSOR)
+    assert state.attributes["tanks"][0]["doser"] == 4
