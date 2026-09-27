@@ -1,19 +1,27 @@
 """Stock tanks: the room's nutrient concentrates, drawn down by every batch tank it makes. Pure (no
 Home Assistant import), so it is tested directly; stock_api.py stores it and counts the batches.
 
-A batch is one new fill of the room's batch tank: a newer timestamp on the tank last-fill entity
-mapped in Rooms & setup (`tank_last_fill_sensor`), or the operator recording one by hand. Each stock
-tank then loses its dose per batch: a fixed amount, or what a dose entity reads at that moment (a
-doser's dose-volume number), so the draw follows the doser's own setting.
+A stock tank on one of the room's dosers (Reservoir) is drawn by the batches the controller mixes:
+each loses what its doser gave in that batch, as the controller recorded it. When bottles are
+swapped between stages, several tanks can be on one doser; a batch then draws from the one named
+like the nutrient its recipe puts on that doser.
+
+Any other tank is drawn by every other batch: a newer timestamp on the tank last-fill entity mapped
+in Rooms & setup (`tank_last_fill_sensor`), or the operator recording one by hand. It loses its dose
+per batch: a fixed amount, or what a dose entity reads at that moment (a dose-volume number of a
+doser this system does not run), so the draw follows that doser's own setting.
 
 The first fill time the integration ever sees is only a starting point: counting it would draw the
-stock down for a batch made before the tanks were set up.
+stock down for a batch made before the tanks were set up. The same goes for the Reservoir's batches.
 """
 
 from __future__ import annotations
 
+import math
 import re
 from datetime import datetime, tzinfo
+
+from .room import MAX_DOSERS
 
 MAX_TANKS = 12
 HISTORY = 30
@@ -26,7 +34,14 @@ class StockError(ValueError):
 
 
 def empty() -> dict:
-    return {"revision": 0, "tanks": [], "last_batch": None, "history": []}
+    return {
+        "revision": 0,
+        "tanks": [],
+        "last_batch": None,
+        # When the last Reservoir batch counted ended; None until the store first runs.
+        "reservoir_batch": None,
+        "history": [],
+    }
 
 
 def _number(raw: dict, key: str, low: float, high: float, default=None) -> float:
@@ -91,6 +106,12 @@ def clean_tanks(raw: list, current: list[dict], now: str) -> list[dict]:
             raise StockError(
                 f"{dose_entity} is not a number, input_number or sensor entity"
             )
+        doser = _doser(item["doser"] if "doser" in item else (old or {}).get("doser"))
+        if doser is not None and dose_entity:
+            raise StockError(
+                f"{name} is on doser {doser}, so it loses what that doser gives: clear its dose "
+                "entity"
+            )
         tank_id = old["id"] if old else _slug(name, kept | {t["id"] for t in out})
         out.append(
             {
@@ -102,6 +123,7 @@ def clean_tanks(raw: list, current: list[dict], now: str) -> list[dict]:
                     item, "dose_ml", 0, 100000, old["dose_ml"] if old else 0
                 ),
                 "dose_entity": dose_entity or None,
+                "doser": doser,
                 "low_l": min(
                     _number(
                         item, "low_l", 0, 10000, old["low_l"] if old else capacity * 0.2
@@ -117,11 +139,64 @@ def clean_tanks(raw: list, current: list[dict], now: str) -> list[dict]:
     return out
 
 
+def _doser(value) -> int | None:
+    """The doser a tank is on (1 to MAX_DOSERS), or None for a tank on none."""
+    if value is None or value == "":
+        return None
+    number = int(value) if isinstance(value, str) and value.isdigit() else value
+    if (
+        isinstance(number, bool)
+        or not isinstance(number, int)
+        or not 1 <= number <= MAX_DOSERS
+    ):
+        raise StockError(f"a stock tank's doser is numbered 1 to {MAX_DOSERS}")
+    return number
+
+
 def _changed(old: dict, item: dict) -> bool:
     return any(
         item.get(key) is not None and item.get(key) != old.get(key)
-        for key in ("name", "capacity_l", "level_l", "dose_ml", "dose_entity", "low_l")
+        for key in (
+            "name",
+            "capacity_l",
+            "level_l",
+            "dose_ml",
+            "dose_entity",
+            "doser",
+            "low_l",
+        )
     )
+
+
+def on_doser(tanks: list[dict], doser: int, nutrient: str | None) -> dict | None:
+    """The tank a doser draws from: the one tank on it or, with bottles swapped between stages and
+    several on it, the one named like the nutrient the recipe puts on it. None when there is none.
+    """
+    on = [tank for tank in tanks if tank.get("doser") == doser]
+    if len(on) == 1:
+        return on[0]
+    wanted = (nutrient or "").strip().casefold()
+    return next((tank for tank in on if tank["name"].casefold() == wanted), None)
+
+
+def reservoir_draws(
+    tanks: list[dict], dosed, nutrients: dict[int, str]
+) -> dict[str, float]:
+    """A Reservoir batch's draw from each tank on a doser, in mL: what its doser gave (`dosed`,
+    doser -> mL, as the controller recorded it). `nutrients` is what the batch's recipe put on each
+    doser, which picks between tanks sharing one."""
+    draws: dict[str, float] = {}
+    for key, value in (dosed if isinstance(dosed, dict) else {}).items():
+        try:
+            doser, ml = int(key), float(value)
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(ml) or ml <= 0:
+            continue
+        tank = on_doser(tanks, doser, nutrients.get(doser))
+        if tank is not None:
+            draws[tank["id"]] = draws.get(tank["id"], 0.0) + ml
+    return draws
 
 
 def dose_ml(tank: dict, reading: str | None) -> float:

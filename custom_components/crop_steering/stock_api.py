@@ -2,8 +2,10 @@
 
 Response-only services addressed by canonical room id, like the run and strategy services. Reading
 is open to any signed-in user; changing a tank, recording a refill or a batch needs an
-administrator. A batch is counted when the room's mapped tank last-fill entity moves to a newer
-time, or when the operator records one; a room whose tanks run low gets a Repairs card.
+administrator. A tank on one of the room's dosers is drawn when the controller reports a batch it
+mixed ended (sensor.crop_steering_<prefix>batch_status, its `last`): by what that doser gave. Any
+other tank is drawn when the room's mapped tank last-fill entity moves to a newer time, or when the
+operator records a batch. A room whose tanks run low gets a Repairs card.
 """
 
 from __future__ import annotations
@@ -42,6 +44,10 @@ def _valid(value) -> dict:
             tank[key] = raw.get(key, tank[key])
     last = value.get("last_batch")
     data["last_batch"] = datetime.fromisoformat(last).isoformat() if last else None
+    mixed = value.get("reservoir_batch")
+    data["reservoir_batch"] = (
+        datetime.fromisoformat(mixed).isoformat() if mixed else None
+    )
     history = value.get("history", [])
     data["history"] = history[: stock.HISTORY] if isinstance(history, list) else []
     return data
@@ -85,38 +91,149 @@ class StockStore:
                 f"{error}"
             )
 
+    @property
+    def batch_entity(self) -> str:
+        """Where the controller reports the room's nutrient batches (controller.py _batch_publish)."""
+        return f"sensor.{DOMAIN}_{self.prefix}batch_status"
+
     def start(self):
-        """Count batches from the fill entity and raise the low-stock card. Returns the unsubscribe
-        for the listener, or None when no fill entity is mapped."""
+        """Count batches from the Reservoir and the fill entity, and raise the low-stock card.
+        Returns the unsubscribe for the listeners, or None when there is nothing to listen to.
+        """
         self._alert()
-        entity = self.fill_entity
-        if not entity or self.error:
+        if self.error:
             return None
         from homeassistant.core import callback
         from homeassistant.helpers.event import async_track_state_change_event
 
-        # The fill time at start-up is a starting point, not a batch (stock.new_batch).
-        current = self.hass.states.get(entity)
-        self.hass.async_create_task(self._fill(current.state if current else None))
+        entity = self.fill_entity
+        # The fill time at start-up is a starting point, not a batch (stock.new_batch); so is the
+        # Reservoir's last batch the first time this runs (_reservoir).
+        if entity:
+            current = self.hass.states.get(entity)
+            self.hass.async_create_task(self._fill(current.state if current else None))
+        self.hass.async_create_task(
+            self._reservoir(self.hass.states.get(self.batch_entity))
+        )
 
         @callback
         def changed(event):
             state = event.data.get("new_state")
-            self.hass.async_create_task(self._fill(state.state if state else None))
+            if event.data.get("entity_id") == self.batch_entity:
+                self.hass.async_create_task(self._reservoir(state))
+            else:
+                self.hass.async_create_task(self._fill(state.state if state else None))
 
-        return async_track_state_change_event(self.hass, [entity], changed)
+        return async_track_state_change_event(
+            self.hass, [e for e in (entity, self.batch_entity) if e], changed
+        )
+
+    def _feed(self):
+        """The room's feed settings (feed_api.py), or None when they cannot be read."""
+        from .feed_api import get_feed
+
+        manager = get_feed(self.hass, self.entry)
+        return None if manager is None or manager.error else manager
+
+    def _nutrients(self, stage=None) -> dict[int, str]:
+        """What a recipe puts on each doser: the one called `stage`, or the stage in use."""
+        manager = self._feed()
+        if manager is None:
+            return {}
+        recipes = manager.data.get("recipes", [])
+        if stage is None:
+            recipe = next(
+                (r for r in recipes if r["id"] == manager.data.get("stage")), None
+            )
+        else:
+            recipe = next((r for r in recipes if r["name"] == stage), None)
+        return {
+            int(n): dose["label"]
+            for n, dose in (recipe or {}).get("doses", {}).items()
+            if dose.get("label")
+        }
+
+    def dosers(self) -> dict[str, dict]:
+        """The room's dosers from Rooms & setup, each with its switch and the nutrient the stage
+        in use puts on it (None when it doses nothing in that stage)."""
+        from .feed_api import mapped_dosers
+
+        config = self.hass.data.get(DOMAIN, {}).get(self.entry.entry_id, {})
+        hardware = config.get("hardware", {}) if isinstance(config, dict) else {}
+        nutrients = self._nutrients()
+        return {
+            str(n): {"switch": entity, "nutrient": nutrients.get(n)}
+            for n, entity in mapped_dosers(
+                hardware if isinstance(hardware, dict) else {}
+            ).items()
+        }
 
     def doses(self) -> dict[str, float]:
-        """What one batch takes from each tank right now, in mL."""
+        """What one batch takes from each tank right now, in mL. A tank on a doser: what the stage
+        in use doses from it (0 when that stage does not use it). Any other: its dose entity's
+        reading, or its fixed dose."""
         doses = {}
         for tank in self.data["tanks"]:
+            if tank.get("doser"):
+                doses[tank["id"]] = 0.0
+                continue
             state = (
                 self.hass.states.get(tank["dose_entity"])
                 if tank["dose_entity"]
                 else None
             )
             doses[tank["id"]] = stock.dose_ml(tank, state.state if state else None)
+        manager = self._feed()
+        for dose in manager.plan()["doses"] if manager is not None else []:
+            owner = stock.on_doser(self.data["tanks"], dose["doser"], dose["label"])
+            if owner is not None:
+                doses[owner["id"]] = float(dose["ml"])
         return doses
+
+    def _hand_doses(self) -> dict[str, float]:
+        """A batch the Reservoir did not mix (a fill, or one recorded by hand) draws only from the
+        tanks on no doser: the others lose what their dosers give, in the Reservoir's batches.
+        """
+        on = {tank["id"] for tank in self.data["tanks"] if tank.get("doser")}
+        return {
+            tank_id: ml for tank_id, ml in self.doses().items() if tank_id not in on
+        }
+
+    async def _reservoir(self, state):
+        """A batch the Reservoir mixed ended (the batch status's `last`): each tank on a doser
+        loses what its doser gave. Counted once, by when it ended; the first time this runs, the
+        batch already reported is a starting point, not counted (it ended before any tank here was
+        on a doser)."""
+        last = state.attributes.get("last") if state is not None else None
+        # The controller gives the time with its UTC offset; one without is read as UTC.
+        ended = (
+            stock.parse_fill(str(last.get("at")), timezone.utc)
+            if isinstance(last, dict) and last.get("at")
+            else None
+        )
+        async with self._lock:
+            if self.error:
+                return
+            draft = deepcopy(self.data)
+            counted = draft.get("reservoir_batch")
+            if counted is None:
+                draft["reservoir_batch"] = _now()
+                await self._commit(draft)
+                return
+            if ended is None or ended <= datetime.fromisoformat(counted):
+                return
+            draft["reservoir_batch"] = ended.isoformat()
+            draws = stock.reservoir_draws(
+                draft["tanks"], last.get("dosed"), self._nutrients(last.get("stage"))
+            )
+            if draws:
+                stock.draw(draft, draws, ended.isoformat(), "reservoir")
+                _LOGGER.info(
+                    "Stock tanks for %s: Reservoir batch at %s counted",
+                    self.room_id,
+                    ended,
+                )
+            await self._commit(draft)
 
     async def _fill(self, state):
         from homeassistant.util import dt as dt_util
@@ -134,7 +251,7 @@ class StockStore:
             draft = deepcopy(self.data)
             counted = stock.new_batch(draft, fill)
             if counted and draft["tanks"]:
-                stock.draw(draft, self.doses(), fill.isoformat(), "fill")
+                stock.draw(draft, self._hand_doses(), fill.isoformat(), "fill")
                 _LOGGER.info(
                     "Stock tanks for %s: batch at %s counted", self.room_id, fill
                 )
@@ -148,6 +265,7 @@ class StockStore:
             "room_id": self.room_id,
             **deepcopy(self.data),
             "fill_entity": self.fill_entity,
+            "dosers": self.dosers(),
             "doses": doses,
             "low": [tank["id"] for tank in stock.low_tanks(self.data)],
             "max_tanks": stock.MAX_TANKS,
@@ -169,7 +287,7 @@ class StockStore:
             elif action == "stock_refill":
                 stock.refill(draft, data.get("id"), data.get("level_l"), now)
             elif action == "stock_record_batch":
-                stock.draw(draft, self.doses(), now, "manual")
+                stock.draw(draft, self._hand_doses(), now, "manual")
             else:
                 raise ValueError("Unsupported stock operation")
             await self._commit(draft)

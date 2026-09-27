@@ -74,7 +74,7 @@ The **Reservoir** page runs the room's nutrient batches with your own dosers. Wh
 
 ### Keep the nutrient stock topped up
 
-The **Stock tanks** page tracks the concentrates each batch tank is dosed from. Tell it each tank's size and how much goes into one batch; every batch you make takes its dose off each stock tank. When one runs low you get a Repairs card and an Overview notice saying roughly how many batches are left, and a sensor you can use for a phone alert. Press **Refilled** when you top it up.
+The **Stock tanks** page tracks the concentrates each batch tank is dosed from. Tell it each tank's size and, if its bottle is on one of the Reservoir's dosers, which one: every batch the Reservoir mixes then takes what that doser gave. A tank on no doser takes a set amount from each batch you record. When one runs low you get a Repairs card and an Overview notice saying roughly how many batches are left, and a sensor you can use for a phone alert. Press **Refilled** when you top it up.
 
 ![Stock tanks with their levels, low marks and batches left](https://raw.githubusercontent.com/JakeTheRabbit/HA-Irrigation-Strategy/main/img/stock-tanks.png)
 

@@ -12,7 +12,7 @@ from . import ha_stubs
 
 ha_stubs.install()
 
-from custom_components.crop_steering import stock_api  # noqa: E402
+from custom_components.crop_steering import feed_api, stock_api  # noqa: E402
 from custom_components.crop_steering.const import DOMAIN  # noqa: E402
 
 NZ = timezone(timedelta(hours=12))
@@ -172,3 +172,145 @@ def test_a_failed_save_changes_nothing():
     with pytest.raises(OSError):
         mutate(store, "stock_refill", id="bloom")
     assert store.data["tanks"][0]["level_l"] == 20 and store.data["revision"] == 1
+
+
+# ------------------------------------------------------------ tanks on the Reservoir's dosers
+DOSERS = {f"doser_{n}_switch": f"switch.doser_{n}" for n in (1, 2, 3, 4)}
+FLOWER = {
+    "id": "flower",
+    "name": "Flower",
+    "strength": 1,
+    "doses": {
+        "1": {"label": "Core", "parts": 3},
+        "2": {"label": "Bloom", "parts": 5},
+        "3": {"label": "Balance", "parts": 1},
+        "4": {"label": "Cleanse", "parts": 0.5},
+    },
+}
+BATCH = "sensor.crop_steering_batch_status"
+
+
+def reservoir_rig(value=None):
+    """A room with four dosers and Athena Flower in use (150 L), its stock store started."""
+    hass = ha_stubs.FakeHass(
+        data={DOMAIN: {"entry": {"hardware": {**DOSERS, "tank_last_fill_sensor": ""}}}}
+    )
+    entry = ha_stubs.FakeEntry(entry_id="entry")
+    feed = feed_api.FeedStore(hass, entry, MemoryStore())
+    asyncio.run(feed.async_init())
+    asyncio.run(
+        feed.save(
+            {
+                "expected_revision": 0,
+                "document": {"batch_l": 150, "recipes": [FLOWER], "stage": "flower"},
+            }
+        )
+    )
+    hass.data[DOMAIN]["_feed"] = {"entry": feed}
+    store = stock_api.StockStore(hass, entry, MemoryStore(value))
+    asyncio.run(store.async_init())
+    asyncio.run(store._reservoir(None))  # the first run: a starting point
+    return hass, store
+
+
+def ended(store, at, dosed, stage="Flower", result="done"):
+    last = {"at": at, "result": result, "stage": stage, "dosed": dosed}
+    asyncio.run(store._reservoir(ha_stubs.FakeState("idle", {"last": last})))
+
+
+def test_a_reservoir_batch_draws_what_each_doser_gave_once():
+    hass, store = reservoir_rig()
+    mutate(
+        store,
+        "stock_save",
+        tanks=[
+            {"name": "Core", "capacity_l": 20, "doser": 1},
+            {"name": "Balance", "capacity_l": 20, "doser": 3},
+            {"name": "pH down", "capacity_l": 5, "dose_ml": 60},
+        ],
+    )
+    response = store.response()
+    assert response["dosers"]["3"] == {
+        "switch": "switch.doser_3",
+        "nutrient": "Balance",
+    }
+    # Per batch: what Flower gives from its doser; a tank on no doser keeps its fixed dose.
+    assert response["doses"] == {"core": 450.0, "balance": 150.0, "ph_down": 60.0}
+
+    ended(store, "2999-01-01T10:00:00+12:00", {"1": 450.0, "2": 750.0, "3": 150.0})
+    levels = {t["id"]: t["level_l"] for t in store.data["tanks"]}
+    assert levels == {"core": 19.55, "balance": 19.85, "ph_down": 5}
+    assert store.data["history"][0]["source"] == "reservoir"
+    ended(
+        store, "2999-01-01T10:00:00+12:00", {"1": 450.0}
+    )  # reported again: counted once
+    assert store.data["tanks"][0]["level_l"] == 19.55
+    # Stopped part-way: only what went in.
+    ended(store, "2999-01-02T10:00:00+12:00", {"1": 200.0}, result="stopped: x")
+    assert store.data["tanks"][0]["level_l"] == 19.35
+
+
+def test_the_reservoirs_batch_before_this_is_a_starting_point_and_a_restart_counts_nothing_twice():
+    hass, store = reservoir_rig()
+    mutate(store, "stock_save", tanks=[{"name": "Core", "capacity_l": 20, "doser": 1}])
+    ended(store, "2000-01-01T10:00:00+00:00", {"1": 450.0})  # ended before this ran
+    assert store.data["tanks"][0]["level_l"] == 20
+    ended(store, "2999-01-01T10:00:00+00:00", {"1": 450.0})
+    _, again = reservoir_rig(value=store._store.value)
+    ended(again, "2999-01-01T10:00:00+00:00", {"1": 450.0})
+    assert again.data["tanks"][0]["level_l"] == 19.55
+
+
+def test_a_batch_by_hand_or_a_fill_leaves_the_tanks_on_dosers_alone():
+    hass, store = reservoir_rig()
+    mutate(
+        store,
+        "stock_save",
+        tanks=[
+            {"name": "Core", "capacity_l": 20, "doser": 1},
+            {"name": "pH down", "capacity_l": 5, "dose_ml": 60},
+        ],
+    )
+    response = mutate(store, "stock_record_batch")
+    assert [t["level_l"] for t in response["tanks"]] == [20, 4.94]
+
+
+def test_a_tank_whose_doser_the_stage_does_not_use_takes_nothing_per_batch():
+    hass, store = reservoir_rig()
+    mutate(
+        store,
+        "stock_save",
+        tanks=[
+            {"name": "Grow", "capacity_l": 20, "doser": 2},
+            {"name": "Bloom", "capacity_l": 20, "doser": 2},
+        ],
+    )
+    assert store.doses() == {
+        "grow": 0.0,
+        "bloom": 750.0,
+    }  # Flower puts Bloom on doser 2
+
+
+def test_stock_tanks_stored_before_dosers_load_on_none():
+    old = {
+        "revision": 4,
+        "tanks": [
+            {
+                "id": "bloom",
+                "name": "Bloom",
+                "capacity_l": 50,
+                "level_l": 20,
+                "dose_ml": 1800,
+                "dose_entity": None,
+                "low_l": 10,
+                "refilled_at": None,
+                "updated_at": "2026-09-25T08:00:00+12:00",
+            }
+        ],
+        "last_batch": None,
+        "history": [],
+    }
+    _, store = rig(value=old)
+    assert store.error is None
+    assert store.data["tanks"][0]["doser"] is None
+    assert store.data["reservoir_batch"] is None and store.data["revision"] == 4

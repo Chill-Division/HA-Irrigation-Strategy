@@ -23,6 +23,7 @@ version being released.
 
 ## Unreleased
 
+- Put each stock tank on the doser its bottle feeds, and every batch the Reservoir mixes takes what that doser gave from it, by itself.
 - A dryback target now reads "% below peak", so it is clear the substrate dries back by that much, not to it.
 
 ## 2.26.0 - 2026-09-27
