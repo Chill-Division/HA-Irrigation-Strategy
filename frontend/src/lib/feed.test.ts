@@ -1,0 +1,304 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { HaClient } from "./client";
+import { createDemo } from "./demo";
+import { ControllerStore } from "./use-controller";
+import {
+  documentOf,
+  draftErrors,
+  duration,
+  moveTo,
+  newRecipe,
+  planOf,
+  roomOrder,
+  type FeedDraft,
+} from "./feed";
+import { FeedDemo, sampleFeed } from "./feed-demo";
+import { almostEmpty, levelMm, readBatchStatus, timeLeft } from "./feed-status";
+import type { States } from "./types";
+
+// Athena Flower as the owner runs it: 3 Core : 5 Bloom : 1 Balance : 0.5 Cleanse, 1.667 mL per litre
+// per part, on doser 4 (Core), 3 (Bloom), 2 (Balance) and 1 (Cleanse), in 145 L. The integration's
+// own test (tests/test_feed.py) gives the same numbers.
+const flower = (change: Partial<FeedDraft> = {}): FeedDraft => ({
+  fill_s: 621,
+  batch_l: 145,
+  empty_mm: 800,
+  settle_s: 20,
+  pause_s: 10,
+  mix_s: 600,
+  dosers: {},
+  order: [4, 3, 2, 1],
+  recipes: [
+    {
+      id: "flower",
+      name: "Flower",
+      strength: 5 / 3,
+      doses: {
+        "4": { label: "Core", parts: 3 },
+        "3": { label: "Bloom", parts: 5 },
+        "2": { label: "Balance", parts: 1 },
+        "1": { label: "Cleanse", parts: 0.5 },
+      },
+    },
+  ],
+  stage: "flower",
+  ...change,
+});
+
+describe("feed plan", () => {
+  it("turns a ratio and a strength into each doser's mL and seconds, as the integration does", () => {
+    const plan = planOf(flower(), [1, 2, 3, 4]);
+    expect(plan.problem).toBeNull();
+    expect(plan.doses.map((d) => [d.doser, d.label, d.ml, d.seconds])).toEqual([
+      [4, "Core", 725, 72.5],
+      [3, "Bloom", 1208.3, 120.8],
+      [2, "Balance", 241.7, 24.2],
+      [1, "Cleanse", 120.8, 12.1],
+    ]);
+  });
+
+  it("runs 750 mL of Bloom for 75 s at 600 mL/min, and longer on a slower doser", () => {
+    const plan = planOf(sampleFeed(), [1, 2, 3, 4]);
+    expect(plan.doses.find((d) => d.label === "Bloom")).toMatchObject({ ml: 750, seconds: 75 });
+    const slow = planOf({ ...sampleFeed(), dosers: { "2": { flow_ml_min: 450 } } }, [1, 2, 3, 4]);
+    expect(slow.doses.find((d) => d.label === "Bloom")?.seconds).toBe(100);
+  });
+
+  it("says why no batch can run", () => {
+    expect(planOf(flower(), []).problem).toBe("No doser is mapped in Rooms & setup.");
+    expect(planOf(flower({ stage: null }), [1, 2, 3, 4]).problem).toBe("No feed stage is chosen.");
+    expect(planOf(flower(), [1, 2, 4]).problem).toBe(
+      "Flower uses doser 3, which has no switch in Rooms & setup.",
+    );
+    const none = flower();
+    none.recipes[0].strength = 0;
+    expect(planOf(none, [1, 2, 3, 4]).problem).toBe(
+      "Flower's strength is 0: nothing would be dosed.",
+    );
+  });
+
+  it("keeps the room's order, then any other doser by number, and moves one", () => {
+    expect(roomOrder([2], [1, 2, 3, 4])).toEqual([2, 1, 3, 4]);
+    expect(roomOrder([6, 3], [1, 3])).toEqual([3, 1]);
+    expect(moveTo([1, 2, 3, 4], 0, 2)).toEqual([2, 3, 1, 4]);
+    expect(moveTo([1, 2, 3, 4], 3, 0)).toEqual([4, 1, 2, 3]);
+    expect(moveTo([1, 2, 3, 4], 1, 1)).toEqual([1, 2, 3, 4]);
+  });
+});
+
+describe("feed checks", () => {
+  it("says what the integration would refuse before it is sent", () => {
+    expect(draftErrors(flower())).toEqual([]);
+    expect(draftErrors(flower({ fill_s: 12.5 })).join()).toMatch(
+      /Fresh-water fill must be a whole/,
+    );
+    expect(draftErrors(flower({ batch_l: Number.NaN })).join()).toMatch(/Batch size/);
+    expect(draftErrors(flower({ dosers: { "2": { flow_ml_min: 0 } } })).join()).toMatch(
+      /Doser 2's flow/,
+    );
+    const twice = flower();
+    twice.recipes.push({ ...twice.recipes[0], id: "b", name: "flower" });
+    expect(draftErrors(twice)).toContain("Two feed recipes are called flower.");
+    const strong = flower();
+    strong.recipes[0].strength = 7;
+    expect(draftErrors(strong).join()).toMatch(/comes to 66\.5 mL per litre/);
+    const unnamed = flower();
+    unnamed.recipes[0].doses["4"].label = " ";
+    expect(draftErrors(unnamed)).toContain("Flower: doser 4 has parts but no nutrient.");
+  });
+
+  it("starts a new recipe with the bottles the last one had, no parts, and its own id", () => {
+    const recipe = newRecipe(flower(), [1, 2, 3, 4], "Fade");
+    expect(recipe.name).toBe("Fade");
+    expect(recipe.id).toMatch(/^[a-f0-9]{12}$/);
+    expect(recipe.doses["3"]).toEqual({ label: "Bloom", parts: 0 });
+  });
+
+  it("sends names and nutrients as the integration keeps them", () => {
+    const draft = flower();
+    draft.recipes[0].name = "  Late   flower ";
+    draft.recipes[0].doses["4"].label = " Core ";
+    const sent = documentOf(draft);
+    expect(sent.recipes[0].name).toBe("Late flower");
+    expect(sent.recipes[0].doses["4"].label).toBe("Core");
+  });
+
+  it("reads durations in minutes and seconds", () => {
+    expect(duration(45)).toBe("45 s");
+    expect(duration(12.1)).toBe("12.1 s");
+    expect(duration(600)).toBe("10 min");
+    expect(duration(90)).toBe("1 min 30 s");
+  });
+});
+
+describe("batch status", () => {
+  const states = (state: string, attributes: Record<string, unknown>): States => ({
+    "sensor.crop_steering_batch_status": {
+      entity_id: "sensor.crop_steering_batch_status",
+      state,
+      attributes,
+    },
+  });
+
+  it("reads what the controller reports, and nothing when it has not", () => {
+    expect(readBatchStatus({}, "")).toBeNull();
+    const status = readBatchStatus(
+      states("dosing", {
+        stage: "Flower",
+        until: "2026-09-27T14:01:10+12:00",
+        doser: 3,
+        nutrient: "Bloom",
+        doses: [{ doser: 3, label: "Bloom", ml: 750, seconds: 75, dosed: null }, { bad: 1 }],
+        level_mm: 210.4,
+        empty_mm: 800,
+        auto: true,
+        armed: false,
+        last: {
+          at: "2026-09-26T18:00:00+12:00",
+          result: "done",
+          stage: "Flower",
+          dosed: { "3": 750 },
+        },
+        blocked: null,
+      }),
+      "",
+    )!;
+    expect(status.step).toBe("dosing");
+    expect(status.until).toBe(Date.parse("2026-09-27T02:01:10Z"));
+    expect(status.doses).toEqual([{ doser: 3, label: "Bloom", ml: 750, seconds: 75, dosed: null }]);
+    expect(status.last).toMatchObject({ result: "done", dosed: { "3": 750 } });
+    expect([status.auto, status.armed, status.blocked]).toEqual([true, false, null]);
+    expect(readBatchStatus(states("unavailable", {}), "")!.step).toBeNull();
+  });
+
+  it("reads the level sensor in mm as the controller does, before the controller reports", () => {
+    const sensor = (state: string, unit?: string) => ({
+      entity_id: "sensor.res_distance",
+      state,
+      attributes: unit === undefined ? {} : { unit_of_measurement: unit },
+    });
+    expect(levelMm(sensor("84.6", "cm"))).toBeCloseTo(846);
+    expect(levelMm(sensor("0.85", "m"))).toBeCloseTo(850);
+    expect(levelMm(sensor("850"))).toBe(850);
+    expect(levelMm(sensor("850", "in"))).toBeNull();
+    expect(levelMm(sensor("unavailable", "mm"))).toBeNull();
+    expect(levelMm(undefined)).toBeNull();
+  });
+
+  it("is almost empty at or past the mark, and unknown without a reading or a mark", () => {
+    expect(almostEmpty(800, 800)).toBe(true);
+    expect(almostEmpty(640, 800)).toBe(false);
+    expect(almostEmpty(null, 800)).toBeNull();
+    expect(almostEmpty(900, 0)).toBeNull();
+  });
+
+  it("counts down to the end of the step", () => {
+    const now = Date.parse("2026-09-27T02:00:00Z");
+    expect(timeLeft(now + 200_000, now)).toBe("3 min 20 s left");
+    expect(timeLeft(now + 42_300, now)).toBe("43 s left");
+    expect(timeLeft(now - 1, now)).toBeNull();
+  });
+});
+
+describe("demo feed services", () => {
+  const room = "room:";
+  const rig = () => {
+    let current: States = {
+      "sensor.crop_steering_engine_config": {
+        entity_id: "sensor.crop_steering_engine_config",
+        state: "ready",
+        attributes: {
+          prefix: "",
+          fresh_water_switch: "switch.fresh",
+          doser_1_switch: "switch.d1",
+          doser_2_switch: "switch.d2",
+          doser_3_switch: "switch.d3",
+          doser_4_switch: "switch.d4",
+        },
+      },
+      "switch.fresh": { entity_id: "switch.fresh", state: "off", attributes: {} },
+      "sensor.crop_steering_batch_status": {
+        entity_id: "sensor.crop_steering_batch_status",
+        state: "idle",
+        attributes: { auto: false },
+      },
+    };
+    const demo = new FeedDemo(
+      () => current,
+      (next) => (current = next),
+    );
+    return { demo, states: () => current };
+  };
+
+  it("saves like the integration, refusing a stale revision and what it would not accept", () => {
+    const { demo, states } = rig();
+    let doc = demo.call("feed_get", { room_id: room });
+    expect(doc.plan.stage).toBe("Flower");
+    expect(() =>
+      demo.call("feed_save", { room_id: room, expected_revision: 99, document: sampleFeed() }),
+    ).toThrow(/changed elsewhere/);
+    expect(() =>
+      demo.call("feed_save", {
+        room_id: room,
+        expected_revision: doc.revision,
+        document: { ...sampleFeed(), batch_l: 0 },
+      }),
+    ).toThrow(/Batch size/);
+    doc = demo.call("feed_save", {
+      room_id: room,
+      expected_revision: doc.revision,
+      document: { ...sampleFeed(), batch_l: 300, order: [2, 1, 3, 4] },
+    });
+    expect(doc.plan.doses.map((d) => [d.doser, d.ml])).toEqual([
+      [2, 1500],
+      [1, 900],
+      [3, 300],
+      [4, 150],
+    ]);
+    expect(states()["sensor.crop_steering_feed_plan"].state).toBe("Flower");
+    expect(states()["select.crop_steering_feed_stage"].attributes.options).toEqual(["Flower"]);
+  });
+
+  it("starts a batch asked for as the controller would, filling first", () => {
+    const { demo, states } = rig();
+    const doc = demo.call("feed_mix", { room_id: room });
+    expect(doc.requested).toBeTruthy();
+    expect(states()["sensor.crop_steering_batch_status"].state).toBe("filling");
+    expect(states()["switch.fresh"].state).toBe("on");
+  });
+});
+
+describe("feed actions in the dashboard", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("are for the room selected, whatever the page sends, and a read changes nothing", async () => {
+    const storage = new Map<string, string>();
+    vi.stubGlobal("sessionStorage", {
+      getItem: (key: string) => storage.get(key) || null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+    });
+    vi.stubGlobal("window", {
+      location: { origin: "http://x.test", hostname: "x.test", href: "http://x.test/", search: "" },
+      history: { replaceState: vi.fn() },
+    });
+    vi.spyOn(HaClient.prototype, "states").mockResolvedValue(createDemo());
+    const operator = vi.spyOn(HaClient.prototype, "operator").mockResolvedValue({ revision: 1 });
+    const store = new ControllerStore(false);
+    await store.connect("http://x.test", "token");
+    store.changeRoom("room:f1_");
+    const refresh = vi.spyOn(store, "refresh");
+    await store.operator("feed_get");
+    expect(refresh).not.toHaveBeenCalled();
+    await store.operator("feed_mix", { room_id: "room:" });
+    expect(operator.mock.calls).toEqual([
+      ["feed_get", { room_id: "room:f1_" }],
+      ["feed_mix", { room_id: "room:f1_" }],
+    ]);
+    expect(refresh).toHaveBeenCalledTimes(1); // a batch asked for: the new button state
+    store.disconnect();
+  });
+});

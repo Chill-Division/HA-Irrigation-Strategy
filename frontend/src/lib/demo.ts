@@ -4,14 +4,29 @@ import type { CounterSample, WaterRecordRequest } from "./water-use";
 import { addDays, daysBetween } from "./comparison";
 import { dateForDay, localDate } from "./grow-plan";
 import { numeric } from "./model";
+import { feedEntities, sampleFeed } from "./feed-demo";
+import { mappedNumbers, planOf } from "./feed";
 
 export function isDemoLocation(location: Pick<Location, "hostname" | "search">): boolean {
   return (
     new URLSearchParams(location.search).has("demo") || location.hostname.endsWith(".github.io")
   );
 }
+const DOSER_SWITCHES: Record<string, string> = {
+  "1": "switch.demo_doser_1",
+  "2": "switch.demo_doser_2",
+  "3": "switch.demo_doser_3",
+  "4": "switch.demo_doser_4",
+};
+const DEMO_RESERVOIR = {
+  reservoir_distance_sensor: "sensor.demo_reservoir_distance",
+  fresh_water_switch: "switch.demo_fresh_water",
+  recirc_switch: "switch.demo_recirc",
+  ...Object.fromEntries(Object.entries(DOSER_SWITCHES).map(([n, e]) => [`doser_${n}_switch`, e])),
+};
 export function createDemo(now = Date.now()): States {
   const states: States = {};
+  const stamp = new Date(now - 18_000).toISOString();
   function put(
     entity_id: string,
     state: string | number,
@@ -61,6 +76,8 @@ export function createDemo(now = Date.now()): States {
       tank_temperature_sensor: `sensor.demo_${prefix}tank_temperature`,
       tank_last_fill_sensor: `sensor.demo_${prefix}tank_last_fill`,
       tank_fill_entity: `binary_sensor.demo_${prefix}tank_filling`,
+      // Flower 2 mixes its own nutrient batches; Flower 1 has no reservoir mapped.
+      ...(index ? {} : DEMO_RESERVOIR),
       // Both rooms have been saved in Rooms & setup.
       setup_revision: 1,
     });
@@ -75,6 +92,58 @@ export function createDemo(now = Date.now()): States {
       { device_class: "timestamp" },
     );
     put(`binary_sensor.demo_${prefix}tank_filling`, "off");
+    // What the integration publishes for every room's nutrient batches, and, for Flower 2, what the
+    // controller reports: its reservoir reads 640 mm from the top, short of its almost-empty mark.
+    const feed = index ? null : sampleFeed();
+    const plan = feed
+      ? planOf(feed, mappedNumbers(DOSER_SWITCHES))
+      : {
+          stage: null,
+          stage_id: null,
+          fill_s: 600,
+          batch_l: 100,
+          empty_mm: 0,
+          settle_s: 20,
+          pause_s: 10,
+          mix_s: 600,
+          doses: [],
+          problem: "No doser is mapped in Rooms & setup.",
+        };
+    for (const entity of Object.values(
+      feedEntities(prefix, plan, feed ? feed.recipes.map((r) => r.name) : [], stamp),
+    ))
+      put(entity.entity_id, entity.state, entity.attributes);
+    put(`switch.crop_steering_${prefix}auto_batches`, index ? "off" : "on");
+    put(`button.crop_steering_${prefix}mix_batch`, new Date(now - 20 * 3600_000).toISOString());
+    if (!index) {
+      put(DEMO_RESERVOIR.reservoir_distance_sensor, 640, { unit_of_measurement: "mm" });
+      for (const entity of [
+        DEMO_RESERVOIR.fresh_water_switch,
+        DEMO_RESERVOIR.recirc_switch,
+        ...Object.values(DOSER_SWITCHES),
+      ])
+        put(entity, "off");
+      put(`sensor.crop_steering_${prefix}batch_status`, "idle", {
+        friendly_name: "Nutrient batch",
+        stage: plan.stage,
+        until: null,
+        doser: null,
+        nutrient: null,
+        doses: plan.doses.map((d) => ({ ...d, dosed: null })),
+        level_mm: 640,
+        empty_mm: plan.empty_mm,
+        auto: true,
+        armed: true,
+        last: {
+          at: new Date(now - 20 * 3600_000 + 1_450_000).toISOString(),
+          result: "done",
+          stage: plan.stage,
+          dosed: Object.fromEntries(plan.doses.map((d) => [String(d.doser), d.ml])),
+        },
+        blocked: null,
+        updated: stamp,
+      });
+    }
     put(enable, "on");
     put(`switch.crop_steering_${prefix}room_active`, "on");
     // Flower 2 demonstrates a running setpoint supervisor; Flower 1 keeps the default (off).
@@ -338,6 +407,14 @@ export function demoReact(states: States, entityId: string, value: unknown): Sta
       ...(states[phase] ? { [phase]: { ...states[phase], state: value } } : {}),
     };
   }
+  // The controller reports the room's Automatic batches switch in its batch status.
+  const batches = entityId.match(/^switch\.crop_steering_(.*)auto_batches$/);
+  const status = batches && states[`sensor.crop_steering_${batches[1]}batch_status`];
+  if (status && typeof value === "boolean")
+    return {
+      ...states,
+      [status.entity_id]: { ...status, attributes: { ...status.attributes, auto: value } },
+    };
   const auto = entityId.match(/^switch\.crop_steering_(.*)auto_setpoints$/);
   if (!auto || typeof value !== "boolean") return states;
   const sensor = new RegExp(`^sensor\\.crop_steering_${auto[1]}zone_\\d+_auto_setpoints$`);

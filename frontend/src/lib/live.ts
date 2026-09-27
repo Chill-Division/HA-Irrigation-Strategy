@@ -176,7 +176,13 @@ export function applyEntityUpdate(states: States, update: EntityUpdate): States 
 
 // What the controller publishes (over REST, so these do not exist until it has posted them once:
 // after a Home Assistant restart with the controller stopped they are missing, not stale).
-const ROOM_SENSORS = ["ai_heartbeat", "app_status", "current_decision", "activity_log"];
+const ROOM_SENSORS = [
+  "ai_heartbeat",
+  "app_status",
+  "current_decision",
+  "activity_log",
+  "batch_status",
+];
 const ZONE_SENSORS = [
   "phase",
   "status",

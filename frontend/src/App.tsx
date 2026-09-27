@@ -5,6 +5,7 @@ import {
   ChartNoAxesCombined,
   Wrench,
   ArrowUpRight,
+  Beaker,
   ChevronRight,
   CircleHelp,
   Droplets,
@@ -56,6 +57,7 @@ import { Setup } from "@/pages/setup";
 import { Insights } from "@/pages/insights";
 import { Comparison } from "@/pages/comparison";
 import { StockTanks } from "@/pages/stock";
+import { Reservoir } from "@/pages/reservoir";
 
 const navigation = [
   { id: "overview", label: "Overview", icon: House },
@@ -65,6 +67,7 @@ const navigation = [
   { id: "insights", label: "Insights", icon: ChartNoAxesCombined },
   { id: "activity", label: "Activity", icon: Activity },
   { id: "sensors", label: "Sensors", icon: Radio },
+  { id: "reservoir", label: "Reservoir", icon: Beaker },
   { id: "stock", label: "Stock tanks", icon: FlaskConical },
   { id: "setup", label: "Rooms & setup", icon: Wrench },
   { id: "settings", label: "Settings", icon: Settings2 },
@@ -454,6 +457,14 @@ export default function App() {
               <ActivityPage key={controller.roomId} controller={controller} />
             )}
             {page === "sensors" && <Sensors key={controller.roomId} controller={controller} />}
+            {page === "reservoir" && (
+              <Reservoir
+                key={controller.roomId}
+                controller={controller}
+                navigate={navigate}
+                onDirtyChange={setWorkspaceDirty}
+              />
+            )}
             {page === "stock" && (
               <StockTanks key={controller.roomId} controller={controller} navigate={navigate} />
             )}

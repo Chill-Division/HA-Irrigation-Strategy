@@ -1,0 +1,362 @@
+/* Reservoir: a room's nutrient batches. Colours come from the theme tokens in styles.css. */
+.panel.res-batch {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+}
+.res-batch-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.res-batch-head p {
+  margin: 6px 0 0;
+}
+.res-step {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.res-step strong {
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+.res-batch-actions {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  max-width: 320px;
+  text-align: right;
+}
+.res-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.res-steps li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+  font-size: var(--text-sm);
+}
+.res-steps li[data-state="now"] {
+  border-color: var(--primary);
+  background: var(--secondary);
+}
+.res-steps li[data-state="done"] {
+  color: var(--muted-foreground);
+}
+.res-step-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  grid-row: span 2;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--muted-foreground);
+}
+.res-steps li[data-state="now"] .res-step-dot {
+  border-color: var(--primary);
+  background: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+.res-steps li[data-state="done"] .res-step-dot {
+  border-color: var(--success);
+  background: var(--success);
+  color: var(--surface);
+}
+.res-step-label {
+  font-weight: 600;
+}
+.res-step-detail {
+  color: var(--muted-foreground);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.res-batch-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+}
+.res-batch-body p {
+  margin: 0 0 8px;
+}
+.res-level {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+.res-vessel {
+  width: 56px;
+  height: 92px;
+}
+.res-shell {
+  fill: color-mix(in srgb, var(--foreground) 5%, var(--surface));
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+.res-water {
+  fill: color-mix(in srgb, var(--primary) 45%, var(--surface));
+}
+.res-vessel[data-low] .res-water {
+  fill: color-mix(in srgb, var(--warning) 55%, var(--surface));
+}
+.res-mark {
+  stroke: var(--foreground);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.res-facts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.res-facts dt {
+  font-size: var(--text-xs);
+  color: var(--muted-foreground);
+}
+.res-facts dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.res-auto p,
+.res-last p {
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+.workspace-message.res-note {
+  margin: 0;
+}
+.res-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+}
+.res-columns > .panel {
+  margin-bottom: 20px;
+}
+.res-stage label {
+  display: block;
+  margin-top: 14px;
+}
+.res-select {
+  width: 100%;
+  min-height: 40px;
+  margin: 6px 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--input-background, var(--card));
+  color: var(--foreground);
+}
+.res-plan {
+  width: 100%;
+}
+.res-setting-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 18px;
+  margin-top: 12px;
+}
+.res-setting {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.res-setting small {
+  line-height: 1.45;
+}
+.inline-link.inline-link {
+  justify-self: start;
+  height: auto;
+  padding: 0;
+  font-size: inherit;
+}
+.res-dosers {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
+}
+.res-doser {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) 150px auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.res-doser[data-dragging] {
+  border-color: var(--primary);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 16%);
+  position: relative;
+  z-index: 1;
+}
+.res-grip {
+  display: inline-flex;
+  padding: 6px 2px;
+  color: var(--muted-foreground);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.res-doser[data-dragging] .res-grip {
+  cursor: grabbing;
+}
+.res-doser-position {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--secondary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.res-doser-name {
+  display: grid;
+  min-width: 0;
+}
+.res-entity {
+  overflow: hidden;
+  font-size: var(--text-xs);
+  color: var(--muted-foreground);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.res-flow {
+  display: grid;
+  gap: 4px;
+}
+.res-flow label {
+  font-size: var(--text-xs);
+}
+.res-doser-move {
+  display: flex;
+}
+.res-recipes {
+  margin-bottom: 20px;
+}
+.res-recipes .workspace-section-heading {
+  margin-bottom: 12px;
+}
+.res-recipes h2 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  margin: 0;
+}
+.panel.res-recipe {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px 20px;
+  margin: 0 0 16px;
+}
+.res-recipe-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 14px;
+}
+.res-recipe-head > div {
+  display: grid;
+  gap: 6px;
+}
+.res-recipe-head > .pill {
+  margin-bottom: 10px;
+}
+.res-recipe-table input {
+  min-width: 90px;
+}
+.res-recipe-table input[type="number"] {
+  min-width: 64px;
+  max-width: 96px;
+}
+.res-recipe-table td:first-child {
+  white-space: nowrap;
+}
+.pill.res-unmapped {
+  margin-left: 8px;
+}
+.res-recipe-total {
+  margin: 0;
+}
+.res-savebar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  display: grid;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+}
+.res-savebar .workspace-message {
+  margin: 0;
+}
+.res-savebar-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.res-savebar-row span {
+  margin-right: auto;
+  font-weight: 600;
+}
+@media (max-width: 900px) {
+  .res-batch-body,
+  .res-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .res-columns {
+    gap: 0;
+  }
+}
+@media (max-width: 640px) {
+  .panel.res-batch {
+    padding: 16px;
+  }
+  .res-batch-actions {
+    justify-items: start;
+    text-align: left;
+    max-width: none;
+  }
+  .res-setting-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .res-doser {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+  }
+  .res-flow {
+    grid-column: 3 / -1;
+    grid-row: 2;
+  }
+  .res-recipe-head {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+  .res-recipe-head > div:first-child {
+    grid-column: 1 / -1;
+  }
+}
