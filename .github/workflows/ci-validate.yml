@@ -2,8 +2,8 @@ name: Validate
 
 on:
   push:
-    # `main` is the only branch (docs/RELEASING.md): scripts/release.py releases only a commit
-    # this workflow has passed on it.
+    # `main` is what is released (docs/RELEASING.md): scripts/release.py releases only a commit
+    # this workflow has passed on it. What is merged into `testing` was checked by its pull request.
     branches: [ main ]
   # Every pull request, whatever branch it targets, so nothing is merged unchecked.
   pull_request:
