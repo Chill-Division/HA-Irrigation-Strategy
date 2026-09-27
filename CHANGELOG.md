@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to fill them in with its own built-in values and could water on those; now the zone waits up to
   three passes (about three minutes) for them. A setting still missing after that is watered on its
   built-in value, as before, and the "settings missing" notice (CS-402) says which.
+- **The dashboard says when the controller has stopped.** When the controller app stops for an
+  update or a restart it says so first, and the dashboard shows "The controller app stopped 3 min
+  ago", adding that it starts again by itself, which can take a few minutes. With no word from the
+  controller at all, as just after Home Assistant restarts, it now says that this lasts a few
+  minutes, instead of only that the controller is not running.
 
 ### 🔧 Technical notes
 
@@ -28,6 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Settings read later in a pass (the pot volume, in shot sizing) are not waited for. The controller
   tests see settings as loaded at once (`conftest._settings_load_at_once`) except
   `test_settings_wait.py`.
+- **Stopped heartbeat (controller, dashboard).** On SIGTERM, after closing a shot in flight and
+  saving state, `_say_stopped` sets each room's `sensor.crop_steering_<prefix>ai_heartbeat` to
+  `stopped` with `stopped_at` (2 s timeout per room). It keeps `enable_flag` and `setup_revision` for
+  the integration and leaves out `strategy_snapshot_version`, so `controller_supported` is false and
+  no grow plan is armed on a stopped controller; the engine-offline repair still comes after 10
+  minutes. The dashboard's `readHeartbeat` gains a `stopped` health: a "Controller stopped" warning
+  and "The controller app stopped … ago" on the status line. A missing heartbeat's texts add that it
+  lasts a few minutes after a restart or an update.
 
 ## [2.25.0] - 2026-09-27
 

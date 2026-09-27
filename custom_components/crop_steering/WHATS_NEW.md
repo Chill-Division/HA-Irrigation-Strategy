@@ -23,6 +23,7 @@ version being released.
 
 ## Unreleased
 
+- When the controller app stops for an update or a restart, the dashboard says so, and that it starts again by itself.
 - Bug fixes and improvements.
 
 ## 2.25.0 - 2026-09-27
