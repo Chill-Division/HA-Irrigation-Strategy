@@ -1,4 +1,6 @@
-# Unreleased
+# 2.25.0
+
+Pair with integration 2.25.0.
 
 Three options are removed, `cf_account_id`, `cf_api_token` and `cf_gateway_id`: Supervisor drops them from an old configuration. The state file keeps what each zone learned and drops the Cloudflare judge's keys (`peak_adj`, `jev`, `veto`) on load.
 

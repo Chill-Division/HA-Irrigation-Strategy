@@ -9,7 +9,9 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.25.0] - 2026-09-27
+
+Integration and controller **2.25.0**.
 
 Eight changes from JakeTheRabbit/HA-Irrigation-Strategy (its pull requests 119 to 125 and 127), What's new
 linking to this repository's releases, and Auto Setpoints without the Cloudflare judge. Checked by the lean, controller, engine, real-Home-Assistant (2026.9.3 and

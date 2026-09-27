@@ -21,7 +21,7 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
-## Unreleased
+## 2.25.0 - 2026-09-27
 
 - Each zone shows what it is waiting for next: the moisture or EC level that starts its next shot or phase.
 - One switch in the zones heading turns every zone on or off, and switching a zone off now stops a shot already running.
