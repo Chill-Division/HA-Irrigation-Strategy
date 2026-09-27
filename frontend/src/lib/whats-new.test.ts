@@ -83,7 +83,7 @@ describe("Help & tools", () => {
   });
   it("links each release to its notes", () => {
     expect(releaseUrl("2.24.0")).toBe(
-      "https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/releases/tag/v2.24.0",
+      "https://github.com/ChillingSilence/HA-Irrigation-Strategy/releases/tag/v2.24.0",
     );
   });
 });
