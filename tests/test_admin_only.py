@@ -22,6 +22,7 @@ ha_stubs.install()
 
 from custom_components.crop_steering import (  # noqa: E402
     run_api,
+    feed_api,
     services,
     setup_api,
     stock_api,
@@ -38,6 +39,7 @@ READ_ONLY = {
     "strategy_preview",
     "runs_get",
     "stock_get",
+    "feed_get",
     "whats_new_get",
 }
 # Changes nothing but whether the dashboard's What's new window shows again: whoever opens the
@@ -63,6 +65,8 @@ CHANGES = {
     "stock_save": {"room_id": ROOM, "expected_revision": 0, "tanks": []},
     "stock_refill": {"room_id": ROOM, "expected_revision": 0, "id": "bloom"},
     "stock_record_batch": {"room_id": ROOM, "expected_revision": 0},
+    "feed_save": {"room_id": ROOM, "expected_revision": 0, "document": {}},
+    "feed_mix": {"room_id": ROOM},
 }
 
 
@@ -120,6 +124,14 @@ def rig(monkeypatch):
         mutate=AsyncMock(return_value={"tanks": []}),
     )
     monkeypatch.setattr(stock_api, "StockStore", lambda hass, entry: tanks)
+    batches = SimpleNamespace(
+        room_id=ROOM,
+        async_init=AsyncMock(),
+        response=MagicMock(return_value={"recipes": []}),
+        save=AsyncMock(return_value={"recipes": []}),
+        mix=AsyncMock(return_value={"recipes": []}),
+    )
+    monkeypatch.setattr(feed_api, "FeedStore", lambda hass, entry: batches)
     notice = SimpleNamespace(
         async_init=AsyncMock(),
         response=AsyncMock(return_value={"seen": None}),
@@ -154,6 +166,7 @@ def rig(monkeypatch):
     asyncio.run(strategy_api.async_setup_strategy_services(hass))
     asyncio.run(run_api.async_setup_runs(hass, ha_stubs.FakeEntry()))
     asyncio.run(stock_api.async_setup_stock(hass, ha_stubs.FakeEntry()))
+    asyncio.run(feed_api.async_setup_feed(hass, ha_stubs.FakeEntry()))
     asyncio.run(setup_api.async_setup_setup_services(hass))
     asyncio.run(whats_new.async_setup_whats_new(hass, ha_stubs.FakeEntry(), False))
 
@@ -168,6 +181,8 @@ def rig(monkeypatch):
             strategy.disarm,
             runs.mutate,
             tanks.mutate,
+            batches.save,
+            batches.mix,
             setup["create_setup"],
             setup["save_setup"],
             setup["remove_setup"],

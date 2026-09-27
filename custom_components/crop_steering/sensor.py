@@ -230,6 +230,8 @@ async def async_setup_entry(
         CropSteeringEngineConfigSensor(entry, num_zones, zones_config, hardware_config)
     )
     sensors.append(CropSteeringStockSensor(entry))
+    # What the controller runs for the room's next nutrient batch (feed_api.py).
+    sensors.append(CropSteeringFeedPlanSensor(entry))
 
     async_add_entities(sensors)
 
@@ -859,3 +861,63 @@ class CropSteeringZoneStatusSensor(CropSteeringSensor):
     @property
     def extra_state_attributes(self) -> dict | None:
         return dict(self._current()[1])
+
+
+class CropSteeringFeedPlanSensor(SensorEntity):
+    """What the controller app runs for the room's next nutrient batch: the feed stage in use as the
+    state ("none" when none is chosen), and as attributes the batch settings and, in the room's
+    order, each doser's nutrient, mL and seconds (feed.plan), with `problem` saying why no batch can
+    run. Rewritten whenever the room's feed settings change."""
+
+    _attr_should_poll = False
+    _attr_icon = "mdi:beaker-outline"
+
+    def __init__(self, entry):
+        self._entry = entry
+        self._prefix = room_prefix(entry)
+        self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_feed_plan"
+        self._attr_name = "Feed plan"
+        self._attr_object_id = f"{DOMAIN}_{self._prefix}feed_plan"
+        self.entity_id = f"sensor.{self._attr_object_id}"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._entry.entry_id)},
+            name="Crop Steering System",
+            manufacturer="Home Assistant Community",
+            model="Professional Irrigation Controller",
+            sw_version=SOFTWARE_VERSION,
+        )
+
+    def _manager(self):
+        from .feed_api import get_feed
+
+        return get_feed(self.hass, self._entry)
+
+    @property
+    def native_value(self) -> Any:
+        manager = self._manager()
+        if manager is None or manager.error:
+            return None
+        return manager.plan()["stage"] or "none"
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        manager = self._manager()
+        if manager is None:
+            return {}
+        if manager.error:
+            return {"error": manager.error}
+        return {**manager.plan(), "revision": manager.data["revision"]}
+
+    async def async_added_to_hass(self) -> None:
+        from homeassistant.helpers.dispatcher import async_dispatcher_connect
+
+        from .feed_api import SIGNAL
+
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, f"{SIGNAL}_{self._entry.entry_id}", self.async_write_ha_state
+            )
+        )

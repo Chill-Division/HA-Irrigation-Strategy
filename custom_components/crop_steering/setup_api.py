@@ -15,6 +15,7 @@ from .plumbing import (
     infer as infer_plumbing,
     problems as plumbing_problems,
 )
+from .feed import DOSER_KEYS
 from .sizing import prefer_setup_value
 
 API_VERSION = 1
@@ -30,7 +31,14 @@ HARDWARE_DOMAINS = {
     "tank_temperature_sensor": {"sensor"},
     "tank_last_fill_sensor": {"sensor", "input_datetime"},
     "tank_fill_entity": {"switch", "binary_sensor"},
+    # The reservoir and its dosers, for nutrient batches (feed.py): the controller drives these.
+    "reservoir_distance_sensor": {"sensor"},
+    "fresh_water_switch": {"switch"},
+    "recirc_switch": {"switch"},
+    **{key: {"switch"} for key in DOSER_KEYS},
 }
+# Switches a nutrient batch drives, besides the room's pump.
+BATCH_SWITCHES = ("fresh_water_switch", "recirc_switch", *DOSER_KEYS)
 # Mappings earlier versions had, for the source-water gate and the tank's EC and pH (removed in 2.26.0).
 RETIRED_HARDWARE = (
     "feed_ec_sensor",
@@ -48,6 +56,7 @@ UNITS = {
     "vwc": units.accepted("vwc"),  # converted to % where the probe reports a fraction
     "ec": units.accepted("ec"),  # converted to mS/cm where the probe reports uS/cm
     "tank_temperature": {"°c", "°f", "k"},
+    "distance": {"mm", "cm", "m"},
 }
 
 
@@ -63,6 +72,7 @@ def hardware_entities(data):
             hw.get("pump_switch"),
             hw.get("main_line_switch"),
             hw.get("waste_switch"),
+            *[hw.get(key) for key in BATCH_SWITCHES],
             *[z.get("zone_switch") for z in data.get("zones", {}).values()],
         ]
         if entity
@@ -376,7 +386,10 @@ def prepare_setup(hass, payload, old=None, entry_id=None):
                 hass,
                 value,
                 HARDWARE_DOMAINS[key],
-                "tank_temperature" if key == "tank_temperature_sensor" else None,
+                {
+                    "tank_temperature_sensor": "tank_temperature",
+                    "reservoir_distance_sensor": "distance",
+                }.get(key),
             )
             if key == "tank_last_fill_sensor":
                 _tank_timestamp(hass, value)
@@ -405,6 +418,15 @@ def prepare_setup(hass, payload, old=None, entry_id=None):
         z["zone_switch"] for z in zones.values() if z.get("active", True)
     ):
         raise ValueError("A valve cannot also be pump, mainline or waste")
+    batch = [hw[key] for key in BATCH_SWITCHES if hw.get(key)]
+    if len(set(batch)) != len(batch):
+        raise ValueError(
+            "Each doser and the fresh-water and recirculation solenoids need a switch of their own"
+        )
+    if set(batch) & (shared | {z.get("zone_switch") for z in zones.values()}):
+        raise ValueError(
+            "A doser or reservoir solenoid cannot also be the pump, mainline, waste or a zone valve"
+        )
     # The plumbing layout is DECLARED, never inferred here. Absent from the payload (an older
     # dashboard, the env file, a room from before this existed) keeps whatever the room already
     # had, which may be nothing: that room is then driven as it always was. Once declared it can

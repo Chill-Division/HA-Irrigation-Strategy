@@ -208,6 +208,8 @@ async def test_the_controller_carries_straight_on_after_the_upgrade_without_a_di
     assert room.state[1]["shots"] == 7 and room.state[1]["daily_vol"] == 9.5
     assert room.state[2]["phase"] == "P1"
     assert "Setup" not in (c._blocked(room, 1) or "")
+    # A state file from before nutrient batches: no batch, and a room without a reservoir has none.
+    assert room.batch["step"] == "idle" and room.hw.get("reservoir") is None
     # ...and it still drives the room the way it always did: pump, mainline, valve.
     for switch in (
         "switch.crop_steering_system_enabled",
@@ -225,6 +227,18 @@ async def test_the_controller_carries_straight_on_after_the_upgrade_without_a_di
         ("turn_off", "switch.main_line"),
         ("turn_off", "switch.main_pump"),
     ]
+
+
+async def test_an_old_room_gains_nutrient_batches_switched_off_with_nothing_to_run(hass):
+    await _upgrade(hass, "entry_2_17_wizard.json")
+    assert hass.states.get("switch.crop_steering_auto_batches").state == "off"
+    assert hass.states.get("button.crop_steering_mix_batch").state == "unknown"
+    plan = hass.states.get("sensor.crop_steering_feed_plan")
+    assert plan.state == "none"
+    assert plan.attributes["problem"] == "No doser is mapped in Rooms & setup."
+    assert hass.states.get("select.crop_steering_feed_stage").state == "unavailable"
+    descriptor = hass.states.get(DESCRIPTOR).attributes
+    assert not [key for key in descriptor if key.startswith("doser_") or "reservoir" in key]
 
 
 # ------------------------------------------------------------------ an env-file era install

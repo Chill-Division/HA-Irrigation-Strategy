@@ -163,7 +163,7 @@ class FakeServices:
     def async_remove(self, domain, name):
         self.registered.pop((domain, name), None)
 
-    async def async_call(self, domain, service, data, blocking=False):
+    async def async_call(self, domain, service, data, blocking=False, context=None):
         self.calls.append((domain, service, data))
 
 

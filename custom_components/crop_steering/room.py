@@ -74,6 +74,18 @@ def restored_state_is_ours(entry, last_state) -> bool:
         return True
 
 
+# A room's reservoir and dosers, for nutrient batches (feed.py): mapped in Rooms & setup, driven by
+# the controller. Published in the descriptor only when mapped, like `plumbing`.
+MAX_DOSERS = 6
+DOSER_KEYS = tuple(f"doser_{number}_switch" for number in range(1, MAX_DOSERS + 1))
+RESERVOIR_KEYS = (
+    "reservoir_distance_sensor",
+    "fresh_water_switch",
+    "recirc_switch",
+    *DOSER_KEYS,
+)
+
+
 def build_engine_config(
     prefix,
     slug,
@@ -154,4 +166,6 @@ def build_engine_config(
         "tank_temperature_sensor": hw.get("tank_temperature_sensor", ""),
         "tank_last_fill_sensor": hw.get("tank_last_fill_sensor", ""),
         "tank_fill_entity": hw.get("tank_fill_entity", ""),
+        # Only when mapped: a room without a reservoir publishes the descriptor it always did.
+        **{key: hw[key] for key in RESERVOIR_KEYS if hw.get(key)},
     }
