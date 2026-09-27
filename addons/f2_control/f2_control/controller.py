@@ -2880,8 +2880,33 @@ class Controller:
         try:
             self._safe_off()
             self._save_state()
+            self._say_stopped(datetime.now())
         finally:
             sys.exit(0)
+
+    def _say_stopped(self, now):
+        """The app is stopping (an update, a restart or by hand): each room's heartbeat says so, so the
+        dashboard shows a stopped controller, and when, rather than a missing one. It keeps what the
+        integration reads to find the engine switch, and leaves out strategy_snapshot_version, so no
+        grow plan is armed on a stopped controller. Last, and quickly: Supervisor kills the app 10 s
+        after asking it to stop, and closing a shot comes first."""
+        for room in self.rooms:
+            ha_set(
+                f"sensor.crop_steering_{room.prefix}ai_heartbeat",
+                "stopped",
+                {
+                    "engine": "f2-control",
+                    "controller_version": CONTROLLER_VERSION,
+                    "stopped_at": now.isoformat(),
+                    "last_beat": now.isoformat(),
+                    "enable_flag": room.enable_flag,
+                    "hardware_fault": self._hardware_fault_block(room),
+                    "setup_revision": getattr(room, "setup_revision", 0),
+                    "setup_active": getattr(room, "setup_active", True),
+                    "room_active": getattr(room, "_room_active_known", True),
+                },
+                timeout=2,
+            )
 
     @staticmethod
     def _step_ec_offset(cur, ec_smooth, ec_target_p2, base):

@@ -3,6 +3,7 @@
 No change to add-on options or the state file.
 
 - **Waits for its settings.** A setting `_zone_num` has to fill in with a built-in value holds the room's shots (`_blocked`: "waiting for its settings to load") until it has been missing for `SETTINGS_WAIT_PASSES` (3) passes, when CS-402 is raised and the built-in value is used, as before. While Home Assistant starts or the integration reloads, the numbers are missing for a moment.
+- **Says when it stops.** On SIGTERM (an update, a restart or a stop), after closing a shot in flight and saving state, each room's heartbeat is set to `stopped` with `stopped_at`, without `strategy_snapshot_version`. The dashboard the app serves shows it.
 
 # 2.25.0
 
