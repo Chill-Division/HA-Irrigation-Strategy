@@ -458,11 +458,15 @@ export function StockTanks({
           {doc.fill_entity ? (
             <>
               Batches are counted from <code>{doc.fill_entity}</code>: each newer fill time takes
-              one batch's dose from every tank. Last batch {when(doc.last_batch)}.
+              one batch's dose from every tank
+              {Object.keys(doc.dosers ?? {}).length ? " on no doser" : ""}. Last batch{" "}
+              {when(doc.last_batch)}.
             </>
           ) : (
             <>
-              No tank last-fill entity is mapped, so record each batch by hand, or{" "}
+              No tank last-fill entity is mapped, so record each batch
+              {Object.keys(doc.dosers ?? {}).length ? " the Reservoir did not mix" : ""} by hand,
+              or{" "}
               <Button variant="link" className="inline-link" onClick={() => navigate("setup")}>
                 map one in Rooms & setup
               </Button>
