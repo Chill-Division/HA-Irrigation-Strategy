@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- A zone with more than one probe can read its moisture, and separately its EC, as their average, median, lowest or highest.
+
 ## 2.26.2 - 2026-09-28
 
 - The vitals notification is shorter and says what each zone will do next; Settings can leave that out.

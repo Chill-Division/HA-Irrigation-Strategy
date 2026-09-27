@@ -9,6 +9,30 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **Choose how a zone's probes are read.** A zone with more than one probe read their average.
+  Now each zone has two choices, one for moisture and one for EC: Average, Median, Lowest or
+  Highest. Steer on the driest probe for safety while the EC stays an average, for example. In a
+  zone's details, under Probes, each choice shows what the zone would read with it right now,
+  including which probe the lowest and the highest are. A change takes effect at once, after a
+  review, and the controller steers on the new reading from its next check. Every zone stays on
+  Average until you choose, so nothing changes by itself.
+
+### 🔧 Technical notes
+
+- **Probe choices (integration, dashboard).** Per zone,
+  `select.crop_steering_<prefix>zone_N_vwc_method` and `_ec_method` (Average, Median, Lowest,
+  Highest; Average by default, and for an upgraded zone). `sensor.crop_steering_<prefix>vwc_zone_N`
+  and `ec_zone_N` apply them (`calculations.combine_probes`; Average is the arithmetic mean it
+  always was, and a choice they do not know reads as Average), update the moment a choice changes,
+  and publish `probes` (each probe's reading, converted), `combined` (what every choice gives now)
+  and `method`. The controller steers on those sensors unchanged, proven with the real controller.
+  The dashboard's zone sheet has a Probes section with both choices, reviewed, and its Moisture and
+  EC tiles say how they are read and what each probe reads.
+
 ## [2.26.2] - 2026-09-28
 
 Integration and controller **2.26.2**.

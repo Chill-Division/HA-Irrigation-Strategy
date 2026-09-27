@@ -156,7 +156,7 @@ An HA administrator uses **Rooms & setup**. Pair devices and expose their entiti
 
 1. Choose an existing room or **Add room**. Give it a clear name. Names may change without changing its stable identity.
 2. Map **Room pump** and **Mainline valve**, then each active zone's valve. Search by friendly name or exact entity ID; inspect the displayed value/unit before selecting.
-3. Select one or more VWC and EC probes per zone. **Clear mapping** removes the selected mapping; **Done** closes the picker. Multiple valid readings are combined by the integration; automatic outlier rejection is not provided.
+3. Select one or more VWC and EC probes per zone. **Clear mapping** removes the selected mapping; **Done** closes the picker. Several probes in a zone become one moisture and one EC reading: their average until you choose otherwise in the zone's details, under **Probes** (average, median, lowest or highest, for moisture and EC apart; each choice shows what the zone would read with it now). Automatic outlier rejection is not provided.
 4. Enter plant count, substrate litres **per plant**, drippers **per plant**, and flow in litres/hour **per dripper**. Review existing values instead of replacing them with generic defaults.
 5. Map optional room equipment and tank displays as separate roles. Explicitly map shared equipment only where appropriate; never reuse a zone valve accidentally.
 6. Stop affected engines and verify the implicated irrigation equipment is OFF. **Review configuration** shows the changes and blockers; **Save configuration** persists the setup after backend validation.
