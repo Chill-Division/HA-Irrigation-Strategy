@@ -162,12 +162,13 @@ def test_a_room_that_never_declared_publishes_the_descriptor_it_always_did():
     """A room that never declared its plumbing must not grow a `plumbing` key, or anything else
     the controller's setup fingerprint reads: that would bring every existing install back from
     an update blocked behind a disarm cycle. (`integration_version` is not one of the keys the
-    fingerprint reads; addons/f2_control/tests/test_versions.py pins that side.)"""
+    fingerprint reads; addons/f2_control/tests/test_versions.py pins that side.) The feed and tank
+    EC/pH keys left in 2.26.0; the controller compares a fingerprint saved with them without them
+    (addons/f2_control/tests/test_declared_plumbing.py)."""
     legacy = {
         "setup_api_version", "setup_revision", "active", "room_name", "active_zone_ids", "zone_names",
-        "slug", "prefix", "num_zones", "pump", "mainline", "valves", "enable_flag", "feed_ec_sensor",
-        "feed_ph_sensor", "water_level_sensor", "tank_temperature_sensor", "tank_ec_sensor",
-        "tank_ph_sensor", "tank_last_fill_sensor", "tank_fill_entity",
+        "slug", "prefix", "num_zones", "pump", "mainline", "valves", "enable_flag",
+        "water_level_sensor", "tank_temperature_sensor", "tank_last_fill_sensor", "tank_fill_entity",
     }  # fmt: skip
     hass, entry, _ = rig()
     data = api.effective(entry)

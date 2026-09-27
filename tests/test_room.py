@@ -46,7 +46,7 @@ def test_slugify():
 _HW = {
     "pump_switch": "switch.veg_pump",
     "main_line_switch": "switch.veg_main",
-    "feed_ec_sensor": "sensor.veg_res_ec",
+    "feed_ec_sensor": "sensor.veg_res_ec",  # a setup from before 2.26.0 may still hold these
     "feed_ph_sensor": "sensor.veg_res_ph",
 }
 _ZONES = {
@@ -63,8 +63,9 @@ def test_named_room_engine_config_has_own_kill_switch_and_hardware():
     assert (
         d["enable_flag"] == "switch.crop_steering_veg_engine_enabled"
     )  # per-room kill switch
-    assert d["feed_ec_sensor"] == "sensor.veg_res_ec"
-    assert d["feed_ph_sensor"] == "sensor.veg_res_ph"
+    assert (
+        "feed_ec_sensor" not in d and "feed_ph_sensor" not in d
+    )  # the source-water gate is gone
 
 
 def test_default_room_engine_config_uses_global_kill_switch():
@@ -75,9 +76,6 @@ def test_default_room_engine_config_uses_global_kill_switch():
         d["enable_flag"] == "input_boolean.f2_control_enabled"
     )  # default keeps the global kill switch
     assert d["prefix"] == "" and d["valves"] == {1: "switch.f2_row1"}
-    assert (
-        d["feed_ec_sensor"] == "" and d["feed_ph_sensor"] == ""
-    )  # unset -> gate disabled
 
 
 def test_engine_config_skips_zones_without_a_valve():

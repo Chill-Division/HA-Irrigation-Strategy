@@ -14,8 +14,6 @@ from .test_setup import payload, rig
 MAPPINGS = {
     "water_level_sensor": "sensor.tank_level",
     "tank_temperature_sensor": "sensor.tank_temp",
-    "tank_ec_sensor": "sensor.tank_ec",
-    "tank_ph_sensor": "sensor.tank_ph",
     "tank_last_fill_sensor": "sensor.tank_last_fill",
     "tank_fill_entity": "binary_sensor.tank_filling",
 }
@@ -44,7 +42,9 @@ def tank_rig():
 def test_tank_mappings_roundtrip_without_changing_plumbing_identity_or_setpoints():
     hass, entry, _states = tank_rig()
     entry.data["hardware"]["temperature_sensor"] = "sensor.temp"
+    # a setup from before 2.26.0: its feed and tank EC/pH probes are dropped on its next save
     entry.data["hardware"]["feed_ec_sensor"] = "sensor.ec"
+    entry.data["hardware"]["tank_ph_sensor"] = "sensor.tank_ph"
     entry.options = {"keep_this_option": 42}
     before = deepcopy(entry.data)
     data = payload()
@@ -54,7 +54,7 @@ def test_tank_mappings_roundtrip_without_changing_plumbing_identity_or_setpoints
         assert result["hardware"][key] == value
         assert entry.data["hardware"][key] == value
     assert entry.data["hardware"]["temperature_sensor"] == "sensor.temp"
-    assert entry.data["hardware"]["feed_ec_sensor"] == "sensor.ec"
+    assert not {"feed_ec_sensor", "tank_ph_sensor"} & set(entry.data["hardware"])
     assert entry.data["room_prefix"] == before["room_prefix"]
     assert entry.data["parameters"] == before["parameters"]
     assert entry.data["zones"]["1"]["special"] == 123
@@ -84,14 +84,13 @@ def test_descriptor_exposes_only_explicit_room_tank_mappings():
         "temperature_sensor": "sensor.air",
     }
     attrs = build_engine_config("veg_", "veg", 1, {}, hardware)
-    for key, value in hardware.items():
-        if key != "temperature_sensor":
-            assert attrs[key] == value
+    for key, value in MAPPINGS.items():
+        assert attrs[key] == value
+    assert not {"feed_ec_sensor", "feed_ph_sensor", "temperature_sensor"} & set(attrs)
     absent = build_engine_config(
         "", "default", 1, {}, {"temperature_sensor": "sensor.air"}
     )
     assert all(absent[key] == "" for key in MAPPINGS)
-    assert absent["feed_ec_sensor"] == absent["feed_ph_sensor"] == ""
 
 
 @pytest.mark.parametrize("unit", ["°C", "°F", "K"])
@@ -178,37 +177,14 @@ def test_tank_mappings_reject_missing_entities_or_wrong_domains(key, value):
 
 
 @pytest.mark.parametrize(
-    "key,entity,unit",
-    [
-        ("tank_ec_sensor", "sensor.tank_ec", "mS/cm"),
-        ("tank_ec_sensor", "sensor.tank_ec", "dS/m"),
-        ("tank_ph_sensor", "sensor.tank_ph", "pH"),
-        ("tank_ph_sensor", "sensor.tank_ph", ""),
-    ],
+    "key", ["tank_ec_sensor", "tank_ph_sensor", "feed_ec_sensor", "feed_ph_sensor"]
 )
-def test_dedicated_tank_quality_units_do_not_enable_feed_gates(key, entity, unit):
-    hass, entry, states = tank_rig()
-    states[entity].attributes["unit_of_measurement"] = unit
-    data = payload()
-    data["hardware"][key] = entity
-    result = api.prepare_setup(hass, data, entry.data, entry.entry_id)
-    assert result["hardware"][key] == entity
-    assert not result["hardware"].get("feed_ec_sensor")
-    assert not result["hardware"].get("feed_ph_sensor")
-
-
-@pytest.mark.parametrize(
-    "key,entity",
-    [
-        ("tank_ec_sensor", "sensor.tank_ph"),
-        ("tank_ph_sensor", "sensor.tank_ec"),
-    ],
-)
-def test_dedicated_tank_quality_mapping_rejects_wrong_units(key, entity):
+def test_the_tank_and_feed_ec_ph_mappings_are_gone(key):
+    """Removed in 2.26.0 with the source-water gate: a setup that names one is refused."""
     hass, entry, _states = tank_rig()
     data = payload()
-    data["hardware"][key] = entity
-    with pytest.raises(ValueError, match="unit"):
+    data["hardware"][key] = "sensor.tank_ec"
+    with pytest.raises(ValueError, match="Unknown hardware mapping field"):
         api.prepare_setup(hass, data, entry.data, entry.entry_id)
 
 

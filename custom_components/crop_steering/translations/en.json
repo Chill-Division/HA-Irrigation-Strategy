@@ -351,12 +351,8 @@
           "water_level_sensor": "Tank level sensor (optional)",
           "notification_service": "Notification service (optional)",
           "tank_temperature_sensor": "Tank water temperature sensor (optional)",
-          "tank_ec_sensor": "Tank EC display sensor (optional)",
-          "tank_ph_sensor": "Tank pH display sensor (optional)",
           "tank_last_fill_sensor": "Tank last-fill time (optional)",
-          "tank_fill_entity": "Tank filling status (optional)",
-          "feed_ec_sensor": "Feed / tank EC probe (source-water check)",
-          "feed_ph_sensor": "Feed / tank pH probe (source-water check)"
+          "tank_fill_entity": "Tank filling status (optional)"
         },
         "data_description": {
           "plumbing": "What stands between the water and a zone valve. This is a statement about your plumbing, and the switches below have to match it. Setup refuses to save if they do not, and the controller refuses to water if they ever stop matching: a room that needs its pump is never run with the valve open and no pump. Not sure? If water only comes out while a pump is running, the room has a pump.",
@@ -377,12 +373,8 @@
           "water_level_sensor": "Reservoir/tank level sensor. Optional; triggers low-water alerts.",
           "notification_service": "Recorded only. Alerts are sent by the controller add-on, using its own notify_service option.",
           "tank_temperature_sensor": "Read-only tank-water temperature in °C, °F or K. This is separate from room/canopy temperature.",
-          "tank_ec_sensor": "Read-only tank EC in mS/cm or dS/m. This mapping does not enable or change the source-water EC gate.",
-          "tank_ph_sensor": "Read-only tank pH. This mapping does not enable or change the source-water pH gate.",
           "tank_last_fill_sensor": "Timestamp sensor or date-and-time helper recording the last fill. Helpers require both date and time plus a numeric epoch timestamp. A level sensor's last_changed time is not a fill event.",
-          "tank_fill_entity": "Read-only switch or binary sensor indicating filling. The dashboard does not operate this entity.",
-          "feed_ec_sensor": "An EC probe in the water you IRRIGATE WITH, not in the substrate. When mapped, the controller refuses to water while feed EC is outside your limits or the probe stops reporting. mS/cm, dS/m or µS/cm (converted for you). Leave empty to switch this check off.",
-          "feed_ph_sensor": "A pH probe in the water you irrigate with. When mapped, watering is refused outside your pH limits (5.8-6.2 by default) or when the probe stops reporting. Leave empty to switch this check off."
+          "tank_fill_entity": "Read-only switch or binary sensor indicating filling. The dashboard does not operate this entity."
         }
       },
       "load_env": {
@@ -605,12 +597,8 @@
           "zone_24_name": "Zone 24 label",
           "zone_24_active": "Zone 24 active (off archives this slot)",
           "tank_temperature_sensor": "Tank water temperature sensor (optional)",
-          "tank_ec_sensor": "Tank EC display sensor (optional)",
-          "tank_ph_sensor": "Tank pH display sensor (optional)",
           "tank_last_fill_sensor": "Tank last-fill time (optional)",
-          "tank_fill_entity": "Tank filling status (optional)",
-          "feed_ec_sensor": "Feed / tank EC probe (source-water check)",
-          "feed_ph_sensor": "Feed / tank pH probe (source-water check)"
+          "tank_fill_entity": "Tank filling status (optional)"
         },
         "data_description": {
           "plumbing": "What stands between the water and a zone valve. This is a statement about your plumbing, and the switches below have to match it. Setup refuses to save if they do not, and the controller refuses to water if they ever stop matching: a room that needs its pump is never run with the valve open and no pump. Not sure? If water only comes out while a pump is running, the room has a pump.",
@@ -727,8 +715,6 @@
           "water_level_sensor": "Reservoir/tank level sensor. Optional; triggers low-water alerts.",
           "notification_service": "Recorded only. Alerts are sent by the controller add-on, using its own notify_service option.",
           "tank_temperature_sensor": "Read-only tank-water temperature in °C, °F or K. This is separate from room/canopy temperature.",
-          "tank_ec_sensor": "Read-only tank EC in mS/cm or dS/m. This mapping does not enable or change the source-water EC gate.",
-          "tank_ph_sensor": "Read-only tank pH. This mapping does not enable or change the source-water pH gate.",
           "tank_last_fill_sensor": "Timestamp sensor or date-and-time helper recording the last fill. Helpers require both date and time plus a numeric epoch timestamp. A level sensor's last_changed time is not a fill event.",
           "tank_fill_entity": "Read-only switch or binary sensor indicating filling. The dashboard does not operate this entity.",
           "zone_1_name": "What you call zone 1, e.g. 'Tent' or 'Bench 2'. Shown on the dashboard. Changing it later never changes an entity id.",
@@ -778,9 +764,7 @@
           "zone_23_name": "What you call zone 23, e.g. 'Tent' or 'Bench 2'. Shown on the dashboard. Changing it later never changes an entity id.",
           "zone_23_active": "Untick to park zone 23: it keeps its number, settings and history, and is never watered.",
           "zone_24_name": "What you call zone 24, e.g. 'Tent' or 'Bench 2'. Shown on the dashboard. Changing it later never changes an entity id.",
-          "zone_24_active": "Untick to park zone 24: it keeps its number, settings and history, and is never watered.",
-          "feed_ec_sensor": "An EC probe in the water you IRRIGATE WITH, not in the substrate. When mapped, the controller refuses to water while feed EC is outside your limits or the probe stops reporting. mS/cm, dS/m or µS/cm (converted for you). Leave empty to switch this check off.",
-          "feed_ph_sensor": "A pH probe in the water you irrigate with. When mapped, watering is refused outside your pH limits (5.8-6.2 by default) or when the probe stops reporting. Leave empty to switch this check off."
+          "zone_24_active": "Untick to park zone 24: it keeps its number, settings and history, and is never watered."
         }
       },
       "edit_parameters": {

@@ -23,18 +23,21 @@ HARDWARE_DOMAINS = {
     "main_line_switch": {"switch"},
     "waste_switch": {"switch"},
     "light_entity": {"light", "switch"},
-    "feed_ec_sensor": {"sensor"},
-    "feed_ph_sensor": {"sensor"},
     "temperature_sensor": {"sensor"},
     "humidity_sensor": {"sensor"},
     "vpd_sensor": {"sensor"},
     "water_level_sensor": {"sensor"},
     "tank_temperature_sensor": {"sensor"},
-    "tank_ec_sensor": {"sensor"},
-    "tank_ph_sensor": {"sensor"},
     "tank_last_fill_sensor": {"sensor", "input_datetime"},
     "tank_fill_entity": {"switch", "binary_sensor"},
 }
+# Mappings earlier versions had, for the source-water gate and the tank's EC and pH (removed in 2.26.0).
+RETIRED_HARDWARE = (
+    "feed_ec_sensor",
+    "feed_ph_sensor",
+    "tank_ec_sensor",
+    "tank_ph_sensor",
+)
 SIZING = {
     "plant_count": (1, 1000, True),
     "substrate_volume": (0.1, 200, False),
@@ -44,7 +47,6 @@ SIZING = {
 UNITS = {
     "vwc": units.accepted("vwc"),  # converted to % where the probe reports a fraction
     "ec": units.accepted("ec"),  # converted to mS/cm where the probe reports uS/cm
-    "ph": {"ph", ""},
     "tank_temperature": {"°c", "°f", "k"},
 }
 
@@ -362,6 +364,9 @@ def prepare_setup(hass, payload, old=None, entry_id=None):
             prior[key] = int(value) if integer else float(value)
         zones[str(z)] = prior
     hw = deepcopy(old.get("hardware", {}))
+    # An older setup's feed and tank EC/pH probes (RETIRED_HARDWARE) go on its next save.
+    for key in RETIRED_HARDWARE:
+        hw.pop(key, None)
     incoming = payload.get("hardware", {})
     if not isinstance(incoming, dict) or set(incoming) - set(HARDWARE_DOMAINS):
         raise ValueError("Unknown hardware mapping field")
@@ -371,19 +376,7 @@ def prepare_setup(hass, payload, old=None, entry_id=None):
                 hass,
                 value,
                 HARDWARE_DOMAINS[key],
-                (
-                    "ec"
-                    if key in ("feed_ec_sensor", "tank_ec_sensor")
-                    else (
-                        "ph"
-                        if key in ("feed_ph_sensor", "tank_ph_sensor")
-                        else (
-                            "tank_temperature"
-                            if key == "tank_temperature_sensor"
-                            else None
-                        )
-                    )
-                ),
+                "tank_temperature" if key == "tank_temperature_sensor" else None,
             )
             if key == "tank_last_fill_sensor":
                 _tank_timestamp(hass, value)
