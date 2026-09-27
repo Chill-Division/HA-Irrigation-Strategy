@@ -1,4 +1,4 @@
-"""Setpoint supervisor: attainable targets, scheduled through the day, nudged by judgement. It never fires a shot.
+"""Setpoint supervisor: attainable targets, scheduled through the day. It never fires a shot.
 
 LIVE_Z1 is Zone 1's real setpoint set as read from Work HA on 2026-09-19.
 """
@@ -27,7 +27,7 @@ def _ctx(**kw):
 
 
 def _want(**kw):
-    return ss.desired(Z1, GEN, PLAN, ss.Steer(p2_shot=2.0), _ctx(**kw), ec_seen_max=5.6)
+    return ss.desired(Z1, GEN, PLAN, 2.0, _ctx(**kw), ec_seen_max=5.6)
 
 
 # ------------------------------------------------------------------ attainable
@@ -37,7 +37,7 @@ def test_targets_follow_the_zones_own_knee_not_a_textbook_number():
     assert w["field_capacity"] == 40.0  # knee + 2, held at the engine's lower bound
     assert w["p2_vwc_threshold"] == 34.8  # one maintenance shot (2% x 0.6) under the peak
     probe2 = ct.ZoneModel(knee=27.0, gain=0.25, day_rate=0.30, night_rate=0.15)  # reads low, steered the same way
-    w2 = ss.desired(probe2, GEN, ct.plan_day(probe2, GEN, 10, 22, 23.0), ss.Steer(2.0), _ctx(vwc=26.0), 3.9)
+    w2 = ss.desired(probe2, GEN, ct.plan_day(probe2, GEN, 10, 22, 23.0), 2.0, _ctx(vwc=26.0), 3.9)
     assert w2["p1_target_vwc"] == 27.0 and w2["p2_vwc_threshold"] == 26.5
 
 
@@ -52,7 +52,7 @@ def test_ec_target_is_pulled_to_what_the_feed_and_the_zone_can_actually_reach():
 def test_an_unreachable_dryback_is_replaced_by_the_deepest_one_possible():
     stretch = ct.ATHENA["stretch"]  # asks for 45%
     plan = ct.plan_day(Z1, stretch, 10, 22, 31.5)
-    w = ss.desired(Z1, stretch, plan, ss.Steer(1.5), _ctx(), ec_seen_max=5.6)
+    w = ss.desired(Z1, stretch, plan, 1.5, _ctx(), ec_seen_max=5.6)
     assert w["dryback_target"] == round(plan.achievable_dryback_pct, 1) < 45.0
 
 
@@ -93,35 +93,14 @@ def test_writes_are_clamped_stepped_and_never_invert_the_vwc_ladder():
     assert ss.writes(dict(LIVE_Z1, **moves), _want()) == []  # already there: nothing to write
 
 
-# ------------------------------------------------------------------ judgement
-def test_evidence_arrives_already_compared_and_in_words():
-    e = ss.evidence(Z1, GEN, PLAN, ss.Steer(2.0), _ctx(ec=7.6), ec_trend_24h=0.4, light_note="PPFD 787, 13% below the 7-day norm")
-    assert "ABOVE the stage range 4.0 to 7.0" in e["pore_ec"] and "runoff lowers pore EC" in e["feed_ec"]
-    assert "rising" in e["pore_ec_trend_24h"] and "reached the peak target" in e["highest_vwc_today"]
-    assert e["last_shot_responses"] == ["+1.7 normal", "+1.8 normal", "+1.1 normal"] and "787" in e["light_today"]
-    short = ss.evidence(Z1, GEN, PLAN, ss.Steer(2.0), _ctx(peak_today=33.0, responses=[0.2, 0.1]))
-    assert "3.0 points short" in short["highest_vwc_today"] and short["last_shot_responses"] == ["+0.2 weak", "+0.1 weak"]
-
-
-def test_a_flush_verdict_grows_the_p2_shot_and_the_band_with_it_once_a_day_inside_limits():
-    sup = ss.Supervisor(Z1, GEN, 10, 22, ec_seen_max=5.6, judge=lambda ev: {"freeze": None, "p2_shot_delta": 0.5, "peak_delta": 0.0})
-    moves = dict((s, v) for s, v, _w in sup(_ctx(minutes_since_lights_on=240)))
-    assert moves["p2_shot_size"] == 2.5 and moves["p2_vwc_threshold"] == 34.5  # 36 - 0.6 x 2.5
-    for _ in range(10):  # the same verdict all afternoon: pore EC answers over a day, so no further nudge today
-        sup(_ctx(minutes_since_lights_on=240))
-    assert sup.steer.p2_shot == 2.5
-    for day in range(10):  # day after day it keeps walking, but never past the allowed range
-        sup(_ctx(minutes_since_lights_on=0, shots_today=0))
-        sup(_ctx(minutes_since_lights_on=240))
-    assert sup.steer.p2_shot == ss.P2_SHOT_RANGE[1]
-
-
-def test_a_guard_freezes_every_setpoint_and_a_dead_judge_changes_nothing():
-    frozen = ss.Supervisor(Z1, GEN, 10, 22, 5.6, judge=lambda ev: {"freeze": "delivery failure 0.91"})
-    assert frozen(_ctx(minutes_since_lights_on=240)) == []
-    dead = ss.Supervisor(Z1, GEN, 10, 22, 5.6, judge=lambda ev: None)
-    alone = ss.Supervisor(Z1, GEN, 10, 22, 5.6)
-    assert dead(_ctx(minutes_since_lights_on=240)) == alone(_ctx(minutes_since_lights_on=240))
+# ------------------------------------------------------------------ reproducible
+def test_the_same_day_gives_the_same_setpoints_every_time():
+    """No outside opinion is asked: the same zone, recipe and readings always give the same writes."""
+    runs = []
+    for _ in range(2):
+        sup = ss.Supervisor(Z1, GEN, 10, 22, ec_seen_max=5.6)
+        runs.append([sup(_ctx(minutes_since_lights_on=m, shots_today=m // 60)) for m in range(0, 720, 30)])
+    assert runs[0] == runs[1] and any(runs[0])
 
 
 # ------------------------------------------------------------------ does the ENGINE then follow the curve?
@@ -159,13 +138,3 @@ def test_with_the_supervisor_the_same_engine_traces_the_chart():
     base = sum(s for _h, s, _p in _day(et.run(Z1, LIVE_Z1, 31.5, 5.2, 3.0, days=2, demand=DEMAND)[0], 1)[1])
     assert sum(s for _h, s, _p in shots) < base * 0.75  # and far less water goes to runoff
     assert any(s == "p1_target_vwc" and old == 40.0 and new == 36.0 for _h, s, old, new, _w in changes)
-
-
-def test_the_judge_is_told_the_24h_ec_trend_and_todays_light():
-    seen = []
-    sup = ss.Supervisor(Z1, GEN, 10, 22, 5.6, judge=lambda ev: seen.append(ev))
-    sup(_ctx(minutes_since_lights_on=240, ec=5.2))
-    sup(_ctx(minutes_since_lights_on=240, ec=5.9, light_note="PPFD 787, 13% below the 7-day norm"))
-    assert "pore_ec_trend_24h" not in seen[0]
-    assert "+0.7" in seen[1]["pore_ec_trend_24h"] and "rising" in seen[1]["pore_ec_trend_24h"]
-    assert "787" in seen[1]["light_today"]

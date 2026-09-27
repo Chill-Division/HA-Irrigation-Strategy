@@ -30,7 +30,6 @@ from datetime import date, datetime, timedelta, timezone
 
 import requests
 import auto_setpoints
-import jev_policy
 import setpoint_supervisor
 from strategy_runtime import parse_snapshot, parameter_override, strategy_block
 
@@ -425,8 +424,6 @@ class Controller:
         self.hold_entities = [e for e in (o.get("hold_entities") or []) if e]
         self.feed_grace_min = float(o.get("feed_grace_min", 30))
         self.blind_fallback_min = float(o.get("blind_fallback_min", 90))
-        # Optional: Jev (TypeSafe, via Cloudflare AI) as a guard on auto setpoints. Unset = arithmetic only.
-        self._cf = tuple((o.get(k) or "").strip() for k in ("cf_account_id", "cf_api_token", "cf_gateway_id"))
         self.loop_seconds = float(o.get("loop_seconds", 60))
         self.flow_lps = float(
             o.get("flow_lps", 0.02)
@@ -1647,7 +1644,7 @@ class Controller:
         learn = st["learn"]
         st["last_vwc"] = snap.vwc
         # the pore EC the engine's own rules act on (settled when there is one), so the P1 EC gate helper
-        # and the judge reason about the same number the engine does
+        # reasons about the same number the engine does
         ec_rules = getattr(snap, "ec_settled", None)
         ec_rules = snap.ec if ec_rules is None else ec_rules
         auto_setpoints.new_day(learn, self._grow_day_start(room, now).isoformat(), snap.vwc)
@@ -1655,21 +1652,9 @@ class Controller:
                             snap.dryback_rate, self._minutes_since_shot(st, now))
         enabled = self._on(f"switch.crop_steering_{room.prefix}auto_setpoints", False)
         planned = bool(getattr(room, "strategy_required", False))
-        jev_state = room.__dict__.setdefault("_jev_state", {})
-        jev = jev_state.get(zone, "ok") if (self._cf[0] and self._cf[1]) else "disabled"
         was = learn["outcome"]
         outcome = auto_setpoints.ramp_outcome(learn, st["phase"])
         if outcome != was:
-            if outcome == "plateau" and enabled and jev != "disabled":
-                verdict = jev_policy.verdicts(jev_policy.call(
-                    self._cf[0], self._cf[1],
-                    auto_setpoints.evidence(learn, st["phase"], snap.vwc, p.p1_target, ec_rules, p.ec_target_p2,
-                                            self._read_feed_ec(room), p.p2_shot_size, st["shots"]),
-                    gateway=self._cf[2] or None, timeout=5.0))
-                jev = jev_state[zone] = "ok" if verdict is not None else "unavailable"
-                if verdict and verdict.get("freeze"):  # a guard can only make it MORE careful
-                    auto_setpoints.distrust(learn, f"Jev: {verdict['freeze']}")
-                    outcome = learn["outcome"]
             log(f"[{room.slug}] Z{zone} P1 ramp outcome: {outcome} (peak {learn['peak']})")
             if outcome == "suspect":
                 self._alert(f"auto_{room.slug}_z{zone}", "CS-404", "automatic targets paused",
@@ -1678,23 +1663,6 @@ class Controller:
                             "Watering carries on with the current targets, and the next morning's "
                             "ramp is judged again.",
                             room=room, zone=zone)
-            self._save_state()
-        # In P2 the judge manages the maintenance shot: asked once an hour, it may nudge the P2 shot
-        # size (pore EC) and the working peak, one bounded step per lever per grow-day. It cannot fire,
-        # size or delay a shot, and a call that fails or takes too long changes nothing.
-        stamp = now.strftime("%Y-%m-%dT%H")
-        if (enabled and not planned and jev != "disabled" and lights_on and st["phase"] == "P2"
-                and auto_setpoints.jev_due(learn, stamp)):
-            verdict = jev_policy.verdicts(jev_policy.call(
-                self._cf[0], self._cf[1],
-                auto_setpoints.evidence(learn, "P2", snap.vwc, p.p1_target, ec_rules, p.ec_target_p2,
-                                        self._read_feed_ec(room), p.p2_shot_size, st["shots"]),
-                gateway=self._cf[2] or None, timeout=5.0))
-            jev = jev_state[zone] = "ok" if verdict is not None else "unavailable"
-            asked = auto_setpoints.jev_verdict(learn, stamp, verdict, p.p2_shot_size, now.strftime("%H:%M"))
-            for suffix, value in asked.items():
-                self._auto_write(room, zone, suffix, p.p2_shot_size, value, learn, now, by="Jev")
-            log(f"[{room.slug}] Z{zone} Jev P2: {learn['jev']['last']}")
             self._save_state()
         if enabled and not planned:
             current = {
@@ -1721,16 +1689,13 @@ class Controller:
         state, attrs = auto_setpoints.status(learn, enabled)
         if enabled and planned:
             state, attrs["frozen_reason"] = "frozen", "an armed grow plan owns this room's targets"
-        suffixes = auto_setpoints.MANAGED + (auto_setpoints.JEV_MANAGED if jev != "disabled" else ())
         attrs.update(
-            jev=jev, jev_last=learn["jev"]["last"], jev_changed_today=learn["jev"]["changed"],
-            working_peak_adjust=learn["peak_adj"],
             updated=now.isoformat(), engine="f2-control", friendly_name=f"Zone {zone} auto setpoints",
-            managed=[f"number.crop_steering_{room.prefix}zone_{zone}_{s}" for s in suffixes],
+            managed=[f"number.crop_steering_{room.prefix}zone_{zone}_{s}" for s in auto_setpoints.MANAGED],
         )
         ha_set(f"sensor.crop_steering_{room.prefix}zone_{zone}_auto_setpoints", state, attrs)
 
-    def _auto_write(self, room, zone, suffix, old, value, learn, now, by="auto"):
+    def _auto_write(self, room, zone, suffix, old, value, learn, now):
         entity = f"number.crop_steering_{room.prefix}zone_{zone}_{suffix}"
         if ha_get(entity)[0] in (None, "unknown", "unavailable", ""):
             return  # no per-zone number on this install: room-level values are the operator's, never ours
@@ -1742,8 +1707,8 @@ class Controller:
         ha_call("number", "set_value", entity_id=entity, value=value)
         learn["last_change"] = f"{now.strftime('%H:%M')} {suffix} {old:g} -> {value:g}"
         tag = "" if room.prefix == "" else f"{room.slug} "
-        self._activity.insert(0, f"{now.strftime('%H:%M')} {tag}Z{zone} {by} {suffix} {old:g} -> {value:g}"[:120])
-        log(f"[{room.slug}] Z{zone} {by} {suffix} {old:g} -> {value:g}")
+        self._activity.insert(0, f"{now.strftime('%H:%M')} {tag}Z{zone} auto {suffix} {old:g} -> {value:g}"[:120])
+        log(f"[{room.slug}] Z{zone} auto {suffix} {old:g} -> {value:g}")
 
     # ---------- room status (On / Off) ----------
     def _room_active(self, room):
