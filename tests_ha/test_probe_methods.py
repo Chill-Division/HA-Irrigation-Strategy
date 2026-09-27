@@ -4,8 +4,6 @@ Median, Lowest, Highest). Average until someone chooses, which is how every zone
 choice shows at once, the zone's sensors say what each probe reads and what every choice gives, and
 the controller steers on the chosen reading."""
 
-from datetime import datetime
-
 from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.crop_steering.plumbing import infer
