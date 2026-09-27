@@ -1,4 +1,6 @@
-# Unreleased
+# 2.26.3
+
+Pair with integration 2.26.3.
 
 - **The dashboard the app serves:** a zone's sheet chooses how its probes become its moisture and its EC reading. No change to the controller, which steers on the chosen reading.
 
