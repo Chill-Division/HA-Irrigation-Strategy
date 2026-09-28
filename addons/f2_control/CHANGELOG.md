@@ -1,4 +1,6 @@
-# Unreleased
+# 2.27.1
+
+Pair with integration 2.27.1.
 
 - **Maintenance shots are spaced.** A P2 top-up waits the zone's `number.crop_steering_<prefix>[zone_N_]p2_time_between_shots` (5 minutes unless set; 0 = off) after the last shot. It is read as optional: under an older integration, 5 applies without holding the room. `waiting_for`'s `p2_topup` carries `in_min`, and the vitals' Next line says when the next maintenance shot may fire. No change to the state file.
 - **The dashboard the app serves:** readings show to at most three decimals where a raw entity state was shown. No change to the controller.
