@@ -175,9 +175,12 @@ jobs:
           # on 2024.9.x the suite's automation test is written in the syntax 2024.10.0 introduced.
           # josepy 2.0 (2025) removed an API that the acme release this Home Assistant pins still
           # imports, so it is held at the josepy that was current when this Home Assistant shipped.
+          # So is pycares: from 5.0 (2025) it leaves a thread running after a DNS channel closes, and
+          # this plugin release fails any test that ends with a thread it did not start
+          # (tests_ha/test_refusal_reasons.py, which runs the real web server).
           - python: '3.12'
             homeassistant: '2024.10.0'
-            install: 'pytest-homeassistant-custom-component==0.13.171 josepy==1.14.0'
+            install: 'pytest-homeassistant-custom-component==0.13.171 josepy==1.14.0 pycares==4.4.0'
             suffix: ' - oldest supported Home Assistant'
     steps:
       - uses: actions/checkout@v4
