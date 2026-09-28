@@ -9,7 +9,9 @@ import pytest
 from .test_setup import rig, payload, api
 
 
-def test_response_services_require_admin_and_return_actual_saved_revision(monkeypatch):
+def test_response_services_require_admin_and_return_actual_saved_revision(
+    monkeypatch, caplog
+):
     from . import ha_stubs
 
     ha_stubs.install()
@@ -44,7 +46,31 @@ def test_response_services_require_admin_and_return_actual_saved_revision(monkey
         asyncio.run(handlers["setup_save"](call))
     assert not hass.config_entries.updates
     admin["is_admin"] = True
+    fired = []
+    hass.bus = SimpleNamespace(
+        async_fire=lambda event, data, context=None: fired.append(
+            (event, data, context)
+        )
+    )
     result = asyncio.run(handlers["setup_save"](call))
     assert result["revision"] == 1 and result["active_zone_ids"] == [2]
+    # Recorded in the logbook, as the person who saved it.
+    ((event, data, context),) = fired
+    assert (event, data["name"], context) == (
+        "logbook_entry",
+        "Veg renamed",
+        call.context,
+    )
+    assert data["message"].startswith("setup saved (revision 1): renamed from “Veg”; ")
     result = asyncio.run(handlers["setup_read"](call))
     assert result["api_version"] == 1 and result["rooms"][0]["revision"] == 1
+
+    # A save stands even when recording it fails; the log says it was not recorded.
+    def refuse(*_args, **_kwargs):
+        raise RuntimeError("no logbook")
+
+    hass.bus = SimpleNamespace(async_fire=refuse)
+    call.data = {**payload(), "expected_revision": 1, "room_name": "Veg again"}
+    result = asyncio.run(handlers["setup_save"](call))
+    assert result["revision"] == 2 and result["room_name"] == "Veg again"
+    assert "could not be recorded" in caplog.text
