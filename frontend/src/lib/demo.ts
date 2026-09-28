@@ -236,6 +236,7 @@ export function createDemo(now = Date.now()): States {
       number(prefix, `${key}p1_maximum_shots`, 6, 1, 30, 1);
       number(prefix, `${key}p1_time_between_shots`, 15, 5, 120, 1, "min");
       number(prefix, `${key}p2_shot_size`, 4, 0.5, 20, 0.5, "%");
+      number(prefix, `${key}p2_time_between_shots`, 5, 0, 60, 1, "min");
       number(prefix, `${key}vegetative_dryback_target`, 8, 1, 30, 0.5, "% below peak");
       number(prefix, `${key}p3_emergency_vwc_threshold`, 35, 10, 70, 0.5, "%");
       number(prefix, `${key}max_daily_volume`, 40, 1, 200, 1, "L");

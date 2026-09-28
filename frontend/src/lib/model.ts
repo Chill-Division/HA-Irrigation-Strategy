@@ -24,6 +24,7 @@ export const ZONE_PARAMETERS = new Set([
   "p1_target_vwc",
   "p2_vwc_threshold",
   "p2_shot_size",
+  "p2_time_between_shots",
   "p1_initial_shot_size",
   "p1_shot_size_increment",
   "p1_maximum_shots",

@@ -119,6 +119,11 @@ const WORDS: Record<string, SettingWords> = {
     short: "Maintenance shot",
     help: `Each maintenance shot, ${OF_SUBSTRATE}.`,
   },
+  p2_time_between_shots: {
+    label: "Time between P2 shots",
+    short: "Time between P2 shots",
+    help: "Lets each maintenance shot soak down to the probes before moisture is read again. 0 turns it off.",
+  },
   p3_emergency_vwc_threshold: {
     label: "Rescue shot when below",
     short: "Rescue level",
@@ -263,7 +268,7 @@ const DETAILS: Record<string, SettingDetail> = {
   },
   p2_vwc_threshold: {
     what: "The level that triggers a daytime maintenance shot. The peak VWC target minus this is how far the substrate dries back during the day.",
-    when: "Each time the controller checks in P2 (every minute by default), from the end of the ramp until P3: whenever moisture reads below it, a maintenance shot fires. It is a level, not a crossing: moisture does not need to have been above it first, and reading exactly the value does not fire. There is no minimum wait between maintenance shots; the daily water limit still applies.",
+    when: "Each time the controller checks in P2 (every minute by default), from the end of the ramp until P3: whenever moisture reads below it, a maintenance shot fires, once the time between P2 shots has passed since the last shot. It is a level, not a crossing: moisture does not need to have been above it first, and reading exactly the value does not fire. The daily water limit still applies.",
     affects:
       "How often maintenance shots fire, runoff and substrate EC. In P0, reaching it ends the wait and starts the ramp. After P0, with lights on, the watchdog waters a zone below it that has had no shot for the watchdog interval. It is always kept at least 1 point below the peak VWC target and 3 points above the rescue level, whatever is entered.",
     stacking:
@@ -279,6 +284,14 @@ const DETAILS: Record<string, SettingDetail> = {
       "Maintenance shots are sized by substrate EC against the P2 target, from half to twice this. Bigger shots make more runoff and lower substrate EC.",
     athena:
       "“Decrease Substrate EC: Increase shot size”; “Increase Substrate EC: Decrease shot size” (p. 38).",
+  },
+  p2_time_between_shots: {
+    what: "The least time from the last shot to a maintenance shot.",
+    when: "Under the maintenance trigger, a maintenance shot fires only once this long has passed since the last shot of any kind, so its water can reach the probes before moisture is read again. Read sooner, moisture has not moved yet and shots stack a minute apart. 0 turns it off: a shot every time the controller checks and moisture reads below the trigger.",
+    affects:
+      "How fast a zone below its trigger is brought back up: one maintenance shot each time this passes until moisture reads at the trigger. Dilution and rescue flushes and the daily minimum keep their own 10-minute wait; the watchdog and P3 rescue shots do not wait for this.",
+    athena:
+      "Athena spaces P1 shots 15 to 30 minutes apart so each can soak in (p. 36); it gives no spacing for P2 events.",
   },
   p3_emergency_vwc_threshold: {
     what: "The overnight safety level. It is not an Athena setting.",
