@@ -28,18 +28,24 @@ if _OURS not in custom_components.__path__:
 
 
 @pytest.fixture(autouse=True)
-def _custom_integrations(hass, enable_custom_integrations):
+def _custom_integrations(hass, enable_custom_integrations, request):
     """Let Home Assistant load custom_components/crop_steering from this repository.
 
     The manifest depends on `frontend` and `http` for one thing only: the sidebar panel. The real
     frontend needs the `hass_frontend` wheel and a listening web server, neither of which these
     tests are about, so both are marked as already set up and only the WEB SERVER is stood in for.
+    A test marked `web_server` is about it (the websocket the dashboard calls the integration
+    over), so there Home Assistant sets its real web server up, as it does for the integration.
 
     The panel registration itself runs, against the real `homeassistant.components.frontend`.
     It used to be replaced with a no-op here, and that is how an AttributeError on every Home
     Assistant older than 2026.5 got past this tier: `frontend.async_panel_exists` only exists from
     2026.5.0, the entry failed to set up, and no test ever executed the line.
     The config flow, the entity platforms and the registries are all real."""
+    if request.node.get_closest_marker("web_server"):
+        hass.config.components.update({"frontend"})
+        yield
+        return
     hass.config.components.update({"frontend", "http"})
     hass.http = MagicMock(async_register_static_paths=AsyncMock())
     yield
