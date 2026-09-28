@@ -164,6 +164,8 @@ An HA administrator uses **Rooms & setup**. Pair devices and expose their entiti
 
 Zone and room removal archives stable IDs. **Restore zone** or **Restore room** reactivates the same identity after review; archived slots are not silently reused for different hardware. Adding/archiving a zone may require updating a draft grow plan's assignments.
 
+Every saved change is recorded in Home Assistant's **Activity** (the logbook), on the room's device page too: who saved it and what changed, for example *Growroom 2 setup saved (revision 2): renamed from "Crop Steering System"*. A change Home Assistant refuses is not saved, so it is not recorded; the review says why it was refused.
+
 ## Mix nutrient batches (Reservoir)
 
 The **Reservoir** page runs a room's nutrient batches: the controller app refills the room's reservoir with fresh water, mixes it and doses each nutrient in turn. Each room has its own reservoir and dosers.

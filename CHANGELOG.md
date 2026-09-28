@@ -9,6 +9,29 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **Room setup changes are recorded.** Each saved change to a room's setup (its name, zones,
+  valves, probes, pot and dripper sizing, equipment) now shows in Home Assistant's Activity, and
+  on the room's device page, with who saved it and what changed: for example "Growroom 2 setup
+  saved (revision 2): renamed from “Crop Steering System”". A change Home Assistant refuses is not
+  saved, so it is not recorded. The controller's log still says when it takes a saved change on.
+
+### 🔧 Technical notes
+
+- **Setup changes in the logbook (integration).** When `crop_steering.setup_save`, `setup_create`
+  or `setup_remove` succeeds, the service fires the logbook's own event (`logbook_entry`,
+  `homeassistant.const.EVENT_LOGBOOK_ENTRY`) with the service call's context, so the entry names
+  the user. Its name is the room's name, its `entity_id` the room's
+  `sensor.crop_steering_<prefix>engine_config`, and its message `setup_changes(before, after)`:
+  the room as `setup_room` gave it to the page and as saved (renamed, archived or restored,
+  plumbing, each mapping, and each zone's name, valve, probes and sizing), or "set up" or
+  "archived", with the revision. The same line goes to the log at INFO
+  (`custom_components.crop_steering.setup_api`). A refused change records nothing; a recording
+  that fails is logged and never fails the save. Proven through the real recorder and logbook.
+
 ## [2.26.3] - 2026-09-28
 
 Integration and controller **2.26.3**.

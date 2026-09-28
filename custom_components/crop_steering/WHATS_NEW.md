@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- Each saved change to a room's setup now shows in Home Assistant's Activity, with who made it and what changed.
+
 ## 2.26.3 - 2026-09-28
 
 - A zone with more than one probe can read its moisture, and separately its EC, as their average, median, lowest or highest.
