@@ -370,8 +370,12 @@ def next_text(conditions, at):
     if topup or off:
         # A held plan leaves the routine shots out: then only lights-off is left.
         dilute = find("p2_dilute")
+        # Under the trigger, a maintenance shot may still wait out the time between P2 shots.
+        wait = when(topup) if topup else None
+        below = wait and topup.get("now") is not None and topup["now"] < (topup.get("value") or 0)
         parts = [
-            f"shot when {test(topup, '%', 'VWC')}{reading(topup, '%')}" if topup else None,
+            (f"shot at {wait} (VWC {_num(topup['now'])}% under {_num(topup.get('value'))}%)" if below
+             else f"shot when {test(topup, '%', 'VWC')}{reading(topup, '%')}") if topup else None,
             f"dilution if {test(dilute, '', 'pwEC')}{reading(dilute, '')}" if dilute else None,
             # By, not at: in its last three hours P2 moves early when the night is too short to dry.
             f"P3 by {when(off) or 'lights-off'}" if off else None,
@@ -1655,6 +1659,11 @@ class Controller:
             p1_max_shots=int(self._zone_num(room, zone, "p1_maximum_shots", 12)),
             p1_min_shots=int(self._zone_num(room, zone, "p1_minimum_shots", 0)),
             p1_time_between_min=self._zone_num(room, zone, "p1_time_between_shots", 15),
+            # Optional: an integration older than this controller has no such setting, and the
+            # default then applies without holding the room for a missing setpoint.
+            p2_time_between_min=self._zone_num(
+                room, zone, "p2_time_between_shots", 5, optional=True
+            ),
             dryback_target=self._zone_num(
                 room,
                 zone,

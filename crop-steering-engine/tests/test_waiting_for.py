@@ -62,6 +62,23 @@ def test_p2_tops_up_exactly_below_its_trigger():
         assert decide(s, p)[2] == holds(topup), vwc  # fires exactly when the test holds
 
 
+def test_p2_maintenance_shots_wait_their_spacing_after_the_last_shot():
+    """Seen live on 28 Sep: the trigger raised to 70 while the zone read 67, and a maintenance shot
+    fired every minute, three in four minutes, before the first had soaked down to the probe."""
+    p = P(p1_target=85, field_capacity=80, p2_threshold=70, p2_time_between_min=5)
+    soon = S(phase="P2", vwc=67, ec=6, ec_smooth=6, minutes_since_shot=1)
+    assert not decide(soon, p)[2]
+    topup = by_rule(waiting_for(soon, p), "p2_topup")
+    assert (topup["value"], topup["now"], topup["in_min"]) == (70, 67, 4.0)
+    later = S(phase="P2", vwc=67, ec=6, ec_smooth=6, minutes_since_shot=5)
+    assert decide(later, p)[4].kind == "p2_topup"
+    assert by_rule(waiting_for(later, p), "p2_topup")["in_min"] == 0.0
+    # 0 is off: a shot whenever moisture reads below the trigger, and no wait to show, as before.
+    off = P(p1_target=85, field_capacity=80, p2_threshold=70)
+    assert decide(soon, off)[4].kind == "p2_topup"
+    assert "in_min" not in by_rule(waiting_for(soon, off), "p2_topup")
+
+
 def test_p2_lists_the_dilution_limit_only_with_a_known_ec():
     p = P(ec_target_p2=6)
     items = waiting_for(S(phase="P2", vwc=50, ec=5, ec_smooth=5, hours_to_lights_off=2.5), p)

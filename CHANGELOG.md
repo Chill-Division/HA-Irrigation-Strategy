@@ -13,12 +13,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🌱 In plain English
 
+- **Maintenance shots wait for the last one to soak in.** A maintenance (P2) shot fired whenever
+  moisture read below its trigger, checked every minute. With the trigger raised above the
+  reading, it fired a shot a minute, before the first had reached the probes. There is now a
+  **Time between P2 shots** setting, like P1's: a maintenance shot waits at least that long after
+  the last shot. It is 5 minutes unless you change it, for every room and zone, including rooms
+  already running; 0 turns it off. A zone's Next: line says when its next shot may fire.
 - **Readings are rounded.** A probe that reports its reading unrounded, such as an estimated pore
   EC of 0.639473676681519, now shows as 0.639 when you pick entities in Rooms & setup, on the
   Sensors page, in a zone's details and in Insights. Only what is shown is rounded.
 
 ### 🔧 Technical notes
 
+- **P2 time between shots (engine, integration, controller, dashboard).**
+  `ZoneParams.p2_time_between_min` (engine default 0 = off; bounds 0–120): a P2 top-up, the plain
+  one and the one beside a waiting rescue, fires only once `minutes_since_shot` (from the end of
+  the last shot of any kind) reaches it, and `waiting_for`'s `p2_topup` then carries `in_min`.
+  New `number.crop_steering_<prefix>p2_time_between_shots` and per-zone
+  `number.crop_steering_<prefix>zone_N_p2_time_between_shots` (0–60 min, default 5; an upgraded
+  install gets them at 5). The controller reads it as it reads P1's (plan override, zone, room)
+  but as an optional setting: under an integration older than it, 5 applies without holding the
+  room or raising CS-402. EC dilution and rescue flushes and the daily minimum keep their own
+  10-minute `p2_min_interval_min`; the watchdog and the P3 rescue do not wait. The dashboard has
+  it in P2 · Maintenance, and a zone under its trigger reads "shot at 15:21 (VWC 67% under 70%)";
+  so does the vitals' Next line.
 - **Rounded readings (dashboard).** `stateText` (`lib/units.ts`) shows a numeric entity state to at
   most three decimals, trailing zeros trimmed (`displayNumber`), and any other state as it is. Used
   by the Rooms & setup entity picker, the Sensors table, a zone's Reporting sensors and Insights'

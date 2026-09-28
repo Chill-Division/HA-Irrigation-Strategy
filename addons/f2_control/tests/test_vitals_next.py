@@ -55,6 +55,14 @@ def test_p1_the_next_ramp_shot_and_what_hands_over_to_p2():
     assert controller.next_text(full, AT) == "ramp shot when VWC < 85% (now 86%) · P2 at VWC ≥ 85% after 1 more shot"
 
 
+def test_p2_under_the_trigger_says_when_the_next_maintenance_shot_may_fire():
+    waiting = [{**P2[0], "now": 67, "in_min": 4}, P2[2]]
+    assert controller.next_text(waiting, AT) == "shot at 07:40 (VWC 67% under 70%) · P3 by 17:36"
+    # Its time between shots has passed, or it is above the trigger: as before.
+    assert controller.next_text([{**P2[0], "now": 67, "in_min": 0}], AT) == "shot when VWC < 70% (now 67%)"
+    assert controller.next_text([{**P2[0], "in_min": 4}], AT) == "shot when VWC < 70% (now 84.1%)"
+
+
 def test_p2_p3_and_a_held_plan():
     assert controller.next_text(P2, AT) == (
         "shot when VWC < 70% (now 84.1%) · dilution if pwEC > 3.84 (now 0.5) · P3 by 17:36"

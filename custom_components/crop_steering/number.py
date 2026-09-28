@@ -215,6 +215,19 @@ NUMBER_DESCRIPTIONS = [
         native_unit_of_measurement=PERCENTAGE,
         mode="box",
     ),
+    # The least time from the last shot to a maintenance shot, so each can soak down to the probes
+    # before moisture is judged again (0 = off). Checked every minute without it, a zone under the
+    # trigger fired a shot a minute before the first had reached the probes.
+    NumberEntityDescription(
+        key="p2_time_between_shots",
+        name="P2 Time Between Shots",
+        icon="mdi:timer-outline",
+        native_min_value=0.0,
+        native_max_value=60.0,
+        native_step=1.0,
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        mode="box",
+    ),
     NumberEntityDescription(
         key="p2_ec_high_threshold",
         name="P2 EC High (ratio x target)",
@@ -379,6 +392,7 @@ DEFAULT_VALUES = {
     "p1_maximum_shots": 6.0,
     "p1_minimum_shots": 3.0,
     "p2_shot_size": 5.0,
+    "p2_time_between_shots": 5.0,
     "p2_ec_high_threshold": 1.2,
     "p2_ec_low_threshold": 0.8,
     "p3_emergency_vwc_threshold": 40.0,
@@ -414,6 +428,7 @@ PER_ZONE_STEERING_KEYS = [
     "p1_minimum_shots",
     "p2_vwc_threshold",
     "p2_shot_size",
+    "p2_time_between_shots",
     "p3_emergency_vwc_threshold",
     "p3_emergency_shot_size",
     "ec_target_veg_p0",
@@ -452,6 +467,7 @@ PARAM_TO_ENTITY_KEY: dict[str, str] = {
     "p1_min_shots": "p1_minimum_shots",
     # P2
     "p2_shot_size": "p2_shot_size",
+    "p2_time_between_shots": "p2_time_between_shots",
     "p2_vwc_threshold": "p2_vwc_threshold",
     "p2_ec_high_threshold": "p2_ec_high_threshold",
     "p2_ec_low_threshold": "p2_ec_low_threshold",

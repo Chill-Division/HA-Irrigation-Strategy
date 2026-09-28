@@ -23,6 +23,7 @@ version being released.
 
 ## Unreleased
 
+- Maintenance shots now wait at least 5 minutes after the last shot so each can soak in; Time between P2 shots changes that.
 - Bug fixes and improvements.
 
 ## 2.27.0 - 2026-09-28
