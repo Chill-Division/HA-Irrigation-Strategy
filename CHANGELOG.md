@@ -9,6 +9,22 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **Readings are rounded.** A probe that reports its reading unrounded, such as an estimated pore
+  EC of 0.639473676681519, now shows as 0.639 when you pick entities in Rooms & setup, on the
+  Sensors page, in a zone's details and in Insights. Only what is shown is rounded.
+
+### 🔧 Technical notes
+
+- **Rounded readings (dashboard).** `stateText` (`lib/units.ts`) shows a numeric entity state to at
+  most three decimals, trailing zeros trimmed (`displayNumber`), and any other state as it is. Used
+  by the Rooms & setup entity picker, the Sensors table, a zone's Reporting sensors and Insights'
+  "Last reported". The demo has an unmapped estimated-pwEC probe with an unrounded reading, and the
+  browser check finds it as 0.639 in the picker.
+
 ## [2.27.0] - 2026-09-28
 
 Integration and controller **2.27.0**.

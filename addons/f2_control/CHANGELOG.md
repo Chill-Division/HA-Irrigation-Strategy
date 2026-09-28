@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** readings show to at most three decimals where a raw entity state was shown. No change to the controller.
+
 # 2.27.0
 
 Pair with integration 2.27.0.
