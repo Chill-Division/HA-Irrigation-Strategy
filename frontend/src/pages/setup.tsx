@@ -908,6 +908,7 @@ export function Setup({
                       </div>
                       <div className="workspace-form-grid sizing-helpers">
                         <SubstratePresetPicker
+                          key={draft.entry_id + ":" + zone.id}
                           id={"zone-" + zone.id + "-substrate-preset"}
                           volumeFieldId={"zone-" + zone.id + "-substrate_volume"}
                           litres={zone.substrate_volume ?? NaN}
