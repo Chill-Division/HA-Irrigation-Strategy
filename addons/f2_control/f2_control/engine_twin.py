@@ -30,6 +30,7 @@ def params_from(sp):
         max_daily_volume=sp["max_daily_volume"], field_capacity=sp["field_capacity"], max_ec=sp["maximum_ec"],
         stacking_on=False, watchdog_hours=sp.get("watchdog_hours", 3.0),
         p1_min_shots=int(sp.get("p1_minimum_shots", 0)),
+        p2_time_between_min=sp.get("p2_time_between_shots", 5.0),
     )
 
 
