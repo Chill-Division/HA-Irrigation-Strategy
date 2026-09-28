@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   choosing Custom went straight back to it. The preset now reads Custom unless you have just
   picked one there, and Custom stays chosen. Nothing about the zone changes: its volume is what
   is saved, as before.
+- **Room setup changes are recorded.** Each saved change to a room's setup (its name, zones,
+  valves, probes, pot and dripper sizing, equipment) now shows in Home Assistant's Activity, and
+  on the room's device page, with who saved it and what changed: for example "Growroom 2 setup
+  saved (revision 2): renamed from “Crop Steering System”". A change Home Assistant refuses is not
+  saved, so it is not recorded. The controller's log still says when it takes a saved change on.
 
 ### 🔧 Technical notes
 
@@ -41,6 +46,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   volume is the one that preset filled in during this edit (`picked`, fresh for each room and
   zone); any other volume, typed or saved, reads Custom. It showed whichever preset matched the
   volume (`matchPreset`), so a volume that matched one could never read Custom.
+- **Setup changes in the logbook (integration).** When `crop_steering.setup_save`, `setup_create`
+  or `setup_remove` succeeds, the service fires the logbook's own event (`logbook_entry`,
+  `homeassistant.const.EVENT_LOGBOOK_ENTRY`) with the service call's context, so the entry names
+  the user. Its name is the room's name, its `entity_id` the room's
+  `sensor.crop_steering_<prefix>engine_config`, and its message `setup_changes(before, after)`:
+  the room as `setup_room` gave it to the page and as saved (renamed, archived or restored,
+  plumbing, each mapping, and each zone's name, valve, probes and sizing), or "set up" or
+  "archived", with the revision. The same line goes to the log at INFO
+  (`custom_components.crop_steering.setup_api`). A refused change records nothing; a recording
+  that fails is logged and never fails the save. Proven through the real recorder and logbook.
 
 ## [2.26.3] - 2026-09-28
 
