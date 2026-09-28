@@ -759,6 +759,20 @@ try {
       });
     },
   );
+  await check("An entity's reading in the picker shows at most three decimals", async () => {
+    await fresh("setup");
+    await visible(page.locator("#room-name"));
+    await page.getByRole("button", { name: "Map Zone 1 EC probes", exact: true }).click();
+    await page
+      .getByRole("textbox", { name: "Search Zone 1 EC probes entities" })
+      .fill("estimated pwec");
+    const reading = page
+      .locator(".mapping-result")
+      .filter({ hasText: "sensor.demo_substrate_estimated_pwec" })
+      .locator(".mapping-reading");
+    assert.equal((await reading.innerText()).split("\n")[0], "0.639");
+    await page.keyboard.press("Escape");
+  });
   await check(
     "Catch test works out L/h, rejects nonsense, fills only the dripper-flow draft and actuates nothing",
     async () => {

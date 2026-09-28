@@ -6,6 +6,7 @@ import { Empty, Heading, time } from "@/components/dashboard";
 import { Pill, Sparkline } from "@/components/mini-visuals";
 import { recentReadings } from "@/lib/dryback";
 import { numeric } from "@/lib/model";
+import { stateText } from "@/lib/units";
 import { useRecentHistory } from "@/lib/use-recent-moisture";
 import type { Controller, EntityState } from "@/lib/types";
 
@@ -148,7 +149,7 @@ export function Sensors({ controller }: { controller: Controller }) {
                       </td>
                       <td className="numeric">
                         {isAvailable(sensor)
-                          ? `${sensor.state} ${sensor.attributes.unit_of_measurement || ""}`
+                          ? `${stateText(sensor.state)} ${sensor.attributes.unit_of_measurement || ""}`
                           : "Unavailable"}
                       </td>
                       <td data-sensor-trend={sensor.entity_id}>

@@ -10,6 +10,7 @@ import {
   rememberedUnitSystem,
   reviewValue,
   sizingError,
+  stateText,
   sizingLabel,
   toMetric,
   unitSystemFromHass,
@@ -56,6 +57,13 @@ describe("sizing unit conversion", () => {
     expect(displayNumber(0.65)).toBe("0.65");
     expect(displayNumber(18.92705892, 2)).toBe("18.93");
     expect(displayNumber(NaN)).toBe("");
+  });
+  it("shows a reported reading to at most three decimals, and anything else as it is", () => {
+    expect(stateText("0.639473676681519")).toBe("0.639"); // an estimated-pwEC probe, unrounded
+    expect(stateText("83.5")).toBe("83.5");
+    expect(stateText("525")).toBe("525");
+    for (const state of ["on", "unavailable", "unknown", "", " ", "2026-09-28T03:15:00+13:00"])
+      expect(stateText(state)).toBe(state);
   });
 });
 

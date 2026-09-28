@@ -30,6 +30,7 @@ import { WaterDelivery } from "@/components/water-delivery";
 import { waterParameters } from "@/lib/water-delivery";
 import { calibrateDripper } from "@/lib/catch-test";
 import type { Controller, Metric, Zone } from "@/lib/types";
+import { stateText } from "@/lib/units";
 import { errorText } from "@/lib/utils";
 import type { SetupDocument, SetupRoom } from "@/lib/operator-types";
 import { roomPlants, useWaterView } from "@/lib/water-view";
@@ -176,7 +177,7 @@ export function Insights({
           {aggregate?.value === null
             ? "Current reading unavailable / unverified"
             : entity
-              ? `Last reported: ${entity.state} ${entity.attributes.unit_of_measurement || ""} · ${time(entity.last_updated)}`
+              ? `Last reported: ${stateText(entity.state)} ${entity.attributes.unit_of_measurement || ""} · ${time(entity.last_updated)}`
               : "Unavailable"}
         </small>
       </div>

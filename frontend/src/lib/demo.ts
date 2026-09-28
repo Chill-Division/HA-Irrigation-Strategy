@@ -92,6 +92,13 @@ export function createDemo(now = Date.now()): States {
       { device_class: "timestamp" },
     );
     put(`binary_sensor.demo_${prefix}tank_filling`, "off");
+    // A probe's estimated pore EC as some probe firmware publishes it, unrounded. Nothing maps it,
+    // so it is only among the entities Rooms & setup offers.
+    if (!index)
+      put("sensor.demo_substrate_estimated_pwec", 0.639473676681519, {
+        friendly_name: "Demo Substrate Estimated pwEC",
+        unit_of_measurement: "mS/cm",
+      });
     // What the integration publishes for every room's nutrient batches, and, for Flower 2, what the
     // controller reports: its reservoir reads 640 mm from the top, short of its almost-empty mark.
     const feed = index ? null : sampleFeed();
