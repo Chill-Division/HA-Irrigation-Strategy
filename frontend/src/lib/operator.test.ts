@@ -4,10 +4,68 @@ import { buildRoom, discoverRooms, validateChange } from "./model";
 import { createDemo } from "./demo";
 import type { States } from "./types";
 import type { OperatorAction } from "./operator-types";
+import { errorText } from "./utils";
 
 afterEach(() => vi.restoreAllMocks());
+const REFUSAL =
+  "switch.crop_steering_engine_enabled must read OFF before changing setup (it is ON: turn it off, then submit again)";
+/** Inside Home Assistant: its frontend's session, with the websocket it is connected over. */
+function insideHomeAssistant(sendMessagePromise: ReturnType<typeof vi.fn>) {
+  const callApi = vi.fn(),
+    callService = vi.fn();
+  const session = {
+    callApi,
+    callService,
+    connection: { subscribeMessage: vi.fn(), sendMessagePromise },
+  } as HassSession;
+  return { client: new HaClient("http://ha.test", "", session), callApi, callService };
+}
 describe("workspace response transport", () => {
-  it("uses response-bearing REST even inside an inherited HA session", async () => {
+  it("inside Home Assistant calls the integration over its websocket, with the response", async () => {
+    const send = vi.fn().mockResolvedValue({ context: { id: "c" }, response: { revision: 2 } });
+    const { client, callApi, callService } = insideHomeAssistant(send);
+    const payload = { entry_id: "e", expected_revision: 1, room_name: "Growroom 2" };
+    expect(await client.operator("setup_save", payload)).toEqual({ revision: 2 });
+    expect(send).toHaveBeenCalledWith({
+      type: "call_service",
+      domain: "crop_steering",
+      service: "setup_save",
+      service_data: payload,
+      return_response: true,
+    });
+    expect(callApi).not.toHaveBeenCalled();
+    expect(callService).not.toHaveBeenCalled();
+  });
+  it("shows why Home Assistant refused a change, not a bare 500", async () => {
+    // What Home Assistant's websocket sends back when the integration refuses: over REST the same
+    // refusal was "500 Internal Server Error", and the page said "Response error: 500".
+    const send = vi.fn().mockRejectedValue({ code: "home_assistant_error", message: REFUSAL });
+    const { client } = insideHomeAssistant(send);
+    const refused = await client.operator("setup_save", {}).catch((error: unknown) => error);
+    expect(errorText(refused)).toBe(REFUSAL);
+  });
+  it("says an integration without the action needs updating", async () => {
+    const send = vi
+      .fn()
+      .mockRejectedValue({
+        code: "not_found",
+        message: "Service crop_steering.feed_get not found.",
+      });
+    const { client } = insideHomeAssistant(send);
+    await expect(client.operator("feed_get", { room_id: "room:" })).rejects.toThrow(
+      /updated Crop Steering/,
+    );
+  });
+  it("outside Home Assistant, a refusal points at Home Assistant's log", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("500 Internal Server Error\n\nServer got itself in trouble", { status: 500 }),
+    );
+    const client = new HaClient("http://ha.test", "token");
+    await expect(client.operator("setup_save", {})).rejects.toThrow(
+      /\(500\)\. Its log, under Settings → System → Logs, says why/,
+    );
+  });
+  it("uses response-bearing REST in a session without Home Assistant's websocket", async () => {
     const callApi = vi
       .fn()
       .mockResolvedValue({ changed_states: [], service_response: { revision: 3 } });

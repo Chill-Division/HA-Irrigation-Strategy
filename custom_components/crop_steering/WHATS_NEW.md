@@ -23,7 +23,9 @@ version being released.
 
 ## Unreleased
 
+- When Home Assistant refuses a change, the dashboard now says why.
 - Each saved change to a room's setup now shows in Home Assistant's Activity, with who made it and what changed.
+- Bug fixes and improvements.
 
 ## 2.26.3 - 2026-09-28
 

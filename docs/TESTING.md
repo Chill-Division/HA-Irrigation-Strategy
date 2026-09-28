@@ -81,7 +81,9 @@ a probe with no unit, bookkeeping keys in `entry.options`).
 sidebar panel; `conftest.py` marks both as set up and gives `hass.http` a mock, and the panel
 registration then runs against the real frontend module. It used to be replaced with a no-op,
 which is how the pre-2026.5 `AttributeError` got past this tier. Do not stub out more than the
-thing a test genuinely cannot have.
+thing a test genuinely cannot have. A test about the web server itself is marked `web_server` and
+gets the real one: `test_refusal_reasons.py` calls the room services over Home Assistant's
+websocket, as the dashboard does, and reads the refusal the page shows.
 
 `tests_ha/` is a separate directory on purpose: `tests/conftest.py` registers fake
 `homeassistant` modules, which would shadow the real package.
@@ -97,7 +99,7 @@ something else cannot pass.
 | Leg (check name) | Python | Plugin release | Home Assistant | What it proves |
 | --- | --- | --- | --- | --- |
 | Production: `Real Home Assistant (setup wizard and entity ids)` | 3.14 | 0.13.366, from `requirements-test-ha.txt` | 2026.9.3 | What production runs. Branch protection may require this check on `main`. |
-| Oldest supported: the same name followed by ` - oldest supported Home Assistant` | 3.12 | 0.13.171, with `josepy==1.14.0` | 2024.10.0 | The minimum in `hacs.json`, the README badge and [INSTALL.md](INSTALL.md). |
+| Oldest supported: the same name followed by ` - oldest supported Home Assistant` | 3.12 | 0.13.171, with `josepy==1.14.0` and `pycares==4.4.0` | 2024.10.0 | The minimum in `hacs.json`, the README badge and [INSTALL.md](INSTALL.md). |
 
 The Python requirement follows Home Assistant: 2026.9 needs Python 3.14.2 or newer, and no plugin
 release for 2026.3 or later installs on an older Python; 2024.10 runs on 3.12. Before the matrix the
@@ -121,7 +123,9 @@ Moving a leg:
   `action:` form works on every version tested here, so rewriting that one automation would bring
   2024.9.0 back. The `josepy` pin works around the test environment, not the integration: josepy
   2.0 (2025) removed an API that the `acme` release pinned by Home Assistant 2024.10 still imports,
-  so the leg installs the josepy of that time.
+  so the leg installs the josepy of that time. `pycares` likewise: from 5.0 (2025) it leaves a
+  thread running once a DNS channel closes, and that plugin release fails any test that ends with
+  a thread it did not start, which a test on the real web server (`test_refusal_reasons.py`) does.
 
 ### hassfest, without Docker
 
