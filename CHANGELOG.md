@@ -9,7 +9,9 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.27.0] - 2026-09-28
+
+Integration and controller **2.27.0**.
 
 ### 🌱 In plain English
 
