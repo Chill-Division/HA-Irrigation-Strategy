@@ -9,6 +9,23 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **The substrate preset no longer guesses.** A zone keeps its pot volume, not what is in the pot,
+  so Rooms & setup named a 3.2 L coco bag a Rockwool Hugo block, which holds 3.2 L too, and
+  choosing Custom went straight back to it. The preset now reads Custom unless you have just
+  picked one there, and Custom stays chosen. Nothing about the zone changes: its volume is what
+  is saved, as before.
+
+### 🔧 Technical notes
+
+- **Substrate preset picker (dashboard).** `SubstratePresetPicker` shows a preset only while the
+  volume is the one that preset filled in during this edit (`picked`, fresh for each room and
+  zone); any other volume, typed or saved, reads Custom. It showed whichever preset matched the
+  volume (`matchPreset`), so a volume that matched one could never read Custom.
+
 ## [2.26.3] - 2026-09-28
 
 Integration and controller **2.26.3**.
