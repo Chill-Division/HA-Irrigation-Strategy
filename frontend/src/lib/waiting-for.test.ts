@@ -88,6 +88,32 @@ describe("saying what a zone waits for", () => {
       "P3 by 17:36",
     );
   });
+  it("P2: under the trigger, the time the next maintenance shot may fire", () => {
+    const p2 = waiting(
+      { rule: "p2_topup", shot: true, metric: "vwc", op: "<", value: 70, now: 67, in_min: 4 },
+      { rule: "lights_off", to: "P3", in_min: 600 },
+    );
+    expect(waitingText(p2, format)).toBe("shot at 07:40 (VWC 67% under 70%) · P3 by 17:36");
+    // Its time between shots has passed, or it is above the trigger: as before.
+    const due = waiting({
+      rule: "p2_topup",
+      metric: "vwc",
+      op: "<",
+      value: 70,
+      now: 67,
+      in_min: 0,
+    });
+    expect(waitingText(due, format)).toBe("shot when VWC < 70% (now 67%)");
+    const above = waiting({
+      rule: "p2_topup",
+      metric: "vwc",
+      op: "<",
+      value: 70,
+      now: 72,
+      in_min: 4,
+    });
+    expect(waitingText(above, format)).toBe("shot when VWC < 70% (now 72%)");
+  });
   it("P3: the rescue level and lights-on", () => {
     const p3 = waiting(
       { rule: "p3_emergency", shot: true, metric: "vwc", op: "<", value: 60, now: 84.1 },

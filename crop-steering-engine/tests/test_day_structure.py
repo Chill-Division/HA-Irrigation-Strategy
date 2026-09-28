@@ -3,7 +3,7 @@ pore-EC reading the EC rules act on. The live cases are F2, 21-22 Sep 2026."""
 
 import pytest
 
-from crop_steering_engine import CAP_EXEMPT, EC_SETTLE_MIN, Reason, decide
+from crop_steering_engine import CAP_EXEMPT, EC_SETTLE_MIN, Reason, decide, validate_params
 from test_core import P, S
 
 
@@ -201,6 +201,20 @@ def test_a_correction_judged_on_a_held_settled_value_waits_for_the_next_settled_
     assert decide(S(**flush, minutes_since_shot=20), P(max_ec=12))[2] is False
     assert decide(S(**flush, minutes_since_shot=50), P(max_ec=12))[4].kind == "p1_flush"
     assert decide(S(**{**flush, "vwc": 50}, minutes_since_shot=20), P(max_ec=12))[4].kind == "p1_ramp"
+
+
+def test_the_top_up_beside_a_waiting_rescue_keeps_the_maintenance_spacing_too():
+    rescue = dict(phase="P2", vwc=40, ec=5, ec_settled=8.5, feed_ec=3)
+    spaced = P(p2_time_between_min=5)
+    assert decide(S(**rescue, minutes_since_shot=3), spaced)[2] is False
+    assert decide(S(**rescue, minutes_since_shot=5), spaced)[4].kind == "p2_topup"
+
+
+def test_the_maintenance_spacing_is_kept_to_two_hours_and_never_below_nothing():
+    for given, kept in ((-1, 0.0), (200, 120.0)):
+        p, warnings = validate_params(P(p2_time_between_min=given))
+        assert p.p2_time_between_min == kept
+        assert warnings == [f"p2_time_between_min={given:g} out of [0,120] -> clamped to {kept:g}"]
 
 
 def test_without_a_settled_value_the_raw_reading_behaves_exactly_as_before():
