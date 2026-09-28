@@ -40,6 +40,7 @@ import { errorText } from "@/lib/utils";
 import { budgetShare, DRYBACK_WINDOW_H, drybackTrend, type DrybackTrend } from "@/lib/dryback";
 import { useRecentHistory } from "@/lib/use-recent-moisture";
 import { coreWaterValue, dailyWater, waterParameters } from "@/lib/water-delivery";
+import { stateText } from "@/lib/units";
 import { waitingText } from "@/lib/waiting-for";
 import {
   mlPerPlant,
@@ -1366,7 +1367,8 @@ export function ZoneDetails({
                     <div key={sensor.entity_id}>
                       <span>{String(sensor.attributes.friendly_name || sensor.entity_id)}</span>
                       <strong>
-                        {sensor.state} {String(sensor.attributes.unit_of_measurement || "")}
+                        {stateText(sensor.state)}{" "}
+                        {String(sensor.attributes.unit_of_measurement || "")}
                       </strong>
                     </div>
                   ))}

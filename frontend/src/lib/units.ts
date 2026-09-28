@@ -63,6 +63,12 @@ export const fromMetric = (metric: number, unit: SizingUnit): number =>
 /** Display rounding only; never feed the result back into a draft. */
 export const displayNumber = (value: number, digits = 3): string =>
   Number.isFinite(value) ? String(Number(value.toFixed(digits))) : "";
+/** An entity's state as shown: a number to at most three decimals (an estimated-pwEC probe's
+ * 0.639473676681519 reads 0.639), anything else as Home Assistant has it. Display only. */
+export const stateText = (state: string, digits = 3): string => {
+  const value = state.trim() ? Number(state) : NaN;
+  return Number.isFinite(value) ? displayNumber(value, digits) : state;
+};
 
 export const sizingLabel = (key: SizingKey, unit: SizingUnit) =>
   `${FIELDS[key].name} · ${unit.symbol} ${FIELDS[key].per}`;

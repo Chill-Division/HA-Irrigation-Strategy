@@ -30,7 +30,7 @@ import {
   useSizingUnits,
 } from "@/components/zone-sizing";
 import type { Controller } from "@/lib/types";
-import { SIZING_UNITS, reviewValue, sizingError } from "@/lib/units";
+import { SIZING_UNITS, reviewValue, sizingError, stateText } from "@/lib/units";
 import {
   PLUMBING_HINTS,
   PLUMBING_LABELS,
@@ -150,7 +150,7 @@ function MappingPicker({
                   <small>{c.entity_id}</small>
                 </span>
                 <span className="mapping-reading">
-                  {c.state}
+                  {stateText(c.state)}
                   <small>{c.unit || c.domain}</small>
                 </span>
               </button>
