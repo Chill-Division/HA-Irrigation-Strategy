@@ -4,6 +4,7 @@ import type { TimelineRequest, TimelineRows } from "./day-timeline";
 import type { OperatorAction } from "./operator-types";
 import type { Change, EntityState, RoomView, Series, States, WriteResult } from "./types";
 import { numeric, validateChange } from "./model";
+import { liveConnection } from "./live";
 
 export interface HassSession {
   callApi: <T>(method: string, path: string, data?: unknown) => Promise<T>;
@@ -95,7 +96,7 @@ export class HaClient {
     method: string,
     path: string,
     data?: unknown,
-    service?: { domain: string; action: string },
+    inSession?: (session: HassSession) => Promise<unknown>,
     externalSignal?: AbortSignal,
   ): Promise<T> {
     if (externalSignal?.aborted) throw new DOMException("History request cancelled.", "AbortError");
@@ -122,12 +123,8 @@ export class HaClient {
     });
     try {
       const operation = this.session
-        ? service
-          ? this.session.callService(
-              service.domain,
-              service.action,
-              data as Record<string, unknown>,
-            )
+        ? inSession
+          ? inSession(this.session)
           : this.session.callApi<T>(method, path, data)
         : fetch(`${this.base}/api/${path}`, {
             method,
@@ -145,9 +142,11 @@ export class HaClient {
                   ? "Home Assistant authentication failed or this action needs an administrator."
                   : typeof detail?.message === "string"
                     ? detail.message
-                    : "Home Assistant request failed (" +
-                      response.status +
-                      "). Check that the integration is updated.",
+                    : response.status === 500
+                      ? "Home Assistant could not complete that (500). Its log, under Settings → System → Logs, says why."
+                      : "Home Assistant request failed (" +
+                        response.status +
+                        "). Check that the integration is updated.",
               );
             }
             return response.json();
@@ -186,16 +185,31 @@ export class HaClient {
       "whats_new_seen",
     ];
     if (!allowed.includes(action)) throw new Error("Unsupported workspace action.");
-    const response = await this.request<{ service_response?: T }>(
-      "POST",
-      "services/crop_steering/" + action + "?return_response",
-      data,
+    const outdated = new Error(
+      "This action needs the updated Crop Steering integration. Open Setup for installation instructions.",
     );
-    if (!response || response.service_response === undefined)
-      throw new Error(
-        "This action needs the updated Crop Steering integration. Open Setup for installation instructions.",
-      );
-    return response.service_response;
+    // Inside Home Assistant, over its websocket, the way its own frontend calls a service: a
+    // refusal comes back with the integration's reason. Over REST, Home Assistant answers every
+    // refusal with a bare "500 Internal Server Error" and the reason reaches only its log.
+    const path = "services/crop_steering/" + action + "?return_response";
+    const socket = liveConnection(this.session);
+    const reply = socket?.sendMessagePromise
+      ? (
+          await this.request<{ response?: T }>("POST", path, data, () =>
+            socket.sendMessagePromise!({
+              type: "call_service",
+              domain: "crop_steering",
+              service: action,
+              service_data: data,
+              return_response: true,
+            }).catch((error) => {
+              throw error?.code === "not_found" ? outdated : error;
+            }),
+          )
+        )?.response
+      : (await this.request<{ service_response?: T }>("POST", path, data))?.service_response;
+    if (reply === undefined) throw outdated;
+    return reply;
   }
   async states(): Promise<States> {
     return asStates(await this.request("GET", "states"));
@@ -204,10 +218,9 @@ export class HaClient {
     return this.request("GET", `states/${encodeURIComponent(entityId)}`);
   }
   async service(domain: string, action: string, data: Record<string, unknown>): Promise<void> {
-    await this.request("POST", `services/${domain}/${action}`, data, {
-      domain,
-      action,
-    });
+    await this.request("POST", `services/${domain}/${action}`, data, (session) =>
+      session.callService(domain, action, data),
+    );
   }
   async historyWindow(request: HistoryRequest) {
     return loadHistoryWindow(

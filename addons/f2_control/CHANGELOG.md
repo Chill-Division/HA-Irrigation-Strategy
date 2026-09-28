@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** a change Home Assistant refuses says why, instead of "Response error: 500". No change to the controller.
+
 # 2.26.3
 
 Pair with integration 2.26.3.
