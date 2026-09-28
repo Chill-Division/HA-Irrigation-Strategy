@@ -700,7 +700,7 @@ try {
     },
   );
   await check(
-    "Substrate presets fill the pot volume in litres, show their litres, and leave custom typing alone",
+    "Substrate presets fill the pot volume in litres, show their litres, and never name a pot from its volume",
     async () => {
       await fresh("setup");
       await visible(page.locator("#room-name"));
@@ -731,10 +731,11 @@ try {
       );
       await preset.selectOption("rockwool-4in");
       assert.equal(await page.locator("#zone-1-substrate_volume").inputValue(), "0.65");
+      assert.equal(await preset.inputValue(), "rockwool-4in", "The preset just picked shows");
       await page.locator("#zone-1-substrate_volume").fill("6.5");
       assert.equal(await preset.inputValue(), "custom", "Typing a volume is a custom entry");
       await page.locator("#zone-1-substrate_volume").fill("20");
-      assert.equal(await preset.inputValue(), "pot-20l", "A typed preset volume is recognised");
+      assert.equal(await preset.inputValue(), "custom", "A typed volume never names a pot");
       await liveSetup(async (lp, calls) => {
         await lp.locator("#zone-1-substrate-preset").selectOption("pot-5gal");
         assert.equal(await lp.locator("#zone-1-substrate_volume").inputValue(), "18.9");
@@ -744,6 +745,17 @@ try {
         await saveSetup(lp);
         assert.equal(savedZone(calls).substrate_volume, 3.2, "Hugo block is 3.2 L");
         assert.equal(savedZone(calls).dripper_flow_rate, 4, "Other sizing is untouched");
+        // Opened again, the saved 3.2 L is as likely a coco bag as a Hugo block: it reads
+        // Custom, and Custom chosen by hand stays chosen with the volume as it was.
+        await lp.reload({ waitUntil: "networkidle" });
+        const saved = lp.locator("#zone-1-substrate-preset");
+        await visible(saved);
+        assert.equal(await saved.inputValue(), "custom", "3.2 L is not read as a Hugo block");
+        await saved.selectOption("rockwool-hugo");
+        assert.equal(await saved.inputValue(), "rockwool-hugo");
+        await saved.selectOption("custom");
+        assert.equal(await saved.inputValue(), "custom", "Custom stays chosen");
+        assert.equal(await lp.locator("#zone-1-substrate_volume").inputValue(), "3.2");
       });
     },
   );

@@ -171,16 +171,21 @@ export function SubstratePresetPicker({
   disabled: boolean;
   onPick: (litres: number) => void;
 }) {
+  // A zone keeps its pot volume, not what fills the pot, and the volume cannot say: a 3.2 L coco
+  // bag holds what a Rockwool Hugo block does. So a preset shows only while the volume is the one
+  // it filled in here; any other volume, typed or saved, reads Custom.
+  const [picked, setPicked] = useState<string | null>(null);
   return (
     <div>
       <Label htmlFor={id}>Substrate preset</Label>
       <select
         id={id}
         disabled={disabled}
-        value={matchPreset(litres)?.id ?? "custom"}
+        value={picked !== null && matchPreset(litres)?.id === picked ? picked : "custom"}
         aria-describedby={id + "-note"}
         onChange={(event) => {
           const preset = SUBSTRATE_PRESETS.find((item) => item.id === event.target.value);
+          setPicked(preset?.id ?? null);
           if (preset) onPick(preset.litres);
           else document.getElementById(volumeFieldId)?.focus();
         }}

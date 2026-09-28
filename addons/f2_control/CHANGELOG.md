@@ -1,6 +1,7 @@
 # Unreleased
 
 - **The dashboard the app serves:** a change Home Assistant refuses says why, instead of "Response error: 500". No change to the controller.
+- **The dashboard the app serves:** the substrate preset in Rooms & setup reads Custom unless a preset was just picked there, so a 3.2 L pot is no longer named a Rockwool Hugo block. No change to the controller.
 
 # 2.26.3
 

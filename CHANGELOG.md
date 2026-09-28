@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (renaming a room while it was watering, for example), the page said only "Response error: 500"
   and the reason went to Home Assistant's own log. The page now gives the reason, such as which
   switch has to be off first.
+- **The substrate preset no longer guesses.** A zone keeps its pot volume, not what is in the pot,
+  so Rooms & setup named a 3.2 L coco bag a Rockwool Hugo block, which holds 3.2 L too, and
+  choosing Custom went straight back to it. The preset now reads Custom unless you have just
+  picked one there, and Custom stays chosen. Nothing about the zone changes: its volume is what
+  is saved, as before.
 
 ### 🔧 Technical notes
 
@@ -32,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the REST call stays, and a 500 points at Home Assistant's log. Proven on Home Assistant's real
   web server and websocket (`tests_ha/test_refusal_reasons.py`, marked `web_server`); the oldest
   supported CI leg pins `pycares==4.4.0`, the one Home Assistant 2024.10 shipped with.
+- **Substrate preset picker (dashboard).** `SubstratePresetPicker` shows a preset only while the
+  volume is the one that preset filled in during this edit (`picked`, fresh for each room and
+  zone); any other volume, typed or saved, reads Custom. It showed whichever preset matched the
+  volume (`matchPreset`), so a volume that matched one could never read Custom.
 
 ## [2.26.3] - 2026-09-28
 
