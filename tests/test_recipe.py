@@ -29,7 +29,7 @@ def test_default_recipe_values_in_sane_ranges():
         assert 30 <= r["p1_target_vwc"] <= 90
         assert 30 <= r["p2_vwc_threshold"] <= r["p1_target_vwc"]  # floor below target
         assert 5 <= r["generative_dryback_target"] <= 60
-        assert 5 <= r["p0_dryback_drop_percent"] <= 50
+        assert 1 <= r["p0_dryback_drop_percent"] <= 5  # Athena's additional dryback
         assert 0.5 <= r["ec_target_gen_p1"] <= r["ec_target_gen_p2"] <= r["maximum_ec"]
         assert 1 <= r["p2_shot_size"] <= 15
 

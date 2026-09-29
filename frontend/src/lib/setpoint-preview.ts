@@ -18,6 +18,7 @@ const steeringKeys = [
   "p1_maximum_shots",
   "p1_time_between_shots",
   "p0_maximum_wait_time",
+  "p0_dryback_drop_percent",
   "p3_emergency_vwc_threshold",
   "p3_emergency_shot_size",
   "max_daily_volume",

@@ -145,13 +145,15 @@ NUMBER_DESCRIPTIONS = [
         native_unit_of_measurement=UnitOfTime.MINUTES,
         mode="box",
     ),
+    # Athena's additional dryback: P0 ends once moisture is this far below its lights-on reading
+    # (or at the latest first shot). The key is from 2025, when nothing read it.
     NumberEntityDescription(
         key="p0_dryback_drop_percent",
-        name="P0 Dryback Drop Percent",
+        name="P0 Additional Dryback",
         icon="mdi:water-minus",
-        native_min_value=2.0,
+        native_min_value=1.0,
         native_max_value=40.0,
-        native_step=1.0,
+        native_step=0.5,
         native_unit_of_measurement=PERCENTAGE,
         mode="box",
     ),
@@ -385,7 +387,7 @@ DEFAULT_VALUES = {
     "p1_target_vwc": 65.0,
     "p2_vwc_threshold": 60.0,
     "p0_maximum_wait_time": 120.0,
-    "p0_dryback_drop_percent": 15.0,
+    "p0_dryback_drop_percent": 3.0,
     "p1_initial_shot_size": 2.0,
     "p1_shot_size_increment": 0.5,
     "p1_time_between_shots": 15.0,
@@ -443,6 +445,11 @@ PER_ZONE_STEERING_KEYS = [
 ]
 
 _DESC_BY_KEY = {d.key: d for d in NUMBER_DESCRIPTIONS}
+
+# A P0 additional dryback saved before the controller read it was never used: a value restored
+# without this attribute starts at the default instead, so no room carries an old 15-30% into P0.
+P0_DRYBACK_KEY = "p0_dryback_drop_percent"
+P0_DRYBACK_READ = "read_by_controller"
 
 # Maps entry.data["parameters"] key → number entity key (where names differ).
 # Keys that share the same name on both sides are also listed so the lookup is
@@ -702,11 +709,17 @@ class CropSteeringNumber(NumberEntity, RestoreEntity):
             ):
                 self._attr_native_value = self._setup_value
                 return
+            if self._is_p0_dryback and not last_state.attributes.get(P0_DRYBACK_READ):
+                return  # saved while nothing read it: start at the default
             try:
                 self._attr_native_value = float(last_state.state)
             except (ValueError, TypeError):
                 # Keep default value if restore fails
                 pass
+
+    @property
+    def _is_p0_dryback(self) -> bool:
+        return self.entity_description.key.endswith(P0_DRYBACK_KEY)
 
     @property
     def extra_state_attributes(self):
@@ -715,6 +728,8 @@ class CropSteeringNumber(NumberEntity, RestoreEntity):
                 "setup_revision": self._setup_revision,
                 "setup_value": self._setup_value,
             }
+        if self._is_p0_dryback:
+            return {P0_DRYBACK_READ: True}
         return {}
 
     @property

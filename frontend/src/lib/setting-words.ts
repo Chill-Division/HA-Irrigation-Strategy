@@ -82,6 +82,12 @@ const WORDS: Record<string, SettingWords> = {
     tag: "time",
     help: "The ramp starts this long after lights-on at the latest; sooner if moisture falls to the maintenance trigger.",
   },
+  p0_dryback_drop_percent: {
+    label: "Additional dryback",
+    short: "Additional dryback",
+    tag: "dries",
+    help: "The ramp starts once moisture has dropped this far below its lights-on reading, or at the latest first shot. Athena: 1 to 5%.",
+  },
   p1_target_vwc: {
     label: "Peak VWC target",
     short: "Peak target",
@@ -231,9 +237,17 @@ const EC_STAGES =
 const DETAILS: Record<string, SettingDetail> = {
   p0_maximum_wait_time: {
     what: "How long after lights-on the first shot can wait: Athena’s “transpiration before irrigation”.",
-    when: "P0 ends and the ramp starts at the first of: this long after lights-on; moisture at or below the maintenance trigger; moisture down by the P3 dryback target from its highest reading since lights-on. The ramp’s first shot then fires straight away, unless moisture is still at the peak VWC target.",
+    when: "P0 ends and the ramp starts at the first of: this long after lights-on; moisture at or below the maintenance trigger; moisture down by the additional dryback from its highest reading since lights-on. The ramp’s first shot then fires straight away, unless moisture is still at the peak VWC target.",
     athena:
       "Additional dryback is “the decrease in VWC% that occurs during P3, after the lights turn on and before the first irrigation event of the day” (p. 33): 1 to 5%, first shot 30 minutes to 2 hours after lights-on (p. 39). The P1 page says 1 to 2 hours (p. 36).",
+  },
+  p0_dryback_drop_percent: {
+    what: "How far the substrate dries after lights-on before the first shot, as a percentage of its reading at lights-on: Athena’s additional dryback, the plants drinking before they are watered.",
+    when: "In P0, the ramp starts once moisture is this far below its highest reading since lights-on, unless the latest first shot or the maintenance trigger comes first. 3% unless changed.",
+    affects:
+      "When the ramp starts: a bigger additional dryback starts it later, after more drinking. The overnight dryback is the P3 dryback target’s.",
+    athena:
+      "“The decrease in VWC% that occurs during P3, after the lights turn on and before the first irrigation event of the day” (p. 33): 1 to 5% (p. 39).",
   },
   p1_target_vwc: {
     what: "The moisture the morning ramp brings the substrate up to: the top of the day’s range. Athena calls it the Peak VWC% Target.",
@@ -337,7 +351,7 @@ const EC_DETAILS: Record<string, SettingDetail> = {
 };
 const DRYBACK_DETAIL: SettingDetail = {
   what: "How far the substrate should dry back overnight, as a percentage of the day’s peak: a relative change. A 30% dryback from a 65% peak ends at 45.5%. The zone’s steering mode picks the vegetative or generative one.",
-  when: "Overnight nothing waters toward it: the substrate simply dries. It acts in two places. In the last 3 hours before lights-off, maintenance shots stop early if drying this far by lights-on needs the rest of the night (and no more than 12 hours). After lights-on, P0 also ends once moisture drops this much below its highest reading since lights-on; with P3-sized values that rarely comes first.",
+  when: "Overnight nothing waters toward it: the substrate simply dries. In the last 3 hours before lights-off, maintenance shots stop early if drying this far by lights-on needs the rest of the night (and no more than 12 hours). The drying after lights-on, before the first shot, is P0’s own additional dryback.",
   affects: "When P2 ends, and so substrate EC: a bigger dryback raises it.",
   athena:
     "P3 dryback targets: vegetative 30 to 40% (less stress), generative 40 to 50% (more stress), “based on a relative change” (p. 39). By growth stage, the veg stage dries back 50% the first time, then 25% (p. 40). “The grower can control the amount of dryback by adding or subtracting P2 shots at the end of the day” (p. 37): stopping maintenance shots early is how the controller does that.",

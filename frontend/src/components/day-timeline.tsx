@@ -161,6 +161,8 @@ interface Lane {
   /** Overnight, how far the zone has dried since today's peak: what the P3 dryback target reads. */
   overnight: { dryback: number; peak: number } | null;
   drybackTarget: number | null;
+  /** P0's additional dryback, the target of the P0 figure. */
+  p0Target: number | null;
   /** Rooms & setup was saved after the day compared with began. */
   setupNote: string | null;
   /** What the lane line ends with: why the zone is not watered, or held, or how old the last report
@@ -630,6 +632,9 @@ function Timeline({
       dryback: p0 ? morningDryback(points, p0) : null,
       overnight: phase === "P3" ? dayDryback(points, day.start, zone.vwc.value) : null,
       drybackTarget: Number.isFinite(parameters.dryback_target) ? parameters.dryback_target : null,
+      p0Target: Number.isFinite(parameters.p0_dryback_drop_percent)
+        ? parameters.p0_dryback_drop_percent
+        : 3,
       setupNote: !moved
         ? null
         : layers.compare === "yesterday"
@@ -1484,13 +1489,13 @@ function tracking(
       : `${duration(lane.seconds * 1000)} of watering so far${then ? ` (${signed((lane.seconds - then.seconds) / 60, 0)} min)` : ""}`,
   );
   // Overnight, the dryback the P3 target is about: from today's peak. The morning's P0 figure is
-  // measured from the lights-on reading instead, and read beside "P3" it looked like tonight's.
+  // measured from the lights-on reading instead, against P0's own additional dryback.
   if (lane.overnight && lane.drybackTarget !== null)
     parts.push(
       `P3 dryback ${number(lane.overnight.dryback)}% of ${number(lane.drybackTarget)}% from today's ${number(lane.overnight.peak)}% peak`,
     );
-  else if (lane.dryback !== null && lane.drybackTarget !== null)
-    parts.push(`P0 dryback ${number(lane.dryback)}% of ${number(lane.drybackTarget)}%`);
+  else if (lane.dryback !== null && lane.p0Target !== null)
+    parts.push(`P0 dryback ${number(lane.dryback)}% of ${number(lane.p0Target)}%`);
   return [...parts, lane.setupNote, lane.status].filter(Boolean).join(" · ");
 }
 function changeText(change: Change): string {

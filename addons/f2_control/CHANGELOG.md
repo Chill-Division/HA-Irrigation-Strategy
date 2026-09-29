@@ -3,6 +3,7 @@
 - **Moisture levels used as set.** The engine takes a peak VWC target up to 100 (was 85), a P2 trigger up to 100 (was 70), field capacity up to 100 (was 90) and a rescue level up to 65 (was 60): the ranges their settings accept, so it no longer clips them and raises CS-401. Its lower limits are unchanged, and Auto Setpoints' bounds match. No change to the state file.
 - **The dashboard the app serves:** overnight, a zone's grow-day line shows how far it has dried from today's peak against the P3 dryback target, not the morning's P0 figure. No change to the controller.
 - **The dashboard the app serves:** the Irrigation plan points out a zone's moisture levels that work against each other. No change to the controller.
+- **P0 ends on the additional dryback.** `ZoneParams.additional_dryback`, from `number.crop_steering_<prefix>[zone_N_]p0_dryback_drop_percent` (optional; 3 when missing): P0 ends once VWC is that far below its lights-on reading, instead of the P3 dryback target. The dashboard the app serves shows the setting in P0. No change to the state file.
 
 # 2.27.2
 
