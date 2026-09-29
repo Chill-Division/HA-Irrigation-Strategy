@@ -2,7 +2,7 @@
   "domain": "crop_steering",
   "name": "Crop Steering",
   "codeowners": [
-    "@JakeTheRabbit"
+    "@Chill-Division"
   ],
   "config_flow": true,
   "dependencies": [
