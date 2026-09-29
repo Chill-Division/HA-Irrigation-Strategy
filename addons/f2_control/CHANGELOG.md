@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** overnight, a zone's grow-day line shows how far it has dried from today's peak against the P3 dryback target, not the morning's P0 figure. No change to the controller.
+
 # 2.27.1
 
 Pair with integration 2.27.1.

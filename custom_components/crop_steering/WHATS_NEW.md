@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- Overnight, each zone's line on the Overview shows how far it has dried back from today's peak.
+
 ## 2.27.1 - 2026-09-28
 
 - Maintenance shots now wait at least 5 minutes after the last shot so each can soak in; Time between P2 shots changes that.

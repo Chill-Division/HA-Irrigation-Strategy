@@ -9,6 +9,24 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **Overnight, a zone's line shows tonight's dryback.** In P3 the grow-day line read, for example,
+  "P3 · 60.1% now · … · P0 dryback 1.4% of 30%": that was the morning's dryback after lights-on,
+  measured from the lights-on reading, and beside "P3" it looked as if tonight's dryback had
+  barely started. Overnight the line now says how far the zone has dried from today's peak, which
+  is what the P3 dryback target is about: "P3 dryback 30.5% of 30% from today's 86.5% peak".
+
+### 🔧 Technical notes
+
+- **Overnight dryback on the grow-day line (dashboard).** While a lane is in P3, `tracking` shows
+  `dayDryback` (`lib/day-timeline.ts`): (peak − VWC) / peak × 100 with the peak the highest reading
+  since lights-on, where the controller starts its peak, in place of the P0 figure
+  (`morningDryback`, from the lights-on reading), which the other phases keep. A browser check pins
+  the demo at 23:30 and finds every lane saying it.
+
 ## [2.27.1] - 2026-09-28
 
 Integration and controller **2.27.1**.
