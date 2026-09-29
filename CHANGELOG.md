@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   measured from the lights-on reading, and beside "P3" it looked as if tonight's dryback had
   barely started. Overnight the line now says how far the zone has dried from today's peak, which
   is what the P3 dryback target is about: "P3 dryback 30.5% of 30% from today's 86.5% peak".
+- **Moisture levels that work against each other are pointed out.** On the Irrigation plan, a
+  zone's moisture levels now say when, together, they will not do what each says alone: a
+  maintenance trigger the controller moves (it keeps it under the peak target and above the
+  rescue level) says which value it will use; a rescue level above where tonight's dryback ends
+  says it would stop the dryback early, beside both settings; a trigger that lets the substrate
+  dry further by day than the night's dryback says so; and a peak target above field capacity says
+  the ramp stops at field capacity. These are advice only: any value can still be saved.
 - **The first shot of the day waits for the plants to drink.** P0, the time after lights-on before
   the ramp, was meant to end once the substrate had dried a little more: Athena's additional
   dryback, 1–5%. It waited for the overnight P3 dryback target instead (30%, for example), which
@@ -54,6 +61,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   since lights-on, where the controller starts its peak, in place of the P0 figure
   (`morningDryback`, from the lights-on reading), which the other phases keep. A browser check pins
   the demo at 23:30 and finds every lane saying it.
+- **Level-order advisories (dashboard).** `levelWarning` (`lib/level-order.ts`) reads a zone's
+  peak target, field capacity, trigger, rescue level and its steering mode's P3 dryback target, as
+  `buildSetpointPreview` resolves them with the page's drafts, and words, for the setting beside it,
+  the controller's ordering (`max(rescue + 3, min(min(peak, field capacity) − 1, trigger))`, as
+  `controller._params` applies it), a rescue level above `ceiling × (1 − dryback / 100)`, a daytime
+  dryback `(ceiling − trigger) / ceiling` bigger than the P3 target, and a peak target above field
+  capacity. Shown under a zone's settings only, a dryback target only for the mode in use, as an
+  advisory like the probe-history ones. A browser check types a trigger and a rescue level out of
+  order in the demo.
 - **P0 additional dryback (engine, integration, controller, dashboard).**
   `ZoneParams.additional_dryback` (engine; None is the P3 `dryback_target`, as before; bounds
   1–40): P0 ends when `dryback_pct` reaches it, and `waiting_for`'s `p0_dryback` reads it. The
