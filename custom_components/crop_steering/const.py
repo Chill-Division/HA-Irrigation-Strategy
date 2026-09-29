@@ -66,7 +66,8 @@ RECIPE_PARAMS = [
 
 # Sane cannabis starting defaults: veg -> ripen drops VWC targets, deepens the
 # dryback, and climbs EC + the EC ceiling (the generative push). Starting points
-# the grower tunes — never claimed as optimal.
+# the grower tunes — never claimed as optimal. The P0 additional dryback stays in
+# Athena's 1-5% (p. 39).
 DEFAULT_RECIPE = {
     "version": RECIPE_STORAGE_VERSION,
     "active_stage": "Veg",
@@ -75,7 +76,7 @@ DEFAULT_RECIPE = {
             "p1_target_vwc": 70.0,
             "p2_vwc_threshold": 60.0,
             "generative_dryback_target": 15.0,
-            "p0_dryback_drop_percent": 12.0,
+            "p0_dryback_drop_percent": 2.0,
             "ec_target_gen_p1": 2.0,
             "ec_target_gen_p2": 2.5,
             "maximum_ec": 7.0,
@@ -85,7 +86,7 @@ DEFAULT_RECIPE = {
             "p1_target_vwc": 66.0,
             "p2_vwc_threshold": 56.0,
             "generative_dryback_target": 22.0,
-            "p0_dryback_drop_percent": 18.0,
+            "p0_dryback_drop_percent": 3.0,
             "ec_target_gen_p1": 2.6,
             "ec_target_gen_p2": 3.0,
             "maximum_ec": 8.0,
@@ -95,7 +96,7 @@ DEFAULT_RECIPE = {
             "p1_target_vwc": 62.0,
             "p2_vwc_threshold": 50.0,
             "generative_dryback_target": 32.0,
-            "p0_dryback_drop_percent": 24.0,
+            "p0_dryback_drop_percent": 3.0,
             "ec_target_gen_p1": 3.0,
             "ec_target_gen_p2": 3.5,
             "maximum_ec": 9.0,
@@ -105,7 +106,7 @@ DEFAULT_RECIPE = {
             "p1_target_vwc": 58.0,
             "p2_vwc_threshold": 46.0,
             "generative_dryback_target": 42.0,
-            "p0_dryback_drop_percent": 30.0,
+            "p0_dryback_drop_percent": 5.0,
             "ec_target_gen_p1": 3.4,
             "ec_target_gen_p2": 4.0,
             "maximum_ec": 10.0,
@@ -116,7 +117,7 @@ DEFAULT_RECIPE = {
             "p1_target_vwc": 62.0,
             "p2_vwc_threshold": 50.0,
             "generative_dryback_target": 32.0,
-            "p0_dryback_drop_percent": 24.0,
+            "p0_dryback_drop_percent": 3.0,
             "ec_target_gen_p1": 3.0,
             "ec_target_gen_p2": 3.5,
             "maximum_ec": 9.0,
