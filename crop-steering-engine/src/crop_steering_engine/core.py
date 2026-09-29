@@ -478,11 +478,18 @@ def detect_vmax(wetup_vwc, min_points=4, plateau_delta=0.6, plateau_runs=2):
 
 
 # clamp ranges for config validation (the 12.2-EC fat-finger class). (lo, hi) per field.
+# The four moisture levels take exactly the range their Home Assistant setting accepts, so the
+# engine never clips a value the setting took. Their tops are 100: what bounds the water is the
+# order between them (the ramp stops at field capacity; the P2 trigger stays at least 1 point
+# under the peak and 3 over the rescue level), not a fixed number. A probe reads on its own scale
+# (a THC-S in coco peaks in the 80s; Athena's examples put field capacity at 50% and a saturated
+# slab at 70%), so only the floors guard, against a slipped digit such as 6.5 for 65; they stay
+# where they were, so a room steering low (a peak of 20, a trigger of 15) waters as set.
 _PARAM_BOUNDS = {
-    "p1_target": (20.0, 85.0), "p2_threshold": (10.0, 70.0),
+    "p1_target": (20.0, 100.0), "p2_threshold": (10.0, 100.0),
     "ec_target_p0": (0.5, 9.0), "ec_target_p1": (0.5, 9.0), "ec_target_p2": (0.5, 9.0),
-    "dryback_target": (2.0, 60.0), "p3_emergency_floor": (10.0, 60.0),
-    "field_capacity": (40.0, 90.0), "max_ec": (3.0, 15.0), "watchdog_hours": (0.0, 12.0),
+    "dryback_target": (2.0, 60.0), "p3_emergency_floor": (10.0, 65.0),
+    "field_capacity": (40.0, 100.0), "max_ec": (3.0, 15.0), "watchdog_hours": (0.0, 12.0),
     "p2_shot_size": (0.5, 20.0), "p1_initial": (0.5, 15.0), "p1_incr": (0.0, 5.0),
     "p1_max_shots": (1.0, 40.0), "p1_time_between_min": (1.0, 120.0),
     "p2_time_between_min": (0.0, 120.0),

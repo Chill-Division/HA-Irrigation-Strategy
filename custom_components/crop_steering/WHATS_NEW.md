@@ -23,6 +23,8 @@ version being released.
 
 ## Unreleased
 
+- The peak VWC target, maintenance trigger, field capacity and rescue level are used exactly as you set them, up to 100% (the rescue level up to 65%).
+- Overnight, each zone's line on the Overview shows how far it has dried back from today's peak.
 - The first shot of the day now waits for the plants to drink a little after lights-on (3% unless you change it), not just for the clock.
 
 ## 2.27.2 - 2026-09-29

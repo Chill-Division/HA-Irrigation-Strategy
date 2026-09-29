@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🌱 In plain English
 
+- **Moisture levels are used as set.** The peak VWC target, maintenance trigger, field capacity
+  and rescue level each accepted more than the controller would use: a peak target of 87 was
+  reported as outside the engine's range and used as 85. Each now has one range, the same
+  wherever you set it: peak target 20–100%, maintenance trigger 10–100%, field capacity 40–100%
+  and rescue level 10–65%. What keeps them sensible is their order, as before: the ramp stops at
+  field capacity, and the trigger stays under the peak target and over the rescue level. A room
+  set above the old limits now waters to what it was set to; a value below the new lower limits
+  was already being used as the lowest one allowed.
+- **Overnight, a zone's line shows tonight's dryback.** In P3 the grow-day line read, for example,
+  "P3 · 60.1% now · … · P0 dryback 1.4% of 30%": that was the morning's dryback after lights-on,
+  measured from the lights-on reading, and beside "P3" it looked as if tonight's dryback had
+  barely started. Overnight the line now says how far the zone has dried from today's peak, which
+  is what the P3 dryback target is about: "P3 dryback 30.5% of 30% from today's 86.5% peak".
 - **The first shot of the day waits for the plants to drink.** P0, the time after lights-on before
   the ramp, was meant to end once the substrate had dried a little more: Athena's additional
   dryback, 1–5%. It waited for the overnight P3 dryback target instead (30%, for example), which
@@ -24,6 +37,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Technical notes
 
+- **One range per moisture level (engine, integration, controller).** `MOISTURE_RANGES`
+  (`const.py`): `p1_target_vwc` 20–100, `p2_vwc_threshold` 10–100, `field_capacity` 40–100,
+  `p3_emergency_vwc_threshold` 10–65. They are the number entities' ranges (room and zone) and the
+  setup wizard's field capacity range, and grow plans' `ENGINE_BOUNDS`, Auto Setpoints' `BOUNDS`
+  and the engine's `_PARAM_BOUNDS` (`p1_target`, `p2_threshold`, `field_capacity`,
+  `p3_emergency_floor`) are the same, so `validate_params` never clips a value the setting
+  accepted. CS-401 is left for a value outside them, which only an older install can hold. The
+  engine's floors are unchanged; its tops were 85, 70, 90 and 60. The ordering clamps are unchanged
+  (the ramp stops at field capacity; the trigger is kept at least 3 over the rescue level and 1
+  under the lower of the peak target and field capacity). Proven in a real Home Assistant
+  (`tests_ha/test_moisture_ranges.py`): entities, engine, grow plans and Auto Setpoints agree,
+  neither end of a range is clipped, and a peak target of 87 is used as set with no CS-401.
+- **Overnight dryback on the grow-day line (dashboard).** While a lane is in P3, `tracking` shows
+  `dayDryback` (`lib/day-timeline.ts`): (peak − VWC) / peak × 100 with the peak the highest reading
+  since lights-on, where the controller starts its peak, in place of the P0 figure
+  (`morningDryback`, from the lights-on reading), which the other phases keep. A browser check pins
+  the demo at 23:30 and finds every lane saying it.
 - **P0 additional dryback (engine, integration, controller, dashboard).**
   `ZoneParams.additional_dryback` (engine; None is the P3 `dryback_target`, as before; bounds
   1–40): P0 ends when `dryback_pct` reaches it, and `waiting_for`'s `p0_dryback` reads it. The
