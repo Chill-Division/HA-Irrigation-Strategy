@@ -1,4 +1,6 @@
-# Unreleased
+# 2.28.0
+
+Pair with integration 2.28.0.
 
 - **Moisture levels used as set.** The engine takes a peak VWC target up to 100 (was 85), a P2 trigger up to 100 (was 70), field capacity up to 100 (was 90) and a rescue level up to 65 (was 60): the ranges their settings accept, so it no longer clips them and raises CS-401. Its lower limits are unchanged, and Auto Setpoints' bounds match. No change to the state file.
 - **The dashboard the app serves:** overnight, a zone's grow-day line shows how far it has dried from today's peak against the P3 dryback target, not the morning's P0 figure. No change to the controller.
