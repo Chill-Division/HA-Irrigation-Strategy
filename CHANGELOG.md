@@ -37,6 +37,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`tests_ha/test_moisture_ranges.py`): entities, engine, grow plans and Auto Setpoints agree,
   neither end of a range is clipped, and a peak target of 87 is used as set with no CS-401.
 
+## [2.27.2] - 2026-09-29
+
+Integration and controller **2.27.2**.
+
+### 🌱 In plain English
+
+- **Auto setpoints no longer gives up a day's watering for the overnight dryback.** To reach the P3
+  dryback target, Auto setpoints stops maintenance shots early, so the day's drying adds to the
+  night's. When a zone's nights dried too slowly for the target, it stopped them as soon as the
+  morning ramp ended: a zone set to Vegetative got its ramp to 85% and then no water until the next
+  morning, down to about 60% by lights-off, a generative day nobody asked for. Now a Vegetative zone
+  keeps its maintenance shots until 3 hours before lights-off and a Generative zone until the middle
+  of the day: Athena adjusts the dryback by adding or removing maintenance shots at the end of the
+  day. When the target still can't be reached, the zone gets the deepest dryback left, and the
+  Irrigation plan says so beside the P3 dryback target, for example "30% dryback unreachable at this
+  zone's uptake: about 14% tonight, with maintenance shots until 17:00".
+
+### 🔧 Technical notes
+
+- **How early Auto setpoints may stop maintenance shots (controller, dashboard).**
+  `curve_tracker.plan_day` stops P2 no earlier than `day_h − 3` hours after lights-on for a
+  vegetative recipe and `day_h / 2` for a generative one (`Recipe.generative`, new, default False;
+  Athena's stretch and finish stages set it), never inside P1. The dryback it cannot reach is capped
+  (`achievable_dryback_pct`, `floor`), and its note names what the zone gets and until when. The
+  controller passes the zone's steering mode (`_veg`) as `plan_ctx["generative"]` and publishes the
+  note as `dryback_note` on `sensor.crop_steering_<prefix>zone_N_auto_setpoints`; the dashboard shows
+  it beside the P3 dryback target of the mode in use and on the zone's Auto chip. A zone without
+  Auto setpoints is unchanged. Proven with the real controller in a real Home Assistant
+  (`tests_ha/test_auto_setpoints_steering_mode.py`): at 17:00 a Vegetative zone's trigger is still
+  one maintenance shot under the peak and a Generative zone's is drying, from the zone's own select.
+
 ## [2.27.1] - 2026-09-28
 
 Integration and controller **2.27.1**.

@@ -217,6 +217,11 @@ export function AutoZoneChip({ status, name }: { status: AutoSetpointStatus; nam
       <span>
         Last change <b>{status.lastChange ?? "none yet"}</b>
       </span>
+      {status.state === "tracking" && status.drybackNote && (
+        <span>
+          Tonight <b>{status.drybackNote}</b>
+        </span>
+      )}
     </div>
   );
 }

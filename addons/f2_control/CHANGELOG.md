@@ -2,6 +2,12 @@
 
 - **Moisture levels used as set.** The engine takes a peak VWC target up to 100 (was 85), a P2 trigger up to 100 (was 70), field capacity up to 100 (was 90) and a rescue level up to 65 (was 60): the ranges their settings accept, so it no longer clips them and raises CS-401. Its lower limits are unchanged, and Auto Setpoints' bounds match. No change to the state file.
 
+# 2.27.2
+
+Pair with integration 2.27.2.
+
+- **Auto setpoints keeps the afternoon's maintenance shots.** Its day plan (`curve_tracker.plan_day`) stops P2 for the dryback no earlier than 3 hours before lights-off on a Vegetative zone, or the middle of the day on a Generative one (the zone's `select.crop_steering_<prefix>zone_N_steering_mode`), instead of as soon as P1 ends. A dryback it cannot reach is capped, and `sensor.crop_steering_<prefix>zone_N_auto_setpoints` publishes `dryback_note`, which the dashboard the app serves shows. No change to the state file.
+
 # 2.27.1
 
 Pair with integration 2.27.1.

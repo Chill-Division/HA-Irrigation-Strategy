@@ -46,6 +46,7 @@ describe("auto setpoint status", () => {
       updated: "2026-09-08T00:58:00+00:00",
       holdDays: 3,
       frozenReason: null,
+      drybackNote: null,
     });
   });
   it.each(["pending", "reached", "plateau", "suspect", "short"])(
@@ -75,6 +76,13 @@ describe("auto setpoint status", () => {
     expect(malformed.frozenReason).toBeNull();
     expect(parseAutoSetpoints(entity("tracking", { hold_days: 1.5 }))!.holdDays).toBeNull();
     expect(parseAutoSetpoints(entity("tracking", { hold_days: 0 }))!.holdDays).toBe(0);
+  });
+  it("reads tonight's dryback note, what the zone gets when the target is out of reach", () => {
+    const note =
+      "30% dryback unreachable at this zone's uptake: about 14% tonight, with maintenance shots until 17:00";
+    expect(parseAutoSetpoints(entity("tracking", { dryback_note: note }))!.drybackNote).toBe(note);
+    expect(parseAutoSetpoints(entity("tracking", { dryback_note: null }))!.drybackNote).toBeNull();
+    expect(parseAutoSetpoints(entity("tracking", { dryback_note: 3 }))!.drybackNote).toBeNull();
   });
   it("treats unknown states and malformed attributes defensively", () => {
     const status = parseAutoSetpoints(

@@ -9,7 +9,8 @@ Why setpoints have to move during the day (from the engine's actual rules):
   * P1 only graduates at its target. A target above what the probe can read burns every ramp shot
     into runoff, so the target follows the zone's own saturation knee.
   * P2 tops up under its threshold until lights-off. Dropping the threshold at the planned stop time
-    is what starts the dryback early enough to land the overnight target.
+    is what starts the dryback early enough to land the overnight target: no earlier than the last
+    3 hours of a vegetative day, or the middle of a generative one (curve_tracker.plan_day).
 
 Everything here is arithmetic (knee, band, stop time, attainable dryback): the same zone model, recipe
 and readings always give the same setpoints.
