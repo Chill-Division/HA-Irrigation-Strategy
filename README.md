@@ -7,7 +7,7 @@ It runs inside [Home Assistant](https://www.home-assistant.io/) and works with t
 **[Try the live demo](https://jaketherabbit.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1)** (runs in your browser with sample data, nothing to install) · [Install](#install) · [User guide](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/USER_GUIDE.md) · [What has been tested](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/FEATURE_MATRIX.md)
 
 ![Release](https://img.shields.io/badge/Release-2.28.0-blue)
-![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.10+-41BDF5)
+![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.5+-41BDF5)
 ![HACS](https://img.shields.io/badge/HACS-Custom-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
@@ -120,7 +120,7 @@ Both parts carry the same version number. Install and update them together.
 
 | | |
 | --- | --- |
-| **Home Assistant** | **2024.10.0 or newer.** Every change is tested on 2024.10.0 and on 2026.9.3. |
+| **Home Assistant** | **2026.5.0 or newer.** Every change is tested on 2026.5.0 and on 2026.9.3. |
 | **The controller app** | Home Assistant OS or Supervised, where it installs from the app store (amd64, aarch64 or armv7) and brings its own Python 3.12. Home Assistant Container and Core have no app store: there you run the controller yourself (see the [install guide](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/INSTALL.md)). |
 | **HACS** | 1.6.0 or newer for the guided download, or copy `custom_components/crop_steering` into Home Assistant by hand. |
 | **Hardware** | A switch Home Assistant can control for each zone's valve (and your pump and main line, if you have them), and a moisture probe per zone. EC probes and tank sensors are optional but recommended. |
