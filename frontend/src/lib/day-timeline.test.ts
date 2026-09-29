@@ -13,6 +13,7 @@ import {
   growDay,
   joinRows,
   levels,
+  dayDryback,
   morningDryback,
   nextShot,
   NOT_REPORTING,
@@ -949,6 +950,21 @@ describe("how today is tracking", () => {
       6,
     );
     expect(morningDryback(points, { start: 0, end: 1 })).toBeNull();
+  });
+  it("overnight, how far the zone has dried since today's peak, as the P3 target reads", () => {
+    // GR2 on 28 Sep: peaked at 86.5% after the ramp, 60.1% in the night. The line said "P0
+    // dryback 1.4% of 30%", this morning's figure from the lights-on reading, beside "P3".
+    const points = [
+      { time: START - 600_000, value: 90 }, // before lights-on: yesterday's
+      { time: START, value: 61 },
+      { time: START + 3_600_000, value: 86.5 },
+      { time: START + 43_200_000, value: 62 },
+    ];
+    const tonight = dayDryback(points, START, 60.1)!;
+    expect(tonight.peak).toBe(86.5);
+    expect(tonight.dryback).toBeCloseTo(((86.5 - 60.1) / 86.5) * 100, 6); // 30.5%: the target met
+    expect(dayDryback(points, START, null)).toBeNull();
+    expect(dayDryback([], START, 60.1)).toBeNull();
   });
   it("a controller not reporting gets no projection, only when it last reported", () => {
     const now = at("03:00:00");

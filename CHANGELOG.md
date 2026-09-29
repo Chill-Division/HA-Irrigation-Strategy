@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   field capacity, and the trigger stays under the peak target and over the rescue level. A room
   set above the old limits now waters to what it was set to; a value below the new lower limits
   was already being used as the lowest one allowed.
+- **Overnight, a zone's line shows tonight's dryback.** In P3 the grow-day line read, for example,
+  "P3 · 60.1% now · … · P0 dryback 1.4% of 30%": that was the morning's dryback after lights-on,
+  measured from the lights-on reading, and beside "P3" it looked as if tonight's dryback had
+  barely started. Overnight the line now says how far the zone has dried from today's peak, which
+  is what the P3 dryback target is about: "P3 dryback 30.5% of 30% from today's 86.5% peak".
 
 ### 🔧 Technical notes
 
@@ -36,6 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   under the lower of the peak target and field capacity). Proven in a real Home Assistant
   (`tests_ha/test_moisture_ranges.py`): entities, engine, grow plans and Auto Setpoints agree,
   neither end of a range is clipped, and a peak target of 87 is used as set with no CS-401.
+- **Overnight dryback on the grow-day line (dashboard).** While a lane is in P3, `tracking` shows
+  `dayDryback` (`lib/day-timeline.ts`): (peak − VWC) / peak × 100 with the peak the highest reading
+  since lights-on, where the controller starts its peak, in place of the P0 figure
+  (`morningDryback`, from the lights-on reading), which the other phases keep. A browser check pins
+  the demo at 23:30 and finds every lane saying it.
 
 ## [2.27.2] - 2026-09-29
 

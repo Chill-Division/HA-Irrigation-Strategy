@@ -506,6 +506,20 @@ export function morningDryback(points: readonly Reading[], band: Span): number |
   return dryback;
 }
 
+/** How far the zone has dried since today's peak, as the engine measures dryback and as the P3
+ * dryback target reads: (peak − VWC) / peak × 100, the peak being the highest reading since
+ * lights-on (`since`, where the controller starts its peak). Null without a reading. */
+export function dayDryback(
+  points: readonly Reading[],
+  since: number,
+  vwc: number | null,
+): { dryback: number; peak: number } | null {
+  const values = points.filter((point) => point.time >= since).map((point) => point.value);
+  if (vwc === null || !Number.isFinite(vwc) || !values.length) return null;
+  const peak = Math.max(...values, vwc);
+  return peak > 0 ? { dryback: ((peak - vwc) / peak) * 100, peak } : null;
+}
+
 const quantile = (sorted: readonly number[], q: number) => {
   const at = (sorted.length - 1) * q,
     below = Math.floor(at);
