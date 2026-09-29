@@ -9,6 +9,33 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **The first shot of the day waits for the plants to drink.** P0, the time after lights-on before
+  the ramp, was meant to end once the substrate had dried a little more: Athena's additional
+  dryback, 1–5%. It waited for the overnight P3 dryback target instead (30%, for example), which
+  never came first, so the ramp always started at the latest-first-shot time. P0 now has its own
+  setting, Additional dryback, 3% unless you change it: the ramp starts once moisture has dropped
+  that far below its lights-on reading, or at the latest first shot, whichever comes first. It is
+  in P0 on the Irrigation plan. The setting it takes over never did anything, so every room
+  starts at 3%, and the built-in recipes use 2–5%.
+
+### 🔧 Technical notes
+
+- **P0 additional dryback (engine, integration, controller, dashboard).**
+  `ZoneParams.additional_dryback` (engine; None is the P3 `dryback_target`, as before; bounds
+  1–40): P0 ends when `dryback_pct` reaches it, and `waiting_for`'s `p0_dryback` reads it. The
+  controller reads it from `number.crop_steering_<prefix>[zone_N_]p0_dryback_drop_percent`
+  (optional; 3 when missing), a setting that existed since 2025 and nothing read. That number is
+  now "P0 Additional Dryback", 1–40%, default 3, and carries `read_by_controller`; a value restored
+  without it (saved while nothing read it: the old 15% default, a recipe's 12–30%) starts at 3. The
+  recipes' values are now 2–5%. The dashboard shows it in P0, its explainers and the grow-day P0
+  line use it, and the projected P0 ends on it. Proven in a real Home Assistant
+  (`tests_ha/test_p0_additional_dryback.py`): a new room at 3%, the controller reading the zone's
+  own value, an old saved 15% and 24% starting at 3%, and a value set since kept.
+
 ## [2.27.2] - 2026-09-29
 
 Integration and controller **2.27.2**.

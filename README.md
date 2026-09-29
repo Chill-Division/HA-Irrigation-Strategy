@@ -23,7 +23,7 @@ It runs inside [Home Assistant](https://www.home-assistant.io/) and works with t
 
 | Part of the day | What happens | Why |
 | --- | --- | --- |
-| **P0: morning dry-back** | After the lights come on, it waits until the roots have dried by the amount you chose. | Drying in the morning tells the plant to root and gives you control over its growth. |
+| **P0: morning dry-back** | After the lights come on, it waits until the roots have dried a little more, by the amount you chose (3% unless you change it), or until the latest first shot. | Drying in the morning tells the plant to root and gives you control over its growth. |
 | **P1: ramp-up** | A series of small shots, a few minutes apart, until moisture reaches your target. | Brings the root zone back up gently instead of flooding it. |
 | **P2: maintenance** | A top-up shot whenever moisture falls to your threshold. | Holds the root zone steady through the main part of the day. |
 | **P3: overnight** | Routine watering stops before the lights go off; only an emergency shot if a zone gets too dry. | The overnight dry-back is where much of the steering happens. |

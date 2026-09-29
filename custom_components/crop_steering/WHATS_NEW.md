@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- The first shot of the day now waits for the plants to drink a little after lights-on (3% unless you change it), not just for the clock.
+
 ## 2.27.2 - 2026-09-29
 
 - Auto setpoints keeps a vegetative zone's maintenance shots going until 3 hours before lights-off, and says when the overnight dryback target is out of reach.

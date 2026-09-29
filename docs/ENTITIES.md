@@ -19,7 +19,7 @@ entities scale with your zone count, `N` = 1…zones).
 ### P0: morning dryback
 | Entity | Range | Default | Unit | What it does |
 |---|---|---|---|---|
-| `p0_dryback_drop_percent` | 2-40 | 15 | % | How far VWC must drop from the overnight peak before P0 ends and P1 begins. |
+| `p0_dryback_drop_percent` | 1-40 | 3 | % | P0 Additional Dryback: P0 ends once VWC is this far below its lights-on reading (Athena's 1–5% before the first shot), unless `p0_maximum_wait_time` or the P2 trigger comes first. A value saved before the controller read it starts at 3. |
 | `p0_maximum_wait_time` | 30-600 | 120 | min | Hard ceiling: forces P0 → P1 if the dryback target is never reached. |
 
 ### P1: ramp-up

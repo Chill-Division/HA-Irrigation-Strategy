@@ -1,3 +1,7 @@
+# Unreleased
+
+- **P0 ends on the additional dryback.** `ZoneParams.additional_dryback`, from `number.crop_steering_<prefix>[zone_N_]p0_dryback_drop_percent` (optional; 3 when missing): P0 ends once VWC is that far below its lights-on reading, instead of the P3 dryback target. The dashboard the app serves shows the setting in P0. No change to the state file.
+
 # 2.27.2
 
 Pair with integration 2.27.2.
