@@ -158,3 +158,26 @@ def test_the_same_value_is_not_rewritten_every_tick(phase):
         c._auto_tick(room, 1, SimpleNamespace(vwc=vwc, ec=5.0, dryback_rate=0.0), frozen, True, now + timedelta(minutes=k))
     sent = [(d["entity_id"], d["value"]) for dom, svc, d in fake.calls if (dom, svc) == ("number", "set_value")]
     assert len(sent) == len(set(sent))
+
+
+@pytest.mark.parametrize("mode, stop", [("Vegetative", "19:00"), ("Generative", "16:00")])
+def test_a_dryback_the_nights_cannot_reach_keeps_the_zones_afternoon_by_its_steering_mode(mode, stop):
+    """GR2 on 28 Sep: vegetative, a 30% P3 dryback its nights could not reach, and no maintenance shot all
+    day after the ramp. At 17:00 (lights 10:00-22:00) a vegetative zone is still watered, a generative
+    one has been drying since the middle of the day, and the dashboard is told why."""
+    c, fake, room = _rig(
+        numbers={**NUMBERS, "select.crop_steering_zone_1_steering_mode": (mode, {})}
+    )
+    room.state[1]["learn"] = dict(
+        au.fresh(), peak=36.0, gain=0.6, day_rate=0.72, night_rate=0.37,
+        day_n=au.MIN_RATE_DAYS, night_n=au.MIN_RATE_DAYS, outcome="reached", hold_days=2,
+    )
+    room.state[1]["phase"], room.state[1]["shots"] = "P2", 6
+    _Clock.current = datetime(2026, 9, 19, 17, 0)
+    p = SimpleNamespace(**{**vars(_p(fake)), "dryback_target": 30.0})
+    c._auto_tick(room, 1, SimpleNamespace(vwc=35.0, ec=5.0, dryback_rate=0.0), p, True, _Clock.current)
+    trigger = float(fake.states["number.crop_steering_zone_1_p2_vwc_threshold"][0])
+    band = round(36.0 - 0.6 * 3.0, 1)
+    assert (trigger == band) is (mode == "Vegetative")
+    note = fake.sets["sensor.crop_steering_zone_1_auto_setpoints"][1]["dryback_note"]
+    assert note.startswith("30% dryback unreachable at this zone's uptake") and note.endswith(stop)

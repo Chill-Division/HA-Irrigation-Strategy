@@ -14,6 +14,7 @@ import {
   earlierTraces,
   growDay,
   joinRows,
+  dayDryback,
   morningDryback,
   nextShot,
   NOT_REPORTING,
@@ -157,6 +158,8 @@ interface Lane {
   /** Valve-open seconds today, until now. */
   seconds: number;
   dryback: number | null;
+  /** Overnight, how far the zone has dried since today's peak: what the P3 dryback target reads. */
+  overnight: { dryback: number; peak: number } | null;
   drybackTarget: number | null;
   /** Rooms & setup was saved after the day compared with began. */
   setupNote: string | null;
@@ -625,6 +628,7 @@ function Timeline({
       reached: level === null ? null : reachedHour(today, level),
       seconds: openSeconds(shots, day.start, hour),
       dryback: p0 ? morningDryback(points, p0) : null,
+      overnight: phase === "P3" ? dayDryback(points, day.start, zone.vwc.value) : null,
       drybackTarget: Number.isFinite(parameters.dryback_target) ? parameters.dryback_target : null,
       setupNote: !moved
         ? null
@@ -1479,7 +1483,13 @@ function tracking(
       ? `≈${number(used)} L so far${before != null ? ` (${signed(used - before)} L)` : ""}`
       : `${duration(lane.seconds * 1000)} of watering so far${then ? ` (${signed((lane.seconds - then.seconds) / 60, 0)} min)` : ""}`,
   );
-  if (lane.dryback !== null && lane.drybackTarget !== null)
+  // Overnight, the dryback the P3 target is about: from today's peak. The morning's P0 figure is
+  // measured from the lights-on reading instead, and read beside "P3" it looked like tonight's.
+  if (lane.overnight && lane.drybackTarget !== null)
+    parts.push(
+      `P3 dryback ${number(lane.overnight.dryback)}% of ${number(lane.drybackTarget)}% from today's ${number(lane.overnight.peak)}% peak`,
+    );
+  else if (lane.dryback !== null && lane.drybackTarget !== null)
     parts.push(`P0 dryback ${number(lane.dryback)}% of ${number(lane.drybackTarget)}%`);
   return [...parts, lane.setupNote, lane.status].filter(Boolean).join(" · ");
 }

@@ -1820,6 +1820,7 @@ class Controller:
             st["learn"] = auto_setpoints.fresh()
         learn = st["learn"]
         st["last_vwc"] = snap.vwc
+        note = None
         # the pore EC the engine's own rules act on (settled when there is one), so the P1 EC gate helper
         # reasons about the same number the engine does
         ec_rules = getattr(snap, "ec_settled", None)
@@ -1854,8 +1855,11 @@ class Controller:
                 shots_today=st["shots"], dryback_pct=p.dryback_target, p0_wait_min=p.p0_max_wait_min,
                 p1_shot_pct=p.p1_initial, p1_gap_min=p.p1_time_between_min,
                 start_vwc=learn["ramp_start"] if learn["ramp_start"] is not None else snap.vwc,
+                generative=not self._veg(room, zone),
             )
             want = auto_setpoints.wanted(learn, current, snap.vwc, st["phase"], ctx)
+            planned_day = auto_setpoints.day_plan(learn, current, ctx)
+            note = planned_day[1].note if planned_day else None
             for suffix, value, _why in setpoint_supervisor.writes(current, want):
                 self._auto_write(room, zone, suffix, current[suffix], value, learn, now)
             if st["phase"] == "P1" and learn["outcome"] == "plateau":
@@ -1863,7 +1867,7 @@ class Controller:
                 if gate is not None:  # let the hand-over through; see p1_ec_gate
                     mode = "veg" if self._veg(room, zone) else "gen"
                     self._auto_write(room, zone, f"ec_target_{mode}_p1", p.ec_target_p1, gate, learn, now)
-        state, attrs = auto_setpoints.status(learn, enabled)
+        state, attrs = auto_setpoints.status(learn, enabled, note if enabled and not planned else None)
         if enabled and planned:
             state, attrs["frozen_reason"] = "frozen", "an armed grow plan owns this room's targets"
         attrs.update(

@@ -514,6 +514,14 @@ export function Strategy({
                                 param.slice(0, 3) === activeMode;
                               const order =
                                 param && levels && inUse ? levelWarning(param, levels) : null;
+                              // Auto setpoints' plan for tonight, beside the dryback target it could
+                              // not reach: the steering mode in use only.
+                              const autoNote =
+                                param?.endsWith("dryback_target") &&
+                                param.slice(0, 3) === activeMode &&
+                                zone?.auto?.state === "tracking"
+                                  ? zone.auto.drybackNote
+                                  : null;
                               const suggested = hint?.suggestion
                                 ? suggestedDraft(hint.suggestion.value, setting)
                                 : null;
@@ -577,7 +585,7 @@ export function Strategy({
                                         aria-invalid={Boolean(error)}
                                         aria-describedby={
                                           `hint-${setting.entityId}` +
-                                          (hint || auto || order
+                                          (hint || auto || order || autoNote
                                             ? ` context-${setting.entityId}`
                                             : "")
                                         }
@@ -601,7 +609,7 @@ export function Strategy({
                                             : "")}
                                     </p>
                                   </div>
-                                  {(hint || auto || order) && (
+                                  {(hint || auto || order || autoNote) && (
                                     <div
                                       className="setting-context"
                                       id={`context-${setting.entityId}`}
@@ -609,6 +617,11 @@ export function Strategy({
                                       {auto && (
                                         <p className="setting-auto-hint">
                                           Managed automatically – manual edits will be overwritten.
+                                        </p>
+                                      )}
+                                      {autoNote && (
+                                        <p className="setting-auto-hint" data-auto-dryback>
+                                          Auto setpoints: {autoNote}.
                                         </p>
                                       )}
                                       {hint?.text && (

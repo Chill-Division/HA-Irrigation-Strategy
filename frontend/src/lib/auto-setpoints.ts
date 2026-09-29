@@ -21,6 +21,9 @@ export interface AutoSetpointStatus {
   holdDays: number | null;
   /** Why the supervisor is frozen, e.g. an armed grow plan owns the targets. */
   frozenReason: string | null;
+  /** Today's plan cannot reach the P3 dryback target: what the zone gets instead, and until when
+   * its maintenance shots run. */
+  drybackNote: string | null;
 }
 const finite = (value: unknown): number | null => {
   const parsed =
@@ -58,6 +61,7 @@ export function parseAutoSetpoints(entity: EntityState | undefined): AutoSetpoin
       finite(attributes.hold_days),
     ),
     frozenReason: text(attributes.frozen_reason),
+    drybackNote: text(attributes.dryback_note),
   };
 }
 export const autoStateLabel = (state: AutoSetpointState) => state[0].toUpperCase() + state.slice(1);

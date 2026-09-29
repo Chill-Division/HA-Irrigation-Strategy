@@ -258,6 +258,17 @@ try {
     await field("p3_emergency_vwc_threshold").locator("input").fill("35");
     assert.equal(await advisory("p3_emergency_vwc_threshold").count(), 0);
   });
+  await check("irrigation plan: auto setpoints says when tonight's dryback is out of reach", async () => {
+    await go("strategy");
+    const note =
+      "8% dryback unreachable at this zone's uptake: about 6% tonight, with maintenance shots until 19:00";
+    // Beside the P3 dryback target of the steering mode in use, and on the zone's Auto chip.
+    const target = page.locator(".setting-field", {
+      has: page.locator('[id="setting-number.crop_steering_zone_1_vegetative_dryback_target"]'),
+    });
+    assert.equal(await target.locator("[data-auto-dryback]").innerText(), `Auto setpoints: ${note}.`);
+    assert.match(await page.locator(".auto-chip").first().innerText(), /Tonight/);
+  });
   await check("status line: watering switched off says why and opens that room's Settings", async () => {
     await go("settings", "f1");
     await page.getByRole("button", { name: "Switch watering off…", exact: true }).click();
@@ -754,6 +765,23 @@ try {
     );
     assert.doesNotMatch(zone1, /next:/, "no P1 conditions beside a P2 lane");
     await pinned.close();
+    // Overnight a lane says how far it has dried from today's peak, what the P3 dryback target
+    // reads; the morning's P0 figure beside "P3" read as tonight's (GR2, 28 Sep).
+    const night = await context.newPage();
+    night.on("pageerror", (error) => pageErrors.push(error.message));
+    await night.clock.setFixedTime(new Date(2026, 8, 20, 23, 30, 0));
+    await night.goto(`${base}/dashboard.html?demo&room=f2#/overview`, {
+      waitUntil: "networkidle",
+    });
+    const nightLanes = night.locator(".timeline-zone-line");
+    await nightLanes.first().waitFor();
+    const lines = await nightLanes.allInnerTexts();
+    assert.ok(lines.length && lines.every((line) => line.includes(" P3 · ")), lines.join("\n"));
+    for (const line of lines) {
+      assert.match(line, / · P3 dryback [\d.]+% of [\d.]+% from today's [\d.]+% peak/);
+      assert.doesNotMatch(line, /P0 dryback/);
+    }
+    await night.close();
   });
   await check("water today: per plant is the room's choice, made in Settings", async () => {
     const cells = () => page.locator(".zone-table-desktop .water-use").allInnerTexts();
