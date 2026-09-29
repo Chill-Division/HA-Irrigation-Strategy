@@ -649,9 +649,11 @@ export function projectFrom(
   let phase: PlanningPhaseId = now.hour >= plan.phases[3].start ? "P3" : now.phase;
   let p1Start = now.hour;
   if (phase === "P0") {
-    const dryback = parameters.dryback_target;
-    const level =
-      now.peak !== null && Number.isFinite(dryback) ? now.peak * (1 - dryback / 100) : null;
+    // P0's own additional dryback, from the lights-on reading: the controller's 3% when unset.
+    const dryback = usable(parameters.p0_dryback_drop_percent)
+      ? parameters.p0_dryback_drop_percent
+      : 3;
+    const level = now.peak !== null ? now.peak * (1 - dryback / 100) : null;
     p1Start = at(
       now.value <= threshold
         ? now.hour

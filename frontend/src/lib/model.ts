@@ -32,6 +32,7 @@ export const ZONE_PARAMETERS = new Set([
   "vegetative_dryback_target",
   "generative_dryback_target",
   "p0_maximum_wait_time",
+  "p0_dryback_drop_percent",
   "p3_emergency_vwc_threshold",
   "p3_emergency_shot_size",
   "max_daily_volume",

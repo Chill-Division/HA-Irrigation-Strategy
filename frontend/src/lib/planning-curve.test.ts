@@ -563,18 +563,28 @@ describe("the rest of today, projected from now on the same rules", () => {
     // Past lights-off it is P3 whatever the recorded phase says.
     expect(from({ hour: 13, phase: "P2", since: 4, value: 35 }).points[0].phase).toBe("P3");
   });
-  it("P0: at once when already at the threshold, at the dryback target, or at its maximum wait", () => {
+  it("P0: at once when already at the threshold, at its additional dryback, or at its maximum wait", () => {
     const bypass = from({ hour: 0.2, phase: "P0", since: 0, value: 33 });
     expect(bypass.shots[0]).toMatchObject({ phase: "P1", size: 2 });
     expect(bypass.shots[0].hour).toBeCloseTo(0.2, 9);
-    // 36 from a 36.5 peak dries to the 2 % dryback target (35.77) in 0.32 h
+    // 36 from a 36.5 peak dries to a 2 % additional dryback (35.77) in 0.32 h
     const drying = from(
       { hour: 0.2, phase: "P0", since: 0, value: 36, peak: 36.5 },
-      { ...live, dryback_target: 2 },
+      { ...live, p0_dryback_drop_percent: 2 },
     );
     expect(drying.shots[0].hour).toBeCloseTo(0.2 + (36 - 36.5 * 0.98) / 0.72, 1);
-    const waiting = from({ hour: 0.2, phase: "P0", since: 0, value: 36, peak: 38 });
+    // Unset, the controller's 3 %: from a 38 peak, 36.86, 0.89 h from 37.5, so the 1 h wait comes first.
+    const waiting = from({ hour: 0.2, phase: "P0", since: 0, value: 37.5, peak: 38 });
     expect(waiting.shots[0].hour).toBeCloseTo(1, 9);
+    // The P3 dryback target no longer ends P0: 5 % below the peak is past 3 %, so the ramp is due.
+    const past = from(
+      { hour: 0.2, phase: "P0", since: 0, value: 36, peak: 38 },
+      {
+        ...live,
+        dryback_target: 30,
+      },
+    );
+    expect(past.shots[0].hour).toBeCloseTo(0.2, 9);
   });
   it("ends at a 23- or 25-hour next lights-on, and says nothing without targets or a start", () => {
     expect(

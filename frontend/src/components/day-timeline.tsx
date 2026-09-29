@@ -158,6 +158,8 @@ interface Lane {
   seconds: number;
   dryback: number | null;
   drybackTarget: number | null;
+  /** P0's additional dryback, the target of the P0 figure. */
+  p0Target: number | null;
   /** Rooms & setup was saved after the day compared with began. */
   setupNote: string | null;
   /** What the lane line ends with: why the zone is not watered, or held, or how old the last report
@@ -626,6 +628,9 @@ function Timeline({
       seconds: openSeconds(shots, day.start, hour),
       dryback: p0 ? morningDryback(points, p0) : null,
       drybackTarget: Number.isFinite(parameters.dryback_target) ? parameters.dryback_target : null,
+      p0Target: Number.isFinite(parameters.p0_dryback_drop_percent)
+        ? parameters.p0_dryback_drop_percent
+        : 3,
       setupNote: !moved
         ? null
         : layers.compare === "yesterday"
@@ -1479,8 +1484,8 @@ function tracking(
       ? `≈${number(used)} L so far${before != null ? ` (${signed(used - before)} L)` : ""}`
       : `${duration(lane.seconds * 1000)} of watering so far${then ? ` (${signed((lane.seconds - then.seconds) / 60, 0)} min)` : ""}`,
   );
-  if (lane.dryback !== null && lane.drybackTarget !== null)
-    parts.push(`P0 dryback ${number(lane.dryback)}% of ${number(lane.drybackTarget)}%`);
+  if (lane.dryback !== null && lane.p0Target !== null)
+    parts.push(`P0 dryback ${number(lane.dryback)}% of ${number(lane.p0Target)}%`);
   return [...parts, lane.setupNote, lane.status].filter(Boolean).join(" · ");
 }
 function changeText(change: Change): string {
