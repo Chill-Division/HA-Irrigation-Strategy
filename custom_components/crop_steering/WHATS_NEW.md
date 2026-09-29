@@ -23,7 +23,12 @@ version being released.
 
 ## Unreleased
 
+- The peak VWC target, maintenance trigger, field capacity and rescue level are used exactly as you set them, up to 100% (the rescue level up to 65%).
 - Overnight, each zone's line on the Overview shows how far it has dried back from today's peak.
+
+## 2.27.2 - 2026-09-29
+
+- Auto setpoints keeps a vegetative zone's maintenance shots going until 3 hours before lights-off, and says when the overnight dryback target is out of reach.
 
 ## 2.27.1 - 2026-09-28
 

@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🌱 In plain English
 
+- **Moisture levels are used as set.** The peak VWC target, maintenance trigger, field capacity
+  and rescue level each accepted more than the controller would use: a peak target of 87 was
+  reported as outside the engine's range and used as 85. Each now has one range, the same
+  wherever you set it: peak target 20–100%, maintenance trigger 10–100%, field capacity 40–100%
+  and rescue level 10–65%. What keeps them sensible is their order, as before: the ramp stops at
+  field capacity, and the trigger stays under the peak target and over the rescue level. A room
+  set above the old limits now waters to what it was set to; a value below the new lower limits
+  was already being used as the lowest one allowed.
 - **Overnight, a zone's line shows tonight's dryback.** In P3 the grow-day line read, for example,
   "P3 · 60.1% now · … · P0 dryback 1.4% of 30%": that was the morning's dryback after lights-on,
   measured from the lights-on reading, and beside "P3" it looked as if tonight's dryback had
@@ -21,11 +29,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Technical notes
 
+- **One range per moisture level (engine, integration, controller).** `MOISTURE_RANGES`
+  (`const.py`): `p1_target_vwc` 20–100, `p2_vwc_threshold` 10–100, `field_capacity` 40–100,
+  `p3_emergency_vwc_threshold` 10–65. They are the number entities' ranges (room and zone) and the
+  setup wizard's field capacity range, and grow plans' `ENGINE_BOUNDS`, Auto Setpoints' `BOUNDS`
+  and the engine's `_PARAM_BOUNDS` (`p1_target`, `p2_threshold`, `field_capacity`,
+  `p3_emergency_floor`) are the same, so `validate_params` never clips a value the setting
+  accepted. CS-401 is left for a value outside them, which only an older install can hold. The
+  engine's floors are unchanged; its tops were 85, 70, 90 and 60. The ordering clamps are unchanged
+  (the ramp stops at field capacity; the trigger is kept at least 3 over the rescue level and 1
+  under the lower of the peak target and field capacity). Proven in a real Home Assistant
+  (`tests_ha/test_moisture_ranges.py`): entities, engine, grow plans and Auto Setpoints agree,
+  neither end of a range is clipped, and a peak target of 87 is used as set with no CS-401.
 - **Overnight dryback on the grow-day line (dashboard).** While a lane is in P3, `tracking` shows
   `dayDryback` (`lib/day-timeline.ts`): (peak − VWC) / peak × 100 with the peak the highest reading
   since lights-on, where the controller starts its peak, in place of the P0 figure
   (`morningDryback`, from the lights-on reading), which the other phases keep. A browser check pins
   the demo at 23:30 and finds every lane saying it.
+
+## [2.27.2] - 2026-09-29
+
+Integration and controller **2.27.2**.
+
+### 🌱 In plain English
+
+- **Auto setpoints no longer gives up a day's watering for the overnight dryback.** To reach the P3
+  dryback target, Auto setpoints stops maintenance shots early, so the day's drying adds to the
+  night's. When a zone's nights dried too slowly for the target, it stopped them as soon as the
+  morning ramp ended: a zone set to Vegetative got its ramp to 85% and then no water until the next
+  morning, down to about 60% by lights-off, a generative day nobody asked for. Now a Vegetative zone
+  keeps its maintenance shots until 3 hours before lights-off and a Generative zone until the middle
+  of the day: Athena adjusts the dryback by adding or removing maintenance shots at the end of the
+  day. When the target still can't be reached, the zone gets the deepest dryback left, and the
+  Irrigation plan says so beside the P3 dryback target, for example "30% dryback unreachable at this
+  zone's uptake: about 14% tonight, with maintenance shots until 17:00".
+
+### 🔧 Technical notes
+
+- **How early Auto setpoints may stop maintenance shots (controller, dashboard).**
+  `curve_tracker.plan_day` stops P2 no earlier than `day_h − 3` hours after lights-on for a
+  vegetative recipe and `day_h / 2` for a generative one (`Recipe.generative`, new, default False;
+  Athena's stretch and finish stages set it), never inside P1. The dryback it cannot reach is capped
+  (`achievable_dryback_pct`, `floor`), and its note names what the zone gets and until when. The
+  controller passes the zone's steering mode (`_veg`) as `plan_ctx["generative"]` and publishes the
+  note as `dryback_note` on `sensor.crop_steering_<prefix>zone_N_auto_setpoints`; the dashboard shows
+  it beside the P3 dryback target of the mode in use and on the zone's Auto chip. A zone without
+  Auto setpoints is unchanged. Proven with the real controller in a real Home Assistant
+  (`tests_ha/test_auto_setpoints_steering_mode.py`): at 17:00 a Vegetative zone's trigger is still
+  one maintenance shot under the peak and a Generative zone's is drying, from the zone's own select.
 
 ## [2.27.1] - 2026-09-28
 

@@ -229,6 +229,17 @@ try {
     }
     assert.equal(focused, true, "focus returns to the ?");
   });
+  await check("irrigation plan: auto setpoints says when tonight's dryback is out of reach", async () => {
+    await go("strategy");
+    const note =
+      "8% dryback unreachable at this zone's uptake: about 6% tonight, with maintenance shots until 19:00";
+    // Beside the P3 dryback target of the steering mode in use, and on the zone's Auto chip.
+    const target = page.locator(".setting-field", {
+      has: page.locator('[id="setting-number.crop_steering_zone_1_vegetative_dryback_target"]'),
+    });
+    assert.equal(await target.locator("[data-auto-dryback]").innerText(), `Auto setpoints: ${note}.`);
+    assert.match(await page.locator(".auto-chip").first().innerText(), /Tonight/);
+  });
   await check("status line: watering switched off says why and opens that room's Settings", async () => {
     await go("settings", "f1");
     await page.getByRole("button", { name: "Switch watering off…", exact: true }).click();

@@ -20,9 +20,23 @@ DEFAULT_EC_RATIO = 1.0
 DEFAULT_EC_FALLBACK = 3.0
 VWC_ADJUSTMENT_PERCENT = 5.0
 
+# The four moisture levels, (lowest, highest) %: each setting accepts exactly this, and grow plans,
+# Auto Setpoints and the engine (crop-steering-engine _PARAM_BOUNDS) use the same range, so the
+# engine never clips a value its setting accepted (tests_ha/test_moisture_ranges.py). The tops are
+# 100 because the order between the levels bounds the water: the ramp stops at field capacity, the
+# P2 trigger stays at least 1 point under the peak and 3 over the rescue level. The floors are the
+# engine's long-standing ones: they catch a slipped digit (6.5 for 65) and keep rooms steering low
+# (a peak of 20 and a trigger of 15, on dry-rooted crops or coarse substrates) watering as set.
+MOISTURE_RANGES = {
+    "p1_target_vwc": (20.0, 100.0),
+    "p2_vwc_threshold": (10.0, 100.0),
+    "field_capacity": (40.0, 100.0),
+    "p3_emergency_vwc_threshold": (10.0, 65.0),
+}
+
 
 # Software version - single source of truth
-SOFTWARE_VERSION = "2.27.1"
+SOFTWARE_VERSION = "2.27.2"
 
 # Crop steering phases (P0-P3 only, Manual removed)
 PHASES = ["P0", "P1", "P2", "P3"]
