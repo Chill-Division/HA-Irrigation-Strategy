@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **HACS and the app store name Chill-Division as the maintainer.** They named JakeTheRabbit, who
   started Crop Steering, so an installation from this repository looked like one of theirs.
   Nothing else changes.
+- **Messages name the controller, not "f2-control".** It was named after the room it was first
+  written for. When a room is switched off, the "hasn't been watered" notification and the zone's
+  line on the dashboard now say "room off (kill switch)", not "f2-control disabled (kill switch
+  off)", and the controller's log lines start with "[controller]".
 
 ### 🔧 Technical notes
 
@@ -23,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   manifest of the latest release. `repository.yaml` `maintainer` is `Chill-Division`, which the app
   store lists for the repository. The manifest's `documentation` and `issue_tracker` links and
   `repository.yaml`'s `url` are unchanged.
+- The controller's own name in what it says: the blocked reason is `room off (kill switch)`, the
+  `engine` attribute on the sensors it publishes is `crop-steering-controller` (was `f2-control`;
+  nothing shipped reads it), its log prefix is `[controller]` (also in `run.sh`), and it starts
+  with `Crop Steering Controller X.Y.Z starting`. Ids are unchanged: the app slug `f2_control`,
+  `input_boolean.f2_control_enabled`, `sensor.f2_control_vitals` and the notification ids.
 
 ## [2.28.0] - 2026-09-29
 

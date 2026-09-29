@@ -1,3 +1,7 @@
+# Unreleased
+
+- **Its own name in what it says.** The blocked reason for a room switched off is `room off (kill switch)` (was `f2-control disabled (kill switch off)`), in the CS-207 notification and the zone status; the `engine` attribute on the sensors it publishes is `crop-steering-controller` (was `f2-control`); log lines start `[controller]`, and the first one is `Crop Steering Controller X.Y.Z starting`. Entity ids, notification ids, the slug and the state file are unchanged.
+
 # 2.28.0
 
 Pair with integration 2.28.0.
