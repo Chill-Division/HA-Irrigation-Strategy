@@ -1,3 +1,7 @@
+# Unreleased
+
+- **Moisture levels used as set.** The engine takes a peak VWC target up to 100 (was 85), a P2 trigger up to 100 (was 70), field capacity up to 100 (was 90) and a rescue level up to 65 (was 60): the ranges their settings accept, so it no longer clips them and raises CS-401. Its lower limits are unchanged, and Auto Setpoints' bounds match. No change to the state file.
+
 # 2.27.1
 
 Pair with integration 2.27.1.

@@ -9,6 +9,34 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **Moisture levels are used as set.** The peak VWC target, maintenance trigger, field capacity
+  and rescue level each accepted more than the controller would use: a peak target of 87 was
+  reported as outside the engine's range and used as 85. Each now has one range, the same
+  wherever you set it: peak target 20–100%, maintenance trigger 10–100%, field capacity 40–100%
+  and rescue level 10–65%. What keeps them sensible is their order, as before: the ramp stops at
+  field capacity, and the trigger stays under the peak target and over the rescue level. A room
+  set above the old limits now waters to what it was set to; a value below the new lower limits
+  was already being used as the lowest one allowed.
+
+### 🔧 Technical notes
+
+- **One range per moisture level (engine, integration, controller).** `MOISTURE_RANGES`
+  (`const.py`): `p1_target_vwc` 20–100, `p2_vwc_threshold` 10–100, `field_capacity` 40–100,
+  `p3_emergency_vwc_threshold` 10–65. They are the number entities' ranges (room and zone) and the
+  setup wizard's field capacity range, and grow plans' `ENGINE_BOUNDS`, Auto Setpoints' `BOUNDS`
+  and the engine's `_PARAM_BOUNDS` (`p1_target`, `p2_threshold`, `field_capacity`,
+  `p3_emergency_floor`) are the same, so `validate_params` never clips a value the setting
+  accepted. CS-401 is left for a value outside them, which only an older install can hold. The
+  engine's floors are unchanged; its tops were 85, 70, 90 and 60. The ordering clamps are unchanged
+  (the ramp stops at field capacity; the trigger is kept at least 3 over the rescue level and 1
+  under the lower of the peak target and field capacity). Proven in a real Home Assistant
+  (`tests_ha/test_moisture_ranges.py`): entities, engine, grow plans and Auto Setpoints agree,
+  neither end of a range is clipped, and a peak target of 87 is used as set with no CS-401.
+
 ## [2.27.1] - 2026-09-28
 
 Integration and controller **2.27.1**.
