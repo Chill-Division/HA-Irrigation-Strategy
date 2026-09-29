@@ -10,7 +10,7 @@ import setpoint_supervisor as ss
 
 Z1 = ct.ZoneModel(knee=36.0, gain=0.6, day_rate=0.72, night_rate=0.37)
 GEN = ct.Recipe(peak_offset=0.0, dryback_pct=15.0, p1_delay_min=75, p1_shot_pct=3.0, p1_gap_min=20,
-                p2_shot_pct=2.0, ec_range=(4.0, 7.0))
+                p2_shot_pct=2.0, ec_range=(4.0, 7.0), generative=True)
 LIVE_Z1 = dict(p1_target_vwc=40.0, p2_vwc_threshold=34.0, p2_shot_size=3.0, p1_initial_shot_size=2.0,
                p1_shot_size_increment=0.5, p1_maximum_shots=10, p1_minimum_shots=2, p1_time_between_shots=20,
                dryback_target=10.0, p0_maximum_wait_time=60, ec_target_p0=3.0, ec_target_p1=4.5, ec_target_p2=6.0,

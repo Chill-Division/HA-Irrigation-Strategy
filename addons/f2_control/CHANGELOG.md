@@ -1,3 +1,7 @@
+# Unreleased
+
+- **Auto setpoints keeps the afternoon's maintenance shots.** Its day plan (`curve_tracker.plan_day`) stops P2 for the dryback no earlier than 3 hours before lights-off on a Vegetative zone, or the middle of the day on a Generative one (the zone's `select.crop_steering_<prefix>zone_N_steering_mode`), instead of as soon as P1 ends. A dryback it cannot reach is capped, and `sensor.crop_steering_<prefix>zone_N_auto_setpoints` publishes `dryback_note`, which the dashboard the app serves shows. No change to the state file.
+
 # 2.27.1
 
 Pair with integration 2.27.1.
