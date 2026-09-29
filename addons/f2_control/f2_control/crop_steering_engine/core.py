@@ -61,7 +61,8 @@ class ZoneParams:
     p1_incr: float
     p1_max_shots: int
     p1_time_between_min: float
-    dryback_target: float       # P0 morning dryback %, also the overnight target
+    dryback_target: float       # P3 overnight dryback, % below the day's peak (and P0's, when
+    #                             additional_dryback is not given)
     p0_max_wait_min: float
     ec_target_p0: float
     ec_target_p1: float
@@ -87,6 +88,10 @@ class ZoneParams:
     #                                 threshold — a lying/dead probe cannot suppress it. Clamped < max_daily_volume.
     p1_min_shots: int = 0           # P1 cannot graduate on "target reached" until this many ramp shots have
     #                                 landed (0 = off). The ramp runs as configured; max shots still bounds it.
+    additional_dryback: float | None = None  # P0 ends once VWC is this % below its lights-on reading:
+    #                                 Athena's 1-5% "additional dryback" before the first shot. None: the
+    #                                 P3 dryback_target, as before (a P3-sized number that the latest-first-
+    #                                 shot time always beat).
     drown_ceiling: float = 90.0     # the ONLY VWC gate on the min-daily floor: a hard anti-drown limit well above
     #                                 field capacity. Below it, the floor fires regardless of the probe; at/above it
     #                                 the floor holds (never flood). 90 ~= unreachable in coco -> truly probe-blind.
@@ -119,6 +124,11 @@ class ZoneSnapshot:
     steering_held: bool = False   # the caller holds routine steering (a grow-strategy plan that is held,
     #                               stale or missing): only the water-safety rules fire, the P3 emergency,
     #                               the watchdog and the minimum-daily floor. Phases still move.
+
+
+def p0_dryback(p: ZoneParams) -> float:
+    """How far below its lights-on reading P0 lets a zone dry before the ramp starts."""
+    return p.dryback_target if p.additional_dryback is None else p.additional_dryback
 
 
 def ec_adjust(size: float, ec: float | None, target: float) -> float:
@@ -190,8 +200,8 @@ def decide(s: ZoneSnapshot, p: ZoneParams):
     elif phase == "P0":
         if s.vwc <= p.p2_threshold:
             phase, treason = "P1", f"P0 bypass VWC {s.vwc:.0f}<=rewater {p.p2_threshold:.0f}"
-        elif s.dryback_pct >= p.dryback_target:
-            phase, treason = "P1", f"P0 dryback done {s.dryback_pct:.0f}%"
+        elif s.dryback_pct >= p0_dryback(p):
+            phase, treason = "P1", f"P0 dryback done {s.dryback_pct:.1f}%"
         elif s.phase_minutes >= p.p0_max_wait_min:
             phase, treason = "P1", f"P0 timeout {s.phase_minutes:.0f}min"
     elif phase == "P1":
@@ -367,7 +377,7 @@ def waiting_for(s: ZoneSnapshot, p: ZoneParams) -> list:
         add("p0_bypass", to="P1", metric="vwc", op="<=", value=p.p2_threshold, now=s.vwc)
         if s.peak_vwc > 0:
             add("p0_dryback", to="P1", metric="vwc", op="<=",
-                value=s.peak_vwc * (1.0 - p.dryback_target / 100.0), now=s.vwc)
+                value=s.peak_vwc * (1.0 - p0_dryback(p) / 100.0), now=s.vwc)
     elif s.phase == "P1":
         ceiling = min(p.p1_target, p.field_capacity)
         if s.shot_count < p.p1_max_shots and not s.steering_held:
@@ -478,7 +488,7 @@ _PARAM_BOUNDS = {
     "p2_time_between_min": (0.0, 120.0),
     "p0_max_wait_min": (5.0, 240.0), "p3_emergency_shot": (0.5, 15.0),
     "max_daily_volume": (10.0, 2000.0), "min_daily_volume": (0.0, 500.0),
-    "drown_ceiling": (50.0, 100.0),
+    "drown_ceiling": (50.0, 100.0), "additional_dryback": (1.0, 40.0),
 }
 
 
@@ -487,6 +497,8 @@ def validate_params(p):
     warns, fixes = [], {}
     for name, (lo, hi) in _PARAM_BOUNDS.items():
         v = getattr(p, name)
+        if v is None:  # an optional knob left unset
+            continue
         if v < lo or v > hi:
             nv = max(lo, min(hi, v))
             if name == "p1_max_shots":

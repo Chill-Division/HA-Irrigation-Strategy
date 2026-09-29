@@ -210,6 +210,13 @@ def test_the_top_up_beside_a_waiting_rescue_keeps_the_maintenance_spacing_too():
     assert decide(S(**rescue, minutes_since_shot=5), spaced)[4].kind == "p2_topup"
 
 
+def test_the_additional_dryback_is_kept_between_1_and_40_percent_and_may_be_left_unset():
+    assert validate_params(P()) == (P(), [])  # unset: nothing to clamp
+    for given, kept in ((0.5, 1.0), (60, 40.0)):
+        p, warnings = validate_params(P(additional_dryback=given))
+        assert p.additional_dryback == kept and warnings[0].startswith("additional_dryback=")
+
+
 def test_the_maintenance_spacing_is_kept_to_two_hours_and_never_below_nothing():
     for given, kept in ((-1, 0.0), (200, 120.0)):
         p, warnings = validate_params(P(p2_time_between_min=given))

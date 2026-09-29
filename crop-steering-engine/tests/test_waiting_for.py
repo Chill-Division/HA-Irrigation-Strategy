@@ -34,6 +34,24 @@ def test_p0_waits_for_the_first_of_its_time_the_trigger_and_its_dryback():
     assert decide(S(phase="P0", vwc=58, peak_vwc=62, phase_minutes=45), p)[0] == "P1"
 
 
+def test_p0_ends_on_its_own_additional_dryback_from_the_lights_on_reading():
+    """Athena's additional dryback: 1-5% below the lights-on reading, then the first shot. P0 used to
+    wait for the P3 dryback target (30% here), which the latest-first-shot time always beat."""
+    p = P(p0_max_wait_min=60, dryback_target=30, additional_dryback=3)
+    def at(vwc):  # the controller's snapshot: its dryback measured from the lights-on 60.5
+        return S(phase="P0", vwc=vwc, peak_vwc=60.5, dryback_pct=(60.5 - vwc) / 60.5 * 100, phase_minutes=40)
+
+    s = at(59.0)  # 2.5% below
+    assert by_rule(waiting_for(s, p), "p0_dryback")["value"] == round(60.5 * 0.97, 2)
+    assert decide(s, p)[0] == "P0"
+    moved = decide(at(58.6), p)  # 3.1% below
+    assert moved[0] == "P1" and moved[4].startswith("P0 dryback done 3.1%")
+    # Unset, P0 waits for the P3 target as before.
+    unset = P(p0_max_wait_min=60, dryback_target=30)
+    assert decide(at(58.6), unset)[0] == "P0"
+    assert by_rule(waiting_for(s, unset), "p0_dryback")["value"] == round(60.5 * 0.7, 2)
+
+
 def test_p1_ramp_shot_needs_the_moisture_and_the_spacing_and_hands_over_at_the_ceiling():
     p = P(p1_target=65, field_capacity=70, p1_time_between_min=15, p1_min_shots=3, p1_max_shots=6)
     s = S(phase="P1", vwc=62, shot_count=1, minutes_since_shot=5, ec=4, ec_smooth=4)
