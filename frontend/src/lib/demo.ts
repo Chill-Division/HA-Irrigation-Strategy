@@ -236,8 +236,8 @@ export function createDemo(now = Date.now()): States {
       });
       number(prefix, `${key}p0_maximum_wait_time`, 60, 5, 240, 1, "min");
       number(prefix, `${key}generative_dryback_target`, 14, 2, 60, 0.5, "% below peak");
-      number(prefix, `${key}p1_target_vwc`, 64 + index * 2, 20, 90, 0.5, "%");
-      number(prefix, `${key}p2_vwc_threshold`, 61 + index * 2, 10, 90, 0.5, "%");
+      number(prefix, `${key}p1_target_vwc`, 64 + index * 2, 20, 100, 0.5, "%");
+      number(prefix, `${key}p2_vwc_threshold`, 61 + index * 2, 10, 100, 0.5, "%");
       number(prefix, `${key}p1_initial_shot_size`, 6, 0.5, 20, 0.5, "%");
       number(prefix, `${key}p1_shot_size_increment`, 0.5, 0.05, 10, 0.05, "%");
       number(prefix, `${key}p1_maximum_shots`, 6, 1, 30, 1);
@@ -245,13 +245,13 @@ export function createDemo(now = Date.now()): States {
       number(prefix, `${key}p2_shot_size`, 4, 0.5, 20, 0.5, "%");
       number(prefix, `${key}p2_time_between_shots`, 5, 0, 60, 1, "min");
       number(prefix, `${key}vegetative_dryback_target`, 8, 1, 30, 0.5, "% below peak");
-      number(prefix, `${key}p3_emergency_vwc_threshold`, 35, 10, 70, 0.5, "%");
+      number(prefix, `${key}p3_emergency_vwc_threshold`, 35, 10, 65, 0.5, "%");
       number(prefix, `${key}max_daily_volume`, 40, 1, 200, 1, "L");
       number(prefix, `${key}substrate_volume`, 6, 0.5, 50, 0.5, "L/plant");
       number(prefix, `${key}plant_count`, 36, 1, 200, 1);
       number(prefix, key + "drippers_per_plant", 1, 1, 20, 1);
       number(prefix, key + "p3_emergency_shot_size", 3, 0.5, 15, 0.5, "%");
-      number(prefix, key + "field_capacity", 70, 5, 100, 1, "%");
+      number(prefix, key + "field_capacity", 70, 40, 100, 1, "%");
       number(prefix, key + "maximum_ec", 9, 1, 20, 0.1, "mS/cm");
       const supervisor = index ? "off" : (["tracking", "learning", "frozen"][id - 1] ?? "off");
       put(`${base}${key}auto_setpoints`, supervisor, {
