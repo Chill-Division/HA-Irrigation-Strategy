@@ -9,6 +9,30 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **Moisture levels that work against each other are pointed out.** On the Irrigation plan, a
+  zone's moisture levels now say when, together, they will not do what each says alone: a
+  maintenance trigger the controller moves (it keeps it under the peak target and above the
+  rescue level) says which value it will use; a rescue level above where tonight's dryback ends
+  says it would stop the dryback early, beside both settings; a trigger that lets the substrate
+  dry further by day than the night's dryback says so; and a peak target above field capacity says
+  the ramp stops at field capacity. These are advice only: any value can still be saved.
+
+### 🔧 Technical notes
+
+- **Level-order advisories (dashboard).** `levelWarning` (`lib/level-order.ts`) reads a zone's
+  peak target, field capacity, trigger, rescue level and its steering mode's P3 dryback target, as
+  `buildSetpointPreview` resolves them with the page's drafts, and words, for the setting beside it,
+  the controller's ordering (`max(rescue + 3, min(min(peak, field capacity) − 1, trigger))`, as
+  `controller._params` applies it), a rescue level above `ceiling × (1 − dryback / 100)`, a daytime
+  dryback `(ceiling − trigger) / ceiling` bigger than the P3 target, and a peak target above field
+  capacity. Shown under a zone's settings only, a dryback target only for the mode in use, as an
+  advisory like the probe-history ones. A browser check types a trigger and a rescue level out of
+  order in the demo.
+
 ## [2.27.1] - 2026-09-28
 
 Integration and controller **2.27.1**.

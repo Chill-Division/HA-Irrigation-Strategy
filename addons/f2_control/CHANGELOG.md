@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** the Irrigation plan points out a zone's moisture levels that work against each other. No change to the controller.
+
 # 2.27.1
 
 Pair with integration 2.27.1.
