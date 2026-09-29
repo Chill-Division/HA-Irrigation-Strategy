@@ -9,6 +9,21 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **HACS and the app store name Chill-Division as the maintainer.** They named JakeTheRabbit, who
+  started Crop Steering, so an installation from this repository looked like one of theirs.
+  Nothing else changes.
+
+### 🔧 Technical notes
+
+- `manifest.json` `codeowners` is `["@Chill-Division"]`: HACS shows it as the author, reading the
+  manifest of the latest release. `repository.yaml` `maintainer` is `Chill-Division`, which the app
+  store lists for the repository. The manifest's `documentation` and `issue_tracker` links and
+  `repository.yaml`'s `url` are unchanged.
+
 ## [2.28.0] - 2026-09-29
 
 Integration and controller **2.28.0**.
