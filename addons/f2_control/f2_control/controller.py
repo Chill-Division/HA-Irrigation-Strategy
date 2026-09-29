@@ -58,7 +58,7 @@ _S = requests.Session()
 
 
 def log(*a):
-    print("[f2-control]", *a, flush=True)
+    print("[controller]", *a, flush=True)
 
 
 class HAState(tuple):
@@ -1876,7 +1876,7 @@ class Controller:
         if enabled and planned:
             state, attrs["frozen_reason"] = "frozen", "an armed grow plan owns this room's targets"
         attrs.update(
-            updated=now.isoformat(), engine="f2-control", friendly_name=f"Zone {zone} auto setpoints",
+            updated=now.isoformat(), engine="crop-steering-controller", friendly_name=f"Zone {zone} auto setpoints",
             managed=[f"number.crop_steering_{room.prefix}zone_{zone}_{s}" for s in auto_setpoints.MANAGED],
         )
         ha_set(f"sensor.crop_steering_{room.prefix}zone_{zone}_auto_setpoints", state, attrs)
@@ -2257,7 +2257,7 @@ class Controller:
             batch["step"],
             {
                 "friendly_name": "Nutrient batch",
-                "engine": "f2-control",
+                "engine": "crop-steering-controller",
                 "stage": plan.get("stage"),
                 "until": _shown(batch["until"]),
                 "doser": dose["doser"] if dose else None,
@@ -2379,7 +2379,7 @@ class Controller:
             f"sensor.crop_steering_{room.prefix}ai_heartbeat",
             "healthy",
             {
-                "engine": "f2-control",
+                "engine": "crop-steering-controller",
                 # which controller is actually RUNNING, for the dashboard's sidebar
                 "controller_version": CONTROLLER_VERSION,
                 "last_beat": now.isoformat(),
@@ -2459,7 +2459,7 @@ class Controller:
         ha_set(
             f"sensor.crop_steering_{room.prefix}zone_{zone}_status_app",
             label,
-            {"reason": reason, "friendly_name": f"Zone {zone} status (controller)", "engine": "f2-control"},
+            {"reason": reason, "friendly_name": f"Zone {zone} status (controller)", "engine": "crop-steering-controller"},
             **({"timeout": timeout} if timeout else {}),
         )
 
@@ -2480,7 +2480,7 @@ class Controller:
                 "conditions": conditions,
                 "at": now.astimezone().isoformat(timespec="seconds"),
                 "friendly_name": f"Zone {zone} waiting for (controller)",
-                "engine": "f2-control",
+                "engine": "crop-steering-controller",
             },
         )
 
@@ -2498,7 +2498,7 @@ class Controller:
                     ha_set(f"sensor.crop_steering_{px}zone_{zone}_last_irrigation_app", "unknown",
                            {"device_class": "timestamp"})
             ha_set(f"sensor.crop_steering_{px}app_status", "room_off",
-                   {"engine": "f2-control", "updated": now.isoformat()})
+                   {"engine": "crop-steering-controller", "updated": now.isoformat()})
             ha_set(f"sensor.crop_steering_{px}current_decision", "Room off - nothing growing",
                    {"fired": [], "blocked": []})
             self._heartbeat(room, now, self._hardware_fault_block(room), room_active=False)
@@ -2544,7 +2544,7 @@ class Controller:
             )
             return plumbing
         if not self._on(room.enable_flag, False):
-            return "f2-control disabled (kill switch off)"
+            return "room off (kill switch)"
         retired = getattr(room, "_retired_off", None)
         if retired:  # switched off in their place this pass; the switch may not read OFF yet
             return f"{' and '.join(retired)} off: engine switch switched off in its place"
@@ -3477,7 +3477,7 @@ class Controller:
                 f"sensor.crop_steering_{room.prefix}ai_heartbeat",
                 "stopped",
                 {
-                    "engine": "f2-control",
+                    "engine": "crop-steering-controller",
                     "controller_version": CONTROLLER_VERSION,
                     "stopped_at": now.isoformat(),
                     "last_beat": now.isoformat(),
@@ -4150,7 +4150,7 @@ class Controller:
                 ha_set(
                     f"sensor.crop_steering_{px}zone_{zone}_phase",
                     d["phase"],
-                    {"reason": d["reason"], "engine": "f2-control"},
+                    {"reason": d["reason"], "engine": "crop-steering-controller"},
                 )
                 ha_set(
                     f"sensor.crop_steering_{px}zone_{zone}_safety_status",
@@ -4183,7 +4183,7 @@ class Controller:
                             "confidence": vm[1],
                             "unit_of_measurement": "%",
                             "friendly_name": f"Zone {zone} detected Vmax (advisory)",
-                            "engine": "f2-control",
+                            "engine": "crop-steering-controller",
                         },
                     )
                 ls = room.state[zone].get("last_shot")
@@ -4210,7 +4210,7 @@ class Controller:
                         "device_class": "water",
                         "state_class": "total",
                         "friendly_name": f"Zone {zone} water today",
-                        "engine": "f2-control",
+                        "engine": "crop-steering-controller",
                     },
                 )
                 weekly, coverage = self._water_usage(room, zone, now)
@@ -4219,7 +4219,7 @@ class Controller:
                     weekly,
                     {"unit_of_measurement": "L", "device_class": "water",
                      "state_class": "total", "friendly_name": f"Zone {zone} water over seven grow-days",
-                     "engine": "f2-control", **coverage},
+                     "engine": "crop-steering-controller", **coverage},
                 )
                 ha_set(
                     f"sensor.crop_steering_{px}zone_{zone}_irrigation_count_app",
@@ -4227,7 +4227,7 @@ class Controller:
                     {
                         "state_class": "total",
                         "friendly_name": f"Zone {zone} shots today",
-                        "engine": "f2-control",
+                        "engine": "crop-steering-controller",
                     },
                 )
                 # Estimated hours to the next P2 shot (drives the dashboard "next"). Only published
@@ -4240,7 +4240,7 @@ class Controller:
                         {
                             "unit_of_measurement": "h",
                             "friendly_name": f"Zone {zone} next irrigation",
-                            "engine": "f2-control",
+                            "engine": "crop-steering-controller",
                         },
                     )
             sys_stat, unsafe, warn, safe = system_safety_status(labels)
@@ -4265,7 +4265,7 @@ class Controller:
                     if room_held or hardware_fault
                     else ("irrigating" if self._busy else "safe_idle")
                 ),
-                {"engine": "f2-control", "updated": now.isoformat()},
+                {"engine": "crop-steering-controller", "updated": now.isoformat()},
             )
             self._heartbeat(room, now, hardware_fault)
             fired = [
@@ -4421,7 +4421,7 @@ class Controller:
 
     def run(self):
         log(
-            f"f2-control {CONTROLLER_VERSION} starting | rooms",
+            f"Crop Steering Controller {CONTROLLER_VERSION} starting | rooms",
             ", ".join(r.slug for r in self.rooms),
             "| notify",
             self.notify_service or "(none)",
