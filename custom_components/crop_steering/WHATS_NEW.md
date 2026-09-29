@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- Auto setpoints keeps a vegetative zone's maintenance shots going until 3 hours before lights-off, and says when the overnight dryback target is out of reach.
+
 ## 2.27.1 - 2026-09-28
 
 - Maintenance shots now wait at least 5 minutes after the last shot so each can soak in; Time between P2 shots changes that.
