@@ -725,6 +725,23 @@ try {
     );
     assert.doesNotMatch(zone1, /next:/, "no P1 conditions beside a P2 lane");
     await pinned.close();
+    // Overnight a lane says how far it has dried from today's peak, what the P3 dryback target
+    // reads; the morning's P0 figure beside "P3" read as tonight's (GR2, 28 Sep).
+    const night = await context.newPage();
+    night.on("pageerror", (error) => pageErrors.push(error.message));
+    await night.clock.setFixedTime(new Date(2026, 8, 20, 23, 30, 0));
+    await night.goto(`${base}/dashboard.html?demo&room=f2#/overview`, {
+      waitUntil: "networkidle",
+    });
+    const nightLanes = night.locator(".timeline-zone-line");
+    await nightLanes.first().waitFor();
+    const lines = await nightLanes.allInnerTexts();
+    assert.ok(lines.length && lines.every((line) => line.includes(" P3 · ")), lines.join("\n"));
+    for (const line of lines) {
+      assert.match(line, / · P3 dryback [\d.]+% of [\d.]+% from today's [\d.]+% peak/);
+      assert.doesNotMatch(line, /P0 dryback/);
+    }
+    await night.close();
   });
   await check("water today: per plant is the room's choice, made in Settings", async () => {
     const cells = () => page.locator(".zone-table-desktop .water-use").allInnerTexts();
