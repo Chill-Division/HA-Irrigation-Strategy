@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **HACS and the app store name Chill-Division as the maintainer.** They named JakeTheRabbit, who
   started Crop Steering, so an installation from this repository looked like one of theirs.
   Nothing else changes.
+- **The maintenance trigger's explanation no longer mentions a PID option.** Only the original
+  author's own setup could turn it on: it needs Home Assistant helpers that nothing here creates.
 
 ### 🔧 Technical notes
 
@@ -23,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   manifest of the latest release. `repository.yaml` `maintainer` is `Chill-Division`, which the app
   store lists for the repository. The manifest's `documentation` and `issue_tracker` links and
   `repository.yaml`'s `url` are unchanged.
+- The EC Stacking line of the P2 trigger's explainer (`setting-words.ts`) drops "The PID option
+  can move it up to 20%." The controller still runs its EC PID when
+  `input_boolean.crop_steering_ec_pid_enabled` exists and is on, with gains from
+  `input_number.crop_steering_ec_pid_kp` / `_ki` / `_kd`; the integration creates none of them.
 
 ## [2.28.0] - 2026-09-29
 

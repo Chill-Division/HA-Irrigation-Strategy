@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** the P2 trigger's EC Stacking explainer no longer mentions a PID option that needs helpers nothing here creates. No change to the controller.
+
 # 2.28.0
 
 Pair with integration 2.28.0.
