@@ -28,7 +28,10 @@ def test_default_kill_switch_resolves_from_heartbeat():
         states={
             "sensor.crop_steering_ai_heartbeat": ha_stubs.FakeState(
                 "healthy",
-                {"engine": "f2-control", "enable_flag": "input_boolean.my_kill"},
+                {
+                    "engine": "crop-steering-controller",
+                    "enable_flag": "input_boolean.my_kill",
+                },
             ),
             "input_boolean.my_kill": ha_stubs.FakeState("on"),
             # the documented default is absent — must NOT be flagged, because it's
