@@ -25,6 +25,7 @@ version being released.
 
 - The peak VWC target, maintenance trigger, field capacity and rescue level are used exactly as you set them, up to 100% (the rescue level up to 65%).
 - Overnight, each zone's line on the Overview shows how far it has dried back from today's peak.
+- The Irrigation plan points out moisture levels that work against each other, such as a rescue level that would cut the overnight dryback short.
 
 ## 2.27.2 - 2026-09-29
 
