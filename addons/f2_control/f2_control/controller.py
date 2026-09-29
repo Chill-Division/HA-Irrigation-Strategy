@@ -1671,6 +1671,11 @@ class Controller:
                 20,
             ),
             p0_max_wait_min=self._zone_num(room, zone, "p0_maximum_wait_time", 45),
+            # Athena's additional dryback: P0 ends this far below the lights-on reading. Optional: an
+            # integration older than this controller leaves it at 3 without holding the room.
+            additional_dryback=self._zone_num(
+                room, zone, "p0_dryback_drop_percent", 3, optional=True
+            ),
             ec_target_p0=self._zone_num(room, zone, f"ec_target_{sfx}_p0", 4),
             ec_target_p1=self._zone_num(room, zone, f"ec_target_{sfx}_p1", 5),
             ec_target_p2=self._zone_num(room, zone, f"ec_target_{sfx}_p2", 6),
