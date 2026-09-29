@@ -17,6 +17,7 @@ import {
 import { AutoBadge, AutoSetpointsControl, AutoZoneChip } from "@/components/room-controls";
 import { SettingHelp } from "@/components/setting-help";
 import { managedBy } from "@/lib/auto-setpoints";
+import { levelWarning } from "@/lib/level-order";
 import {
   fieldHint,
   referenceLines,
@@ -105,6 +106,17 @@ export function Strategy({
     );
     return !mode || (mode[1]?.slice(0, 3) ?? mode[2]) === activeMode;
   });
+  // The zone's moisture levels as the controller will read them, drafts included: what each one
+  // does against the others (level-order.ts). A room's defaults are not a zone's levels.
+  const levels = zone
+    ? {
+        peak: preview.draft.parameters.p1_target_vwc,
+        fieldCapacity: preview.draft.parameters.field_capacity,
+        trigger: preview.draft.parameters.p2_vwc_threshold,
+        rescue: preview.draft.parameters.p3_emergency_vwc_threshold,
+        dryback: preview.draft.parameters.dryback_target,
+      }
+    : null;
   const groups = [...new Set(visibleFields.map(fieldGroup))];
   const shownGroups = groups.filter(
     (group) =>
@@ -495,6 +507,13 @@ export function Strategy({
                                       sensorZone?.auto?.learnedPeak,
                                     )
                                   : null;
+                              // A dryback target only for the steering mode in use: the other
+                              // mode's is not tonight's.
+                              const inUse =
+                                !param?.endsWith("dryback_target") ||
+                                param.slice(0, 3) === activeMode;
+                              const order =
+                                param && levels && inUse ? levelWarning(param, levels) : null;
                               const suggested = hint?.suggestion
                                 ? suggestedDraft(hint.suggestion.value, setting)
                                 : null;
@@ -558,7 +577,9 @@ export function Strategy({
                                         aria-invalid={Boolean(error)}
                                         aria-describedby={
                                           `hint-${setting.entityId}` +
-                                          (hint || auto ? ` context-${setting.entityId}` : "")
+                                          (hint || auto || order
+                                            ? ` context-${setting.entityId}`
+                                            : "")
                                         }
                                         disabled={
                                           planEngaged ||
@@ -580,7 +601,7 @@ export function Strategy({
                                             : "")}
                                     </p>
                                   </div>
-                                  {(hint || auto) && (
+                                  {(hint || auto || order) && (
                                     <div
                                       className="setting-context"
                                       id={`context-${setting.entityId}`}
@@ -613,15 +634,15 @@ export function Strategy({
                                           onUse={(value) => edit(setting, String(value))}
                                         />
                                       )}
-                                      {hint?.warning && (
-                                        <p className="setting-advisory">
+                                      {[hint?.warning, order].filter(Boolean).map((warning) => (
+                                        <p className="setting-advisory" key={warning}>
                                           <TriangleAlert size={13} aria-hidden="true" />
                                           <span>
-                                            {hint.warning[0].toUpperCase() + hint.warning.slice(1)}.
+                                            {warning![0].toUpperCase() + warning!.slice(1)}.
                                             Advisory only; you can still save this value.
                                           </span>
                                         </p>
-                                      )}
+                                      ))}
                                     </div>
                                   )}
                                 </div>

@@ -229,6 +229,35 @@ try {
     }
     assert.equal(focused, true, "focus returns to the ?");
   });
+  await check("irrigation plan: a level out of order says what the controller does with it", async () => {
+    await go("strategy");
+    const field = (key) =>
+      page.locator(".setting-field", {
+        has: page.locator(`[id="setting-number.crop_steering_zone_1_${key}"]`),
+      });
+    // The levels' own advisories, not the probe-history ones beside them.
+    const advisory = (key) =>
+      field(key).locator(".setting-advisory", {
+        hasText: /controller uses|stop tonight's dryback|dries back overnight|ramp stops/,
+      });
+    for (const key of ["p1_target_vwc", "p2_vwc_threshold", "p3_emergency_vwc_threshold"])
+      assert.equal(await advisory(key).count(), 0, "the demo's levels are in order");
+    // A trigger typed above the zone's 64% peak target: the controller keeps it 1 point under.
+    await field("p2_vwc_threshold").locator("input").fill("80");
+    assert.match(
+      await advisory("p2_vwc_threshold").innerText(),
+      /^The controller uses 63%: it keeps the trigger 1 point under the peak VWC target\. Advisory only/,
+    );
+    // A rescue level above where tonight's dryback ends, said beside both settings it involves.
+    await field("p2_vwc_threshold").locator("input").fill("61");
+    await field("p3_emergency_vwc_threshold").locator("input").fill("62");
+    assert.match(
+      await advisory("p3_emergency_vwc_threshold").innerText(),
+      /^Rescue shots would stop tonight's dryback at 62%: /,
+    );
+    await field("p3_emergency_vwc_threshold").locator("input").fill("35");
+    assert.equal(await advisory("p3_emergency_vwc_threshold").count(), 0);
+  });
   await check("status line: watering switched off says why and opens that room's Settings", async () => {
     await go("settings", "f1");
     await page.getByRole("button", { name: "Switch watering off…", exact: true }).click();
