@@ -9,7 +9,6 @@ const root = fileURLToPath(new URL("../../", import.meta.url)),
   out = path.join(root, "output/playwright");
 await mkdir(out, { recursive: true });
 const html = await readFile(path.join(root, "www/dashboard.html"));
-const classicRedirect = await readFile(path.join(root, "www/f2-classic.html"));
 const server = createServer((req, res) => {
   res.writeHead(200, {
     "Content-Type": "text/html",
@@ -113,8 +112,6 @@ await context.route("**/*", async (route) => {
     errors.push(`Unexpected external request ${url.origin}`);
     return route.abort();
   }
-  if (url.pathname.endsWith("/f2-classic.html"))
-    return route.fulfill({ contentType: "text/html", body: classicRedirect });
   if (!url.pathname.startsWith("/api/")) return route.continue();
   if (req.headers().authorization !== "Bearer browser-fixture-token") {
     errors.push("Missing fixture auth");
@@ -173,7 +170,7 @@ async function check(name, run) {
 const field = (key) => page.locator(`input[id="setting-number.crop_steering_f1_zone_1_${key}"]`);
 try {
   await check("live connection selects requested room without showing demo", async () => {
-    await page.goto(`${base}/dashboard.html?room=f1#/strategy`, {
+    await page.goto(`${base}/dashboard.html?room=room:f1_#/strategy`, {
       waitUntil: "networkidle",
     });
     await visible(page.getByText("Connected", { exact: true }));
@@ -203,7 +200,7 @@ try {
       const phone = await context.newPage();
       try {
         await phone.setViewportSize({ width: 390, height: 640 });
-        await phone.goto(`${base}/dashboard.html?room=f1#/overview`, { waitUntil: "networkidle" });
+        await phone.goto(`${base}/dashboard.html?room=room:f1_#/overview`, { waitUntil: "networkidle" });
         await phone.getByRole("button", { name: "Open navigation", exact: true }).click();
         const drawer = phone.locator(".mobile-sidebar");
         await drawer.waitFor({ state: "visible" });
@@ -227,7 +224,7 @@ try {
       const short = await context.newPage();
       try {
         await short.setViewportSize({ width: 1280, height: 480 });
-        await short.goto(`${base}/dashboard.html?room=f1#/overview`, { waitUntil: "networkidle" });
+        await short.goto(`${base}/dashboard.html?room=room:f1_#/overview`, { waitUntil: "networkidle" });
         const versions = short.locator(".desktop-sidebar .sidebar-versions");
         await versions.scrollIntoViewIfNeeded();
         const box = await versions.boundingBox();
@@ -253,7 +250,7 @@ try {
           return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
         };
         for (const route of ["strategy", "activity", "sensors", "comparison"]) {
-          await themed.goto(`${base}/dashboard.html?room=f1#/${route}`, {
+          await themed.goto(`${base}/dashboard.html?room=room:f1_#/${route}`, {
             waitUntil: "networkidle",
           });
           await themed.evaluate(() => {
@@ -484,47 +481,18 @@ try {
         step: 1,
         unit_of_measurement: "%",
       });
-      await page.goto(`${base}/dashboard.html?room=f2#/strategy`, { waitUntil: "networkidle" });
+      await page.goto(`${base}/dashboard.html?room=room:f2_#/strategy`, { waitUntil: "networkidle" });
       assert.equal(await page.locator("#desktop-room").inputValue(), "room:f2_");
       await visible(
         page.locator('input[id="setting-number.crop_steering_f2_zone_1_p2_vwc_threshold"]'),
       );
-      await page
-        .getByRole("navigation", { name: "Main navigation" })
-        .getByRole("button", { name: "Help & tools", exact: true })
-        .click();
-      assert.equal(
-        await page.locator('a[href*="f2-classic.html"]').count(),
-        0,
-        "Named F2 must not open default classic controls",
-      );
-      await page.goto(`${base}/dashboard.html?room=f2&view=climate`, { waitUntil: "networkidle" });
-      await visible(page.getByRole("heading", { name: "Sensors", exact: true }));
-      assert.equal(
-        new URL(page.url()).pathname,
-        "/dashboard.html",
-        "Unsupported legacy query must stay in the safe dashboard",
-      );
-      await page.goto(`${base}/dashboard.html?room=f2#/help`, { waitUntil: "networkidle" });
+      await page.goto(`${base}/dashboard.html?room=room:f2_#/help`, { waitUntil: "networkidle" });
       await page.locator("#desktop-room").selectOption("room:");
       const planner = page.locator('a[href="#/grow-plan"]').first();
       await visible(planner);
       assert.equal(await page.locator("#desktop-room").inputValue(), "room:");
     },
   );
-  await check("classic roundtrip preserves default and F1 alongside a named F2", async () => {
-    for (const [query, expected] of [
-      ["?room=f2", "room:"],
-      ["?room=f1", "room:f1_"],
-      ["", "room:"],
-    ]) {
-      await page.goto(`${base}/f2-classic.html${query}`, { waitUntil: "networkidle" });
-
-      await visible(page.getByText("Connected", { exact: true }));
-      assert.equal(await page.locator("#desktop-room").inputValue(), expected);
-      assert.equal(new URL(page.url()).searchParams.get("room"), expected);
-    }
-  });
   await check("what's new: an update shows it once, and the integration is told", async () => {
     // Every check above ran against an integration without What's new: no window, no error.
     const dialog = page.getByRole("dialog", { name: "What’s new in Crop Steering", exact: true });
@@ -539,7 +507,7 @@ try {
     };
     const told = () =>
       calls.filter((call) => call.path.startsWith("/api/services/crop_steering/whats_new_seen"));
-    await page.goto(`${base}/dashboard.html?room=f1#/overview`, { waitUntil: "networkidle" });
+    await page.goto(`${base}/dashboard.html?room=room:f1_#/overview`, { waitUntil: "networkidle" });
     await visible(dialog);
     assert.deepEqual(
       (await dialog.locator("section h3").allInnerTexts()).map((text) => text.split("\n")[0]),

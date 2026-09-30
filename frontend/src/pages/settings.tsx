@@ -38,17 +38,6 @@ const CONNECTION: Record<Controller["connection"], { label: string; tone: PillTo
   offline: { label: "Offline", tone: "off" },
 };
 
-export function workspaceLink(view: string): string {
-  const routes: Record<string, string> = {
-    timeline: "grow-plan",
-    recipes: "grow-plan",
-    tune: "strategy",
-    climate: "sensors",
-    floor: "setup",
-    substrate: "insights",
-  };
-  return "#/" + (routes[view] || "help");
-}
 export function Settings({
   controller,
   theme,
@@ -403,22 +392,15 @@ export function Settings({
             <p>Planning, diagnostics and room configuration share this workspace.</p>
           </div>
           <div className="tool-link-list">
-            {!workspaceLink("tune") && (
-              <p className="notice-inline">{"Open the matching workflow in this dashboard."}</p>
-            )}
-            <a href={workspaceLink("tune")} aria-disabled={!workspaceLink("tune")}>
+            <a href="#/strategy">
               Manual setpoints <ArrowUpRight size={16} />
             </a>
-            <a href={workspaceLink("climate")} aria-disabled={!workspaceLink("climate")}>
+            <a href="#/sensors">
               Climate detail <ArrowUpRight size={16} />
             </a>
-            <a href={workspaceLink("floor")} aria-disabled={!workspaceLink("floor")}>
+            <a href="#/setup">
               Room floor plan <ArrowUpRight size={16} />
             </a>
-            <p className="small muted">
-              Classic controls retain their existing behavior. Manual-shot events and phase
-              overrides are not verified commands for this add-on.
-            </p>
           </div>
         </section>
       </div>
