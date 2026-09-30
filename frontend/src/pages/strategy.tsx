@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Empty, Heading, ReviewDialog, number, type ReviewItem } from "@/components/dashboard";
 import type { Controller, Setting } from "@/lib/types";
 import { PlanningCurve } from "@/components/planning-curve";
-import { WaterDelivery } from "@/components/water-delivery";
 import { buildSetpointPreview, validateSetpoint } from "@/lib/setpoint-preview";
 import { smoothRecorded, type PlanningPhaseId } from "@/lib/planning-curve";
 import {
@@ -100,6 +99,8 @@ export function Strategy({
         ? "gen"
         : null;
   const visibleFields = fields.filter((setting) => {
+    // Pot size, plants and drippers are the room's hardware: edited in Settings › Rooms & hardware.
+    if (fieldGroup(setting) === "Hardware sizing") return false;
     if (showInactive || !activeMode) return true;
     const mode = setting.entityId.match(
       /_(vegetative|generative)_dryback_target$|_ec_target_(veg|gen)_p[012]$/,
@@ -547,11 +548,12 @@ export function Strategy({
                                         )}
                                         {auto && <AutoBadge />}
                                       </Label>
-                                      {param && words?.detail && (
+                                      {param && (
                                         <SettingHelp
                                           label={setting.label}
                                           param={param}
-                                          detail={words.detail}
+                                          detail={words?.detail}
+                                          limits={`${setting.min}–${setting.max}${setting.unit ? ` ${setting.unit}` : ""} · step ${setting.step}`}
                                         />
                                       )}
                                     </div>
@@ -559,16 +561,6 @@ export function Strategy({
                                       {setting.description ||
                                         `Allowed range: ${setting.min}–${setting.max}${setting.unit ? ` ${setting.unit}` : ""}.`}
                                     </p>
-                                    <span className="setting-limit">
-                                      {setting.min}–{setting.max} {setting.unit} · step{" "}
-                                      {setting.step}
-                                      {param && (
-                                        <>
-                                          {" "}
-                                          · <code>{param}</code>
-                                        </>
-                                      )}
-                                    </span>
                                   </div>
                                   <div className="setting-input">
                                     <div>
@@ -760,16 +752,6 @@ export function Strategy({
                   {preview.issues.map((issue) => (
                     <p key={issue}>{issue}</p>
                   ))}
-                </div>
-              )}
-              {previewZoneId !== undefined && (
-                <div className="setpoint-water">
-                  <WaterDelivery
-                    controller={controller}
-                    zoneId={previewZoneId}
-                    parameters={preview.draft.parameters}
-                    fieldOverrides={preview.fieldOverrides}
-                  />
                 </div>
               )}
             </aside>

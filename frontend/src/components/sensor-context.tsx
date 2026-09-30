@@ -618,7 +618,7 @@ export function SensorContextCard({
       ) : !vwc.entityId && !ec.entityId ? (
         <Empty
           title="No probes mapped for this zone"
-          detail="Map a VWC and an EC sensor in Rooms & setup to see how the substrate behaves beside these targets."
+          detail="Map a VWC and an EC sensor in Settings → Rooms & hardware to see how the substrate behaves beside these targets."
         />
       ) : !hasData && context.error ? (
         <Empty

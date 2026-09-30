@@ -363,7 +363,7 @@ describe("room status line", () => {
           friendly_name: "Crop Steering System Enabled",
         }),
       ],
-      /^Home Assistant's “Crop Steering System Enabled” switch \(switch\.crop_steering_system_enabled\) is off, and nothing is watered in this room while it is\. Switch it back on in Home Assistant, then switch watering on in Settings if it is off\.$/,
+      /^Home Assistant's “Crop Steering System Enabled” switch \(switch\.crop_steering_system_enabled\) is off, and nothing is watered in this room while it is\. Switch it back on in Home Assistant, then switch watering on in Overview if it is off\.$/,
     ],
     [
       "Home Assistant's Auto Irrigation Enabled is off",
@@ -383,7 +383,7 @@ describe("room status line", () => {
     [
       "the setup is invalid",
       [entity(HEARTBEAT, "healthy", { setup_pending: "Invalid setup descriptor: bad valve" })],
-      /^Invalid setup descriptor: bad valve\. Correct the room in Rooms & setup\.$/,
+      /^Invalid setup descriptor: bad valve\. Correct the room in Settings → Rooms & hardware\.$/,
     ],
     [
       "hardware is stuck",
@@ -415,13 +415,13 @@ describe("room status line", () => {
     expect(line).toMatchObject({ tone: "stopped", text: "Not watering" });
     expect(line.detail).toMatch(detail);
   });
-  it("names an off retired switch before the watering switch, and links to Settings for both", () => {
+  it("names an off retired switch before the watering switch, and links to Overview for both", () => {
     const off = status(fixture([entity("input_boolean.f2_control_enabled", "off")]));
-    expect(off.action).toEqual({ label: "Switch it on in Settings", route: "settings" });
+    expect(off.action).toEqual({ label: "Switch it on in Overview", route: "overview" });
     const systemOff = [entity("switch.crop_steering_system_enabled", "off")];
     expect(status(fixture(systemOff)).action).toEqual({
-      label: "Open Settings",
-      route: "settings",
+      label: "Open Overview",
+      route: "overview",
     });
     // The controller keeps watering switched off while System Enabled is: switching watering on
     // first would not last, so the line names System Enabled.

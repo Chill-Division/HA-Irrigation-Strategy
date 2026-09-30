@@ -65,10 +65,10 @@ describe("feed plan", () => {
   });
 
   it("says why no batch can run", () => {
-    expect(planOf(flower(), []).problem).toBe("No doser is mapped in Rooms & setup.");
+    expect(planOf(flower(), []).problem).toBe("No doser is mapped in Settings → Rooms & hardware.");
     expect(planOf(flower({ stage: null }), [1, 2, 3, 4]).problem).toBe("No feed stage is chosen.");
     expect(planOf(flower(), [1, 2, 4]).problem).toBe(
-      "Flower uses doser 3, which has no switch in Rooms & setup.",
+      "Flower uses doser 3, which has no switch in Settings → Rooms & hardware.",
     );
     const none = flower();
     none.recipes[0].strength = 0;

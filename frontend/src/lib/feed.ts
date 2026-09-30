@@ -51,7 +51,7 @@ export interface FeedDocument extends FeedDraft {
   schema_version: 1;
   room_id: string;
   revision: number;
-  /** The room's doser switches from Rooms & setup, by doser number. */
+  /** The room's doser switches from Rooms & hardware, by doser number. */
   mapped: Record<string, string>;
   plan: FeedPlan;
   max_dosers: number;
@@ -61,7 +61,7 @@ export interface FeedDocument extends FeedDraft {
   requested?: string | null;
 }
 
-/** The room's reservoir and dosers in Rooms & setup (room.py RESERVOIR_KEYS). */
+/** The room's reservoir and dosers in Rooms & hardware (room.py RESERVOIR_KEYS). */
 export const MAX_DOSERS = 6;
 export const DOSER_KEYS = Array.from({ length: MAX_DOSERS }, (_, i) => `doser_${i + 1}_switch`);
 export const BATCH_SWITCH_KEYS = ["fresh_water_switch", "recirc_switch", ...DOSER_KEYS];
@@ -138,7 +138,7 @@ export function planOf(draft: FeedDraft, mapped: number[]): FeedPlan {
   const stage = draft.recipes.find((r) => r.id === draft.stage) ?? null;
   const doses: PlannedDose[] = [];
   let problem: string | null = null;
-  if (!mapped.length) problem = "No doser is mapped in Rooms & setup.";
+  if (!mapped.length) problem = "No doser is mapped in Settings → Rooms & hardware.";
   else if (!stage) problem = "No feed stage is chosen.";
   else {
     const wanted = Object.entries(stage.doses)
@@ -146,7 +146,7 @@ export function planOf(draft: FeedDraft, mapped: number[]): FeedPlan {
       .map(([n]) => Number(n));
     const missing = wanted.filter((n) => !mapped.includes(n)).sort((a, b) => a - b);
     if (missing.length)
-      problem = `${stage.name} uses doser ${missing[0]}, which has no switch in Rooms & setup.`;
+      problem = `${stage.name} uses doser ${missing[0]}, which has no switch in Settings → Rooms & hardware.`;
     else if (!wanted.length)
       problem = `${stage.name} doses nothing: give its nutrients some parts.`;
     for (const n of roomOrder(draft.order, mapped))

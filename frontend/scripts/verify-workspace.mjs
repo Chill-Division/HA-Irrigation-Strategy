@@ -77,6 +77,16 @@ async function navigateSchedule(target = page) {
     .getByRole("button", { name: "Schedule", exact: true })
     .click();
 }
+async function navigateSetup(target = page) {
+  await target
+    .locator(".desktop-sidebar")
+    .getByRole("button", { name: "Settings", exact: true })
+    .click();
+  await target
+    .getByRole("navigation", { name: "Settings views" })
+    .getByRole("button", { name: "Rooms & hardware", exact: true })
+    .click();
+}
 async function exported() {
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export", exact: true }).click();
@@ -100,8 +110,8 @@ async function noOverflow() {
 // Colours animate when the theme changes (transition-colors). Contrast measured mid-transition
 // fails at random, so let the running finite animations and transitions finish (at most 2 s: a
 // paused one never does), then two frames.
-async function settle() {
-  await page.evaluate(async () => {
+async function settle(target = page) {
+  await target.locator("html").evaluate(async () => {
     const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     const running = document
       .getAnimations()
@@ -138,7 +148,7 @@ async function check(name, run) {
   }
 }
 async function pause() {
-  await navigate("Settings");
+  await navigate("Overview");
   const pause = page.getByRole("button", { name: "Switch watering off…", exact: true });
   if (await pause.count()) {
     await pause.click();
@@ -405,7 +415,7 @@ try {
       await visible(page.getByRole("heading", { name: "Discard unsaved workspace changes?" }));
       await page.getByRole("button", { name: "Keep editing" }).click();
       assert.equal(await page.locator("#steering-balance").inputValue(), "83");
-      await page.evaluate(() => (location.hash = "/zones"));
+      await page.evaluate(() => (location.hash = "/water"));
       await visible(page.getByRole("heading", { name: "Discard unsaved workspace changes?" }));
       await page.getByRole("button", { name: "Keep editing" }).click();
       assert.equal(new URL(page.url()).hash, "#/grow-plan");
@@ -488,7 +498,7 @@ try {
       await fresh("grow-plan");
       await visible(page.locator("#steering-balance"));
       await pause();
-      await navigate("Rooms & setup");
+      await navigateSetup();
       await visible(page.locator("#room-name"));
       await page.getByRole("button", { name: "Add zone", exact: true }).click();
       await page.getByRole("button", { name: "Map Zone 4 valve", exact: true }).click();
@@ -1237,10 +1247,7 @@ try {
         await visible(lp.getByText("Grow plan snapshot unavailable", { exact: true }));
         assert.doesNotMatch(await targetCell.innerText(), /77|54/);
         await lp.screenshot({ path: out + "workspace-stale-plan.png", fullPage: true });
-        await lp
-          .locator(".desktop-sidebar")
-          .getByRole("button", { name: "Rooms & setup", exact: true })
-          .click();
+        await navigateSetup(lp);
         await visible(lp.locator("#room-name"));
         await lp.locator("#room-name").fill("Flower 1 verified");
         await lp.getByRole("button", { name: "Review configuration", exact: true }).click();
@@ -1325,11 +1332,9 @@ try {
         });
         await tp.evaluate(() => (document.querySelector("iframe").style.height = "100vh"));
         await tp.screenshot({ path: out + "workspace-ha-native-dark.png", fullPage: true });
-        await frame
-          .locator(".desktop-sidebar")
-          .getByRole("button", { name: "Rooms & setup", exact: true })
-          .click();
+        await navigateSetup(frame);
         await visible(frame.locator("#setup-room"));
+        await settle(frame); // the tabs ease between their colours
         await tp.screenshot({
           path: fileURLToPath(new URL("../../img/rooms-setup.png", import.meta.url)),
         });

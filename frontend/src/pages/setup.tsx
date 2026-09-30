@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Heading, Empty } from "@/components/dashboard";
+import { WateringPower } from "@/components/room-controls";
 import { Pill } from "@/components/mini-visuals";
 import {
   CatchTestCalculator,
@@ -198,7 +199,7 @@ const hardwareFields = [
   ["tank_last_fill_sensor", "Last recorded tank fill", "timestamp"],
   ["tank_fill_entity", "Tank filling status", "binary"],
 ] as const;
-/** The reservoir and dosers a room's nutrient batches use (Reservoir page); the controller app
+/** The reservoir and dosers a room's nutrient batches use (Feed → Reservoir); the controller app
  * switches these. */
 const reservoirFields: [string, string, string][] = [
   ["reservoir_distance_sensor", "Reservoir level sensor (distance)", "distance"],
@@ -222,7 +223,6 @@ export function Setup({
     [notice, setNotice] = useState("");
   const [review, setReview] = useState<"save" | "remove" | null>(null),
     [confirmName, setConfirmName] = useState("");
-  const [tab, setTab] = useState<"rooms" | "install">("rooms");
   const units = useSizingUnits();
   const dirty = !!draft && (isNew || JSON.stringify(draft) !== JSON.stringify(original));
   const connected = ["live", "demo"].includes(controller.connection);
@@ -417,101 +417,10 @@ export function Setup({
   const confirmedRevision = Number(heartbeat?.attributes.setup_revision);
   const mappingConfirmed =
     !isNew && draft && Number.isFinite(confirmedRevision) && confirmedRevision >= draft.revision;
-  const Installation = () => (
-    <section className="panel workspace-card">
-      <h2>Install once, then map your devices</h2>
-      <p className="muted">
-        Home Assistant requires confirmation for custom integrations and controller apps. These
-        shortcuts take you directly to the correct steps.
-      </p>
-      <ol className="install-steps">
-        <li>
-          <span className="step-number">1</span>
-          <div>
-            <h3>Install the integration with HACS</h3>
-            <p>Add this repository as an Integration, download it, then restart Home Assistant.</p>
-            <Button asChild variant="outline">
-              <a
-                href="https://my.home-assistant.io/redirect/hacs_repository/?owner=Chill-Division&repository=HA-Irrigation-Strategy&category=integration"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open in HACS <ExternalLink size={15} />
-              </a>
-            </Button>
-          </div>
-        </li>
-        <li>
-          <span className="step-number">2</span>
-          <div>
-            <h3>Add Crop Steering</h3>
-            <p>
-              The native setup flow creates your first room. The new dashboard registers in the
-              sidebar automatically.
-            </p>
-            <Button asChild variant="outline">
-              <a
-                href="https://my.home-assistant.io/redirect/config_flow_start/?domain=crop_steering"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Add integration <ExternalLink size={15} />
-              </a>
-            </Button>
-          </div>
-        </li>
-        <li>
-          <span className="step-number">3</span>
-          <div>
-            <h3>Install the controller app</h3>
-            <p>
-              For Home Assistant OS/Supervised, add the repository and install Crop Steering. Keep
-              watering off in every room while mapping hardware.
-            </p>
-            <Button asChild variant="outline">
-              <a
-                href="https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FChill-Division%2FHA-Irrigation-Strategy"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Add controller repository <ExternalLink size={15} />
-              </a>
-            </Button>
-          </div>
-        </li>
-        <li>
-          <span className="step-number">4</span>
-          <div>
-            <h3>Map, verify and start</h3>
-            <p>
-              Use Rooms & setup to select valves and probes, enter pot/dripper measurements, confirm
-              the controller acknowledges the mapping, then review your grow plan. Switch watering
-              on deliberately in Settings.
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setTab("rooms");
-                void load();
-              }}
-              disabled={!connected || busy}
-            >
-              Check installed capabilities <RefreshCw size={15} />
-            </Button>
-          </div>
-        </li>
-      </ol>
-      <div className="workspace-message">
-        Core/Container installations can use the integration and dashboard; running the irrigation
-        controller requires a separate supported controller process. HACS is required only for
-        automatic custom-integration updates.
-      </div>
-    </section>
-  );
   return (
     <>
       <Heading
-        title="Rooms & setup"
+        title="Rooms & hardware"
         action={
           <Button
             disabled={!data?.capabilities.create || dirty || busy || !connected}
@@ -522,14 +431,6 @@ export function Setup({
           </Button>
         }
       />
-      <div className="workspace-tabs" role="tablist" aria-label="Setup view">
-        <button role="tab" aria-selected={tab === "rooms"} onClick={() => setTab("rooms")}>
-          Rooms & mappings
-        </button>
-        <button role="tab" aria-selected={tab === "install"} onClick={() => setTab("install")}>
-          Installation
-        </button>
-      </div>
       {error && (
         <div className="workspace-message error" role="alert">
           {error}
@@ -540,9 +441,7 @@ export function Setup({
           {notice}
         </div>
       )}
-      {tab === "install" ? (
-        <Installation />
-      ) : !data ? (
+      {!data ? (
         <>
           <section className="panel workspace-card">
             <Empty
@@ -556,7 +455,6 @@ export function Setup({
               }
             />
           </section>
-          <Installation />
         </>
       ) : (
         <>
@@ -672,9 +570,7 @@ export function Setup({
                       Mapping writes are checked again on the server. Switch watering off and verify
                       the mapped hardware is off before saving.
                     </p>
-                    <Button asChild variant="outline">
-                      <a href="#/settings">Watering settings</a>
-                    </Button>
+                    <WateringPower controller={controller} />
                   </div>
                 )}
               </section>
@@ -766,7 +662,7 @@ export function Setup({
                   <div>
                     <h2>Reservoir & dosers</h2>
                     <p className="muted">
-                      For nutrient batches, run from the Reservoir page. The level sensor reads the
+                      For nutrient batches, run from Feed → Reservoir. The level sensor reads the
                       distance down to the water; each doser is the switch that powers it. Leave
                       them empty if the controller app does not mix this room's feed.
                     </p>

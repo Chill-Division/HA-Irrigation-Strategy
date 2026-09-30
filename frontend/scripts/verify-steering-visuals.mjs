@@ -187,14 +187,13 @@ try {
     await pinned.close();
   });
   await check("Room off stands the room down and says so", async () => {
-    await fresh("settings");
+    await fresh("overview");
     await page.getByRole("button", { name: "Switch room off…" }).click();
     await page.getByRole("button", { name: /^Apply 1 change/ }).click();
-    await page.getByRole("button", { name: "Switch room on…" }).first().waitFor();
-    // Same document, so the demo keeps its in-memory state; a reload would switch the room back on.
-    await page.evaluate(() => {
-      location.hash = "#/overview";
-    });
+    const on = page.getByRole("button", { name: "Switch room on…" });
+    await on.first().waitFor();
+    // One switch on the Overview, in its heading: the banner there only says so.
+    assert.equal(await on.count(), 1);
     const banner = page.locator(".room-off-banner");
     await banner.waitFor();
     assert.match(await banner.innerText(), /no irrigation, no alerts/i);
@@ -203,6 +202,10 @@ try {
       path: fileURLToPath(new URL("../../img/room-off.png", import.meta.url)),
       clip: { x: 0, y: 0, width: 1600, height: 760 },
     });
+    // Any other page: the banner carries the switch. Same document, so the demo keeps its
+    // in-memory state; a reload would switch the room back on.
+    await page.evaluate(() => (location.hash = "#/insights"));
+    await banner.getByRole("button", { name: "Switch room on…" }).waitFor();
   });
   await check("P1 controls reshape preview; invalid drafts cannot apply", async () => {
     await fresh("strategy");
@@ -279,7 +282,7 @@ try {
   await check(
     "Runtime estimates show all-plant zone litres and per-plant water separately",
     async () => {
-      await fresh("strategy");
+      await fresh("water");
       const water = page.getByRole("region", { name: "Zone 1 water delivery" });
       // A labelled section is exposed as a region by the accessibility tree.
       await water.getByLabel("Try a valve-open runtime · seconds").fill("120");
@@ -290,11 +293,10 @@ try {
       assert.match(await water.locator(".wd-effective").innerText(), /2\.4(?:0)? L \/ zone/);
       assert.match(await water.innerText(), /Total substrate capacity/);
       assert.match(await water.innerText(), /216/);
-      await fresh("zones");
-      const summary = page.locator(".wd-daily");
-      const row = summary.getByRole("row").filter({ hasText: "Zone 1" });
+      // Today's water, shared across the zone's 36 plants, beside the zone's total.
+      const row = page.locator(".wu-table tbody tr").filter({ hasText: "Zone 1" });
       assert.match(await row.innerText(), /5\.3(?:0)? L/);
-      assert.match(await row.innerText(), /147\.2 mL/);
+      assert.match(await row.innerText(), /147 mL per plant, 36 plants/);
     },
   );
   await check(

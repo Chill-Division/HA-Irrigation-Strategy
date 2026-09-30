@@ -123,7 +123,7 @@ export function WhatsNewOnUpdate({ controller }: { controller: Controller }) {
   );
 }
 
-/** Help & tools: the latest releases' highlights, at any time. */
+/** Help: the latest releases' highlights, at any time. */
 export function WhatsNewButton({ controller }: { controller: Controller }) {
   const [selection, setSelection] = useState<WhatsNewSelection | null>(null);
   const [error, setError] = useState<string | null>(null);

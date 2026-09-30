@@ -2,7 +2,7 @@
 
 docs/error-codes.json is the list. The controller app puts a code in every notification, the
 integration puts one on every Repairs card, docs/ERROR_CODES.md is written from the list, and the
-dashboard's Help & tools page imports it. A code shown to an operator that the list does not
+dashboard's Help page imports it. A code shown to an operator that the list does not
 explain, or a list entry nothing can raise, fails here.
 """
 

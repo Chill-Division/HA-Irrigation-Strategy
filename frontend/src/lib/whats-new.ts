@@ -85,5 +85,5 @@ export function unseen(doc: WhatsNewDocument): WhatsNewSelection {
   return capped(doc.releases.filter((release) => Date.parse(release.date) >= from));
 }
 
-/** Help & tools: the latest releases, whatever the window has shown. */
+/** Help: the latest releases, whatever the window has shown. */
 export const recent = (doc: WhatsNewDocument): WhatsNewSelection => capped(doc.releases);

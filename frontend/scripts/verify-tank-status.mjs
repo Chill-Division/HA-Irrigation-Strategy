@@ -94,8 +94,13 @@ try {
   await page.setViewportSize({ width: 1440, height: 800 });
   const layout = await page.evaluate(() => {
     const box = (selector) => document.querySelector(selector).getBoundingClientRect();
+    // A live Overview has no demo banner: the room it takes here is not counted.
+    const banner = document.querySelector(".demo-banner");
+    const demo = banner
+      ? banner.nextElementSibling.getBoundingClientRect().top - banner.getBoundingClientRect().top
+      : 0;
     return {
-      height: document.documentElement.scrollHeight,
+      height: document.documentElement.scrollHeight - demo,
       window: innerHeight,
       zonesTop: box(".overview-grid > .panel").top,
       tankTop: box("[data-tank-status]").top,
@@ -105,7 +110,7 @@ try {
   });
   assert.ok(
     layout.height <= 2 * layout.window,
-    `Overview is ${layout.height}px tall in a ${layout.window}px window`,
+    `Overview is ${layout.height}px tall without the demo banner, in a ${layout.window}px window`,
   );
   assert.equal(layout.zonesTop, layout.tankTop, "zones and tank share a row");
   assert.ok(layout.mapTop < layout.titleBottom, "the tank's action shares the title's line");

@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Empty, number } from "@/components/dashboard";
 import { numeric } from "@/lib/model";
+import { dailyWater, waterParameters } from "@/lib/water-delivery";
 import type { StrategyDocument } from "@/lib/operator-types";
 import type { Controller, Zone } from "@/lib/types";
 import { errorText } from "@/lib/utils";
@@ -211,6 +212,7 @@ export function WaterUsePanel({ controller, zones }: { controller: Controller; z
       ) : (
         <WaterUseBody
           rows={shown}
+          plantNotes={new Map(room.zones.map((zone) => [zone.id, perPlant(controller, zone)]))}
           colours={new Map(room.zones.map((zone, index) => [zone.id, palette[index % 5]]))}
           today={today}
           lightsOn={lightsOn!}
@@ -221,6 +223,13 @@ export function WaterUsePanel({ controller, zones }: { controller: Controller; z
   );
 }
 
+/** Today's water shared evenly across the zone's plants, as a note; none without a plant count. */
+function perPlant(controller: Controller, zone: Zone): string[] {
+  const reading = dailyWater(zone, waterParameters(controller, zone.id).plant_count);
+  return reading.mlPerPlant === null
+    ? []
+    : [`${number(reading.mlPerPlant, 0)} mL per plant, ${number(reading.plants, 0)} plants`];
+}
 /** A table cell: the figure, and underneath what it covers. */
 function Figure({ label, value, notes }: { label: string; value: string; notes: string[] }) {
   return (
@@ -242,12 +251,14 @@ type Row = {
 };
 function WaterUseBody({
   rows,
+  plantNotes,
   colours,
   today,
   lightsOn,
   source,
 }: {
   rows: Row[];
+  plantNotes: Map<number, string[]>;
   colours: Map<number, string>;
   today: string;
   lightsOn: number;
@@ -320,7 +331,10 @@ function WaterUseBody({
                 <Figure
                   label="Today"
                   value={litres(use.today.litres)}
-                  notes={[`${dates(use.today.day, use.today.day, today)} from ${clock(lightsOn)}`]}
+                  notes={[
+                    `${dates(use.today.day, use.today.day, today)} from ${clock(lightsOn)}`,
+                    ...(plantNotes.get(zone.id) ?? []),
+                  ]}
                 />
                 <Figure
                   label="This week"

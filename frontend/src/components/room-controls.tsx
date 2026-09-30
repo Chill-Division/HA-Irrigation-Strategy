@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Power, Sparkles } from "lucide-react";
+import { Droplets, Power, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ReviewDialog, Status } from "@/components/dashboard";
@@ -70,6 +70,53 @@ export function RoomPower({
   );
 }
 
+/** The room's watering switch, its engine switch. Off, the controller opens no valve in the room
+ * but keeps reading the probes and following the phases. Hidden without an engine switch. */
+export function WateringPower({ controller }: { controller: Controller }) {
+  const [review, setReview] = useState(false);
+  const { engine, room } = controller.room;
+  if (!engine.entityId) return null;
+  const on = engine.enabled;
+  return (
+    <>
+      <div className="room-power" role="group" aria-label={`${room.name} watering`}>
+        <Status
+          enabled={on}
+          label={on === true ? "Watering on" : on === false ? "Watering off" : undefined}
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={!writable(controller, engine.entityId)}
+          onClick={() => setReview(true)}
+        >
+          <Droplets size={15} />
+          {on ? "Switch watering off…" : "Switch watering on…"}
+        </Button>
+      </div>
+      <ReviewDialog
+        open={review}
+        onOpenChange={setReview}
+        controller={controller}
+        title="Review watering"
+        items={[
+          {
+            change: { entityId: engine.entityId, value: !on },
+            label: `${room.name} watering`,
+            before: on ? "On" : "Off",
+            after: on ? "Off" : "On",
+          },
+        ]}
+        note={
+          on
+            ? "Off, the controller opens no valve in this room and stops a running shot within a few seconds; it keeps reading the probes and following the phases. It is not an emergency stop: use the installation's physical shut-off for that."
+            : "On, the controller waters this room by its targets again."
+        }
+      />
+    </>
+  );
+}
+
 /** Every zone of the room at once, in the zones' heading, as Home Assistant's entities card has
  * its header toggle: on while any zone is on. Switching it reviews switching every zone the same
  * way, a zone paused on purpose included; each zone keeps its own switch in its details. */
@@ -117,8 +164,15 @@ export function AllZonesSwitch({ controller }: { controller: Controller }) {
   );
 }
 
-/** Calm, page-independent reminder that the selected room is off. */
-export function RoomOffBanner({ controller }: { controller: Controller }) {
+/** Calm, page-independent reminder that the selected room is off, with its switch unless the
+ * page has one of its own (the Overview's heading). */
+export function RoomOffBanner({
+  controller,
+  switchable = true,
+}: {
+  controller: Controller;
+  switchable?: boolean;
+}) {
   if (!controller.roomId || controller.room.roomActive) return null;
   return (
     <div className="room-off-banner" role="status">
@@ -130,7 +184,7 @@ export function RoomOffBanner({ controller }: { controller: Controller }) {
           engine will not water this room or raise alerts for it.
         </p>
       </div>
-      <RoomPower controller={controller} showStatus={false} />
+      {switchable && <RoomPower controller={controller} showStatus={false} />}
     </div>
   );
 }

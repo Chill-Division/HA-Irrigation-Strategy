@@ -77,7 +77,7 @@ describe("the integration's answer", () => {
   });
 });
 
-describe("Help & tools", () => {
+describe("Help", () => {
   it("shows the latest releases, whatever the window has shown", () => {
     expect(shown(recent(doc("2.30.0")))).toEqual(RELEASES.slice(0, MOST).map((r) => r.version));
   });

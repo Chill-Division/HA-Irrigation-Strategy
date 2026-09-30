@@ -768,7 +768,7 @@ export function buildRoom(states: States, room: Room): RoomView {
                 ? `, about ${tank.batches_left} batch${tank.batches_left === 1 ? "" : "es"} left`
                 : ""),
           )
-          .join("; ") + ". Refill, then press Refilled on the Stock tanks page.",
+          .join("; ") + ". Refill, then press Refilled in Feed → Stock tanks.",
     });
   return {
     room,
@@ -897,7 +897,7 @@ export function roomStatus(states: States, room: Room, now = Date.now()): RoomSt
       "Not watering",
       pending.startsWith("Setup changed")
         ? `${pending}. Switch watering off, wait up to 5 minutes for the controller to adopt the setup, then switch it back on.`
-        : `${pending}. Correct the room in Rooms & setup.`,
+        : `${pending}. Correct the room in Settings → Rooms & hardware.`,
     );
   // System Enabled and Auto Irrigation Enabled are retired: while one reads off, the controller
   // keeps the engine switch off (CS-208), and an older controller holds every shot itself. Named
@@ -913,8 +913,8 @@ export function roomStatus(states: States, room: Room, now = Date.now()): RoomSt
     return say(
       "stopped",
       "Not watering",
-      `Home Assistant's “${name}” switch (${id}) is off, and nothing is watered in this room while it is. Switch it back on in Home Assistant, then switch watering on in Settings if it is off.`,
-      { label: "Open Settings", route: "settings" },
+      `Home Assistant's “${name}” switch (${id}) is off, and nothing is watered in this room while it is. Switch it back on in Home Assistant, then switch watering on in Overview if it is off.`,
+      { label: "Open Overview", route: "overview" },
     );
   }
   // The room's engine switch (the "watering" switch here): off, or unreadable, stops every shot.
@@ -926,7 +926,7 @@ export function roomStatus(states: States, room: Room, now = Date.now()): RoomSt
       "stopped",
       "Not watering",
       "Watering is switched off for this room (its engine switch), so the controller opens no valve. It still reads the probes and follows the phases. A new room starts with watering off, so nothing is watered before its hardware has been checked.",
-      { label: "Switch it on in Settings", route: "settings" },
+      { label: "Switch it on in Overview", route: "overview" },
     );
   if (engine !== "on")
     return say(

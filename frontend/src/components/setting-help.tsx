@@ -10,10 +10,13 @@ export function SettingHelp({
   label,
   param,
   detail,
+  limits,
 }: {
   label: string;
   param: string;
-  detail: SettingDetail;
+  detail?: SettingDetail;
+  /** What the setting accepts, e.g. "5–240 min · step 1". */
+  limits?: string;
 }) {
   return (
     <Popover.Root>
@@ -37,11 +40,12 @@ export function SettingHelp({
             <strong>{label}</strong>
             <code>{param}</code>
           </div>
+          {limits && <p className="setting-help-limits">{limits}</p>}
           <dl>
-            {DETAIL_HEADINGS.filter(([key]) => detail[key]).map(([key, heading]) => (
+            {DETAIL_HEADINGS.filter(([key]) => detail?.[key]).map(([key, heading]) => (
               <div key={key}>
                 <dt>{heading}</dt>
-                <dd>{detail[key]}</dd>
+                <dd>{detail?.[key]}</dd>
               </div>
             ))}
           </dl>

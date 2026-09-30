@@ -38,16 +38,6 @@ function since(all: Reading[], from: number, live: number | null, now: number): 
   return points;
 }
 
-/** A sensor's readings over the last `hours`, for a sparkline. */
-export function recentReadings(
-  history: { time: string; value: number }[],
-  hours: number,
-  live: number | null,
-  now: number,
-): Reading[] {
-  return since(parse(history, now), now - hours * 3_600_000, live, now);
-}
-
 /**
  * Least-squares slope of the readings since the last shot settled, within the last
  * `DRYBACK_WINDOW_H` hours.

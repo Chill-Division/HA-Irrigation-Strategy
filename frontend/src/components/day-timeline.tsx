@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
-import { LoaderCircle } from "lucide-react";
+import { CircleHelp, LoaderCircle } from "lucide-react";
+import { Popover } from "radix-ui";
 import { Button } from "@/components/ui/button";
 import { Empty, number, time as clock } from "@/components/dashboard";
 import { ageText, ageTone, readHeartbeat } from "@/lib/controller-health";
@@ -163,7 +164,7 @@ interface Lane {
   drybackTarget: number | null;
   /** P0's additional dryback, the target of the P0 figure. */
   p0Target: number | null;
-  /** Rooms & setup was saved after the day compared with began. */
+  /** Rooms & hardware was saved after the day compared with began. */
   setupNote: string | null;
   /** What the lane line ends with: why the zone is not watered, or held, or how old the last report
    * is. */
@@ -345,7 +346,34 @@ export function DayTimeline({ controller }: { controller: Controller }) {
   return (
     <section className="panel day-timeline" data-day-timeline aria-labelledby="day-timeline-title">
       <div className="panel-heading">
-        <h2 id="day-timeline-title">Today’s grow day</h2>
+        <div className="timeline-title">
+          <h2 id="day-timeline-title">Today’s grow day</h2>
+          <Popover.Root>
+            <Popover.Trigger asChild>
+              <button
+                type="button"
+                className="setting-help-trigger"
+                aria-label="How to read this chart"
+              >
+                <CircleHelp size={15} aria-hidden="true" />
+              </button>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                className="setting-help"
+                side="bottom"
+                align="start"
+                sideOffset={6}
+                collisionPadding={12}
+              >
+                <p>
+                  Point at or tap the chart for details. A projection is an estimate: the controller
+                  waters by the probe.
+                </p>
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
+        </div>
         {rows && (
           <div className="timeline-heading-side">
             <label htmlFor="day-timeline-compare" className="timeline-compare">
@@ -638,8 +666,8 @@ function Timeline({
       setupNote: !moved
         ? null
         : layers.compare === "yesterday"
-          ? "Rooms & setup saved since yesterday: its probe may have differed"
-          : `${moved} of ${compared.length} days before the last Rooms & setup save`,
+          ? "Rooms & hardware saved since yesterday: its probe may have differed"
+          : `${moved} of ${compared.length} days before the last Rooms & hardware save`,
       status:
         unprojected(stopped, beat.at, now) ??
         (next.basis === "held" && held
@@ -700,10 +728,9 @@ function Timeline({
           })}
         </>
       )}
-      <p className="timeline-detail" aria-live="polite">
-        {hover ??
-          picked ??
-          "Point at or tap the chart for details. A projection is an estimate: the controller waters by the probe."}
+      {/* Always in the page, so a screen reader hears what is picked; shown only while it says something. */}
+      <p className={`timeline-detail${(hover ?? picked) ? "" : " empty"}`} aria-live="polite">
+        {hover ?? picked ?? ""}
       </p>
       <ul className="timeline-legend" aria-label="Timeline key">
         {Object.entries(PHASES).map(([phase, name]) => (
@@ -975,8 +1002,10 @@ function LaneChart({
   const pad = Math.max(0.3, (high - low) * 0.12);
   const min = low - pad,
     max = high + pad;
+  // The moisture plot, then the rows under it: shots, then yesterday's shots.
   const top = 24,
-    area = 40;
+    area = 80,
+    below = top + area;
   const y = (value: number) =>
     top + area - ((Math.min(max, Math.max(min, value)) - min) / (max - min)) * area;
   const start = Math.max(now, day.start);
@@ -1106,36 +1135,46 @@ function LaneChart({
         () => `${clock(band.start)}–${clock(band.end)} · ${name} · expected: ${band.text}`,
       ),
     ),
-    mark(day.start, day.end, 20, 66, 4, vwcAt),
+    mark(day.start, day.end, 20, below + 2, 4, vwcAt),
     ...edges.map((edge) => mark(edge.time, edge.time, top, top + area, 0, () => edge.text)),
     ...lane.changes.map((change) =>
       mark(change.time, change.time, 18, 32, 0, () => changeText(change)),
     ),
-    ...lane.shots.map((shot) => mark(shot.start, shot.end, 64, 88, 0, () => shotText(shot, lane))),
+    ...lane.shots.map((shot) =>
+      mark(shot.start, shot.end, below, below + 24, 0, () => shotText(shot, lane)),
+    ),
     ...lane.blocks.map((block) =>
-      mark(block.start, block.end, 64, 88, 1, () => blockText(block, lane)),
+      mark(block.start, block.end, below, below + 24, 1, () => blockText(block, lane)),
     ),
     ...(projection?.shots ?? []).map((shot) =>
       mark(
         shot.time,
         shot.time,
-        64,
-        88,
+        below,
+        below + 24,
         0,
         () =>
           `≈${clock(shot.time)} · ${name} · expected ${shot.emergency ? "P3 emergency" : shot.phase} shot${shot.size === null ? "" : ` of ${number(shot.size, 2)} % of the substrate`}, an estimate`,
       ),
     ),
     ...earlierShots.map((shot) =>
-      mark(aligned(yesterday!, shot.start), aligned(yesterday!, shot.end), 88, 96, 0, () =>
-        [
-          `Yesterday ${clock(shot.start)}–${clock(shot.end)}`,
-          name,
-          `shot ${duration(shot.end - shot.start)}`,
-          ...(lane.litres((shot.end - shot.start) / 1000) === null
-            ? []
-            : [`≈${number(lane.litres((shot.end - shot.start) / 1000))} L at the configured flow`]),
-        ].join(" · "),
+      mark(
+        aligned(yesterday!, shot.start),
+        aligned(yesterday!, shot.end),
+        below + 24,
+        below + 32,
+        0,
+        () =>
+          [
+            `Yesterday ${clock(shot.start)}–${clock(shot.end)}`,
+            name,
+            `shot ${duration(shot.end - shot.start)}`,
+            ...(lane.litres((shot.end - shot.start) / 1000) === null
+              ? []
+              : [
+                  `≈${number(lane.litres((shot.end - shot.start) / 1000))} L at the configured flow`,
+                ]),
+          ].join(" · "),
       ),
     ),
     ...(next.at === null
@@ -1145,7 +1184,7 @@ function LaneChart({
             next.at,
             next.at,
             20,
-            88,
+            below + 24,
             0,
             () => `≈${clock(next.at!)} · ${name} · ${nextText(lane, day)}`,
           ),
@@ -1158,11 +1197,11 @@ function LaneChart({
     <svg
       className="timeline-lane"
       width={plot + 48}
-      height={96}
+      height={below + 32}
       aria-hidden="true"
       {...strip(marks)}
     >
-      <rect x={off} y={0} width={plot - off} height={96} className="night" />
+      <rect x={off} y={0} width={plot - off} height={below + 32} className="night" />
       {lane.bands.map((band, index) => (
         <Band
           key={index}
@@ -1269,7 +1308,7 @@ function LaneChart({
         <rect
           key={index}
           x={x(block.start)}
-          y={70.5}
+          y={below + 6.5}
           width={Math.max(2, x(block.end) - x(block.start))}
           height={13}
           className={block.kind === "hold" ? "hold" : "cap"}
@@ -1279,7 +1318,7 @@ function LaneChart({
         <rect
           key={index}
           x={x(shot.start)}
-          y={68}
+          y={below + 4}
           width={Math.max(2, x(shot.end) - x(shot.start))}
           height={18}
           className="shot"
@@ -1292,8 +1331,8 @@ function LaneChart({
               key={index}
               x1={x(shot.time)}
               x2={x(shot.time)}
-              y1={68}
-              y2={86}
+              y1={below + 4}
+              y2={below + 22}
               className={shot.emergency ? "expected-shot emergency" : "expected-shot"}
             />
           ))}
@@ -1305,7 +1344,7 @@ function LaneChart({
             <rect
               key={index}
               x={x(aligned(yesterday, shot.start))}
-              y={89}
+              y={below + 25}
               width={Math.max(
                 2,
                 x(aligned(yesterday, shot.end)) - x(aligned(yesterday, shot.start)),
@@ -1318,10 +1357,10 @@ function LaneChart({
       )}
       {at !== null && next.basis !== "dry-down" && at <= day.end && (
         <>
-          <line x1={x(at)} x2={x(at)} y1={66} y2={88} className="estimate" />
+          <line x1={x(at)} x2={x(at)} y1={below + 2} y2={below + 24} className="estimate" />
           <text
             x={x(at) + (x(at) > plot - 48 ? -4 : 4)}
-            y={82}
+            y={below + 18}
             className="estimate-label"
             textAnchor={x(at) > plot - 48 ? "end" : "start"}
           >
@@ -1329,7 +1368,7 @@ function LaneChart({
           </text>
         </>
       )}
-      <line x1={x(now)} x2={x(now)} y1={0} y2={96} className="now-line" />
+      <line x1={x(now)} x2={x(now)} y1={0} y2={below + 32} className="now-line" />
     </svg>
   );
 }
