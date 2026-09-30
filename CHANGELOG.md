@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   under the zone's own name. It said "Zone 1 · Maintenance shot when below 71.3 → 63.3 %", whoever
   made it and whatever the zone is called. A person is named as Home Assistant knows them, an
   automation or a script by its name, and the controller's own adjustments as Auto setpoints.
+- **The controller's log says what it is doing, when, and in plain words.** Every line starts with
+  the date and time and names the room and zone as you named them. Each zone writes a line a minute
+  with its moisture, EC and water today and what it is waiting for; a phase change says why ("P3 →
+  P0: lights on"); a shot says what kind it is, how long it runs, about how much water it gives and
+  why; and a setting change says who made it ("Sam raised Most P1 shots to 10 (was 6)"). It said
+  "[controller] [default] Z1 P3 hold —", with no time, every minute.
 
 ### 🔧 Technical notes
 
@@ -34,6 +40,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   setting's `short` name (new on `Setting`). The demo has a grower, `person.alex`, and
   `demoLogbook`. `tests_ha/test_logbook_names_who.py` changes a real room's trigger as a signed-in
   user, as the Supervisor and from an automation, and reads all three back both ways.
+- `log()` starts each line with the local date and time (the `[controller]` tag it had is gone), and
+  `_say` names the room and zone as the notifications do (`_where`). The words are `log_words.py`'s:
+  decide()'s transition, shot and hold texts said for a person by `Reason.kind`, anything unknown
+  logged as it is, and each setting's short name as the dashboard's `setting-words.ts` has it. What
+  the engine decides and publishes is unchanged.
+- Each minute a zone that does not fire logs its readings (`_readings`), what holds it, and
+  `next_text` of the conditions it published. A phase change has its own line.
+- Every number read (`_num`, `_num_or_none`) is noted; a value that differs from its last read is
+  logged with who changed it, from Home Assistant's logbook (`/api/logbook` for that entity since
+  the last read): an automation or script by its `context_name`, a `context_user_id` by its
+  person's name (`person.*`, read at most every ten minutes). Auto setpoints' own writes are logged
+  where they are made, "Auto setpoints lowered Maintenance trigger to 63.3% (was 71.3%)", and not
+  again. The first read after a start only notes. No state file, option or entity changes.
+- `addons/f2_control/tests/test_log_words.py` runs decide() for each transition, shot and hold it
+  words, holds the names to `setting-words.ts`, and drives a named room through a minute's line and
+  a setting change.
 
 ## [2.29.0] - 2026-09-30
 

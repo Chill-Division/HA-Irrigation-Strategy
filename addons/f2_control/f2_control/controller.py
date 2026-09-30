@@ -30,6 +30,7 @@ from datetime import date, datetime, timedelta, timezone
 
 import requests
 import auto_setpoints
+import log_words
 import setpoint_supervisor
 from strategy_runtime import parse_snapshot, parameter_override, strategy_block
 
@@ -57,7 +58,8 @@ _S = requests.Session()
 
 
 def log(*a):
-    print("[controller]", *a, flush=True)
+    """One line of the app's log: the local date and time, then what happened."""
+    print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), *a, flush=True)
 
 
 class HAState(tuple):
@@ -679,6 +681,9 @@ class Controller:
             {}
         )  # (prefix,metric,zone) -> resolved fused-sensor entity_id
         self._activity = []
+        # Each setting's value at its last read, and when: a change is logged with who made it.
+        self._settings_seen = {}
+        self._people_cache = (0.0, {})  # (when read, user id -> person name)
         self._last_notify = None
         self._start = datetime.now()
         self._last_discovery = self._start
@@ -1035,7 +1040,7 @@ class Controller:
             if "_shot_inflight" in block:
                 room.shot_inflight = self._inflight_record(block["_shot_inflight"])
                 if room.shot_inflight is None:
-                    log(f"[{room.slug}] unreadable interrupted-shot record ignored: {block['_shot_inflight']!r}")
+                    self._say(room, None, f"unreadable interrupted-shot record ignored: {block['_shot_inflight']!r}")
             for z in room.zones:
                 d = block.get(str(z)) or block.get(z)
                 room.state[z] = self._apply_saved_zone(room.state[z], d)
@@ -1408,15 +1413,15 @@ class Controller:
 
     # ---------- HA read helpers ----------
     def _num(self, entity, default):
-        v, _, _ = ha_get(entity)
+        v, attributes, _ = ha_get(entity)
         try:
-            return (
-                float(v)
-                if v not in (None, "unknown", "unavailable", "")
-                else float(default)
-            )
+            value = float(v) if v not in (None, "unknown", "unavailable", "") else None
         except Exception:
+            value = None
+        if value is None:
             return float(default)
+        self._note_setting(entity, value, attributes)
+        return value
 
     def _zone_num(self, room, zone, suffix, default, optional=False):
         override = parameter_override(
@@ -1478,11 +1483,74 @@ class Controller:
 
     def _num_or_none(self, entity):
         """Read a number entity as float, or None if it doesn't exist / isn't a number."""
-        v, _, _ = ha_get(entity)
+        v, attributes, _ = ha_get(entity)
         try:
-            return float(v) if v not in (None, "unknown", "unavailable", "") else None
+            value = float(v) if v not in (None, "unknown", "unavailable", "") else None
         except Exception:
             return None
+        if value is not None:
+            self._note_setting(entity, value, attributes)
+        return value
+
+    def _note_setting(self, entity, value, attributes):
+        """A setting read with another value than at its last read: the log says who changed it and
+        how. The first read after a start only notes it; Auto setpoints' own writes are said where
+        they are made (_auto_write)."""
+        if not entity.startswith("number.crop_steering_") or not math.isfinite(value):
+            return
+        now = datetime.now()
+        settings = self.__dict__.setdefault("_settings_seen", {})
+        seen = settings.get(entity)
+        settings[entity] = (value, now)
+        if seen is None or seen[0] == value:
+            return
+        room, zone, key = self._setting_place(entity)
+        unit = str((attributes or {}).get("unit_of_measurement") or "")
+        who = self._who_changed(entity, value, seen[1] - timedelta(minutes=1))
+        text = log_words.change(log_words.setting_name(key), unit, seen[0], value, who)
+        if room is None:
+            log(text)
+        else:
+            self._say(room, zone, text)
+
+    def _setting_place(self, entity):
+        """The room, zone (None for a room-wide one) and key of a setting's number entity."""
+        rest = entity[len("number.crop_steering_"):]
+        for room in sorted(getattr(self, "rooms", []), key=lambda r: len(r.prefix), reverse=True):
+            if rest.startswith(room.prefix):
+                key = rest[len(room.prefix):]
+                zoned = re.fullmatch(r"zone_(\d+)_(.+)", key)
+                return (room, int(zoned[1]), zoned[2]) if zoned else (room, None, key)
+        return None, None, rest
+
+    def _who_changed(self, entity, value, since):
+        """Who changed a setting to `value` since `since` (local time), from Home Assistant's
+        logbook: an automation or a script by its name, a person by theirs; None when it can't say."""
+        try:
+            r = _S.get(
+                f"{BASE}/logbook/{since.astimezone().isoformat()}",
+                params={"entity": entity, "end_time": datetime.now().astimezone().isoformat()},
+                headers=HDR,
+                timeout=8,
+            )
+            entries = r.json() if r.status_code == 200 else []
+        except Exception:
+            return None
+        return log_words.who(entries if isinstance(entries, list) else [], value, self._people())
+
+    def _people(self):
+        """Each Home Assistant user's person name ({user id: "Sam"}), read again at most every ten
+        minutes: only a setting change asks."""
+        read, people = getattr(self, "_people_cache", (0.0, {}))
+        if not read or time.monotonic() - read > 600:
+            people = {
+                s["attributes"]["user_id"]: s["attributes"].get("friendly_name") or s["entity_id"][7:]
+                for s in ha_get_all()
+                if str(s.get("entity_id", "")).startswith("person.")
+                and (s.get("attributes") or {}).get("user_id")
+            }
+            self._people_cache = (time.monotonic(), people)
+        return people
 
     def _detect_zones(self, prefix, fallback):
         """Count zones from the integration's fused VWC sensors. Returns the number of
@@ -1836,7 +1904,7 @@ class Controller:
         was = learn["outcome"]
         outcome = auto_setpoints.ramp_outcome(learn, st["phase"])
         if outcome != was:
-            log(f"[{room.slug}] Z{zone} P1 ramp outcome: {outcome} (peak {learn['peak']})")
+            self._say(room, zone, f"Auto setpoints: today's ramp outcome {outcome} (peak {learn['peak']}%)")
             if outcome == "suspect":
                 self._alert(f"auto_{room.slug}_z{zone}", "CS-404", "automatic targets paused",
                             "Automatic adjustment of this zone's targets is paused, because this "
@@ -1889,10 +1957,11 @@ class Controller:
             return  # HA has not reflected the last write yet: do not spam it
         written[(zone, suffix)] = (value, now)
         ha_call("number", "set_value", entity_id=entity, value=value)
+        self.__dict__.setdefault("_settings_seen", {})[entity] = (value, now)  # said here, not again
         learn["last_change"] = f"{now.strftime('%H:%M')} {suffix} {old:g} -> {value:g}"
         tag = "" if room.prefix == "" else f"{room.slug} "
         self._activity.insert(0, f"{now.strftime('%H:%M')} {tag}Z{zone} auto {suffix} {old:g} -> {value:g}"[:120])
-        log(f"[{room.slug}] Z{zone} auto {suffix} {old:g} -> {value:g}")
+        self._say(room, zone, log_words.change(log_words.setting_name(suffix), "%", old, value, "Auto setpoints"))
 
     # ---------- nutrient batches: the reservoir refilled, mixed and dosed ----------
     def _batch_hold(self, room):
@@ -2241,7 +2310,7 @@ class Controller:
     def _batch_note(self, room, now, text):
         tag = "" if room.prefix == "" else f"{room.slug} "
         self._activity.insert(0, f"{now.strftime('%H:%M')} {tag}{text}"[:120])
-        log(f"[{room.slug}] {text}")
+        self._say(room, None, text)
 
     def _batch_publish(self, room, now, res):
         """sensor.crop_steering_<prefix>batch_status: the step (idle while none runs) and what the
@@ -2296,7 +2365,7 @@ class Controller:
                 try:
                     self._batch_watch(room, datetime.now())
                 except Exception as e:
-                    log(f"[{room.slug}] batch error", e)
+                    self._say(room, None, f"batch error: {e}")
 
     def _sleep_for(self, now):
         """Until the next pass: the loop's own interval, or sooner when a batch step is due, so the
@@ -2324,7 +2393,7 @@ class Controller:
 
     def _room_switched_off(self, room):
         """Stand the room down: its standing alerts are about a room that is now deliberately idle."""
-        log(f"[{room.slug}] room switched OFF - irrigation and alerts stand down")
+        self._say(room, None, "room switched off: irrigation and alerts stand down")
         for key in [k for k in self._alerted if f"_{room.slug}_" in k or k.endswith(f"_{room.slug}")]:
             ha_call("persistent_notification", "dismiss", notification_id=f"f2_{key}")
             del self._alerted[key]
@@ -2344,10 +2413,10 @@ class Controller:
         now = datetime.now()
         if off_since is not None and timedelta(0) <= now - off_since < timedelta(hours=self.ROOM_RESUME_H):
             minutes = (now - off_since).total_seconds() / 60.0
-            log(f"[{room.slug}] room switched ON after {minutes:.0f} min off - carrying on where it was")
+            self._say(room, None, f"room switched on after {minutes:.0f} min off: carrying on where it was")
             self._save_state()
             return
-        log(f"[{room.slug}] room switched ON - starting a fresh run")
+        self._say(room, None, "room switched on: starting a fresh run")
         for zone in room.zones:
             old = room.state[zone]
             room.state[zone] = {
@@ -2518,7 +2587,7 @@ class Controller:
         if planned_hold:
             if getattr(reason, "kind", None) not in PLAN_HOLD_EXEMPT:
                 return planned_hold
-            log(f"[{room.slug}] Z{zone} {planned_hold}: not holding a {reason.kind} shot")
+            self._say(room, zone, f"{planned_hold}, but a {log_words.shot(reason)[0]} still runs")
         fault = self._hardware_fault_block(room)
         if fault:
             return fault
@@ -2608,6 +2677,19 @@ class Controller:
             return name
         return " · ".join(p for p in (name, self._zone_title(room, zone)) if p)
 
+    def _say(self, room, zone, text):
+        """One line of the log about a room, or one of its zones, named as the operator named them."""
+        where = self._where(room, zone)
+        log(f"{where} · {text}" if where else text)
+
+    @staticmethod
+    def _readings(room, zone, snap):
+        """A zone's readings in the log, and its water today: "VWC 61.2% · EC 2.9 · 5.3 L today"."""
+        vwc = "no probe reading" if snap is None else f"VWC {snap.vwc:.1f}%"
+        ec = "" if snap is None else " · EC —" if snap.ec is None else f" · EC {snap.ec:.1f}"
+        water = float(room.state.get(zone, {}).get("daily_vol") or 0.0)
+        return f"{vwc}{ec} · {water:.1f} L today"
+
     @staticmethod
     def _zone_title(room, zone):
         """A zone in a notification: "GT4 (Z2)" when the operator named it, else "Zone 2". The
@@ -2642,7 +2724,7 @@ class Controller:
             if not self._on(room.enable_flag, False):
                 continue  # watering is off already: nothing was switched
             ha_call(room.enable_flag.split(".", 1)[0], "turn_off", entity_id=room.enable_flag)
-            log(f"[{room.slug}] {name} ({entity}) is off: engine switch {room.enable_flag} switched off")
+            self._say(room, None, f"{name} ({entity}) is off, so watering was switched off ({room.enable_flag})")
             self._alert(
                 f"retired_switch_{room.slug}_{key}",
                 "CS-208",
@@ -2957,7 +3039,7 @@ class Controller:
             room's mapped valve, main line and pump.
         """
         zone = rec["zone"]
-        tag = f"[{room.slug}] Z{zone} interrupted shot (started {rec['started']})"
+        tag = " · ".join(p for p in (self._where(room, zone), f"interrupted shot (started {rec['started']})") if p)
         order = [e for e in (rec.get("valve"), rec.get("mainline"), rec.get("pump")) if e]
         reads = {e: ha_get(e) for e in order}
         if all(read[0] == "off" for read in reads.values()):
@@ -3174,7 +3256,7 @@ class Controller:
             ([f"Switched off {', '.join(close)}."] if close else [])
             + ([f"Left {', '.join(left)} on: a hold owns it now."] if left else [])
         ) or "Nothing it had opened was still on."
-        log(f"[{room.slug}] Z{zone} shot cut short after {open_s:.1f}/{duration_s:.0f}s: {what}. {outcome}")
+        self._say(room, zone, f"shot cut short after {open_s:.1f} of {duration_s:.0f} s: {what}. {outcome}")
         self._alert(
             f"cutshort_{room.slug}_z{zone}",
             "CS-307",
@@ -3212,16 +3294,16 @@ class Controller:
         if self._hardware_fault_block(room):
             return
         if getattr(room, "shot_inflight", None):
-            log(f"[{room.slug}] Z{zone} shot held: an interrupted shot's hardware is not accounted for yet")
+            self._say(room, zone, "shot held: an interrupted shot's hardware is not accounted for yet")
             return
         plumbing = plumbing_hold(room.hw)
         if plumbing:  # never open a valve on a room whose declared pump is not there to run
-            log(f"[{room.slug}] Z{zone} shot held: {plumbing}")
+            self._say(room, zone, f"shot held: {plumbing}")
             return
         # A shot a plan hold never stops (PLAN_HOLD_EXEMPT) does not wait on the plan here either.
         strategy_hold = None if plan_exempt else self._strategy_preflight(room, zone, datetime.now())
         if strategy_hold:
-            log(f"[{room.slug}] Z{zone} shot held: {strategy_hold}")
+            self._say(room, zone, f"shot held: {strategy_hold}")
             return
         # Freeze hydraulic sizing before opening hardware. Editing plant count,
         # substrate or dripper configuration mid-shot must not rewrite its litres.
@@ -3450,12 +3532,12 @@ class Controller:
                 continue
             close, left, unsure, why = self._inflight_plan(room, rec, reads)
             if close and not self._switch_off_confirmed(close):
-                log(f"[{room.slug}] stopping: {', '.join(close)} not confirmed OFF - left recorded for the next start")
+                self._say(room, None, f"stopping: {', '.join(close)} not confirmed OFF, left recorded for the next start")
                 continue
             if close:
-                log(f"[{room.slug}] stopping: switched off {', '.join(close)} (the shot in flight)")
+                self._say(room, None, f"stopping: switched off {', '.join(close)} (the shot in flight)")
             if left:
-                log(f"[{room.slug}] stopping: left {', '.join(left)} alone ({why})")
+                self._say(room, None, f"stopping: left {', '.join(left)} alone ({why})")
             if not unsure:
                 room.shot_inflight = None
 
@@ -3583,9 +3665,9 @@ class Controller:
                 zone=zone,
             )
         if fire and block:
-            log(
-                f"[{room.slug}] Z{zone} {st['phase']} BLOCKED ({block}): would {reason}"
-            )
+            what, why = log_words.shot(reason)
+            self._say(room, zone, f"{st['phase']} · {self._readings(room, zone, snap)} · held: {block}, "
+                                  f"instead of a {what} ({why})")
         elif fire:
             flow = self._zone_flow_lps(room, zone)
             substrate = self._substrate_l(room, zone)
@@ -3634,12 +3716,18 @@ class Controller:
                 if allowed < MIN_SHOT_S:
                     held = f"BLOCK daily-cap ({max(left_l, 0.0):.2f} L left)"
                     self._alert_daily_cap(room, zone, st, snap is None, held)
-                    log(f"[{room.slug}] Z{zone} {st['phase']} hold — {held}: would {reason}")
+                    what, why = log_words.shot(reason)
+                    self._say(room, zone, f"{st['phase']} · {self._readings(room, zone, snap)} · held: the daily "
+                                          f"water limit is spent ({max(left_l, 0.0):.2f} L left), instead of a "
+                                          f"{what} ({why})")
                     return False, 0.0, held
                 if dur > allowed:
-                    log(f"[{room.slug}] Z{zone} shot clipped {dur}s -> {allowed}s: {left_l:.2f} L of the daily budget left")
+                    self._say(room, zone, f"shot cut from {dur} s to {allowed} s: {left_l:.2f} L of the "
+                                          "daily water limit left")
                     size, dur = round(size * allowed / dur, 2), allowed
-            log(f"[{room.slug}] Z{zone} {st['phase']} FIRE {size}% ~{dur}s — {reason}")
+            what, why = log_words.shot(reason)
+            self._say(room, zone, f"{st['phase']} {what} {log_words.amount(size)}% for {dur} s "
+                                  f"(~{flow * dur:.1f} L): {why}")
             # Count configured flow x actual runtime, including caps, truncation,
             # the minimum duration and partial aborts. Preserve this flow snapshot
             # so later sizing edits cannot change an already delivered volume.
@@ -3665,10 +3753,18 @@ class Controller:
                     room=room,
                     zone=zone,
                 )
-            # A gate that is closed is said out loud in every phase: overnight nothing is due, and a
-            # room blocked since a restart used to look exactly like a healthy one until lights-on.
-            log(f"[{room.slug}] Z{zone} {st['phase']} hold — {reason}"
-                + (f" [blocked: {block}]" if block else ""))
+            # Every minute, each zone's readings and what it waits for. A gate that is closed is said
+            # out loud in every phase: overnight nothing is due, and a room blocked since a restart used
+            # to look exactly like a healthy one until lights-on.
+            held = [text for text in (log_words.hold(reason), block) if text]
+            waiting = (getattr(room, "_waiting", None) or {}).get(zone)
+            upcoming = next_text(*waiting) if waiting else ""
+            self._say(room, zone, " · ".join(
+                [st["phase"], self._readings(room, zone, snap)]
+                + [f"held: {text}" for text in held]
+                + ([] if held else ["holding"])
+                + ([f"next: {upcoming}"] if upcoming else [])
+            ))
 
     def _alert_daily_cap(self, room, zone, st, blind, detail):
         """CS-205. A zone with a working probe still gets its rescue shots past its daily limit; a zone
@@ -3813,7 +3909,7 @@ class Controller:
         st["phase"], st["last_phase_change"] = wanted, now
         tag = "" if room.prefix == "" else f"{room.slug} "
         self._activity.insert(0, f"{now.strftime('%H:%M')} {tag}Z{zone} phase {was} -> {wanted}, set by hand"[:120])
-        log(f"[{room.slug}] Z{zone} phase {was} -> {wanted}: set by hand")
+        self._say(room, zone, f"{was} → {wanted}: set by hand")
         self._save_state()
 
     def _strategy_preflight(self, room, zone, now):
@@ -3940,6 +4036,7 @@ class Controller:
                 new_phase, new_thr, fire, size, reason = decide(snap, p)
             shown = snap  # what waiting_for reads: the snapshot, in the phase the zone is now in
             if new_phase != st["phase"]:
+                self._say(room, zone, f"{st['phase']} → {new_phase}: {log_words.transition(reason)}")
                 if new_phase == "P0":
                     st["daily_vol"], st["shots"], st["peak"] = 0.0, 0, snap.vwc
                     st["ec_offset"], st["last_ec_steer"] = 0.0, None

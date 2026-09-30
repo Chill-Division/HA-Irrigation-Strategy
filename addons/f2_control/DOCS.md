@@ -20,6 +20,18 @@ The controller retains interlock holds, duration/daily-volume caps and hardware 
 
 Water cards distinguish total substrate capacity from all-plant zone litres and average mL per plant. The runtime calculator includes whole-second timing, the minimum shot and duration cap. Phase estimates also disclose engine parameter limits. New delivery counters use configured flow captured per shot and elapsed runtime, including partial aborts; historical totals are preserved.
 
+## Its log
+
+The app's **Log** tab has a line a minute for every zone, each dated and named as you named the room and zone: its phase, moisture, EC and water today, and what it waits for next. A phase change says why; a shot says what kind it is, how long it runs, about how much water it gives and why; a setting change says who made it, a person as Home Assistant knows them, Auto setpoints, or an automation by its name.
+
+```
+2026-10-01 06:59:02 GR2 · Bench 1 (Z1) · P3 · VWC 61.2% · EC 2.9 · 0.0 L today · holding · next: rescue shot if VWC < 35% (now 61%) · P0 at 07:00
+2026-10-01 07:00:03 GR2 · Bench 1 (Z1) · P3 → P0: lights on
+2026-10-01 07:01:04 GR2 · Bench 1 (Z1) · P0 → P1: VWC 61% is at or under the maintenance trigger (63%), no morning dryback needed
+2026-10-01 07:01:04 GR2 · Bench 1 (Z1) · P1 ramp shot 2.5% for 72 s (~0.9 L): VWC 61% under the 88% peak target
+2026-10-01 07:04:12 GR2 · Bench 1 (Z1) · Sam raised Most P1 shots to 10 (was 6)
+```
+
 ## Updating
 
 Update the integration and this app together. Use **Update** or **Rebuild** to include new Python code; restarting an old image does not rebuild it. Preserve persistent data and export plans before upgrades. See the installation guide for rollback instructions.
