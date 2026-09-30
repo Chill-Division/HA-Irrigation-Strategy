@@ -205,6 +205,7 @@ describe("inside Home Assistant", () => {
   function homeAssistant() {
     const ha: States = { ...createDemo(), "light.kitchen": entity("light.kitchen", "on") };
     const calls: string[] = [];
+    const logbook: Record<string, unknown>[] = [];
     const listeners = new Map<string, () => void>();
     let push: ((update: EntityUpdate) => void) | undefined;
     const connection = {
@@ -225,6 +226,7 @@ describe("inside Home Assistant", () => {
         calls.push(`${method} ${path}`);
         if (path === "states") return Object.values(ha);
         if (path.startsWith("history/period/")) return [];
+        if (path.startsWith("logbook/")) return logbook;
         return ha[decodeURIComponent(path.slice("states/".length))];
       }),
       callService: vi.fn(
@@ -258,6 +260,7 @@ describe("inside Home Assistant", () => {
     return {
       ha,
       calls,
+      logbook,
       connection,
       session,
       push: (update: EntityUpdate) => push!(update),
@@ -273,6 +276,65 @@ describe("inside Home Assistant", () => {
     await vi.advanceTimersByTimeAsync(0);
     return { home, store };
   }
+  it("reads who changed a setting over the websocket, and knows who is signed in", async () => {
+    vi.useFakeTimers();
+    const home = homeAssistant();
+    Object.assign(home.session, { user: { id: "u9", name: "Admin" } });
+    home.connection.sendMessagePromise.mockImplementation(async (message) =>
+      message.type === "logbook/get_events"
+        ? [{ when: 1_790_000_000, entity_id: TARGET, state: "64", context_user_id: "u9" }]
+        : {},
+    );
+    const store = new ControllerStore(false);
+    store.start();
+    await vi.advanceTimersByTimeAsync(0);
+    const snapshot = store.getSnapshot();
+    expect(snapshot.viewer).toEqual({ id: "u9", name: "Admin" });
+    const end = Date.now(),
+      start = end - 3_600_000;
+    expect(await snapshot.logbook({ entityIds: [TARGET], start, end })).toEqual([
+      {
+        entityId: TARGET,
+        time: 1_790_000_000_000,
+        state: "64",
+        userId: "u9",
+        eventType: null,
+        source: null,
+      },
+    ]);
+    expect(home.connection.sendMessagePromise).toHaveBeenCalledWith({
+      type: "logbook/get_events",
+      start_time: new Date(start).toISOString(),
+      end_time: new Date(end).toISOString(),
+      entity_ids: [TARGET],
+    });
+    await expect(snapshot.logbook({ entityIds: ["light.kitchen"], start, end })).rejects.toThrow(
+      /selected room/,
+    );
+    store.stop();
+  });
+  it("reads who changed a setting over REST where the websocket takes no commands", async () => {
+    vi.useFakeTimers();
+    const home = homeAssistant();
+    Reflect.deleteProperty(home.connection, "sendMessagePromise");
+    home.logbook.push({
+      when: "2026-09-22T07:04:12+00:00",
+      entity_id: TARGET,
+      state: "64",
+      context_event_type: "automation_triggered",
+      context_name: "Morning tweak",
+    });
+    const store = new ControllerStore(false);
+    store.start();
+    await vi.advanceTimersByTimeAsync(0);
+    const end = Date.now(),
+      start = end - 3_600_000;
+    const [entry] = await store.getSnapshot().logbook({ entityIds: [TARGET], start, end });
+    expect(entry).toMatchObject({ eventType: "automation_triggered", source: "Morning tweak" });
+    const query = new URLSearchParams({ end_time: new Date(end).toISOString(), entity: TARGET });
+    expect(home.calls).toContain(`GET logbook/${new Date(start).toISOString()}?${query}`);
+    store.stop();
+  });
   it("downloads everything once, then subscribes to what it reads", async () => {
     const { home, store } = await started();
     expect(home.fullFetches()).toBe(1);

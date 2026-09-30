@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🌱 In plain English
 
+- **Today's events say who changed a setting, and what it was.** A change reads "Sam raised Most
+  P1 shots to 10 (was 6)" or "Auto setpoints lowered Maintenance trigger to 63.3% (was 71.3%)",
+  under the zone's own name. It said "Zone 1 · Maintenance shot when below 71.3 → 63.3 %", whoever
+  made it and whatever the zone is called. A person is named as Home Assistant knows them, an
+  automation or a script by its name, and the controller's own adjustments as Auto setpoints.
 - **The controller's log says what it is doing, when, and in plain words.** Every line starts with
   the date and time and names the room and zone as you named them. Each zone writes a line a minute
   with its moisture, EC and water today and what it is waiting for; a phase change says why ("P3 →
@@ -22,6 +27,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Technical notes
 
+- The grow day reads who made each setting change from Home Assistant's logbook, which records the
+  user behind every state change: `logbook/get_events` over the websocket inside Home Assistant,
+  `/api/logbook` over REST standalone (`Controller.logbook`, the selected room's entities only).
+  `changedBy` (`day-timeline.ts`) names an entry's `context_event_type` `automation_triggered` /
+  `script_started` by its `context_name`, a `context_user_id` by that user's person (`person.*`'s
+  `user_id`) or, for an account without one, the signed-in user (`hass.user`, as
+  `Controller.viewer`), and any other user on a zone's `p1_target_vwc`, `field_capacity`,
+  `p2_vwc_threshold` or `p3_emergency_vwc_threshold` as Auto setpoints, which writes only those and
+  through the Supervisor's user. It is read once the day's changes are known and again when one
+  more appears; a failed read shows the changes without a name. `changeSentence` words it, with a
+  setting's `short` name (new on `Setting`). The demo has a grower, `person.alex`, and
+  `demoLogbook`. `tests_ha/test_logbook_names_who.py` changes a real room's trigger as a signed-in
+  user, as the Supervisor and from an automation, and reads all three back both ways.
 - `log()` starts each line with the local date and time (the `[controller]` tag it had is gone), and
   `_say` names the room and zone as the notifications do (`_where`). The words are `log_words.py`'s:
   decide()'s transition, shot and hold texts said for a person by `Reason.kind`, anything unknown

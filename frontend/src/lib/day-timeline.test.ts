@@ -3,6 +3,8 @@ import {
   alignBands,
   appendLive,
   atHour,
+  changedBy,
+  changeSentence,
   compareDays,
   dayTrace,
   dryDown,
@@ -17,7 +19,9 @@ import {
   morningDryback,
   nextShot,
   NOT_REPORTING,
+  logbookEntries,
   openSeconds,
+  peopleByUser,
   phaseAt,
   phaseBands,
   phaseTargets,
@@ -40,7 +44,7 @@ import {
   type Shot,
   type TimelineRow,
 } from "./day-timeline";
-import { createDemo, demoDay } from "./demo";
+import { createDemo, demoDay, demoLogbook } from "./demo";
 import { buildRoom, discoverRooms } from "./model";
 import type { EntityState } from "./types";
 
@@ -371,6 +375,148 @@ describe("setpoint changes", () => {
     expect(levels(rows, START, at("23:00:00"))).toEqual([
       { value: 30.2, start: START, end: at("22:10:00") },
       { value: 31, start: at("22:20:00"), end: at("23:00:00") },
+    ]);
+  });
+});
+
+describe("who changed a setting", () => {
+  const trigger = "number.crop_steering_zone_1_p2_vwc_threshold";
+  const shots = "number.crop_steering_zone_1_p1_maximum_shots";
+  const change = { entityId: trigger, time: at("07:04:12"), from: 71.3, to: 63.3 };
+  const entry = (fields: Partial<ReturnType<typeof logbookEntries>[number]> = {}) => ({
+    entityId: trigger,
+    time: at("07:04:12") + 300,
+    state: "63.3",
+    userId: null,
+    eventType: null,
+    source: null,
+    ...fields,
+  });
+  it("reads Home Assistant's logbook over REST and over its websocket", () => {
+    expect(
+      logbookEntries([
+        {
+          when: "2026-09-22T07:04:12.300000+00:00",
+          entity_id: trigger,
+          state: "63.3",
+          context_user_id: "u1",
+        },
+        {
+          when: at("07:05:00") / 1000,
+          entity_id: shots,
+          state: "10",
+          context_event_type: "automation_triggered",
+          context_name: "Morning tweak",
+        },
+        { when: "2026-09-22T07:06:00Z", name: "An entry with no state", message: "started" },
+      ]),
+    ).toEqual([
+      entry({ userId: "u1" }),
+      {
+        entityId: shots,
+        time: at("07:05:00"),
+        state: "10",
+        userId: null,
+        eventType: "automation_triggered",
+        source: "Morning tweak",
+      },
+    ]);
+    expect(logbookEntries({ message: "not a list" })).toEqual([]);
+  });
+  it("names a user by their person, or the signed-in user's own name", () => {
+    const person = (user_id: unknown, friendly_name?: string) =>
+      ({ entity_id: "", state: "home", attributes: { user_id, friendly_name } }) as EntityState;
+    const people = peopleByUser(
+      {
+        "person.sam": person("u1", "Sam"),
+        "person.guest": person(null, "Guest"),
+        "person.robin": person("u2"),
+      },
+      { id: "u3", name: "Admin" },
+    );
+    expect([...people]).toEqual([
+      ["u1", "Sam"],
+      ["u2", "robin"],
+      ["u3", "Admin"],
+    ]);
+    // A person's name wins over the account's.
+    expect(peopleByUser({ "person.sam": person("u1", "Sam") }, { id: "u1", name: "sam2" })).toEqual(
+      new Map([["u1", "Sam"]]),
+    );
+  });
+  it("says who: an automation or script by name, a person, or Auto setpoints", () => {
+    const people = new Map([["u1", "Sam"]]);
+    const who = (fields: Parameters<typeof entry>[0], setting = change) =>
+      changedBy(setting, [entry({ entityId: setting.entityId, ...fields })], people);
+    expect(who({ userId: "u1" })).toBe("Sam");
+    expect(who({ eventType: "automation_triggered", source: "Morning tweak", userId: "u1" })).toBe(
+      "Automation “Morning tweak”",
+    );
+    expect(who({ eventType: "script_started", source: "Flush" })).toBe("Script “Flush”");
+    expect(who({ eventType: "automation_triggered" })).toBe("An automation");
+    // The controller writes as Home Assistant's Supervisor, nobody's person, and only a zone's four
+    // moisture levels.
+    expect(who({ userId: "supervisor" })).toBe("Auto setpoints");
+    const room = { ...change, entityId: "number.crop_steering_f1_p2_vwc_threshold" };
+    expect(who({ userId: "supervisor" }, room)).toBe(null);
+    const other = { ...change, entityId: shots, to: 10 };
+    expect(who({ userId: "supervisor", state: "10" }, other)).toBe(null);
+    expect(who({})).toBe(null);
+  });
+  it("matches the entry of that change only", () => {
+    const people = new Map([["u1", "Sam"]]);
+    // Another setting, another value, or a minute away is another change.
+    for (const fields of [{ entityId: shots }, { state: "60" }, { time: at("07:05:12") }])
+      expect(changedBy(change, [entry({ userId: "u1", ...fields })], people)).toBe(null);
+    // The nearest of two.
+    expect(
+      changedBy(
+        change,
+        [entry({ userId: "u2", time: at("07:04:13") + 900 }), entry({ userId: "u1" })],
+        new Map([
+          ["u1", "Sam"],
+          ["u2", "Robin"],
+        ]),
+      ),
+    ).toBe("Sam");
+  });
+  it("says it in one sentence: who, which way, the new value and the one it replaced", () => {
+    expect(changeSentence("Most P1 shots", "", 6, 10, "Sam")).toBe(
+      "Sam raised Most P1 shots to 10 (was 6)",
+    );
+    expect(changeSentence("Maintenance trigger", "%", 71.3, 63.3, "Auto setpoints")).toBe(
+      "Auto setpoints lowered Maintenance trigger to 63.3% (was 71.3%)",
+    );
+    expect(changeSentence("Maximum EC", "mS/cm", 8.5, 9, null)).toBe(
+      "Maximum EC raised to 9 mS/cm (was 8.5 mS/cm)",
+    );
+    expect(changeSentence("Time between P1 shots", "min", 15, 12.345, null)).toBe(
+      "Time between P1 shots lowered to 12.35 min (was 15 min)",
+    );
+  });
+  it("names who made the demo day's changes", () => {
+    const now = at("16:00:00"),
+      states = createDemo(now);
+    const day = growDay(10, 22, now)!;
+    const ids = [
+      "number.crop_steering_zone_1_p1_target_vwc",
+      "number.crop_steering_zone_2_maximum_ec",
+    ];
+    const rows = demoDay(
+      states,
+      { entityIds: ids, attributeIds: [], start: day.start, end: now },
+      now,
+    );
+    const entries = demoLogbook(states, { entityIds: ids, start: day.start, end: now }, now);
+    const people = peopleByUser(states);
+    expect(
+      setpointChanges(rows, ids, day.start, now).map((item) => [
+        item.entityId.slice("number.crop_steering_".length),
+        changedBy(item, entries, people),
+      ]),
+    ).toEqual([
+      ["zone_1_p1_target_vwc", "Auto setpoints"],
+      ["zone_2_maximum_ec", "Alex"],
     ]);
   });
 });

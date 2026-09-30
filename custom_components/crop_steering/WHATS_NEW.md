@@ -23,6 +23,7 @@ version being released.
 
 ## Unreleased
 
+- Today's events say who changed a setting (you, Auto setpoints or an automation) and what it was before.
 - The controller app's log is dated, names your rooms and zones, says what each zone is waiting for, and who changed a setting.
 
 ## 2.29.0 - 2026-09-30

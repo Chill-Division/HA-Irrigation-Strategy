@@ -1,4 +1,11 @@
-import type { TimelineRequest, TimelineRow, TimelineRows } from "./day-timeline";
+import {
+  setpointChanges,
+  type LogbookEntry,
+  type LogbookRequest,
+  type TimelineRequest,
+  type TimelineRow,
+  type TimelineRows,
+} from "./day-timeline";
 import type { EntityState, LogEvent, Series, States } from "./types";
 import type { CounterSample, WaterRecordRequest } from "./water-use";
 import { addDays, daysBetween } from "./comparison";
@@ -317,7 +324,32 @@ export function createDemo(now = Date.now()): States {
       events: events.sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
     });
   }
+  // The person behind the demo day's own setting changes (demoLogbook).
+  put("person.alex", "home", { friendly_name: "Alex", user_id: DEMO_GROWER });
   return states;
+}
+
+/** The demo grower's Home Assistant user, and the one Auto setpoints writes as: Home Assistant's
+ * Supervisor, which is nobody's person. */
+const DEMO_GROWER = "demo-grower",
+  DEMO_SUPERVISOR = "demo-supervisor";
+
+/** The logbook of the demo day's setting changes: the peak target Auto setpoints moved (its
+ * sensor's last change), everything else the demo grower. */
+export function demoLogbook(
+  states: States,
+  request: LogbookRequest,
+  now = Date.now(),
+): LogbookEntry[] {
+  const rows = demoDay(states, { ...request, attributeIds: [] }, now);
+  return setpointChanges(rows, request.entityIds, request.start, request.end).map((change) => ({
+    entityId: change.entityId,
+    time: change.time,
+    state: String(change.to),
+    userId: change.entityId.endsWith("_p1_target_vwc") ? DEMO_SUPERVISOR : DEMO_GROWER,
+    eventType: null,
+    source: null,
+  }));
 }
 /** A demo zone with two probes of each kind, one each end, their average its reading, and the
  * zone's choice of how to read them, as the integration publishes them (sensor.py, select.py). */

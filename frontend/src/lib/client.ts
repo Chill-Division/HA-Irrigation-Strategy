@@ -1,6 +1,12 @@
 import { loadHistoryWindow } from "./comparison-history";
 import type { HistoryRequest } from "./comparison-types";
-import type { TimelineRequest, TimelineRows } from "./day-timeline";
+import {
+  logbookEntries,
+  type LogbookEntry,
+  type LogbookRequest,
+  type TimelineRequest,
+  type TimelineRows,
+} from "./day-timeline";
 import type { OperatorAction } from "./operator-types";
 import type { Change, EntityState, RoomView, Series, States, WriteResult } from "./types";
 import { numeric, validateChange } from "./model";
@@ -11,6 +17,8 @@ export interface HassSession {
   callService: (domain: string, service: string, data: Record<string, unknown>) => Promise<unknown>;
   /** Home Assistant's own websocket (`hass.connection`); see live.ts. */
   connection?: unknown;
+  /** The signed-in Home Assistant user. */
+  user?: { id?: string; name?: string };
 }
 export function findSession(base?: string): HassSession | undefined {
   if (typeof window === "undefined") return;
@@ -250,6 +258,22 @@ export class HaClient {
       ...(await read(request.entityIds, false)),
       ...(await read(request.attributeIds, true)),
     };
+  }
+  /** Some entities' logbook lines over a span, with who or what made each change: in requests
+   * short enough for any URL limit, like the day's history. */
+  async logbook(request: LogbookRequest): Promise<LogbookEntry[]> {
+    const entries: LogbookEntry[] = [];
+    for (let index = 0; index < request.entityIds.length; index += 40) {
+      const query = new URLSearchParams({
+        end_time: new Date(request.end).toISOString(),
+        entity: request.entityIds.slice(index, index + 40).join(","),
+      });
+      const start = new Date(request.start).toISOString();
+      entries.push(
+        ...logbookEntries(await this.request<unknown>("GET", `logbook/${start}?${query}`)),
+      );
+    }
+    return entries;
   }
   async history(
     entityIds: string[],

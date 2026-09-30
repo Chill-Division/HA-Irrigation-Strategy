@@ -767,6 +767,35 @@ try {
     }
     await night.close();
   });
+  await check("overview: today's events say who changed a setting, and what it was", async () => {
+    // The demo day at 4 PM: Auto setpoints moved zone 1's peak target, and the demo's grower raised
+    // zone 2's maximum EC, which ended its high-EC hold.
+    const pinned = await context.newPage();
+    pinned.on("pageerror", (error) => pageErrors.push(error.message));
+    await pinned.clock.setFixedTime(new Date(2026, 8, 20, 16, 0, 0));
+    await pinned.goto(`${base}/dashboard.html?demo&room=room:#/overview`, {
+      waitUntil: "networkidle",
+    });
+    const events = pinned.locator(".timeline-events");
+    await events.locator("summary").click();
+    await pinned.waitForFunction(() =>
+      [...document.querySelectorAll(".timeline-events li")].some((item) =>
+        item.textContent.includes(" Auto setpoints "),
+      ),
+    );
+    const changes = (await events.locator("li").allInnerTexts()).filter((line) =>
+      / (raised|lowered) /.test(line),
+    );
+    for (const expected of [
+      / · Zone 1 · Auto setpoints lowered Peak target to 64% \(was 66%\)$/,
+      / · Zone 2 · Alex raised Maximum EC to 9 mS\/cm \(was 8\.5 mS\/cm\)$/,
+    ])
+      assert.ok(
+        changes.some((line) => expected.test(line)),
+        `${expected} in:\n${changes.join("\n")}`,
+      );
+    await pinned.close();
+  });
   await check("water today: per plant is the room's choice, made in Settings", async () => {
     const cells = () => page.locator(".zone-table-desktop .water-use").allInnerTexts();
     // Within the visit, not a reload: the demo keeps each room's choice as Home Assistant would.

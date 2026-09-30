@@ -46,7 +46,7 @@ Use **Settings → Sample workspace → Reset demo session…** and review the c
 
 ## Read a room
 
-**Overview** is the room now: its room and watering switches, alerts, today's totals, the grow-day timeline, each zone's state and readings, and the tank. A zone's name opens its detail panel. The **?** beside **Today's grow day** says how to read the chart: point at or tap it for the details of any moment. **Insights → Water** has water use over the grow, today's water per plant and a shot calculator. The latest controller records open beside any page from the top bar.
+**Overview** is the room now: its room and watering switches, alerts, today's totals, the grow-day timeline, each zone's state and readings, and the tank. A zone's name opens its detail panel. The **?** beside **Today's grow day** says how to read the chart: point at or tap it for the details of any moment. **Today's events**, under the chart, lists the day in order: phase changes, shots, holds, and each setting change with who made it (a person as Home Assistant knows them, **Auto setpoints**, or an automation by its name) and the value it replaced. **Insights → Water** has water use over the grow, today's water per plant and a shot calculator. The latest controller records open beside any page from the top bar.
 
 | Indicator                     | Meaning                                                                                                                                                             |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
