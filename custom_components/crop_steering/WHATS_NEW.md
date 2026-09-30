@@ -21,7 +21,7 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
-## Unreleased
+## 2.29.0 - 2026-09-30
 
 - Set how long your pump runs before a zone's valve opens, for a pump that takes a few seconds to reach pressure.
 - A shorter menu of six: pages that belong together are tabs, and the room and watering switches are on the Overview.
