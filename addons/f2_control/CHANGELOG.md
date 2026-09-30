@@ -1,3 +1,7 @@
+# Unreleased
+
+- **Links go to Chill-Division/HA-Irrigation-Strategy**: the app's `url` and its Documentation tab. **The dashboard the app serves:** the setup page's install buttons and What's new's release notes link, and **Add controller repository** now opens the right My Home Assistant link. No change to the controller.
+
 # 2.28.0
 
 Pair with integration 2.28.0.

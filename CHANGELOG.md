@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **HACS and the app store name Chill-Division as the maintainer.** They named JakeTheRabbit, who
   started Crop Steering, so an installation from this repository looked like one of theirs.
   Nothing else changes.
+- **Links go to Chill-Division, Crop Steering's public home.** The README (its demo, screenshots
+  and install buttons), the integration's documentation and issue links, **Learn more** on
+  Repairs cards, the app store, the setup page's install buttons and the release notes link in
+  What's new all pointed at JakeTheRabbit's or the maintainer's own repository. The setup page's
+  **Add controller repository** button now works: it opened a link Home Assistant does not have.
+  The GitHub Sponsor button, which went to JakeTheRabbit, is gone.
 
 ### 🔧 Technical notes
 
@@ -23,6 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   manifest of the latest release. `repository.yaml` `maintainer` is `Chill-Division`, which the app
   store lists for the repository. The manifest's `documentation` and `issue_tracker` links and
   `repository.yaml`'s `url` are unchanged.
+- Links to `JakeTheRabbit/HA-Irrigation-Strategy`, `jaketherabbit.github.io` and the
+  `ChillingSilence` releases and images point at `Chill-Division/HA-Irrigation-Strategy`:
+  `manifest.json` `documentation` / `issue_tracker`, `const.REPAIRS_DOCS_URL`, both `url:` fields,
+  `DOCS.md`, `setup.tsx`, `whats-new.ts` `RELEASES_URL`, README, INSTALL, USER_GUIDE,
+  SCREENSHOTS, the MCP README and the Pages workflow comment. `setup.tsx`'s app-store button uses
+  `supervisor_add_addon_repository` (was `supervisor_addon_repository`, not a My Home Assistant
+  redirect). INSTALL's move section covers a controller from either of JakeTheRabbit's
+  repositories: this repository's app is `f50c47e4_f2_control`. `.github/FUNDING.yml` is removed.
 
 ## [2.28.0] - 2026-09-29
 
