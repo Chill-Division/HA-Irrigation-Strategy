@@ -44,7 +44,7 @@ It runs inside [Home Assistant](https://www.home-assistant.io/) and works with t
 
 The **Overview** draws today's grow day for every zone, from lights-on to the next lights-on: the phase each zone was in, every shot, what held a zone back and for how long, and every setting change. On top of that it shows the **target** each phase was aiming for, **yesterday's line** for comparison, and a dashed **projection** of the rest of the day. One line per zone sums it up in numbers, for example "58% now, +0.4 points vs yesterday, P1 target reached 11:16".
 
-Under it, **Zones at a glance** shows each zone's moisture against its target, how fast it is drying, today's water against its daily limit, and whether its valve is open, all as small visual bars and coloured pills. The **tank card** shows the batch tank's level, EC, pH and temperature, with a 24-hour line for EC and pH and a History view going back 30 days.
+Under it, the **Zones** table shows each zone's moisture against its target, how fast it is drying, today's water against its daily limit, and whether its valve is open, all as small visual bars and coloured pills. The **tank card** shows the batch tank's level, EC, pH and temperature, with a 24-hour line for EC and pH and a History view going back 30 days.
 
 ### Set targets against what the zone actually does
 
@@ -62,31 +62,31 @@ Every change is a draft until you review it. The draft line moves on the graph s
 
 ### Know how much water each zone uses
 
-The **Zones** page shows every zone's water today, this week, since the grow started, litres per grow week, and an estimate for the whole grow. It reads Home Assistant's long-term statistics, so the history goes back as far as your system does.
+**Insights, Water** shows every zone's water today (also per plant), this week, since the grow started, litres per grow week, and an estimate for the whole grow. It reads Home Assistant's long-term statistics, so the history goes back as far as your system does.
 
 ![Water use per zone: today, this week, this grow and an estimate for the whole grow](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/water-use.png)
 
 ### Mix your nutrient batches
 
-The **Reservoir** page runs the room's nutrient batches with your own dosers. When the reservoir reads almost empty with automatic batches on, or when you ask for a batch, the controller refills it with fresh water for your fill time, starts the pump and the recirculation line, then runs each doser in turn for its dose, in the order you drag them into, and keeps mixing. Keep a feed recipe for each growth stage, with its ratio off the nutrient chart (Athena Flower is 3 Core : 5 Bloom : 1 Balance : 0.5 Cleanse), and the page works out each doser's millilitres and run time for your batch size. Watering waits while a batch runs, and anything that goes wrong switches everything off and tells you what went in.
+**Feed, Reservoir** runs the room's nutrient batches with your own dosers. When the reservoir reads almost empty with automatic batches on, or when you ask for a batch, the controller refills it with fresh water for your fill time, starts the pump and the recirculation line, then runs each doser in turn for its dose, in the order you drag them into, and keeps mixing. Keep a feed recipe for each growth stage, with its ratio off the nutrient chart (Athena Flower is 3 Core : 5 Bloom : 1 Balance : 0.5 Cleanse), and the page works out each doser's millilitres and run time for your batch size. Watering waits while a batch runs, and anything that goes wrong switches everything off and tells you what went in.
 
 ![The Reservoir page: a batch's steps, the reservoir level, automatic batches and the feed stage in use](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/reservoir.png)
 
 ### Keep the nutrient stock topped up
 
-The **Stock tanks** page tracks the concentrates each batch tank is dosed from. Tell it each tank's size and, if its bottle is on one of the Reservoir's dosers, which one: every batch the Reservoir mixes then takes what that doser gave. A tank on no doser takes a set amount from each batch you record. When one runs low you get a Repairs card and an Overview notice saying roughly how many batches are left, and a sensor you can use for a phone alert. Press **Refilled** when you top it up.
+**Feed, Stock tanks** tracks the concentrates each batch tank is dosed from. Tell it each tank's size and, if its bottle is on one of the Reservoir's dosers, which one: every batch the Reservoir mixes then takes what that doser gave. A tank on no doser takes a set amount from each batch you record. When one runs low you get a Repairs card and an Overview notice saying roughly how many batches are left, and a sensor you can use for a phone alert. Press **Refilled** when you top it up.
 
 ![Stock tanks with their levels, low marks and batches left](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/stock-tanks.png)
 
 ### Compare runs
 
-**Compare runs** lines up recorded days, weeks or a whole run against an earlier run at the same age, or against a target reference, so you can see whether this grow is tracking the last good one.
+**Insights, Compare runs** lines up recorded days, weeks or a whole run against an earlier run at the same age, or against a target reference, so you can see whether this grow is tracking the last good one.
 
 ![Moisture and EC compared against a previous run](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/run-comparison.png)
 
 ### Set up rooms without YAML
 
-**Rooms & setup** maps the Home Assistant entities you already have: valves, pump, main line, moisture and EC probes, tank sensors. You enter each zone's pot size, plant count and drippers. Every save is checked first (units, duplicate valves, everything off before a change) and the controller confirms it has picked the new setup up.
+**Settings, Rooms & hardware** maps the Home Assistant entities you already have: valves, pump, main line, moisture and EC probes, tank sensors. You enter each zone's pot size, plant count and drippers. Every save is checked first (units, duplicate valves, everything off before a change) and the controller confirms it has picked the new setup up.
 
 ![Rooms and zones with their sensor mapping](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/rooms-setup.png)
 
@@ -97,7 +97,7 @@ The **Stock tanks** page tracks the concentrates each batch tank is dosed from. 
 
 ![The Overview on a phone](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/mobile-overview.png)
 
-**Room off.** Switch an empty room off: readings stay visible, but there is no watering of any kind and no alerts. Switching it back on starts a clean day at the right point.
+**Room off.** Switch an empty room off from its Overview: readings stay visible, but there is no watering of any kind and no alerts. Switching it back on starts a clean day at the right point.
 
 **Auto Setpoints (off by default).** The controller learns each zone from its own shots: the highest moisture the probe actually reaches, how much a shot raises it, and how fast it dries by day and night. With Auto Setpoints on, it keeps that zone's targets reachable in small, bounded steps, and never while a plan is in charge.
 
@@ -135,7 +135,7 @@ Both parts carry the same version number. Install and update them together.
    [![Open your Home Assistant instance and start setting up Crop Steering.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=crop_steering)
 3. **Add the controller app repository**, then install and start **Crop Steering Controller**.
    [![Open your Home Assistant instance and add this app repository.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FChill-Division%2FHA-Irrigation-Strategy)
-4. **Open Crop Steering in the sidebar.** Map your valves, pump and probes in **Rooms & setup**, check the readings in **Sensors**, and keep watering switched off until everything reads correctly.
+4. **Open Crop Steering in the sidebar.** Map your valves, pump and probes in **Settings, Rooms & hardware**, check the readings on the **Overview** and in **Insights**, and keep watering switched off until everything reads correctly.
 
 The buttons open the right screen; Home Assistant still asks you to confirm each step. Updates arrive the same way: HACS offers the integration and the app store offers the controller. The [install guide](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/INSTALL.md) covers manual installs, upgrades and rolling back.
 

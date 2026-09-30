@@ -2,7 +2,7 @@
 
 [Open the interactive demo](https://chill-division.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1).
 
-Captured on 25 September 2026 from the compiled application with isolated demo data and inherited Home Assistant dark-theme variables. These are current UI examples, not photographs or live facility readings.
+Captured in September 2026 from the compiled application with isolated demo data and inherited Home Assistant dark-theme variables. These are current UI examples, not photographs or live facility readings.
 
 ## Overview
 
@@ -12,15 +12,15 @@ Captured on 25 September 2026 from the compiled application with isolated demo d
 
 ![Graphical tank level, pump/fill reports and water-quality readings](../img/tank-status.png)
 
-## Water use per zone
+## Insights: water use per zone
 
 ![Today, this week, this grow and an estimate for the whole grow, with litres per grow week](../img/water-use.png)
 
-## Reservoir
+## Feed: Reservoir
 
 ![Nutrient batches: a batch's steps, the reservoir level, automatic batches and the feed stage in use](../img/reservoir.png)
 
-## Stock tanks
+## Feed: Stock tanks
 
 ![Nutrient stock tanks with their levels, low marks and batches left](../img/stock-tanks.png)
 
@@ -44,7 +44,7 @@ Captured on 25 September 2026 from the compiled application with isolated demo d
 
 ![Room off: readings shown, no irrigation and no alerts](../img/room-off.png)
 
-## Recorded run comparisons
+## Insights: Compare runs
 
 ![Compare VWC and EC over the same grow age](../img/run-comparison.png)
 
@@ -52,9 +52,9 @@ Captured on 25 September 2026 from the compiled application with isolated demo d
 
 ![Save and reuse your own plans as local drafts](../img/recipe-library.png)
 
-## Rooms and sensor mapping
+## Settings: Rooms & hardware
 
-![Room setup](../img/rooms-setup.png)
+![Rooms & hardware](../img/rooms-setup.png)
 
 ## Mobile overview
 

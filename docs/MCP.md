@@ -4,7 +4,7 @@ The [standalone MCP server](../mcp-server/README.md) lets an assistant inspect C
 
 ## Prerequisites and connection
 
-Install Crop Steering in Home Assistant and create the room in **Rooms & setup** first. The integration must expose response-bearing `crop_steering.setup_read`, `setup_save`, `strategy_get`, `strategy_preview`, `strategy_save`, and `runs_get` services. Setup services, and the services that save, arm or disarm a plan or change run records, require an authenticated Home Assistant administrator. Run this package on a computer that can reach that HA instance.
+Install Crop Steering in Home Assistant and create the room in **Settings → Rooms & hardware** first. The integration must expose response-bearing `crop_steering.setup_read`, `setup_save`, `strategy_get`, `strategy_preview`, `strategy_save`, and `runs_get` services. Setup services, and the services that save, arm or disarm a plan or change run records, require an authenticated Home Assistant administrator. Run this package on a computer that can reach that HA instance.
 
 Install Node.js 22 or newer, then build the server:
 
@@ -63,7 +63,7 @@ Call `preview_setup` with that payload. Allowed changes are:
 
 - `room_name` and existing zone `name`.
 - `plumbing`: how the room is plumbed, one of `valves_only`, `pump_valves`, `mainline_valves`, `pump_mainline_valves`. `get_room_configuration` returns the declared layout (`""` for a room that has never declared one) and `plumbing_inferred`, what its mapped switches imply.
-- Explicit `hardware` mappings supported by Rooms & setup: pump, mainline, waste, lights, ambient probes and dedicated tank telemetry.
+- Explicit `hardware` mappings supported by Rooms & hardware: pump, mainline, waste, lights, ambient probes and dedicated tank telemetry.
 - Existing zone `valve`, `vwc_sensors`, `ec_sensors`, `plant_count`, `substrate_volume`, `drippers_per_plant`, and `dripper_flow_rate`.
 
 Once a room has declared its plumbing, Home Assistant refuses a save whose pump or main-line mapping contradicts it, so **change `plumbing` and the mapping together in one proposal**: to take a pump out of a `pump_valves` room, send `{"plumbing": "valves_only", "hardware": {"pump_switch": ""}}`. The preview refuses either half on its own, before issuing a token, and says which switch disagrees. A room that has never declared its plumbing is not held to one, and these tools never declare one on the operator's behalf: only an explicit `plumbing` change does. A declaration can be changed but not withdrawn.

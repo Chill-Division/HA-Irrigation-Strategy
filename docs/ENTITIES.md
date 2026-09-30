@@ -198,11 +198,11 @@ The controller also publishes `sensor.f2_control_vitals`: the time of its last v
 
 ---
 
-## 6. Hardware (your own switches/sensors: mapped in Rooms & setup, not created here)
+## 6. Hardware (your own switches/sensors: mapped in Rooms & hardware, not created here)
 
 The pump, mainline solenoid, per-zone valve switches, and the raw VWC/EC sensors are **your**
 existing HA entities. Map them in the Crop Steering sidebar under
-**Rooms & setup**: the controller drives what the room's setup maps, and with nothing mapped
+**Settings → Rooms & hardware**: the controller drives what the room's setup maps, and with nothing mapped
 it holds every zone and says so. (The controller also reads a `hardware` map from its options
 file, for tests and hand-built development setups only: the app's Configuration tab doesn't
 offer it, and Supervisor rejects it as an unknown option.)
