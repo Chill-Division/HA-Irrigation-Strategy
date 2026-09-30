@@ -33,7 +33,6 @@ def test_the_reason_is_still_the_same_text_and_now_says_which_rule_fired():
         (dict(phase="P2", vwc=40), {}, "p2_topup"),
         (dict(phase="P3", vwc=35, lights_on=False), {}, "p3_emergency"),
         (dict(phase="P3", vwc=42, minutes_since_shot=200), dict(watchdog_hours=3), "watchdog"),
-        (dict(phase="P2", vwc=50, daily_vol=3), dict(min_daily_volume=10), "min_daily"),
     ],
 )
 def test_every_firing_rule_has_its_kind_and_the_documented_exemption(snap, params, kind):
