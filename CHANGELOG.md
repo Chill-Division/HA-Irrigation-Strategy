@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **HACS and the app store name Chill-Division as the maintainer.** They named JakeTheRabbit, who
   started Crop Steering, so an installation from this repository looked like one of theirs.
   Nothing else changes.
+- **The original author's old page addresses are gone.** `f2.html`, `office.html` and a dozen
+  others only redirected old bookmarks; so did the old room and page names in dashboard links
+  (`?room=f2`, `?view=climate`). The app's sidebar entry, the dashboard in the sidebar and the demo
+  site open as before.
 
 ### 🔧 Technical notes
 
@@ -23,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   manifest of the latest release. `repository.yaml` `maintainer` is `Chill-Division`, which the app
   store lists for the repository. The manifest's `documentation` and `issue_tracker` links and
   `repository.yaml`'s `url` are unchanged.
+- `frontend/scripts/package.mjs` writes `dashboard.html` to all three folders and `index.html` (keeps
+  query and hash, opens `#/overview`) to the app, whose ingress opens it, and to the Pages site. It
+  deletes any other page it finds there, so a page it stops writing cannot stay committed. The 13
+  stubs in `www/` and in the app, and the integration's `www/index.html`, are removed. `?room=`
+  resolves by room id only (`room:`, `room:f1_`), without the slug or `f2` aliases; `?view=` is
+  no longer read; Settings' Advanced workflows links go straight to their pages. `F1_ALIASES`, for
+  an old install's `sensor.crop_steering_system_*` ids, stays.
 
 ## [2.28.0] - 2026-09-29
 

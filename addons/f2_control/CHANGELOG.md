@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** only `dashboard.html` and the `index.html` its sidebar entry opens. The 13 pages that redirected the original author's old bookmarks (`f2.html`, `office.html`, …) are gone, and so are the old `?room=` and `?view=` names. No change to the controller.
+
 # 2.28.0
 
 Pair with integration 2.28.0.
