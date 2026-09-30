@@ -5,6 +5,7 @@
 - **The EC PID option is removed.** EC Stacking always takes its 1-point step; `input_boolean.crop_steering_ec_pid_enabled` and its gain helpers, which nothing here created, are no longer read. A zone's `ec_integral` and `ec_prev_err` are no longer kept: an old state file still loads, without them. The dashboard the app serves no longer mentions the option.
 - **The dashboard the app serves:** a zone added in Rooms & setup starts at a 3.2 L pot with one 4 L/hr dripper per plant. No change to the controller.
 - **Links go to Chill-Division/HA-Irrigation-Strategy**: the app's `url` and its Documentation tab. **The dashboard the app serves:** the setup page's install buttons and What's new's release notes link, and **Add controller repository** now opens the right My Home Assistant link. No change to the controller.
+- **The dashboard the app serves:** only `dashboard.html` and the `index.html` its sidebar entry opens. The 13 pages that redirected the original author's old bookmarks (`f2.html`, `office.html`, …) are gone, and so are the old `?room=` and `?view=` names. No change to the controller.
 
 # 2.28.0
 

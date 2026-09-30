@@ -3,20 +3,13 @@ import { buildRoom, discoverRooms, resolveRequestedRoom, validateChange } from "
 import { createDemo } from "./demo";
 
 describe("adapter review regressions", () => {
-  it("resolves only explicit unambiguous legacy room aliases", () => {
+  it("resolves a room by its id only, not by the old page names", () => {
     const states = createDemo();
-    expect(resolveRequestedRoom(discoverRooms(states), "f2")?.prefix).toBe("");
-    expect(resolveRequestedRoom(discoverRooms(states), "f1")?.prefix).toBe("f1_");
-    expect(resolveRequestedRoom(discoverRooms(states), "missing")).toBeUndefined();
-    states["sensor.crop_steering_f2_engine_config"] = {
-      entity_id: "sensor.crop_steering_f2_engine_config",
-      state: "ready",
-      attributes: { prefix: "f2_", slug: "f2", num_zones: 1 },
-    };
     const rooms = discoverRooms(states);
-    expect(resolveRequestedRoom(rooms, "f2")?.prefix).toBe("f2_");
     expect(resolveRequestedRoom(rooms, "room:")?.prefix).toBe("");
-    expect(resolveRequestedRoom(rooms, "room:f2_")?.prefix).toBe("f2_");
+    expect(resolveRequestedRoom(rooms, "room:f1_")?.prefix).toBe("f1_");
+    for (const old of ["f2", "f1", "missing"])
+      expect(resolveRequestedRoom(rooms, old)).toBeUndefined();
   });
   it("keeps default, named f2, and named default room identities distinct", () => {
     const states = createDemo();

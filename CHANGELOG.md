@@ -46,6 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Setup no longer imports a `crop_steering.env` file, and Configure no longer reloads one.** A
   room set up from one keeps working exactly as before: after setup it only ever ran on what was
   stored then. Change it in Configure or in Rooms & setup.
+- **The original author's old page addresses are gone.** `f2.html`, `office.html` and a dozen
+  others only redirected old bookmarks; so did the old room and page names in dashboard links
+  (`?room=f2`, `?view=climate`). The app's sidebar entry, the dashboard in the sidebar and the demo
+  site open as before.
 
 ### 🔧 Technical notes
 
@@ -103,6 +107,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `load_yaml` step, which no step led to. An entry with `config_method: "env"` loads unchanged:
   nothing read the key or the file at runtime, and nothing rewrites the entry.
   `test_upgrade_in_place` proves it on the env-era fixture, with no `crop_steering.env` present.
+- `frontend/scripts/package.mjs` writes `dashboard.html` to all three folders and `index.html` (keeps
+  query and hash, opens `#/overview`) to the app, whose ingress opens it, and to the Pages site. It
+  deletes any other page it finds there, so a page it stops writing cannot stay committed. The 13
+  stubs in `www/` and in the app, and the integration's `www/index.html`, are removed. `?room=`
+  resolves by room id only (`room:`, `room:f1_`), without the slug or `f2` aliases; `?view=` is
+  no longer read; Settings' Advanced workflows links go straight to their pages. `F1_ALIASES`, for
+  an old install's `sensor.crop_steering_system_*` ids, stays.
 
 ## [2.28.0] - 2026-09-29
 

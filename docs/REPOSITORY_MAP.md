@@ -18,7 +18,7 @@
 | img | Screenshots used by the README and docs |
 | repository.yaml | HA app repository discovery metadata; the controller app is installed from this repository only |
 
-Edit source in frontend/src and run the build; do not hand-edit generated dashboards. Small old-name HTML files are intentional compatibility redirects. Runtime entity IDs, room prefixes and the f2_control app slug remain stable; friendly names can change without breaking references.
+Edit source in frontend/src and run the build; do not hand-edit generated dashboards. Each folder holds `dashboard.html`, plus the `index.html` that opens it for the app's sidebar entry and the demo site. Runtime entity IDs, room prefixes and the f2_control app slug remain stable; friendly names can change without breaking references.
 
 The integration owns plan/configuration storage and per-room run metadata. Run records retain dates, stable zone/sensor IDs and timestamped reference targets; sensor readings stay in HA Recorder, with bounded authenticated history retrieval. Comparison and runtime calculators do not call actuator services.
 

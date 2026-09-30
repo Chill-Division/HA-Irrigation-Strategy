@@ -76,32 +76,7 @@ const navigation = [
 function readPage(): Page {
   const hash = window.location.hash.replace(/^#\/?/, "").split("?")[0];
   if (hash === "grow-plan" || navigation.some((n) => n.id === hash)) return hash as Page;
-  const view = new URLSearchParams(window.location.search).get("view") || "";
-  return (
-    (
-      {
-        dashboard: "overview",
-        overview: "overview",
-        zones: "zones",
-        tune: "strategy",
-        strategy: "strategy",
-        logs: "activity",
-        log: "activity",
-        activity: "activity",
-        sensors: "sensors",
-        settings: "settings",
-        help: "help",
-        timeline: "grow-plan",
-        climate: "sensors",
-        control: "settings",
-        substrate: "insights",
-        analyze: "insights",
-        floor: "setup",
-        floorplan: "setup",
-        recipes: "grow-plan",
-      } as Record<string, Page>
-    )[view] || "overview"
-  );
+  return "overview";
 }
 export default function App() {
   const controller = useController();

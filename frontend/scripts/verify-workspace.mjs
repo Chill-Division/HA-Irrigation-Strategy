@@ -238,7 +238,7 @@ async function liveSetup(run) {
   lp.setDefaultTimeout(10000);
   lp.on("pageerror", (e) => pageErrors.push(e.message));
   try {
-    await lp.goto(origin + "/dashboard.html?room=f1#/setup");
+    await lp.goto(origin + "/dashboard.html?room=room:f1_#/setup");
     await visible(lp.locator("#room-name"));
     assert.equal(
       await lp.locator("#room-plumbing").count(),
@@ -1084,7 +1084,7 @@ try {
       lp.setDefaultTimeout(10000);
       lp.on("pageerror", (e) => pageErrors.push(e.message));
       try {
-        await lp.goto(origin + "/dashboard.html?room=f1#/grow-plan");
+        await lp.goto(origin + "/dashboard.html?room=room:f1_#/grow-plan");
         await visible(lp.locator("#steering-balance"));
         await lp.locator("#steering-balance").fill("80");
         await lp.getByRole("button", { name: "Review & save", exact: true }).click();
