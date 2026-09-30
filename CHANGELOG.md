@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **HACS and the app store name Chill-Division as the maintainer.** They named JakeTheRabbit, who
   started Crop Steering, so an installation from this repository looked like one of theirs.
   Nothing else changes.
+- **The "What has been tested" page is gone.** It logged the original author's own live checks
+  on their installation, not anything a grower can use.
 
 ### 🔧 Technical notes
 
@@ -23,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   manifest of the latest release. `repository.yaml` `maintainer` is `Chill-Division`, which the app
   store lists for the repository. The manifest's `documentation` and `issue_tracker` links and
   `repository.yaml`'s `url` are unchanged.
+- `docs/FEATURE_MATRIX.md` is removed with its links (README, INSTALL, USER_GUIDE, SYSTEM_OVERVIEW,
+  GROW_PLANS), and so are the paragraphs in INSTALL.md and MCP.md that cited a two-room
+  installation as live evidence.
 
 ## [2.28.0] - 2026-09-29
 
