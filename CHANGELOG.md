@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A new room starts at a 3.2 L (0.9 gal) pot with one 4 L/hr dripper per plant**, in setup and
   in its settings. Each place used to start somewhere different: 5, 6 or 10 L, 1.2 to 2 L/hr, one
   or two drippers. A room already set up keeps its own numbers.
+- **The "What has been tested" page is gone.** It logged the original author's own live checks
+  on their installation, not anything a grower can use.
 
 ### 🔧 Technical notes
 
@@ -76,6 +78,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   only a room with neither starts at these. `tests_ha/test_sizing_defaults.py` proves a new room
   gets them and a 2.18 room keeps its 6 L / 2 L/hr. The controller's `substrate_l` / `flow_lps`
   fallback options are unchanged.
+- `docs/FEATURE_MATRIX.md` is removed with its links (README, INSTALL, USER_GUIDE, SYSTEM_OVERVIEW,
+  GROW_PLANS), and so are the paragraphs in INSTALL.md and MCP.md that cited a two-room
+  installation as live evidence.
 
 ## [2.28.0] - 2026-09-29
 

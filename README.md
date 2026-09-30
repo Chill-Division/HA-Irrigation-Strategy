@@ -4,7 +4,7 @@ Crop Steering waters the plants in a grow room automatically. It measures how we
 
 It runs inside [Home Assistant](https://www.home-assistant.io/) and works with the moisture probes, EC probes, pumps and valves you already have there. Everything happens on your own hardware: no cloud account, no subscription.
 
-**[Try the live demo](https://jaketherabbit.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1)** (runs in your browser with sample data, nothing to install) · [Install](#install) · [User guide](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/USER_GUIDE.md) · [What has been tested](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/FEATURE_MATRIX.md)
+**[Try the live demo](https://jaketherabbit.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1)** (runs in your browser with sample data, nothing to install) · [Install](#install) · [User guide](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/USER_GUIDE.md)
 
 ![Release](https://img.shields.io/badge/Release-2.28.0-blue)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.5+-41BDF5)
@@ -152,7 +152,6 @@ The buttons open the right screen; Home Assistant still asks you to confirm each
 - [User guide](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/USER_GUIDE.md) and [planning a grow](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/GROW_PLANS.md)
 - [Error codes: what each alert means and what to do](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/ERROR_CODES.md)
 - [Troubleshooting](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/troubleshooting.md)
-- [What has been tested, and the known limits](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/FEATURE_MATRIX.md)
 - [Entity reference](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/ENTITIES.md) · [All screenshots](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/SCREENSHOTS.md) · [Sidebar and menu button](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/HA_SIDEBAR.md)
 - For developers: [architecture](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/REPOSITORY_MAP.md), [testing](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/TESTING.md), [how releases are made](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/RELEASING.md) and [contributing](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/CONTRIBUTING.md)
 
