@@ -10,4 +10,4 @@ A room with a reservoir mapped also has nutrient batches: the integration keeps 
 
 The live loop applies sensor, enable/interlock, volume and duration gates before hardware sequencing. Readback failures latch shared equipment out. Local tests exercise these branches with fake HA; production hardware behavior still requires site verification.
 
-See [repository map](REPOSITORY_MAP.md), [installation](INSTALL.md), [grow plans](GROW_PLANS.md) and [validated feature matrix](FEATURE_MATRIX.md).
+See [repository map](REPOSITORY_MAP.md), [installation](INSTALL.md) and [grow plans](GROW_PLANS.md).

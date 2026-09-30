@@ -184,9 +184,9 @@ function newZone(id: number): SetupZone {
     vwc_sensors: [],
     ec_sensors: [],
     plant_count: 1,
-    substrate_volume: 5,
+    substrate_volume: 3.2,
     drippers_per_plant: 1,
-    dripper_flow_rate: 2,
+    dripper_flow_rate: 4,
   };
 }
 const hardwareFields = [
@@ -432,7 +432,7 @@ export function Setup({
             <p>Add this repository as an Integration, download it, then restart Home Assistant.</p>
             <Button asChild variant="outline">
               <a
-                href="https://my.home-assistant.io/redirect/hacs_repository/?owner=JakeTheRabbit&repository=HA-Irrigation-Strategy&category=integration"
+                href="https://my.home-assistant.io/redirect/hacs_repository/?owner=Chill-Division&repository=HA-Irrigation-Strategy&category=integration"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -470,7 +470,7 @@ export function Setup({
             </p>
             <Button asChild variant="outline">
               <a
-                href="https://my.home-assistant.io/redirect/supervisor_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FJakeTheRabbit%2FHA-Irrigation-Strategy"
+                href="https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FChill-Division%2FHA-Irrigation-Strategy"
                 target="_blank"
                 rel="noreferrer"
               >

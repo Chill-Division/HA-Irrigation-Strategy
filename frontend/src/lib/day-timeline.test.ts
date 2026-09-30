@@ -265,8 +265,8 @@ describe("blocks and holds", () => {
       at("21:09:37.000"),
       [],
       [
-        "Z1 P3 f2-control disabled (kill switch off)",
-        "Z2 P3 f2-control disabled (kill switch off)",
+        "Z1 P3 room off (kill switch)",
+        "Z2 P3 room off (kill switch)",
       ],
     ),
     decision(at("21:10:37.000")),
@@ -290,7 +290,7 @@ describe("blocks and holds", () => {
       },
       {
         kind: "hold",
-        text: "f2-control disabled (kill switch off)",
+        text: "room off (kill switch)",
         start: at("21:09:37.000"),
         end: at("21:10:37.000"),
         open: false,

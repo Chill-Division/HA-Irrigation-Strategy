@@ -1,6 +1,6 @@
 # Current workspace screenshots
 
-[Open the interactive demo](https://jaketherabbit.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1).
+[Open the interactive demo](https://chill-division.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1).
 
 Captured on 25 September 2026 from the compiled application with isolated demo data and inherited Home Assistant dark-theme variables. These are current UI examples, not photographs or live facility readings.
 

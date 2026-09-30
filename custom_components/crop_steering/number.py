@@ -376,9 +376,9 @@ NUMBER_DESCRIPTIONS = [
 # Default values (shared by global + per-zone entities).
 DEFAULT_VALUES = {
     "max_shot_duration": 900,
-    "substrate_volume": 10.0,
-    "dripper_flow_rate": 1.2,
-    "drippers_per_plant": 2,
+    "substrate_volume": 3.2,
+    "dripper_flow_rate": 4.0,
+    "drippers_per_plant": 1,
     "field_capacity": 70.0,
     "maximum_ec": 9.0,
     "watchdog_hours": 3.0,

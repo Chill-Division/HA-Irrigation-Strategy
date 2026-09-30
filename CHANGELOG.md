@@ -13,9 +13,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🌱 In plain English
 
+- **Home Assistant 2026.5 or newer is required.** It was 2024.10, two years old. On an older Home
+  Assistant, HACS and the app store offer no update to Crop Steering or its controller until Home
+  Assistant itself is updated, and what is installed keeps working. The code and the extra test
+  run that only the older versions needed are gone.
 - **HACS and the app store name Chill-Division as the maintainer.** They named JakeTheRabbit, who
   started Crop Steering, so an installation from this repository looked like one of theirs.
   Nothing else changes.
+- **Messages name the controller, not "f2-control".** It was named after the room it was first
+  written for. When a room is switched off, the "hasn't been watered" notification and the zone's
+  line on the dashboard now say "room off (kill switch)", not "f2-control disabled (kill switch
+  off)", and the controller's log lines start with "[controller]".
+- **The EC PID option is gone.** Only Home Assistant helpers from the original author's own setup
+  could switch it on, so it never ran anywhere else, and the maintenance trigger's explanation no
+  longer mentions it. EC Stacking works as before, moving the maintenance trigger 1 point at a time.
+- **Setup's examples and the entity reference describe any room, not the first one.** Setup's
+  hints for pot size and dripper flow gave a 6 L rockwool block and a 4 L/hr emitter, the room
+  Crop Steering was first written for; they now say a 10 L pot and a 2 L/hr emitter. The entity
+  reference listed that room's own settings as the defaults (6 L pots, 4 L/hr drippers, lights
+  10:00 to 22:00, a 200 L daily budget and more); it now lists what a new room starts at.
+- **A new room starts at a 3.2 L (0.9 gal) pot with one 4 L/hr dripper per plant**, in setup and
+  in its settings. Each place used to start somewhere different: 5, 6 or 10 L, 1.2 to 2 L/hr, one
+  or two drippers. A room already set up keeps its own numbers.
+- **The "What has been tested" page is gone.** It logged the original author's own live checks
+  on their installation, not anything a grower can use.
+- **Links go to Chill-Division, Crop Steering's public home.** The README (its demo, screenshots
+  and install buttons), the integration's documentation and issue links, **Learn more** on
+  Repairs cards, the app store, the setup page's install buttons and the release notes link in
+  What's new all pointed at JakeTheRabbit's or the maintainer's own repository. The setup page's
+  **Add controller repository** button now works: it opened a link Home Assistant does not have.
+  The GitHub Sponsor button, which went to JakeTheRabbit, is gone.
+- **Setup no longer imports a `crop_steering.env` file, and Configure no longer reloads one.** A
+  room set up from one keeps working exactly as before: after setup it only ever ran on what was
+  stored then. Change it in Configure or in Rooms & setup.
 - **The original author's old page addresses are gone.** `f2.html`, `office.html` and a dozen
   others only redirected old bookmarks; so did the old room and page names in dashboard links
   (`?room=f2`, `?view=climate`). The app's sidebar entry, the dashboard in the sidebar and the demo
@@ -23,10 +53,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Technical notes
 
+- **Minimum Home Assistant 2026.5.0** (was 2024.10.0):
+  - `hacs.json` `homeassistant` is `2026.5.0`. The controller app's `config.yaml` sets
+    `homeassistant: "2026.5.0"` too, and the Supervisor checks it on install and on every update,
+    so on an older Home Assistant the controller cannot move ahead of the integration.
+  - `setup_panel` calls `frontend.async_panel_exists` (2026.5.0+) without the panel-table fallback,
+    and registers its static path through `async_register_static_paths` only.
+  - `stock_api` takes the time zone from `dt_util.get_default_time_zone`.
+  - The oldest-supported Real Home Assistant leg runs 2026.5.0 on Python 3.14 (plugin 0.13.329),
+    without the `josepy` and `pycares` pins. `tests/test_requirements_stated.py` checks the app's
+    minimum as well.
 - `manifest.json` `codeowners` is `["@Chill-Division"]`: HACS shows it as the author, reading the
   manifest of the latest release. `repository.yaml` `maintainer` is `Chill-Division`, which the app
   store lists for the repository. The manifest's `documentation` and `issue_tracker` links and
   `repository.yaml`'s `url` are unchanged.
+- The controller's own name in what it says: the blocked reason is `room off (kill switch)`, the
+  `engine` attribute on the sensors it publishes is `crop-steering-controller` (was `f2-control`;
+  nothing shipped reads it), its log prefix is `[controller]` (also in `run.sh`), and it starts
+  with `Crop Steering Controller X.Y.Z starting`. Ids are unchanged: the app slug `f2_control`,
+  `input_boolean.f2_control_enabled`, `sensor.f2_control_vitals` and the notification ids.
+- The EC PID loop is removed: `crop_steering_engine.ec_pid`, the controller's branch that read
+  `input_boolean.crop_steering_ec_pid_enabled` and `input_number.crop_steering_ec_pid_kp` / `_ki` /
+  `_kd`, and the per-zone `ec_integral` / `ec_prev_err` it kept. EC Stacking always takes
+  `_step_ec_offset`'s 1-point step. A state file holding those two keys still loads
+  (`test_state_migration`); they are dropped and not written back. The EC Stacking line of the
+  P2 trigger's explainer (`setting-words.ts`) drops "The PID option can move it up to 20%."
+- `strings.json` / `translations/en.json`: the `substrate_volume` and `dripper_flow_rate` hints,
+  in setup and Configure, use a 10 L pot and a 2 L/hr emitter. `docs/ENTITIES.md` follows
+  `number.py`: `p1_target_vwc` 65, `p1_time_between_shots` 15, `p2_vwc_threshold` 60,
+  `substrate_volume` 10 (range 0.1-200), `dripper_flow_rate` 1.2, `drippers_per_plant` 2 (range
+  1-20), `field_capacity` 70, `lights_on_hour` 12, `lights_off_hour` 0, `zone_N_plant_count` 4
+  (range 1-1000) and `zone_N_max_daily_volume` 20.
+- Sizing defaults are 3.2 L, 4 L/hr and 1 dripper per plant: the wizard's schema and
+  `_build_parameters`, the Configure form's fallbacks, `number.DEFAULT_VALUES` (were 10 / 1.2 / 2),
+  `setup_api.setup_sizing`'s last fallback, and the dashboard's new-zone draft (was 5 L / 2 L/hr).
+  A number restores its state first and seeds from the room's recorded setup answers second, so
+  only a room with neither starts at these. `tests_ha/test_sizing_defaults.py` proves a new room
+  gets them and a 2.18 room keeps its 6 L / 2 L/hr. The controller's `substrate_l` / `flow_lps`
+  fallback options are unchanged.
+- `docs/FEATURE_MATRIX.md` is removed with its links (README, INSTALL, USER_GUIDE, SYSTEM_OVERVIEW,
+  GROW_PLANS), and so are the paragraphs in INSTALL.md and MCP.md that cited a two-room
+  installation as live evidence.
+- Links to `JakeTheRabbit/HA-Irrigation-Strategy`, `jaketherabbit.github.io` and the
+  `ChillingSilence` releases and images point at `Chill-Division/HA-Irrigation-Strategy`:
+  `manifest.json` `documentation` / `issue_tracker`, `const.REPAIRS_DOCS_URL`, both `url:` fields,
+  `DOCS.md`, `setup.tsx`, `whats-new.ts` `RELEASES_URL`, README, INSTALL, USER_GUIDE,
+  SCREENSHOTS, the MCP README and the Pages workflow comment. `setup.tsx`'s app-store button uses
+  `supervisor_add_addon_repository` (was `supervisor_addon_repository`, not a My Home Assistant
+  redirect). INSTALL's move section covers a controller from either of JakeTheRabbit's
+  repositories: this repository's app is `f50c47e4_f2_control`. `.github/FUNDING.yml` is removed.
+- The `.env` import is removed: `env_parser.py`, the first step's `config_method` choice, the
+  `load_env` step, Configure's `reload_env`, `_validate_env_entities` and their strings. So is the
+  `load_yaml` step, which no step led to. An entry with `config_method: "env"` loads unchanged:
+  nothing read the key or the file at runtime, and nothing rewrites the entry.
+  `test_upgrade_in_place` proves it on the env-era fixture, with no `crop_steering.env` present.
 - `frontend/scripts/package.mjs` writes `dashboard.html` to all three folders and `index.html` (keeps
   query and hash, opens `#/overview`) to the app, whose ingress opens it, and to the Pages site. It
   deletes any other page it finds there, so a page it stops writing cannot stay committed. The 13
