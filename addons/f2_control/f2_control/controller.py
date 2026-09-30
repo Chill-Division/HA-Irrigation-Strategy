@@ -42,7 +42,6 @@ from crop_steering_engine import (
     ZoneSnapshot,
     validate_params,
     pick_sibling,
-    ec_pid,
     cross_zone_outliers,
     detect_vmax,
     zone_safety_status,
@@ -58,7 +57,7 @@ _S = requests.Session()
 
 
 def log(*a):
-    print("[f2-control]", *a, flush=True)
+    print("[controller]", *a, flush=True)
 
 
 class HAState(tuple):
@@ -918,8 +917,6 @@ class Controller:
             "ec_settled_at": None,
             "last_phase_change": datetime.now(),
             "ec_offset": 0.0,
-            "ec_integral": 0.0,
-            "ec_prev_err": 0.0,
             "last_ec_steer": None,
             "last_daily_reset": None,
             "water_history": None,
@@ -941,8 +938,6 @@ class Controller:
             "daily_vol",
             "ec_smooth",
             "ec_offset",
-            "ec_integral",
-            "ec_prev_err",
         ):
             if d.get(k) is not None:
                 s[k] = d[k]
@@ -1355,8 +1350,6 @@ class Controller:
             "ec_settled": s.get("ec_settled"),
             "ec_settled_at": esa.isoformat() if isinstance(esa, datetime) else None,
             "ec_offset": float(s.get("ec_offset") or 0.0),
-            "ec_integral": float(s.get("ec_integral") or 0.0),
-            "ec_prev_err": float(s.get("ec_prev_err") or 0.0),
             "last_shot": ls.isoformat() if isinstance(ls, datetime) else None,
             "last_shot_is_anchor": bool(s.get("last_shot_is_anchor")),
             "last_phase_change": lpc.isoformat() if isinstance(lpc, datetime) else None,
@@ -1795,7 +1788,7 @@ class Controller:
         reads the feed front passing it (6-8 mS/cm during the 22 Sep ramp, on zones whose quiet readings
         were ~4.5). Between settled readings the last one stands. None while the probe itself reads
         nothing valid, and before the first settled reading (decide() then uses the raw reading, as it
-        always did). Only settled readings feed ec_smooth, and through it the EC offset step / PID."""
+        always did). Only settled readings feed ec_smooth, and through it the EC offset step."""
         if ec is None:
             return None
         last = st.get("last_shot")
@@ -1890,7 +1883,7 @@ class Controller:
         if enabled and planned:
             state, attrs["frozen_reason"] = "frozen", "an armed grow plan owns this room's targets"
         attrs.update(
-            updated=now.isoformat(), engine="f2-control", friendly_name=f"Zone {zone} auto setpoints",
+            updated=now.isoformat(), engine="crop-steering-controller", friendly_name=f"Zone {zone} auto setpoints",
             managed=[f"number.crop_steering_{room.prefix}zone_{zone}_{s}" for s in auto_setpoints.MANAGED],
         )
         ha_set(f"sensor.crop_steering_{room.prefix}zone_{zone}_auto_setpoints", state, attrs)
@@ -2271,7 +2264,7 @@ class Controller:
             batch["step"],
             {
                 "friendly_name": "Nutrient batch",
-                "engine": "f2-control",
+                "engine": "crop-steering-controller",
                 "stage": plan.get("stage"),
                 "until": _shown(batch["until"]),
                 "doser": dose["doser"] if dose else None,
@@ -2393,7 +2386,7 @@ class Controller:
             f"sensor.crop_steering_{room.prefix}ai_heartbeat",
             "healthy",
             {
-                "engine": "f2-control",
+                "engine": "crop-steering-controller",
                 # which controller is actually RUNNING, for the dashboard's sidebar
                 "controller_version": CONTROLLER_VERSION,
                 "last_beat": now.isoformat(),
@@ -2473,7 +2466,7 @@ class Controller:
         ha_set(
             f"sensor.crop_steering_{room.prefix}zone_{zone}_status_app",
             label,
-            {"reason": reason, "friendly_name": f"Zone {zone} status (controller)", "engine": "f2-control"},
+            {"reason": reason, "friendly_name": f"Zone {zone} status (controller)", "engine": "crop-steering-controller"},
             **({"timeout": timeout} if timeout else {}),
         )
 
@@ -2494,7 +2487,7 @@ class Controller:
                 "conditions": conditions,
                 "at": now.astimezone().isoformat(timespec="seconds"),
                 "friendly_name": f"Zone {zone} waiting for (controller)",
-                "engine": "f2-control",
+                "engine": "crop-steering-controller",
             },
         )
 
@@ -2512,7 +2505,7 @@ class Controller:
                     ha_set(f"sensor.crop_steering_{px}zone_{zone}_last_irrigation_app", "unknown",
                            {"device_class": "timestamp"})
             ha_set(f"sensor.crop_steering_{px}app_status", "room_off",
-                   {"engine": "f2-control", "updated": now.isoformat()})
+                   {"engine": "crop-steering-controller", "updated": now.isoformat()})
             ha_set(f"sensor.crop_steering_{px}current_decision", "Room off - nothing growing",
                    {"fired": [], "blocked": []})
             self._heartbeat(room, now, self._hardware_fault_block(room), room_active=False)
@@ -2558,7 +2551,7 @@ class Controller:
             )
             return plumbing
         if not self._on(room.enable_flag, False):
-            return "f2-control disabled (kill switch off)"
+            return "room off (kill switch)"
         retired = getattr(room, "_retired_off", None)
         if retired:  # switched off in their place this pass; the switch may not read OFF yet
             return f"{' and '.join(retired)} off: engine switch switched off in its place"
@@ -3495,7 +3488,7 @@ class Controller:
                 f"sensor.crop_steering_{room.prefix}ai_heartbeat",
                 "stopped",
                 {
-                    "engine": "f2-control",
+                    "engine": "crop-steering-controller",
                     "controller_version": CONTROLLER_VERSION,
                     "stopped_at": now.isoformat(),
                     "last_beat": now.isoformat(),
@@ -3800,7 +3793,6 @@ class Controller:
             if new_phase == "P0":
                 st["daily_vol"], st["shots"] = 0.0, 0
                 st["ec_offset"], st["last_ec_steer"] = 0.0, None
-                st["ec_integral"], st["ec_prev_err"] = 0.0, 0.0
                 st["last_daily_reset"] = gds
             st["phase"] = new_phase
             st["last_phase_change"] = now
@@ -3926,7 +3918,6 @@ class Controller:
                 # below clears it as well, but only after decide() has read the P2 threshold (its P0
                 # bypass test) with yesterday's offset baked in.
                 st["ec_offset"], st["last_ec_steer"] = 0.0, None
-                st["ec_integral"], st["ec_prev_err"] = 0.0, 0.0
             snap, p = self._snapshot(room, zone, now, lights_on, lights_just_on)
             params[zone] = p
             if snap is None:
@@ -3961,10 +3952,6 @@ class Controller:
                 if new_phase == "P0":
                     st["daily_vol"], st["shots"], st["peak"] = 0.0, 0, snap.vwc
                     st["ec_offset"], st["last_ec_steer"] = 0.0, None
-                    st["ec_integral"], st["ec_prev_err"] = (
-                        0.0,
-                        0.0,
-                    )  # no cross-photoperiod PID windup
                     st["last_daily_reset"] = self._grow_day_start(room, now)
                     room._vmax_wetup[zone] = []  # fresh wet-up curve for today's ramp
                 if new_phase == "P1":
@@ -3985,32 +3972,12 @@ class Controller:
                 base = self._zone_num(room, zone, "p2_vwc_threshold", 45)
                 les = st.get("last_ec_steer")
                 if les is None or (now - les).total_seconds() >= 1800:
-                    if self._on("input_boolean.crop_steering_ec_pid_enabled", False):
-                        gains = (
-                            self._num("input_number.crop_steering_ec_pid_kp", 0.4),
-                            self._num("input_number.crop_steering_ec_pid_ki", 0.15),
-                            self._num("input_number.crop_steering_ec_pid_kd", 0.0),
-                        )
-                        off, integ, perr = ec_pid(
-                            snap.ec_smooth,
-                            p.ec_target_p2,
-                            base,
-                            float(st.get("ec_integral", 0.0)),
-                            float(st.get("ec_prev_err", 0.0)),
-                            gains,
-                        )
-                        st["ec_offset"], st["ec_integral"], st["ec_prev_err"] = (
-                            off,
-                            integ,
-                            perr,
-                        )
-                    else:
-                        st["ec_offset"] = self._step_ec_offset(
-                            float(st.get("ec_offset", 0.0)),
-                            snap.ec_smooth,
-                            p.ec_target_p2,
-                            base,
-                        )
+                    st["ec_offset"] = self._step_ec_offset(
+                        float(st.get("ec_offset", 0.0)),
+                        snap.ec_smooth,
+                        p.ec_target_p2,
+                        base,
+                    )
                     st["last_ec_steer"] = now
                     self._save_state()
             # Vmax advisory: watch the P1 wet-up for the field-capacity ceiling.
@@ -4168,7 +4135,7 @@ class Controller:
                 ha_set(
                     f"sensor.crop_steering_{px}zone_{zone}_phase",
                     d["phase"],
-                    {"reason": d["reason"], "engine": "f2-control"},
+                    {"reason": d["reason"], "engine": "crop-steering-controller"},
                 )
                 ha_set(
                     f"sensor.crop_steering_{px}zone_{zone}_safety_status",
@@ -4201,7 +4168,7 @@ class Controller:
                             "confidence": vm[1],
                             "unit_of_measurement": "%",
                             "friendly_name": f"Zone {zone} detected Vmax (advisory)",
-                            "engine": "f2-control",
+                            "engine": "crop-steering-controller",
                         },
                     )
                 ls = room.state[zone].get("last_shot")
@@ -4228,7 +4195,7 @@ class Controller:
                         "device_class": "water",
                         "state_class": "total",
                         "friendly_name": f"Zone {zone} water today",
-                        "engine": "f2-control",
+                        "engine": "crop-steering-controller",
                     },
                 )
                 weekly, coverage = self._water_usage(room, zone, now)
@@ -4237,7 +4204,7 @@ class Controller:
                     weekly,
                     {"unit_of_measurement": "L", "device_class": "water",
                      "state_class": "total", "friendly_name": f"Zone {zone} water over seven grow-days",
-                     "engine": "f2-control", **coverage},
+                     "engine": "crop-steering-controller", **coverage},
                 )
                 ha_set(
                     f"sensor.crop_steering_{px}zone_{zone}_irrigation_count_app",
@@ -4245,7 +4212,7 @@ class Controller:
                     {
                         "state_class": "total",
                         "friendly_name": f"Zone {zone} shots today",
-                        "engine": "f2-control",
+                        "engine": "crop-steering-controller",
                     },
                 )
                 # Estimated hours to the next P2 shot (drives the dashboard "next"). Only published
@@ -4258,7 +4225,7 @@ class Controller:
                         {
                             "unit_of_measurement": "h",
                             "friendly_name": f"Zone {zone} next irrigation",
-                            "engine": "f2-control",
+                            "engine": "crop-steering-controller",
                         },
                     )
             sys_stat, unsafe, warn, safe = system_safety_status(labels)
@@ -4283,7 +4250,7 @@ class Controller:
                     if room_held or hardware_fault
                     else ("irrigating" if self._busy else "safe_idle")
                 ),
-                {"engine": "f2-control", "updated": now.isoformat()},
+                {"engine": "crop-steering-controller", "updated": now.isoformat()},
             )
             self._heartbeat(room, now, hardware_fault)
             fired = [
@@ -4439,7 +4406,7 @@ class Controller:
 
     def run(self):
         log(
-            f"f2-control {CONTROLLER_VERSION} starting | rooms",
+            f"Crop Steering Controller {CONTROLLER_VERSION} starting | rooms",
             ", ".join(r.slug for r in self.rooms),
             "| notify",
             self.notify_service or "(none)",

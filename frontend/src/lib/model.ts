@@ -176,17 +176,11 @@ export function discoverRooms(states: States): Room[] {
 
 export function resolveRequestedRoom(rooms: Room[], requested: string | null): Room | undefined {
   if (!requested) return undefined;
-  const canonical = rooms.find((room) => room.id === requested);
-  if (canonical) return canonical;
-  // Legacy links name a real prefix first. F2 means the unprefixed room only
-  // when no named f2_ room exists. Canonical IDs never participate in aliases.
-  if (requested.startsWith("room:")) return undefined;
-  const named = rooms.find((room) => room.prefix === `${requested}_`);
-  return named || (requested === "f2" ? rooms.find((room) => room.prefix === "") : undefined);
+  return rooms.find((room) => room.id === requested);
 }
 
-// Legacy F1 integration sensors had a system_ namespace. Explicit aliases from
-// www/f2-classic.html; never apply these to any other named/default room.
+// An old install's F1 room published its sensors under a system_ namespace, and Home Assistant
+// keeps an entity's id across updates. These aliases apply to that room only, never to another.
 const F1_ALIASES: Record<string, string> = {
   average_vwc_all_zones: "sensor.crop_steering_system_average_vwc_all_zones",
   average_ec_all_zones: "sensor.crop_steering_system_average_ec_all_zones",

@@ -4,7 +4,7 @@ Use **Overview** to check a room and **Irrigation plan** for **Today** and **Sch
 
 Existing `#/strategy` and `#/grow-plan` bookmarks open **Irrigation plan → Today** and **Schedule**.
 
-New installation? Start with [Install, upgrade and rollback](INSTALL.md). To try the interface without connecting equipment, open the [interactive demo](https://jaketherabbit.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1).
+New installation? Start with [Install, upgrade and rollback](INSTALL.md). To try the interface without connecting equipment, open the [interactive demo](https://chill-division.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1).
 
 ## What each action changes
 
@@ -240,4 +240,4 @@ The MCP server is not a generic HA actuator interface and does not enable engine
 | Comparison is blank                            | Check selected run/zone, recorded sensor IDs, dates, Recorder retention and coverage notices. Registering metadata cannot recreate readings.                     |
 | A pause was confirmed but equipment remains on | Pause affects scheduling. Inspect the active shot and use the site's established physical shutdown procedure if necessary.                                       |
 
-For source/test evidence and outstanding commissioning limits, use the [feature matrix](FEATURE_MATRIX.md) and [troubleshooting guide](troubleshooting.md). Software validation does not prove physical delivery or a complete live recipe handoff.
+For anything else, use the [troubleshooting guide](troubleshooting.md). A switch that reads on does not prove water reached the plants: only a catch test or a flow meter does.

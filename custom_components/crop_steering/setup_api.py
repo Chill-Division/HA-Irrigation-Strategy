@@ -512,9 +512,9 @@ def setup_sizing(hass, data, cfg, zone, key):
             key,
             {
                 "plant_count": 4,
-                "substrate_volume": 6,
+                "substrate_volume": 3.2,
                 "drippers_per_plant": 1,
-                "dripper_flow_rate": 2,
+                "dripper_flow_rate": 4,
             }[key],
         ),
     )

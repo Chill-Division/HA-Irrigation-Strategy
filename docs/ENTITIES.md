@@ -1,8 +1,9 @@
 # Entity Reference: Complete Schema
 
 Every entity the Crop Steering System creates, what it does, its range/options, and
-its default. Generated against the live deployed system (3-zone example; per-zone
-entities scale with your zone count, `N` = 1…zones).
+its default: what a new room's entity starts at. Where the setup wizard asks (plant count,
+pot size, drippers, lights hours), your answers replace the default. Per-zone entities
+scale with your zone count, `N` = 1…zones.
 
 **Conventions**
 - **Global** entities set the system-wide default: `…crop_steering_<param>`.
@@ -29,13 +30,13 @@ entities scale with your zone count, `N` = 1…zones).
 | `p1_shot_size_increment` | 0.05-10 | 0.5 | % | How much each successive shot grows. |
 | `p1_minimum_shots` | 1-20 | 3 | - | Minimum shots before P1 may exit. |
 | `p1_maximum_shots` | 1-30 | 6 | - | After this many shots P1 exits to P2 even if the target wasn't hit. |
-| `p1_target_vwc` | 20-100 | 60 | % | VWC that ends the ramp and moves the zone to P2. |
-| `p1_time_between_shots` | 1-60 | 5 | min | Spacing between ramp shots. |
+| `p1_target_vwc` | 20-100 | 65 | % | VWC that ends the ramp and moves the zone to P2. |
+| `p1_time_between_shots` | 1-60 | 15 | min | Spacing between ramp shots. |
 
 ### P2: maintenance
 | Entity | Range | Default | Unit | What it does |
 |---|---|---|---|---|
-| `p2_vwc_threshold` | 10-100 | 55 | % | Shoot a maintenance top-up when VWC falls below this. |
+| `p2_vwc_threshold` | 10-100 | 60 | % | Shoot a maintenance top-up when VWC falls below this. |
 | `p2_shot_size` | 0.5-30 | 5 | % | Size of a P2 maintenance shot. |
 | `p2_time_between_shots` | 0-60 | 5 | min | Least time from the last shot to a maintenance top-up, so each can soak down to the probes before moisture is read again (0 = off). EC dilution and rescue flushes keep their own 10-minute wait. |
 | `p2_ec_high_threshold` | 0.5-3.0 | 1.2 | ×target | EC ratio above which the threshold is raised (water more to flush salts). |
@@ -72,14 +73,14 @@ The active EC target = the row for the current phase **and** the zone's steering
 ### Substrate & schedule
 | Entity | Range | Default | Unit | What it does |
 |---|---|---|---|---|
-| `substrate_volume` | 1-200 | 6 | L | Substrate volume per plant: converts shot % → mL → valve seconds. |
+| `substrate_volume` | 0.1-200 | 3.2 | L | Substrate volume per plant: converts shot % → mL → valve seconds. |
 | `dripper_flow_rate` | 0.1-50 | 4 | L/hr | Per-dripper flow: the other half of the % → seconds conversion. |
-| `drippers_per_plant` | 1-6 | 1 | - | Drippers feeding each plant. |
-| `field_capacity` | 40-100 | 60 | % | VWC at/above which irrigation is blocked (over-water guard / P1 clamp). |
+| `drippers_per_plant` | 1-20 | 1 | - | Drippers feeding each plant. |
+| `field_capacity` | 40-100 | 70 | % | VWC at/above which irrigation is blocked (over-water guard / P1 clamp). |
 | `vegetative_dryback_target` | 5-80 | 50 | % | Overnight dryback target in vegetative mode. |
 | `generative_dryback_target` | 5-70 | 40 | % | Overnight dryback target in generative mode. |
-| `lights_on_hour` | 0-23 | 10 | hour | Photoperiod start: P3→P0 + daily-counter reset fire here. |
-| `lights_off_hour` | 0-23 | 22 | hour | Photoperiod end: zones move to P3. |
+| `lights_on_hour` | 0-23 | 12 | hour | Photoperiod start: P3→P0 + daily-counter reset fire here. |
+| `lights_off_hour` | 0-23 | 0 | hour | Photoperiod end: zones move to P3. |
 
 ---
 
@@ -99,8 +100,8 @@ for that zone. (3 zones × 24 = 72 entities on a 3-zone system.)
 **Per-zone only (no global equivalent):**
 | Entity | Range | Default | Unit | What it does |
 |---|---|---|---|---|
-| `zone_N_plant_count` | 1-50 | - | - | Plants in the zone: scales total water volume. |
-| `zone_N_max_daily_volume` | 0-200 | 200 | L | Daily water budget for the zone. Top-ups and EC-correction shots stop at it, and a shot that would cross it gets only what is left; rescues (watchdog, P3 emergency, high-EC flushes) and the P1 ramp are exempt. |
+| `zone_N_plant_count` | 1-1000 | 4 | - | Plants in the zone: scales total water volume. |
+| `zone_N_max_daily_volume` | 0-200 | 20 | L | Daily water budget for the zone. Top-ups and EC-correction shots stop at it, and a shot that would cross it gets only what is left; rescues (watchdog, P3 emergency, high-EC flushes) and the P1 ramp are exempt. |
 | `zone_N_substrate_volume` / `zone_N_drippers_per_plant` / `zone_N_dripper_flow_rate` | as the globals | from setup | - | Created only when setup sizes the zone itself; otherwise the room-wide value applies. |
 
 ---

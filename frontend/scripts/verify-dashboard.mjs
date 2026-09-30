@@ -71,7 +71,7 @@ async function check(name, run) {
   checks.push(name);
   console.log(`PASS ${name}`);
 }
-async function go(route, room = "f2") {
+async function go(route, room = "room:") {
   await page.goto(`${base}/dashboard.html?demo&room=${room}#/${route}`, {
     waitUntil: "networkidle",
   });
@@ -163,9 +163,13 @@ async function axe(label) {
 }
 try {
   await check("primary entry preserves room, demo and route", async () => {
-    await page.goto(`${base}/index.html?demo&room=f1#/zones`);
+    await page.goto(`${base}/index.html?demo&room=room:f1_#/zones`);
     await expectVisible(page.getByRole("heading", { name: "Zones", exact: true }));
-    assert.match(page.url(), /dashboard\.html\?demo=&room=f1#\/zones/);
+    const opened = new URL(page.url());
+    assert.equal(opened.pathname, "/dashboard.html");
+    assert.ok(opened.searchParams.has("demo"));
+    assert.equal(opened.searchParams.get("room"), "room:f1_");
+    assert.equal(opened.hash, "#/zones");
     assert.equal(await page.locator("#desktop-room").inputValue(), "room:f1_");
   });
   const routes = [
@@ -270,7 +274,7 @@ try {
     assert.match(await page.locator(".auto-chip").first().innerText(), /Tonight/);
   });
   await check("status line: watering switched off says why and opens that room's Settings", async () => {
-    await go("settings", "f1");
+    await go("settings", "room:f1_");
     await page.getByRole("button", { name: "Switch watering off…", exact: true }).click();
     await page.getByRole("button", { name: /Apply \d+ change/ }).click();
     await page.getByRole("dialog").waitFor({ state: "hidden" });
@@ -470,14 +474,14 @@ try {
     await page.setViewportSize({ width: 1440, height: 1000 });
   });
   await check("reservoir: a room without one points to Rooms & setup, which maps it", async () => {
-    await go("reservoir", "f1");
+    await go("reservoir", "room:f1_");
     await expectVisible(page.getByRole("heading", { name: "No reservoir mapped" }));
     await page.getByRole("button", { name: "Map them in Rooms & setup" }).click();
     const card = page.locator("[data-setup-reservoir]");
     await expectVisible(card);
     assert.equal(await card.locator(".mapping-picker").count(), 9);
     await inBothThemes("rooms & setup reservoir card", async () => {
-      await go("setup", "f1");
+      await go("setup", "room:f1_");
       await expectVisible(page.locator("[data-setup-reservoir]"));
     });
   });
@@ -753,7 +757,7 @@ try {
     const pinned = await context.newPage();
     pinned.on("pageerror", (error) => pageErrors.push(error.message));
     await pinned.clock.setFixedTime(new Date(2026, 8, 20, 16, 0, 0));
-    await pinned.goto(`${base}/dashboard.html?demo&room=f2#/overview`, {
+    await pinned.goto(`${base}/dashboard.html?demo&room=room:#/overview`, {
       waitUntil: "networkidle",
     });
     const lanes = pinned.locator(".timeline-zone-line");
@@ -770,7 +774,7 @@ try {
     const night = await context.newPage();
     night.on("pageerror", (error) => pageErrors.push(error.message));
     await night.clock.setFixedTime(new Date(2026, 8, 20, 23, 30, 0));
-    await night.goto(`${base}/dashboard.html?demo&room=f2#/overview`, {
+    await night.goto(`${base}/dashboard.html?demo&room=room:#/overview`, {
       waitUntil: "networkidle",
     });
     const nightLanes = night.locator(".timeline-zone-line");
@@ -869,7 +873,7 @@ try {
     );
     assert.equal(
       await dialog.getByRole("link", { name: /Full release notes/ }).getAttribute("href"),
-      "https://github.com/ChillingSilence/HA-Irrigation-Strategy/releases/tag/v2.24.0",
+      "https://github.com/Chill-Division/HA-Irrigation-Strategy/releases/tag/v2.24.0",
     );
     await page.screenshot({ path: path.join(out, "whats-new-desktop.png") });
     await dialog.getByRole("button", { name: "Got it", exact: true }).click();
@@ -952,10 +956,10 @@ try {
       // Flower 1's demo log has all but one kind: water, phase changes and a warning.
       const tones = { water: "water", phase: "phase", warning: "warn", info: "neutral" };
       await inBothThemes("activity", async () => {
-        await go("activity", "f1");
+        await go("activity", "room:f1_");
         await page.locator(".activity-table [data-event-type]").first().waitFor();
       });
-      await go("activity", "f1");
+      await go("activity", "room:f1_");
       const types = await page
         .locator(".activity-table [data-event-type]")
         .evaluateAll((pills) => pills.map((pill) => [pill.dataset.eventType, pill.dataset.tone]));
@@ -971,10 +975,10 @@ try {
         await expectVisible(page.getByRole("dialog", { name: "Recent activity" }));
       };
       await inBothThemes("recent activity panel", async () => {
-        await go("activity", "f1");
+        await go("activity", "room:f1_");
         await panel();
       });
-      await go("activity", "f1");
+      await go("activity", "room:f1_");
       await panel();
       const rows = page.getByRole("dialog", { name: "Recent activity" }).locator(".event-row");
       assert.equal(
@@ -1169,7 +1173,7 @@ try {
     await expectVisible(found.getByText(/No plant in the cube/));
     await search.fill("nothing like this");
     await expectVisible(page.getByText(/No code matches/));
-    await page.goto(`${base}/dashboard.html?demo&room=f2#/help?code=CS-605`, {
+    await page.goto(`${base}/dashboard.html?demo&room=room:#/help?code=CS-605`, {
       waitUntil: "networkidle",
     });
     await expectVisible(page.locator("details#cs-605[open]"));
@@ -1293,7 +1297,7 @@ try {
   await check("zones: one switch flips every zone, through the review", async () => {
     // Flower 1's zone 3 is paused for inspection: the switch is on while any zone is on, as the
     // entities card's header toggle is, and switching it on again switches zone 3 on too.
-    await go("zones", "f1");
+    await go("zones", "room:f1_");
     const all = page.getByRole("switch", { name: "Every zone in Flower 1", exact: true });
     const count = page.locator(".toolbar .all-zones-count");
     const flip = async (title, rows, after) => {

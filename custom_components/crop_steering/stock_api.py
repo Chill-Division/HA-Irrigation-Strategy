@@ -238,12 +238,7 @@ class StockStore:
     async def _fill(self, state):
         from homeassistant.util import dt as dt_util
 
-        # get_default_time_zone arrived in Home Assistant 2024.6; older releases hold the global.
-        zone = (
-            dt_util.get_default_time_zone()
-            if hasattr(dt_util, "get_default_time_zone")
-            else dt_util.DEFAULT_TIME_ZONE
-        )
+        zone = dt_util.get_default_time_zone()
         async with self._lock:
             if self.error:
                 return
