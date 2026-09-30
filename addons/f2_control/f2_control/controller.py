@@ -202,7 +202,7 @@ _PROBE_ALERTS = {
     "CS-102": (
         "moisture sensor not reporting",
         "Check the probe is powered and online, and that the zone's moisture sensor is mapped "
-        "correctly in Rooms & setup.",
+        "correctly in Settings → Rooms & hardware.",
     ),
     "CS-103": (
         "moisture reading out of range",
@@ -421,7 +421,7 @@ def with_plumbing(hw, descriptor):
 
 # ---------------------------------------------------------------- nutrient batches
 # A room's reservoir, refilled and dosed by this controller: the integration's feed.py says how
-# much, Rooms & setup maps the switches, and the descriptor carries them only when mapped.
+# much, Rooms & hardware maps the switches, and the descriptor carries them only when mapped.
 RESERVOIR_KEYS = (
     "reservoir_distance_sensor",
     "fresh_water_switch",
@@ -1939,7 +1939,7 @@ class Controller:
             )
         if batch["step"] != "idle":
             if res is None:
-                self._batch_stop(room, now, "its reservoir is no longer mapped in Rooms & setup")
+                self._batch_stop(room, now, "its reservoir is no longer mapped in Settings → Rooms & hardware")
             else:
                 self._batch_step(room, now, res)
         elif res is not None:
@@ -2009,9 +2009,9 @@ class Controller:
     def _batch_refusal(self, room, res, plan):
         """Why a batch cannot start now, or None."""
         if not res.get("fresh"):
-            return "no fresh-water switch is mapped in Rooms & setup"
+            return "no fresh-water switch is mapped in Settings → Rooms & hardware"
         if not res.get("recirc"):
-            return "no recirculation solenoid is mapped in Rooms & setup"
+            return "no recirculation solenoid is mapped in Settings → Rooms & hardware"
         if not room.hw.get("pump"):
             return "the room has no pump mapped, and a batch mixes with it"
         if plan is None:
@@ -2025,7 +2025,7 @@ class Controller:
             return "the feed plan doses nothing"
         missing = [dose["doser"] for dose in plan["doses"] if dose["doser"] not in res["dosers"]]
         if missing:
-            return f"doser {missing[0]} has no switch mapped in Rooms & setup"
+            return f"doser {missing[0]} has no switch mapped in Settings → Rooms & hardware"
         if not self._on(room.enable_flag, False):
             return f"the room's watering switch ({room.enable_flag}) is off"
         if not self._room_active(room):
@@ -2545,7 +2545,7 @@ class Controller:
                 "plumbing and switches disagree, not watering",
                 "The plumbing this room was set up with and the switches mapped to it don't "
                 "match, so nothing in this room is watered until they do. The detail below says "
-                "what to change, in Rooms & setup."
+                "what to change, in Settings → Rooms & hardware."
                 f"\n\nDetail: {plumbing}.",
                 room=room,
             )
@@ -2660,14 +2660,14 @@ class Controller:
                 f"its engine switch ({room.enable_flag}). Because {name} ({entity}) is off, the "
                 "controller switched watering off in its place, and does so again while it stays "
                 f"off. Switch {name} back on in Home Assistant, then switch watering on in Crop "
-                "Steering → Settings → Watering.",
+                "Steering → Overview.",
                 room=room,
             )
         return off
 
     def _alert(self, key, code, title, message, room=None, zone=None):
         """Raise notification `f2_{key}` with its error code (docs/error-codes.json; the dashboard's
-        Help & tools lists the same catalog). The key, and so the notification id, never changes
+        Help lists the same catalog). The key, and so the notification id, never changes
         with the wording: an update replaces an old notification instead of adding a second one."""
         if not self._alert_due(key, code):
             return
@@ -2676,7 +2676,7 @@ class Controller:
         log("ALERT", title, "-", " ".join(message.split()))
         message = (
             f"{message}\n\nCode {code}. What it means and what to do: "
-            "Crop Steering → Help & tools → Error codes."
+            "Crop Steering → Help → Error codes."
         )
         # The 30-minute quiet period starts only once Home Assistant HAS the notification: an alert
         # raised while it is unreachable (the moment a close fails, typically) is raised again on the
@@ -3610,7 +3610,7 @@ class Controller:
                     "shot size can't be worked out, not watering",
                     "To size a shot the controller needs this zone's pot size (litres per plant), "
                     "plant count, drippers per plant and dripper flow, and one of them is missing, "
-                    "zero or unreadable. Set them in Rooms & setup.",
+                    "zero or unreadable. Set them in Settings → Rooms & hardware.",
                     room=room,
                     zone=zone,
                 )
