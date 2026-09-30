@@ -9,6 +9,32 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **Today's events say who changed a setting, and what it was.** A change reads "Sam raised Most
+  P1 shots to 10 (was 6)" or "Auto setpoints lowered Maintenance trigger to 63.3% (was 71.3%)",
+  under the zone's own name. It said "Zone 1 · Maintenance shot when below 71.3 → 63.3 %", whoever
+  made it and whatever the zone is called. A person is named as Home Assistant knows them, an
+  automation or a script by its name, and the controller's own adjustments as Auto setpoints.
+
+### 🔧 Technical notes
+
+- The grow day reads who made each setting change from Home Assistant's logbook, which records the
+  user behind every state change: `logbook/get_events` over the websocket inside Home Assistant,
+  `/api/logbook` over REST standalone (`Controller.logbook`, the selected room's entities only).
+  `changedBy` (`day-timeline.ts`) names an entry's `context_event_type` `automation_triggered` /
+  `script_started` by its `context_name`, a `context_user_id` by that user's person (`person.*`'s
+  `user_id`) or, for an account without one, the signed-in user (`hass.user`, as
+  `Controller.viewer`), and any other user on a zone's `p1_target_vwc`, `field_capacity`,
+  `p2_vwc_threshold` or `p3_emergency_vwc_threshold` as Auto setpoints, which writes only those and
+  through the Supervisor's user. It is read once the day's changes are known and again when one
+  more appears; a failed read shows the changes without a name. `changeSentence` words it, with a
+  setting's `short` name (new on `Setting`). The demo has a grower, `person.alex`, and
+  `demoLogbook`. `tests_ha/test_logbook_names_who.py` changes a real room's trigger as a signed-in
+  user, as the Supervisor and from an automation, and reads all three back both ways.
+
 ## [2.29.0] - 2026-09-30
 
 Integration and controller **2.29.0**.

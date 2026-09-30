@@ -319,6 +319,7 @@ function setting(entity: EntityState, room: Room): Setting | null {
   return {
     entityId: entity.entity_id,
     label: words?.label ?? title(param),
+    short: words?.short ?? words?.label ?? title(param),
     description:
       words?.help ??
       (match

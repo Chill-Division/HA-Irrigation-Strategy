@@ -1,4 +1,10 @@
-import type { TimelineRequest, TimelineRows } from "./day-timeline";
+import {
+  logbookEntries,
+  type LogbookEntry,
+  type LogbookRequest,
+  type TimelineRequest,
+  type TimelineRows,
+} from "./day-timeline";
 import type { EntityState, States } from "./types";
 import { statisticSamples, type CounterSample, type WaterRecordRequest } from "./water-use";
 
@@ -100,6 +106,37 @@ export async function liveHistory(
       deadline,
     ]);
     return { ...plain, ...detailed };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Some entities' logbook lines over a span, over Home Assistant's own websocket
+ * (`logbook/get_events`), with who or what made each change. */
+export async function liveLogbook(
+  connection: LiveConnection,
+  request: LogbookRequest,
+  timeoutMs = 30_000,
+): Promise<LogbookEntry[]> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error("Home Assistant did not return the logbook in time.")),
+      timeoutMs,
+    );
+  });
+  try {
+    return logbookEntries(
+      await Promise.race([
+        connection.sendMessagePromise!({
+          type: "logbook/get_events",
+          start_time: new Date(request.start).toISOString(),
+          end_time: new Date(request.end).toISOString(),
+          entity_ids: request.entityIds,
+        }),
+        deadline,
+      ]),
+    );
   } finally {
     clearTimeout(timer);
   }

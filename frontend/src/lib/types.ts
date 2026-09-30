@@ -1,5 +1,5 @@
 import type { HistoryRequest, HistoryWindow } from "./comparison-types";
-import type { TimelineRequest, TimelineRows } from "./day-timeline";
+import type { LogbookEntry, LogbookRequest, TimelineRequest, TimelineRows } from "./day-timeline";
 import type { OperatorAction } from "./operator-types";
 import type { AutoSetpointStatus } from "./auto-setpoints";
 import type { Waiting } from "./waiting-for";
@@ -29,6 +29,8 @@ export interface Metric {
 export interface Setting {
   entityId: string;
   label: string;
+  /** The label in a sentence or beside a line: "Maintenance trigger". */
+  short?: string;
   description: string;
   value: number | null;
   min: number;
@@ -163,6 +165,10 @@ export interface Controller {
   history: (entityIds: string[], hours: number, signal?: AbortSignal) => Promise<Series[]>;
   /** One grow-day of recorder history for the selected room's day timeline. */
   timeline: (request: TimelineRequest) => Promise<TimelineRows>;
+  /** The logbook lines of the selected room's entities over a span: who or what changed them. */
+  logbook: (request: LogbookRequest) => Promise<LogbookEntry[]>;
+  /** The signed-in Home Assistant user, inside Home Assistant; null standalone or in the demo. */
+  viewer: { id: string; name: string } | null;
   /** The selected room's water-today counters over a span of grow-days (the Water use panel). */
   waterRecord: (request: WaterRecordRequest) => Promise<WaterRecord>;
   operator: <T>(action: OperatorAction, data?: Record<string, unknown>) => Promise<T>;
