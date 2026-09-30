@@ -8,7 +8,7 @@ Reads and previews work by default. Configuration saves require an explicit envi
 
 Use Node.js 22 or newer. From your checkout:
 
-Clone this repository or download **crop_steering_mcp_source.zip** from the [latest GitHub release](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/releases/latest), then extract it before running:
+Clone this repository or download **crop_steering_mcp_source.zip** from the [latest GitHub release](https://github.com/Chill-Division/HA-Irrigation-Strategy/releases/latest), then extract it before running:
 
 ```sh
 cd mcp-server

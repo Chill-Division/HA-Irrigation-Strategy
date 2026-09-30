@@ -3,7 +3,7 @@ name: Deploy demo to GitHub Pages
 # Publishes the compiled, self-contained demo workspace in www/ to GitHub Pages.
 # The dashboards auto-enter demo mode (baked-in mock data) when served from *.github.io,
 # so dashboard.html runs standalone with no Home Assistant or credentials.
-# Demo: https://jaketherabbit.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1
+# Demo: https://chill-division.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1
 
 on:
   push:

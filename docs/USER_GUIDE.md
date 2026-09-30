@@ -4,7 +4,7 @@ Use **Overview** to check a room and **Irrigation plan** for **Today** and **Sch
 
 Existing `#/strategy` and `#/grow-plan` bookmarks open **Irrigation plan → Today** and **Schedule**.
 
-New installation? Start with [Install, upgrade and rollback](INSTALL.md). To try the interface without connecting equipment, open the [interactive demo](https://jaketherabbit.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1).
+New installation? Start with [Install, upgrade and rollback](INSTALL.md). To try the interface without connecting equipment, open the [interactive demo](https://chill-division.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1).
 
 ## What each action changes
 
