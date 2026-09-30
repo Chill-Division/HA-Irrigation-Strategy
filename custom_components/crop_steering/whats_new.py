@@ -25,7 +25,7 @@ SERVICES = ("whats_new_get", "whats_new_seen")
 NOTES = Path(__file__).with_name("WHATS_NEW.md")
 HEADING = re.compile(r"^## (\d+\.\d+\.\d+) - (\d{4}-\d{2}-\d{2})\s*$")
 VERSION = re.compile(r"^\d+\.\d+\.\d+$")
-# Plenty for a window that shows at most five, and for Help & tools' recent releases.
+# Plenty for a window that shows at most five, and for Help's recent releases.
 MAX_RELEASES = 20
 
 

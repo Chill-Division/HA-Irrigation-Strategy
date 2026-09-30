@@ -42,7 +42,7 @@ async def _room(call):
 
 
 def _renamed(room, name):
-    """What Rooms & setup sends to save a room under a new name (frontend/src/pages/setup.tsx)."""
+    """What Rooms & hardware sends to save a room under a new name (frontend/src/pages/setup.tsx)."""
     return {
         "entry_id": room["entry_id"],
         "expected_revision": room["revision"],

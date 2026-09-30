@@ -1,4 +1,4 @@
-"""Nutrient batches in a real Home Assistant: a room's reservoir and dosers, mapped in Rooms & setup,
+"""Nutrient batches in a real Home Assistant: a room's reservoir and dosers, mapped in Rooms & hardware,
 reach the controller's descriptor; the feed settings save through the real services and schemas;
 the feed plan sensor and the feed stage select follow them; the room's Automatic batches switch
 and Mix a Batch Now button exist, off and never pressed; and the dashboard's Mix a batch now presses
@@ -45,7 +45,7 @@ async def test_a_new_room_has_its_batch_entities_and_nothing_to_run(
     assert hass.states.get(MIX).state == "unknown"  # never pressed
     plan = hass.states.get(PLAN)
     assert plan.state == "none"
-    assert plan.attributes["problem"] == "No doser is mapped in Rooms & setup."
+    assert plan.attributes["problem"] == "No doser is mapped in Settings → Rooms & hardware."
     assert hass.states.get(STAGE).state == "unavailable"  # no feed recipe yet
     assert not set(RESERVOIR) & set(hass.states.get(DESCRIPTOR).attributes)
     with pytest.raises(HomeAssistantError, match="No doser is mapped"):
@@ -156,7 +156,7 @@ async def test_a_recipe_saved_before_the_dosers_are_mapped_runs_once_they_are(
     )
     assert (
         hass.states.get(PLAN).attributes["problem"]
-        == "No doser is mapped in Rooms & setup."
+        == "No doser is mapped in Settings → Rooms & hardware."
     )
     for entity in list(RESERVOIR.values())[1:]:
         hass.states.async_set(entity, "off")

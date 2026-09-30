@@ -26,7 +26,7 @@ SIGNAL = f"{DOMAIN}_feed_changed"
 
 
 def mapped_dosers(hardware: dict) -> dict[int, str]:
-    """The room's doser switches from Rooms & setup, by doser number."""
+    """The room's doser switches from Rooms & hardware, by doser number."""
     return {
         number: hardware[key]
         for number, key in enumerate(feed.DOSER_KEYS, start=1)

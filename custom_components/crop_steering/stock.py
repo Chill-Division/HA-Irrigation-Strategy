@@ -7,7 +7,7 @@ swapped between stages, several tanks can be on one doser; a batch then draws fr
 like the nutrient its recipe puts on that doser.
 
 Any other tank is drawn by every other batch: a newer timestamp on the tank last-fill entity mapped
-in Rooms & setup (`tank_last_fill_sensor`), or the operator recording one by hand. It loses its dose
+in Rooms & hardware (`tank_last_fill_sensor`), or the operator recording one by hand. It loses its dose
 per batch: a fixed amount, or what a dose entity reads at that moment (a dose-volume number of a
 doser this system does not run), so the draw follows that doser's own setting.
 

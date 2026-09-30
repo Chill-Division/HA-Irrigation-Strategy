@@ -55,7 +55,7 @@ async def _call(hass, user, service, data):
 
 
 def _saved_as(document, name):
-    """What Rooms & setup sends to save the room under a new name."""
+    """What Rooms & hardware sends to save the room under a new name."""
     room = document["rooms"][0]
     return {
         "entry_id": room["entry_id"],

@@ -2,8 +2,8 @@
 
 The dashboard's **What's new** window shows these to the first person who opens the dashboard after
 an update: every release since the last one it showed there, newest first, at most five. A new
-installation has nothing to catch up on and shows none. **Help & tools → What's new** opens it
-again at any time.
+installation has nothing to catch up on and shows none. **Help → What's new** opens it again at
+any time.
 
 A change a grower would notice adds one line under `## Unreleased` at the top, in its own pull
 request, and `scripts/release.py` dates them as the release. Write it for growers, not for the
@@ -24,6 +24,8 @@ version being released.
 ## Unreleased
 
 - Set how long your pump runs before a zone's valve opens, for a pump that takes a few seconds to reach pressure.
+- A shorter menu of six: pages that belong together are tabs, and the room and watering switches are on the Overview.
+- Today's grow day chart is twice as tall, and how to read it is behind the ? beside its title.
 
 ## 2.28.0 - 2026-09-29
 

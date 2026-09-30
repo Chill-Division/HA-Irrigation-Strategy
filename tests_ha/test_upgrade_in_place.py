@@ -236,7 +236,7 @@ async def test_an_old_room_gains_nutrient_batches_switched_off_with_nothing_to_r
     assert hass.states.get("button.crop_steering_mix_batch").state == "unknown"
     plan = hass.states.get("sensor.crop_steering_feed_plan")
     assert plan.state == "none"
-    assert plan.attributes["problem"] == "No doser is mapped in Rooms & setup."
+    assert plan.attributes["problem"] == "No doser is mapped in Settings → Rooms & hardware."
     assert hass.states.get("select.crop_steering_feed_stage").state == "unavailable"
     descriptor = hass.states.get(DESCRIPTOR).attributes
     assert not [key for key in descriptor if key.startswith("doser_") or "reservoir" in key]
