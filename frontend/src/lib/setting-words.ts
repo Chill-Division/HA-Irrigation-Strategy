@@ -369,7 +369,9 @@ const MODE: Record<string, string> = {
   generative: "generative",
 };
 const withMode = (words: SettingWords, mode: string | undefined): SettingWords =>
-  mode ? { ...words, label: `${words.label} (${MODE[mode]})` } : words;
+  mode
+    ? { ...words, label: `${words.label} (${MODE[mode]})`, short: `${words.short} (${MODE[mode]})` }
+    : words;
 
 /** Words for a setting key: an entity's parameter ("zone_1_" already removed), or the Schedule's
  * mode-resolved key ("dryback_target", "ec_target_p1"). Undefined for a key nobody has named. */

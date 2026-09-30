@@ -34,6 +34,10 @@ describe("setting words", () => {
     expect(settingWords("generative_dryback_target")!.label).toBe("P3 dryback target (generative)");
     expect(settingWords("dryback_target")!.label).toBe("P3 dryback target");
     expect(settingWords("ec_target_gen_p2")!.label).toBe("Substrate EC target, P2 (generative)");
+    // The short name too, which a setting change in Today's events is said with.
+    expect(settingWords("ec_target_veg_p1")!.short).toBe("P1 EC target (vegetative)");
+    expect(settingWords("vegetative_dryback_target")!.short).toBe("P3 dryback target (vegetative)");
+    expect(settingWords("ec_target_p1")!.short).toBe("P1 EC target");
     expect(settingWords("ec_target_p1")!.label).toBe("Substrate EC target, P1");
     expect(settingWords("no_such_setting")).toBeUndefined();
   });
