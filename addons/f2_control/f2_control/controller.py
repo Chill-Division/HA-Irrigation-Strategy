@@ -299,7 +299,7 @@ def _on_since_shot(history, started):
 # lights-on watchdog and the minimum-daily floor still fire, and so do a blind zone's safety schedule and
 # its copy of a sibling's rescue. Every other gate (kill switch, faults, zone switches, source water, the
 # daily budget) still applies to them.
-PLAN_HOLD_EXEMPT = frozenset({"p3_emergency", "watchdog", "min_daily", "blind_fallback", "blind_copy_rescue"})
+PLAN_HOLD_EXEMPT = frozenset({"p3_emergency", "watchdog", "blind_fallback", "blind_copy_rescue"})
 
 # A room's choice of how Water today reads, select.crop_steering_<prefix>water_today_view. The integration
 # offers ["Zone total", PER_PLANT] (WATER_TODAY_VIEWS in its const.py); the vitals follow it.
@@ -1700,15 +1700,6 @@ class Controller:
                 f"switch.crop_steering_{room.prefix}ec_stacking_enabled", False
             ),
             watchdog_hours=self._zone_num(room, zone, "watchdog_hours", 3),
-            min_daily_volume=self._num(
-                f"input_number.crop_steering_{room.prefix}zone_{zone}_min_daily_ml_per_plant",
-                0.0,
-            )
-            * self._zone_num(room, zone, "plant_count", 0)
-            / 1000.0,  # mL/plant x plants -> zone-L floor (0 if either unset)
-            drown_ceiling=self._zone_num(
-                room, zone, "min_floor_drown_ceiling", 90, optional=True
-            ),  # hard anti-drown VWC cap on the floor (engine-only knob — no integration entity)
         )
         p, warns = validate_params(raw)
         for w in warns:

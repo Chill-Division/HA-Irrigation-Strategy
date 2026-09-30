@@ -3,7 +3,7 @@
 The controller holds routine shots while the room's plan is held, stale or missing. It used to hold every
 shot, and a routine decision also masks the rescues behind it: a zone drying in P2 is a top-up first, so
 the watchdog never came up and the zone got nothing all day. ZoneSnapshot.steering_held asks decide() for
-the rescues only: the P3 emergency, the lights-on watchdog and the minimum-daily floor.
+the rescues only: the P3 emergency and the lights-on watchdog.
 """
 
 import pytest
@@ -45,19 +45,6 @@ def test_a_zone_drying_in_p2_gets_the_watchdog_not_the_top_up_it_would_have_had(
     result = decide(held(**snap), P(watchdog_hours=3))
     assert result[2] is True and kind_of(result) == "watchdog" and result[4].cap_exempt
     assert "WATCHDOG" in result[4]
-
-
-def test_the_minimum_daily_floor_fires_where_a_top_up_would_have():
-    snap = dict(phase="P2", vwc=40, daily_vol=3, minutes_since_shot=30)
-    assert kind_of(decide(S(**snap), P(min_daily_volume=10))) == "p2_topup"
-    result = decide(held(**snap), P(min_daily_volume=10))
-    assert result[2] is True and kind_of(result) == "min_daily"
-
-
-def test_the_minimum_daily_floor_still_fires_in_the_morning_dryback_and_the_ramp():
-    for phase in ("P0", "P1"):
-        result = decide(held(phase=phase, vwc=58, daily_vol=0, minutes_since_shot=30), P(min_daily_volume=10))
-        assert kind_of(result) == "min_daily", phase
 
 
 def test_the_overnight_emergency_fires():

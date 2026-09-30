@@ -162,11 +162,6 @@ const WORDS: Record<string, SettingWords> = {
     short: "Watchdog interval",
     help: "After P0, with lights on, a zone below its maintenance trigger that has had no shot for this long gets one, even past the daily limit. 0 turns it off.",
   },
-  min_floor_drown_ceiling: {
-    label: "Daily minimum stops at",
-    short: "Daily minimum stops at",
-    help: "Shots that make up a zone’s daily minimum water only fire while moisture reads below this.",
-  },
   max_shot_duration: {
     label: "Longest shot",
     short: "Longest shot",
@@ -303,7 +298,7 @@ const DETAILS: Record<string, SettingDetail> = {
   },
   p2_shot_size: {
     what: `The size of each maintenance shot, ${OF_SUBSTRATE}.`,
-    when: "Every maintenance shot. Watchdog and daily-minimum shots use it as it is; dilution and high-EC flushes are 1.5 times it or more.",
+    when: "Every maintenance shot. Watchdog shots use it as it is; dilution and high-EC flushes are 1.5 times it or more.",
     affects:
       "Maintenance shots are sized by substrate EC against the P2 target, from half to twice this. Bigger shots make more runoff and lower substrate EC.",
     athena:
@@ -313,7 +308,7 @@ const DETAILS: Record<string, SettingDetail> = {
     what: "The least time from the last shot to a maintenance shot.",
     when: "Under the maintenance trigger, a maintenance shot fires only once this long has passed since the last shot of any kind, so its water can reach the probes before moisture is read again. Read sooner, moisture has not moved yet and shots stack a minute apart. 0 turns it off: a shot every time the controller checks and moisture reads below the trigger.",
     affects:
-      "How fast a zone below its trigger is brought back up: one maintenance shot each time this passes until moisture reads at the trigger. Dilution and rescue flushes and the daily minimum keep their own 10-minute wait; the watchdog and P3 rescue shots do not wait for this.",
+      "How fast a zone below its trigger is brought back up: one maintenance shot each time this passes until moisture reads at the trigger. Dilution and rescue flushes keep their own 10-minute wait; the watchdog and P3 rescue shots do not wait for this.",
     athena:
       "Athena spaces P1 shots 15 to 30 minutes apart so each can soak in (p. 36); it gives no spacing for P2 events.",
   },

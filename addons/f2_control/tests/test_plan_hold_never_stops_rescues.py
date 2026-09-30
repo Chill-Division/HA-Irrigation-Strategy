@@ -130,21 +130,6 @@ def test_a_zone_drying_in_p2_gets_the_watchdog_while_the_plan_is_held(rig):
     assert opened(fake).count("switch.v1") == 1 and "switch.v2" not in opened(fake)
 
 
-def test_the_minimum_daily_floor_fires_while_the_plan_is_held(rig):
-    c, fake, room = rig
-    now = Clock.now()
-    fake.set_state("input_number.crop_steering_zone_1_min_daily_ml_per_plant", "500")  # 21 L for 42 plants
-    probe(fake, 1, 50)
-    probe(fake, 2, 50)
-    for zone in (1, 2):
-        room.state[zone].update(phase="P2", last_shot=now - timedelta(minutes=30))
-    plan_held(fake, room)
-    pub = c._loop_room(room, now)
-    assert pub[1]["fire"] and pub[1]["reason"].kind == "min_daily" and pub[1]["block"] is None
-    assert not pub[2]["fire"]  # zone 2 has no floor, and nothing else is due
-    assert "switch.v1" in opened(fake)
-
-
 def test_without_a_held_plan_the_same_zone_is_simply_topped_up(rig):
     c, fake, room = rig
     now = Clock.now()
