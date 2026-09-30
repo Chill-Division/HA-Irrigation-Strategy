@@ -1,17 +1,25 @@
 import type { HistoryRequest, HistoryWindow, RunsDocument } from "./comparison-types";
 import { demoHistoryWindow } from "./comparison-demo";
-import type { TimelineRequest } from "./day-timeline";
+import type { LogbookRequest, TimelineRequest } from "./day-timeline";
 import type { OperatorAction } from "./operator-types";
 import { OperatorDemo } from "./operator-demo";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Change, Controller, EntityState, States, WriteResult } from "./types";
-import { applyChanges, asStates, findSession, HaClient, haSessionToken } from "./client";
+import {
+  applyChanges,
+  asStates,
+  findSession,
+  HaClient,
+  haSessionToken,
+  type HassSession,
+} from "./client";
 import { buildRoom, discoverRooms, emptyRoom, resolveRequestedRoom, validateChange } from "./model";
 import {
   createDemo,
   demoBeat,
   demoDay,
   demoHistory,
+  demoLogbook,
   demoReact,
   demoWaterRecord,
   isDemoLocation,
@@ -20,6 +28,7 @@ import {
   applyEntityUpdate,
   liveConnection,
   liveHistory,
+  liveLogbook,
   liveStatistics,
   watchedEntities,
   whileVisible,
@@ -38,6 +47,8 @@ export class ControllerStore {
   private stopTimer?: () => void;
   /** Home Assistant's own websocket, when this page runs inside Home Assistant. */
   private live: LiveConnection | null = null;
+  /** The signed-in Home Assistant user, when this page runs inside Home Assistant. */
+  private viewer: Controller["viewer"] = null;
   private liveToken = 0;
   /** Ends the current subscription; set while one is open or opening. */
   private dropLive?: () => void;
@@ -116,6 +127,8 @@ export class ControllerStore {
       history: this.history,
       historyWindow: this.historyWindow,
       timeline: this.timeline,
+      logbook: this.logbook,
+      viewer: this.viewer,
       waterRecord: this.waterRecord,
       operator: this.operator,
     };
@@ -137,6 +150,7 @@ export class ControllerStore {
       try {
         this.client = new HaClient(base, saved.token || inheritedToken, session);
         this.live = liveConnection(session);
+        this.viewer = viewerOf(session);
         void this.refresh();
       } catch (error) {
         this.connection = "offline";
@@ -323,6 +337,7 @@ export class ControllerStore {
     this.unsubscribe();
     this.watched.clear();
     this.live = liveConnection(session);
+    this.viewer = viewerOf(session);
     this.states = {};
     this.roomId = "";
     this.updated = null;
@@ -348,6 +363,7 @@ export class ControllerStore {
     this.client = null;
     this.unsubscribe();
     this.live = null;
+    this.viewer = null;
     this.connection = "offline";
     this.error = "Disconnected. Displayed data is the last successful snapshot.";
     try {
@@ -568,6 +584,25 @@ export class ControllerStore {
       throw new Error("Room or connection changed; history request cancelled.");
     return result;
   };
+  /** The selected room's logbook lines over a span, who or what changed its settings: over Home
+   * Assistant's websocket inside Home Assistant, over REST standalone. */
+  logbook = async (request: LogbookRequest) => {
+    const allowed = new Set(this.snapshot.room.entities.map((entity) => entity.entity_id));
+    if (!request.entityIds.length || request.entityIds.some((id) => !allowed.has(id)))
+      throw new Error("The logbook is limited to entities in the selected room.");
+    if (!(request.end > request.start) || request.end - request.start > 26 * 3_600_000)
+      throw new Error("The logbook is read one grow-day at a time.");
+    if (this.demo) return demoLogbook(this.states, request);
+    if (!this.client || this.connection !== "live")
+      throw new Error("Connect to Home Assistant to read the logbook.");
+    const generation = this.generation;
+    const result = this.live?.sendMessagePromise
+      ? await liveLogbook(this.live, request)
+      : await this.client.logbook(request);
+    if (generation !== this.generation)
+      throw new Error("Room or connection changed; logbook request cancelled.");
+    return result;
+  };
   /** The selected room's water-today counters: Home Assistant's hourly long-term statistics over
    * its websocket inside Home Assistant; standalone, its recorded history over REST, which reaches
    * back only as far as the recorder keeps it. */
@@ -591,6 +626,11 @@ export class ControllerStore {
       throw new Error("Room or connection changed; water request cancelled.");
     return result;
   };
+}
+/** Who is signed in, from Home Assistant's own session; nobody standalone. */
+function viewerOf(session: HassSession | undefined): Controller["viewer"] {
+  const user = session?.user;
+  return user?.id && user.name ? { id: user.id, name: user.name } : null;
 }
 function message(error: unknown): string {
   return error instanceof Error ? error.message : "Home Assistant request failed.";

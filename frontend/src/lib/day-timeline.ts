@@ -49,6 +49,24 @@ export interface SetpointChange {
   from: number;
   to: number;
 }
+/** A setting's line in Home Assistant's logbook: when it changed, to what, and who or what made the
+ * change, as Home Assistant recorded it. */
+export interface LogbookEntry {
+  entityId: string;
+  time: number;
+  state: string;
+  /** The Home Assistant user behind the change, when there was one. */
+  userId: string | null;
+  /** `automation_triggered` or `script_started` when an automation or a script made it. */
+  eventType: string | null;
+  /** That automation's or script's name. */
+  source: string | null;
+}
+export interface LogbookRequest {
+  entityIds: string[];
+  start: number;
+  end: number;
+}
 export interface Reading {
   time: number;
   value: number;
@@ -287,6 +305,103 @@ export function setpointChanges(
     }
   }
   return changes.sort((a, b) => a.time - b.time);
+}
+
+/** Home Assistant's logbook entries, over REST (`when` an ISO time) or its websocket (`when` in
+ * epoch seconds). What is not a state line is left out. */
+export function logbookEntries(payload: unknown): LogbookEntry[] {
+  if (!Array.isArray(payload)) return [];
+  const text = (value: unknown) => (typeof value === "string" && value ? value : null);
+  return payload.flatMap((item): LogbookEntry[] => {
+    const row = (item ?? {}) as Record<string, unknown>;
+    const time =
+      typeof row.when === "number"
+        ? row.when * 1000
+        : typeof row.when === "string"
+          ? Date.parse(row.when)
+          : NaN;
+    if (
+      typeof row.entity_id !== "string" ||
+      typeof row.state !== "string" ||
+      !Number.isFinite(time)
+    )
+      return [];
+    return [
+      {
+        entityId: row.entity_id,
+        time,
+        state: row.state,
+        userId: text(row.context_user_id),
+        eventType: text(row.context_event_type),
+        source: text(row.context_name),
+      },
+    ];
+  });
+}
+
+/** Each Home Assistant user's name, from the people Home Assistant knows (a person's `user_id`),
+ * and the signed-in user's own name for an account that has no person. */
+export function peopleByUser(
+  states: States,
+  viewer?: { id?: string; name?: string } | null,
+): Map<string, string> {
+  const people = new Map<string, string>();
+  for (const [id, state] of Object.entries(states)) {
+    const user = state.attributes.user_id;
+    if (id.startsWith("person.") && typeof user === "string" && user)
+      people.set(user, String(state.attributes.friendly_name || id.slice("person.".length)));
+  }
+  if (viewer?.id && viewer.name && !people.has(viewer.id)) people.set(viewer.id, viewer.name);
+  return people;
+}
+
+/** The only settings the controller changes: a zone's own four moisture levels, which Auto
+ * setpoints adjusts through Home Assistant's Supervisor user (nobody's person). */
+const AUTO_SETPOINTS =
+  /^number\.crop_steering_.*zone_\d+_(p1_target_vwc|field_capacity|p2_vwc_threshold|p3_emergency_vwc_threshold)$/;
+
+/** Who made a setting change, by its logbook entry: an automation or a script by its name, a person
+ * by their name, Auto setpoints for a setting it adjusts, or null when that is not known. */
+export function changedBy(
+  change: SetpointChange,
+  entries: LogbookEntry[],
+  people: Map<string, string>,
+): string | null {
+  const entry = entries
+    .filter(
+      (item) =>
+        item.entityId === change.entityId &&
+        Math.abs(item.time - change.time) <= 2_000 &&
+        numberOf(item.state) === change.to,
+    )
+    .sort((a, b) => Math.abs(a.time - change.time) - Math.abs(b.time - change.time))[0];
+  if (!entry) return null;
+  if (entry.eventType === "automation_triggered")
+    return entry.source ? `Automation “${entry.source}”` : "An automation";
+  if (entry.eventType === "script_started")
+    return entry.source ? `Script “${entry.source}”` : "A script";
+  if (entry.userId && people.has(entry.userId)) return people.get(entry.userId)!;
+  if (entry.userId && AUTO_SETPOINTS.test(change.entityId)) return "Auto setpoints";
+  return null;
+}
+
+/** A setting change in words: who, which way, the new value and the one it replaced. "Sam raised
+ * Most P1 shots to 10 (was 6)"; with nobody known, "Most P1 shots raised to 10 (was 6)". */
+export function changeSentence(
+  name: string,
+  unit: string,
+  from: number,
+  to: number,
+  who: string | null,
+): string {
+  const way = to > from ? "raised" : "lowered";
+  const value = (amount: number) => {
+    const shown = amount.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    return !unit ? shown : unit === "%" ? `${shown}%` : `${shown} ${unit}`;
+  };
+  return who
+    ? `${who} ${way} ${name} to ${value(to)} (was ${value(from)})`
+    : `${name} ${way} to ${value(to)} (was ${value(from)})`;
 }
 
 export function readings(rows: TimelineRow[] = [], from: number, to: number): Reading[] {

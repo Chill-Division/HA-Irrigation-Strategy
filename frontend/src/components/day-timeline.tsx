@@ -8,6 +8,8 @@ import {
   alignBands,
   appendLive,
   atHour,
+  changedBy,
+  changeSentence,
   compareDays,
   duration,
   earlierDays,
@@ -20,6 +22,7 @@ import {
   nextShot,
   NOT_REPORTING,
   openSeconds,
+  peopleByUser,
   phaseAt,
   phaseBands,
   phaseTargets,
@@ -36,6 +39,7 @@ import {
   type Comparison,
   type DayTrace,
   type GrowDay,
+  type LogbookEntry,
   type NextShot,
   type PhaseBand,
   type Reading,
@@ -121,9 +125,14 @@ function storedLayers(): Layers {
   };
 }
 interface Change extends SetpointChange {
-  label: string;
+  /** The setting's short name, "Maintenance trigger". */
+  name: string;
   unit: string;
   zoneId?: number;
+  /** The zone's name, or the room's for a room-wide setting. */
+  place: string;
+  /** Who made the change (changedBy); null when that is not known. */
+  by: string | null;
 }
 interface Projection {
   points: (Reading & { phase: string })[];
@@ -266,6 +275,37 @@ function useEarlierDays(controller: Controller, day: GrowDay | null, ready: bool
     };
   }, [key, ready, load, attempt]);
   return earlier?.key === key ? earlier : null;
+}
+
+/** Who made the day's setting changes, from Home Assistant's logbook: read once the changes are
+ * known and again whenever another appears. Null until read; after a failed read, none, so the
+ * changes show without who made them. */
+function useChangeAuthors(
+  controller: Controller,
+  day: GrowDay,
+  changes: SetpointChange[],
+): LogbookEntry[] | null {
+  const ids = [...new Set(changes.map((change) => change.entityId))].sort();
+  const key = changes.length
+    ? [controller.roomId, day.start, changes.length, changes.at(-1)!.time, ...ids].join(" ")
+    : "";
+  const [read, setRead] = useState<{ key: string; entries: LogbookEntry[] } | null>(null);
+  const latest = useRef({ ids, start: day.start });
+  latest.current = { ids, start: day.start };
+  const load = controller.logbook;
+  useEffect(() => {
+    if (!key) return;
+    const { ids, start } = latest.current;
+    let current = true;
+    load({ entityIds: ids, start, end: Date.now() + 60_000 }).then(
+      (entries) => current && setRead({ key, entries }),
+      () => current && setRead({ key, entries: [] }),
+    );
+    return () => {
+      current = false;
+    };
+  }, [key, load]);
+  return read?.key === key ? read.entries : null;
 }
 
 /** The selected room's grow-day on one time axis: lights, each zone's phases, every shot, what held
@@ -474,12 +514,22 @@ function Timeline({
   const { room, states } = controller;
   const decisions = rows[entities.attributeIds[0]] ?? [];
   const settings = new Map(room.settings.map((setting) => [setting.entityId, setting]));
-  const changes = setpointChanges(rows, [...settings.keys()], day.start, now).map(
-    (change): Change => {
-      const setting = settings.get(change.entityId) as Setting;
-      return { ...change, label: setting.label, unit: setting.unit, zoneId: setting.zoneId };
-    },
-  );
+  const found = setpointChanges(rows, [...settings.keys()], day.start, now);
+  const authors = useChangeAuthors(controller, day, found);
+  const people = peopleByUser(states, controller.viewer);
+  const changes = found.map((change): Change => {
+    const setting = settings.get(change.entityId) as Setting;
+    const zone = room.zones.find((item) => item.id === setting.zoneId);
+    return {
+      ...change,
+      name: setting.short ?? setting.label,
+      unit: setting.unit,
+      zoneId: setting.zoneId,
+      place:
+        setting.zoneId === undefined ? room.room.name : (zone?.name ?? `Zone ${setting.zoneId}`),
+      by: authors && changedBy(change, authors, people),
+    };
+  });
   const settingId = (zone: Zone, key: string) => {
     // Like the controller: the zone's own setpoint when it has one, else the room's.
     const own = `number.crop_steering_${room.room.prefix}zone_${zone.id}_${key}`;
@@ -1538,9 +1588,7 @@ function tracking(
   return [...parts, lane.setupNote, lane.status].filter(Boolean).join(" · ");
 }
 function changeText(change: Change): string {
-  const unit = change.unit ? ` ${change.unit}` : "";
-  const zone = change.zoneId === undefined ? "Room" : `Zone ${change.zoneId}`;
-  return `${clock(change.time)} · ${zone} · ${change.label} ${number(change.from, 2)} → ${number(change.to, 2)}${unit}`;
+  return `${clock(change.time)} · ${change.place} · ${changeSentence(change.name, change.unit, change.from, change.to, change.by)}`;
 }
 function shotText(shot: Shot, lane: Lane): string {
   const litres = lane.litres((shot.end - shot.start) / 1000);
