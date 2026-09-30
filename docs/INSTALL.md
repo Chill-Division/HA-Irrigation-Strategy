@@ -1,6 +1,6 @@
 # Installation, upgrade and rollback
 
-[Try the isolated demo](https://chill-division.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1) · [Complete user guide](USER_GUIDE.md) · [Tested features and limits](FEATURE_MATRIX.md)
+[Try the isolated demo](https://chill-division.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1) · [Complete user guide](USER_GUIDE.md)
 
 ## What gets installed
 
@@ -14,7 +14,7 @@ Install the integration and controller together. HACS, the HA integration config
 
 ## Requirements
 
-- Home Assistant 2024.10 or newer. Python requirements follow your HA version; HA 2024.10 requires Python 3.12.
+- Home Assistant 2026.5 or newer. Python requirements follow your HA version; HA 2026.5 requires Python 3.14.
 - HACS for the guided integration download, or access to copy a custom integration manually.
 - Home Assistant OS/Supervised with the app store for the guided controller install. Container/Core users must run the companion controller separately; a true one-click controller install is not available there.
 - An HA administrator account for Rooms & setup and its configuration services.
@@ -43,8 +43,6 @@ Room and zone removal means archive. Archived IDs remain reserved, so restoring 
 With engines still off, confirm each room loads in the sidebar, the selected room has a current controller heartbeat, mappings show **Mapping acknowledged**, and **Sensors** shows the intended entities/units. Open **Irrigation plan → Today** and verify the existing values. An upgrade should retain each room's current values, zone identities and plant/dripper sizing.
 
 Open **Overview** and a zone detail panel. A missing optional tank mapping may remain **Not mapped**; a missing required control sensor or controller acknowledgement needs resolution before commissioning. **Last irrigation** is an event record and may legitimately be absent on a new installation. Do not generate a physical shot just to fill that display.
-
-The documented live evidence covers an in-place upgrade of an existing two-room installation. A completely blank installation, physical delivery and a complete live plan-boundary handoff remain separate commissioning checks. The [feature matrix](FEATURE_MATRIX.md) identifies those limits.
 
 ## Before enabling irrigation
 

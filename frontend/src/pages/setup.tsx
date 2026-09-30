@@ -184,9 +184,9 @@ function newZone(id: number): SetupZone {
     vwc_sensors: [],
     ec_sensors: [],
     plant_count: 1,
-    substrate_volume: 5,
+    substrate_volume: 3.2,
     drippers_per_plant: 1,
-    dripper_flow_rate: 2,
+    dripper_flow_rate: 4,
   };
 }
 const hardwareFields = [

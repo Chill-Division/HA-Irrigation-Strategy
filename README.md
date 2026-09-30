@@ -4,10 +4,10 @@ Crop Steering waters the plants in a grow room automatically. It measures how we
 
 It runs inside [Home Assistant](https://www.home-assistant.io/) and works with the moisture probes, EC probes, pumps and valves you already have there. Everything happens on your own hardware: no cloud account, no subscription.
 
-**[Try the live demo](https://chill-division.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1)** (runs in your browser with sample data, nothing to install) · [Install](#install) · [User guide](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/USER_GUIDE.md) · [What has been tested](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/FEATURE_MATRIX.md)
+**[Try the live demo](https://chill-division.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1)** (runs in your browser with sample data, nothing to install) · [Install](#install) · [User guide](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/USER_GUIDE.md)
 
 ![Release](https://img.shields.io/badge/Release-2.28.0-blue)
-![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.10+-41BDF5)
+![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.5+-41BDF5)
 ![HACS](https://img.shields.io/badge/HACS-Custom-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
@@ -120,7 +120,7 @@ Both parts carry the same version number. Install and update them together.
 
 | | |
 | --- | --- |
-| **Home Assistant** | **2024.10.0 or newer.** Every change is tested on 2024.10.0 and on 2026.9.3. |
+| **Home Assistant** | **2026.5.0 or newer.** Every change is tested on 2026.5.0 and on 2026.9.3. |
 | **The controller app** | Home Assistant OS or Supervised, where it installs from the app store (amd64, aarch64 or armv7) and brings its own Python 3.12. Home Assistant Container and Core have no app store: there you run the controller yourself (see the [install guide](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/INSTALL.md)). |
 | **HACS** | 1.6.0 or newer for the guided download, or copy `custom_components/crop_steering` into Home Assistant by hand. |
 | **Hardware** | A switch Home Assistant can control for each zone's valve (and your pump and main line, if you have them), and a moisture probe per zone. EC probes and tank sensors are optional but recommended. |
@@ -152,7 +152,6 @@ The buttons open the right screen; Home Assistant still asks you to confirm each
 - [User guide](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/USER_GUIDE.md) and [planning a grow](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/GROW_PLANS.md)
 - [Error codes: what each alert means and what to do](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/ERROR_CODES.md)
 - [Troubleshooting](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/troubleshooting.md)
-- [What has been tested, and the known limits](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/FEATURE_MATRIX.md)
 - [Entity reference](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/ENTITIES.md) · [All screenshots](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/SCREENSHOTS.md) · [Sidebar and menu button](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/HA_SIDEBAR.md)
 - For developers: [architecture](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/REPOSITORY_MAP.md), [testing](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/TESTING.md), [how releases are made](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/RELEASING.md) and [contributing](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/CONTRIBUTING.md)
 

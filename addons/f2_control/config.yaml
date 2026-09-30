@@ -15,6 +15,7 @@ arch:
 init: false
 boot: auto
 startup: application
+homeassistant: "2026.5.0"
 homeassistant_api: true
 hassio_api: false
 host_network: false

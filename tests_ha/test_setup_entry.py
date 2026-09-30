@@ -1,11 +1,10 @@
 """The config entry itself: does it load, and do the wizard's answers reach the entities?
 
-Both failures here were invisible to every existing test. The stub suite gives the code a
-`frontend.async_panel_exists` that the real frontend only has from Home Assistant 2026.5.0, and
-this tier used to replace the whole panel registration with a no-op.
+Both failures here were invisible to every existing test. This tier used to replace the whole
+panel registration with a no-op, so an entry that failed to set up there still passed; the
+registration now runs against the real frontend.
 """
 
-import pytest
 from homeassistant.components import frontend
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.data_entry_flow import FlowResultType
@@ -32,46 +31,23 @@ async def _install(hass, hardware=None):
 
 
 # ------------------------------------------------------------------ the sidebar panel
-async def test_the_entry_sets_up_on_a_home_assistant_that_has_no_async_panel_exists(
-    hass, monkeypatch
-):
-    """Every Home Assistant from the advertised 2024.3 up to 2026.4. Removing the attribute keeps
-    this meaningful on the day this tier runs on a Home Assistant that does have it."""
-    monkeypatch.delattr(frontend, "async_panel_exists", raising=False)
+async def test_the_entry_registers_its_sidebar_panel_through_the_frontend(hass, monkeypatch):
+    asked = []
+    real = frontend.async_panel_exists
+
+    def exists(hass_, path):
+        asked.append(path)
+        return real(hass_, path)
+
+    monkeypatch.setattr(frontend, "async_panel_exists", exists)
     entry = await _install(hass)
-    assert entry.state is ConfigEntryState.LOADED  # was SETUP_ERROR: AttributeError
+    assert entry.state is ConfigEntryState.LOADED
+    assert asked and set(asked) == {PANEL}
     assert PANEL in hass.data[frontend.DATA_PANELS]
     assert hass.http.async_register_static_paths.await_count == 1
 
 
-async def test_a_home_assistant_that_has_the_helper_is_asked_through_it(
-    hass, monkeypatch
-):
-    asked = []
-
-    def exists(hass_, path):
-        asked.append(path)
-        return path in hass_.data.get(frontend.DATA_PANELS, {})
-
-    monkeypatch.setattr(frontend, "async_panel_exists", exists, raising=False)
-    entry = await _install(hass)
-    assert entry.state is ConfigEntryState.LOADED
-    assert asked and set(asked) == {PANEL}
-
-
-@pytest.mark.parametrize("has_helper", [False, True])
-async def test_a_sidebar_path_somebody_else_owns_is_left_alone_on_either_path(
-    hass, monkeypatch, has_helper
-):
-    if has_helper:
-        monkeypatch.setattr(
-            frontend,
-            "async_panel_exists",
-            lambda hass_, path: path in hass_.data.get(frontend.DATA_PANELS, {}),
-            raising=False,
-        )
-    else:
-        monkeypatch.delattr(frontend, "async_panel_exists", raising=False)
+async def test_a_sidebar_path_somebody_else_owns_is_left_alone(hass):
     theirs = object()
     hass.data.setdefault(frontend.DATA_PANELS, {})[PANEL] = theirs
     entry = await _install(hass)
