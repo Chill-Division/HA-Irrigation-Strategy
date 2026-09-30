@@ -1,9 +1,9 @@
 """What the README says it needs is what the repository actually asks for and tests.
 
-The minimum Home Assistant lives in five places: `hacs.json` (what HACS enforces), the oldest leg of
-the Real Home Assistant job (what is tested), the README badge, the README's *What you need* table
-and docs/INSTALL.md. docs/TESTING.md says to move them together; this fails when one is left
-behind. The Python and Node versions the README names are read from where they are set.
+The minimum Home Assistant lives in six places: `hacs.json` (what HACS enforces for the integration),
+the controller app's `config.yaml` (what the Supervisor enforces for the app), the oldest leg of the
+Real Home Assistant job (what is tested), the README badge, the README's *What you need* table and
+docs/INSTALL.md. docs/TESTING.md says to move them together; this fails when one is left behind. The Python and Node versions the README names are read from where they are set.
 """
 
 from __future__ import annotations
@@ -47,6 +47,12 @@ def test_the_minimum_home_assistant_is_one_number_everywhere():
     assert (
         oldest == minimum
     ), "the oldest tested Home Assistant is not hacs.json's minimum"
+    app = yaml.safe_load(
+        (ROOT / "addons" / "f2_control" / "config.yaml").read_text(encoding="utf-8")
+    )
+    assert (
+        app.get("homeassistant") == minimum
+    ), "addons/f2_control/config.yaml: homeassistant"
     major_minor = ".".join(minimum.split(".")[:2])
     assert f"Home%20Assistant-{major_minor}+" in README, "README badge"
     assert f"**{minimum} or newer.**" in _requirements_table(), "README: What you need"

@@ -109,6 +109,23 @@ def test_old_flat_partial_state_loads_as_default(tmp_path):
     assert st[2]["phase"] == "P2"  # a zone absent from the file -> seeded fresh
 
 
+def test_a_state_file_from_the_ec_pid_era_loads_without_it(tmp_path):
+    """The EC PID loop is gone, and with it the integral and previous error it kept per zone. A
+    file an older controller wrote still loads: the zone's EC offset is kept, the two are dropped,
+    and they are not written back."""
+    zone = {"phase": "P2", "ec_offset": -1.0, "ec_integral": 4.2, "ec_prev_err": 0.3}
+    p = tmp_path / "state.json"
+    p.write_text(json.dumps({"1": zone}), encoding="utf-8")
+    c = _make([1], p)
+    c._load_state()
+    st = c.rooms[0].state[1]
+    assert (st["phase"], st["ec_offset"]) == ("P2", -1.0)
+    assert "ec_integral" not in st and "ec_prev_err" not in st
+    c._save_state()
+    written = p.read_text(encoding="utf-8")
+    assert "ec_integral" not in written and "ec_prev_err" not in written
+
+
 def test_bad_timestamp_is_tolerated(tmp_path):
     p = tmp_path / "state.json"
     p.write_text(
