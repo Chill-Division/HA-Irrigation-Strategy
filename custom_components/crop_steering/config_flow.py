@@ -147,10 +147,10 @@ def _hardware_schema(
         vol.All(vol.Coerce(int), vol.Range(min=0, max=23))
     )
     out[
-        vol.Optional("substrate_volume", default=params.get("substrate_volume", 6.0))
+        vol.Optional("substrate_volume", default=params.get("substrate_volume", 3.2))
     ] = vol.All(vol.Coerce(float), vol.Range(min=0.1, max=200.0))
     out[
-        vol.Optional("dripper_flow_rate", default=params.get("dripper_flow_rate", 2.0))
+        vol.Optional("dripper_flow_rate", default=params.get("dripper_flow_rate", 4.0))
     ] = vol.All(vol.Coerce(float), vol.Range(min=0.1, max=50.0))
     out[
         vol.Optional("drippers_per_plant", default=params.get("drippers_per_plant", 1))
@@ -241,8 +241,8 @@ def _build_hardware(data: dict) -> dict:
 
 def _build_parameters(data: dict) -> dict:
     return {
-        "substrate_volume": data.get("substrate_volume", 6.0),
-        "dripper_flow_rate": data.get("dripper_flow_rate", 2.0),
+        "substrate_volume": data.get("substrate_volume", 3.2),
+        "dripper_flow_rate": data.get("dripper_flow_rate", 4.0),
         "drippers_per_plant": data.get("drippers_per_plant", 1),
         "field_capacity": data.get("field_capacity", 70.0),
         "max_ec": data.get("max_ec", 9.0),
@@ -656,8 +656,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         key, default=current_params.get(key, fallback)
                     ): vol.All(vol.Coerce(float), _number_range(key))
                     for key, fallback in (
-                        ("substrate_volume", 10.0),
-                        ("dripper_flow_rate", 2.0),
+                        ("substrate_volume", 3.2),
+                        ("dripper_flow_rate", 4.0),
                         ("p1_target_vwc", 65.0),
                         ("p2_vwc_threshold", 60.0),
                     )

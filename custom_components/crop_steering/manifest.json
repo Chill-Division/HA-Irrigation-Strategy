@@ -9,10 +9,10 @@
     "frontend",
     "http"
   ],
-  "documentation": "https://github.com/JakeTheRabbit/HA-Irrigation-Strategy",
+  "documentation": "https://github.com/Chill-Division/HA-Irrigation-Strategy",
   "integration_type": "hub",
   "iot_class": "calculated",
-  "issue_tracker": "https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/issues",
+  "issue_tracker": "https://github.com/Chill-Division/HA-Irrigation-Strategy/issues",
   "requirements": [],
   "version": "2.28.0"
 }

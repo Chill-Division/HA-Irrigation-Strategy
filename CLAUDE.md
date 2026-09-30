@@ -59,7 +59,7 @@ local Python installs. CI is unaffected.
   no external runtime dependency.
 - Responsibilities: phase transitions, hardware sequencing, dryback detection,
   fail-closed hardware writes (aborts shot on valve/pump fault), P2 EC-correction min-interval (anti-short-cycle),
-  optional PID EC loop (`input_boolean.crop_steering_ec_pid_enabled`), daily caps,
+  daily caps,
   sensor-fusion republish, 30-min operator vitals, and nutrient batches for a room with a
   reservoir mapped (refill, circulate, dose each doser in order, mix: `_batch_tick`, from the
   integration's `sensor.crop_steering_<prefix>feed_plan`).

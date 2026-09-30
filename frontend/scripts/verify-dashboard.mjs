@@ -869,7 +869,7 @@ try {
     );
     assert.equal(
       await dialog.getByRole("link", { name: /Full release notes/ }).getAttribute("href"),
-      "https://github.com/ChillingSilence/HA-Irrigation-Strategy/releases/tag/v2.24.0",
+      "https://github.com/Chill-Division/HA-Irrigation-Strategy/releases/tag/v2.24.0",
     );
     await page.screenshot({ path: path.join(out, "whats-new-desktop.png") });
     await dialog.getByRole("button", { name: "Got it", exact: true }).click();

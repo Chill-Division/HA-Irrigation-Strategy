@@ -3,7 +3,7 @@
 DOMAIN = "crop_steering"
 
 # Where a Repairs card's "Learn more" link goes: every card carries a CS code, explained there.
-REPAIRS_DOCS_URL = "https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/main/docs/ERROR_CODES.md"
+REPAIRS_DOCS_URL = "https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/ERROR_CODES.md"
 
 # Configuration keys
 CONF_NUM_ZONES = "num_zones"

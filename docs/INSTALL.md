@@ -1,6 +1,6 @@
 # Installation, upgrade and rollback
 
-[Try the isolated demo](https://jaketherabbit.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1) · [Complete user guide](USER_GUIDE.md) · [Tested features and limits](FEATURE_MATRIX.md)
+[Try the isolated demo](https://chill-division.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1) · [Complete user guide](USER_GUIDE.md)
 
 ## What gets installed
 
@@ -14,7 +14,7 @@ Install the integration and controller together. HACS, the HA integration config
 
 ## Requirements
 
-- Home Assistant 2024.10 or newer. Python requirements follow your HA version; HA 2024.10 requires Python 3.12.
+- Home Assistant 2026.5 or newer. Python requirements follow your HA version; HA 2026.5 requires Python 3.14.
 - HACS for the guided integration download, or access to copy a custom integration manually.
 - Home Assistant OS/Supervised with the app store for the guided controller install. Container/Core users must run the companion controller separately; a true one-click controller install is not available there.
 - An HA administrator account for Rooms & setup and its configuration services.
@@ -24,9 +24,9 @@ Install the integration and the controller app at the same version: from 2.21.0 
 
 ## Guided installation
 
-1. [Open this repository in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=JakeTheRabbit&repository=HA-Irrigation-Strategy&category=integration). Download the integration and restart HA. If HACS is absent, install HACS first or use the manual path below.
+1. [Open this repository in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=Chill-Division&repository=HA-Irrigation-Strategy&category=integration). Download the integration and restart HA. If HACS is absent, install HACS first or use the manual path below.
 2. [Start the Crop Steering config flow](https://my.home-assistant.io/redirect/config_flow_start/?domain=crop_steering). Select manual setup for a new installation. Enter a room name and initial zone count. Existing environment-import installations remain supported.
-3. [Add the app repository](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FJakeTheRabbit%2FHA-Irrigation-Strategy). In the app store, install **Crop Steering Controller**. Keep the affected engine enable flags OFF, review the app options, then start the app so it can publish its heartbeat and discover configuration. From then on it starts with the host (**Start on boot** is on unless you turn it off); turn on **Watchdog** as well, so Supervisor restarts it if it stops. Supervisor supplies the internal HA token; do not paste a token into a repository file.
+3. [Add the app repository](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FChill-Division%2FHA-Irrigation-Strategy). In the app store, install **Crop Steering Controller**. Keep the affected engine enable flags OFF, review the app options, then start the app so it can publish its heartbeat and discover configuration. From then on it starts with the host (**Start on boot** is on unless you turn it off); turn on **Watchdog** as well, so Supervisor restarts it if it stops. Supervisor supplies the internal HA token; do not paste a token into a repository file.
 4. Open **Crop Steering** in the HA sidebar. The integration serves its bundled dashboard automatically; no manual dashboard YAML or custom Lovelace card installation is required. The controller's ingress can also serve the same dashboard. In supported HA shells, use the workspace's **Home Assistant** or house button to reopen the temporarily collapsed HA sidebar; see [sidebar behavior](HA_SIDEBAR.md).
 5. In **Rooms & setup**, select or add a room. Name its zones. Search HA entities by friendly name or ID and check their units/current states while mapping valves, VWC probes, EC probes and room equipment. Multiple probes can be selected per zone. Every zone needs its valve. Under **Shared room hardware**, say how the room is plumbed: a tent with one smart plug or solenoid is *Zone valves only* and maps that switch as the zone's valve and nothing else; a room where water only flows while a pump runs is *A pump, then zone valves* and must have the pump chosen. The switches have to match the answer, and the controller holds a room whose switches stop matching rather than watering it with no pump.
 6. Enter substrate litres **per plant**, plant count, drippers per plant and each dripper's L/hour. Catch-test actual output using **Insights → Calibration**. The calculator proposes a value; it does not write it automatically.
@@ -44,8 +44,6 @@ With engines still off, confirm each room loads in the sidebar, the selected roo
 
 Open **Overview** and a zone detail panel. A missing optional tank mapping may remain **Not mapped**; a missing required control sensor or controller acknowledgement needs resolution before commissioning. **Last irrigation** is an event record and may legitimately be absent on a new installation. Do not generate a physical shot just to fill that display.
 
-The documented live evidence covers an in-place upgrade of an existing two-room installation. A completely blank installation, physical delivery and a complete live plan-boundary handoff remain separate commissioning checks. The [feature matrix](FEATURE_MATRIX.md) identifies those limits.
-
 ## Before enabling irrigation
 
 In **Sensors**, verify that mapped values are available, fresh and in the expected units. Set room lights-on/off hours and review the zone's water limits, shot sizes and emergency floor. Check controller heartbeat and any holds. Validate pump/valve physical operation and delivered water on site before enabling an engine. HA state readback alone does not prove water flow.
@@ -60,7 +58,7 @@ Developers build the dashboard using `npm ci --prefix frontend` then `npm run bu
 
 ## Upgrading an existing installation
 
-Update an existing controller in place from this repository. The old `JakeTheRabbit/f2-control` mirror no longer receives releases; a controller installed from it moves once, as described in [Moving a controller installed from f2-control](#moving-a-controller-installed-from-f2-control). Never run two controllers against one room: each app has its own identity and runtime data, and both would drive the same pump and valves.
+Update an existing controller in place from this repository. A controller installed from another repository moves once, as described in [Moving a controller installed from another repository](#moving-a-controller-installed-from-another-repository). Never run two controllers against one room: each app has its own identity and runtime data, and both would drive the same pump and valves.
 
 1. Back up HA, the controller's persistent data and existing setpoints. Export grow plans if available. Record which engines are enabled.
 2. Turn the affected engines off and wait for the pump, mainline and valves to be OFF. Stop the existing controller while replacing software.
@@ -71,17 +69,17 @@ Update an existing controller in place from this repository. The old `JakeTheRab
 
 If an update is missing from the app store, refresh the repository information first. Use Update for published versions or Rebuild for a local source installation. HACS and the app store update separate components.
 
-### Moving a controller installed from f2-control
+### Moving a controller installed from another repository
 
-The controller used to be mirrored to `JakeTheRabbit/f2-control`. That mirror is retired; this repository is the only source. Supervisor names an app after the repository it came from (`4d457e60_f2_control` from the mirror, `6db5faba_f2_control` from here), so the move is a one-time reinstall that carries the runtime state across:
+Crop Steering started at `JakeTheRabbit/HA-Irrigation-Strategy`, and its controller was also mirrored to `JakeTheRabbit/f2-control`. Supervisor names an app after the repository it came from, so the same controller from another repository is a separate app with its own data: `f50c47e4_f2_control` from this repository, `6db5faba_f2_control` from `JakeTheRabbit/HA-Irrigation-Strategy` and `4d457e60_f2_control` from the mirror. Moving is a one-time reinstall that carries the runtime state across:
 
 1. Add this repository to the app store and install **Crop Steering Controller** from it. Do not start it, and turn its **Start on boot** off for now: it is on by default, and a host restart before step 6 would otherwise start both apps.
 2. Copy the old app's Configuration into the new app: every option.
 3. Turn every engine kill switch off and wait until the pump, mainline and valves read OFF.
 4. Stop the old app and turn off its Start on boot and Watchdog.
-5. Copy `state.json` from the old app's data folder to the new one. It holds each zone's phase, today's counters, the accepted setup revision and what Auto Setpoints has learned; without it the controller starts learning again and waits for setup to be accepted. On HA OS, from an SSH terminal with Docker access: `docker run --rm -v /mnt/data/supervisor/apps/data:/d alpine cp -p /d/4d457e60_f2_control/state.json /d/6db5faba_f2_control/state.json` (older Supervisor versions use `addons/data`).
+5. Copy `state.json` from the old app's data folder to the new one. It holds each zone's phase, today's counters, the accepted setup revision and what Auto Setpoints has learned; without it the controller starts learning again and waits for setup to be accepted. On HA OS, from an SSH terminal with Docker access: `docker run --rm -v /mnt/data/supervisor/apps/data:/d alpine cp -p /d/6db5faba_f2_control/state.json /d/f50c47e4_f2_control/state.json`, with the old app's name in place of `6db5faba_f2_control` if it came from the mirror (older Supervisor versions use `addons/data`).
 6. Start the new app, turn on its Start on boot and Watchdog, and check its log, version, heartbeat and setup acceptance before turning the engines back on.
-7. After a day of normal running, uninstall the old app and remove the `f2-control` repository.
+7. After a day of normal running, uninstall the old app and remove its repository.
 
 The existing app slug `f2_control` and entity IDs are deliberately stable. A room set up from a `crop_steering.env` file keeps working without the file. Older dashboard bookmarks retain room context and redirect to the new routes. After upgrade, verify the room descriptor and controller heartbeat, setup acknowledgement and plan capability before enabling control.
 
