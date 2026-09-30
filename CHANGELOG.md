@@ -24,8 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   written for. When a room is switched off, the "hasn't been watered" notification and the zone's
   line on the dashboard now say "room off (kill switch)", not "f2-control disabled (kill switch
   off)", and the controller's log lines start with "[controller]".
-- **The maintenance trigger's explanation no longer mentions a PID option.** Only the original
-  author's own setup could turn it on: it needs Home Assistant helpers that nothing here creates.
+- **The EC PID option is gone.** Only Home Assistant helpers from the original author's own setup
+  could switch it on, so it never ran anywhere else, and the maintenance trigger's explanation no
+  longer mentions it. EC Stacking works as before, moving the maintenance trigger 1 point at a time.
 
 ### 🔧 Technical notes
 
@@ -48,10 +49,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nothing shipped reads it), its log prefix is `[controller]` (also in `run.sh`), and it starts
   with `Crop Steering Controller X.Y.Z starting`. Ids are unchanged: the app slug `f2_control`,
   `input_boolean.f2_control_enabled`, `sensor.f2_control_vitals` and the notification ids.
-- The EC Stacking line of the P2 trigger's explainer (`setting-words.ts`) drops "The PID option
-  can move it up to 20%." The controller still runs its EC PID when
-  `input_boolean.crop_steering_ec_pid_enabled` exists and is on, with gains from
-  `input_number.crop_steering_ec_pid_kp` / `_ki` / `_kd`; the integration creates none of them.
+- The EC PID loop is removed: `crop_steering_engine.ec_pid`, the controller's branch that read
+  `input_boolean.crop_steering_ec_pid_enabled` and `input_number.crop_steering_ec_pid_kp` / `_ki` /
+  `_kd`, and the per-zone `ec_integral` / `ec_prev_err` it kept. EC Stacking always takes
+  `_step_ec_offset`'s 1-point step. A state file holding those two keys still loads
+  (`test_state_migration`); they are dropped and not written back. The EC Stacking line of the
+  P2 trigger's explainer (`setting-words.ts`) drops "The PID option can move it up to 20%."
 
 ## [2.28.0] - 2026-09-29
 

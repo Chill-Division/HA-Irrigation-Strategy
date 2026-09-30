@@ -9,11 +9,9 @@ current behaviour or skipped with a comment naming why (shell-only logic the pur
 does not expose).
 
 SKIPPED (shell-only, intentionally not ported here):
-  * DEFECT #1/#2 multi-tick `_step_ec_offset` stepping — that staticmethod lives on the
-    retired `LeanCropSteering` class, NOT in crop_steering_engine. The active engine
-    replaced the stepped EC-offset with the pure `ec_pid` (covered in test_core.py and
-    extended below) plus shell-owned offset accumulation in the f2-control add-on. No
-    pure entry point exists to port, so those cases have no home in the engine suite.
+  * DEFECT #1/#2 multi-tick `_step_ec_offset` stepping — the controller app steps the EC
+    offset itself (Controller._step_ec_offset), NOT crop_steering_engine. No pure entry
+    point exists to port, so those cases have no home in the engine suite.
   * The old `decide()` "EC steer: low/high EC -> threshold DOWN/UP" cases — the active
     core.py `decide()` does NOT mutate p2_threshold from ec_smooth (the EC STEERING
     block is a documented no-op; the IO shell bakes the offset into p.p2_threshold
@@ -31,7 +29,6 @@ from crop_steering_engine import (
     ZoneParams,
     ZoneSnapshot,
     ec_adjust,
-    ec_pid,
     cross_zone_outliers,
     validate_params,
     pick_sibling,
@@ -444,7 +441,7 @@ def test_d1_effective_threshold():
 
 def test_d1_offset_clamp_helper():
     # The IO-shell clamp bounds offset drift to +/-20% of base; reproduce the formula here
-    # (the engine exposes ec_pid's clamp; the stepped-offset clamp itself lives in the shell).
+    # (the stepped-offset clamp itself lives in the shell).
     def clamp_offset(proposed, base):
         return max(-0.20 * base, min(0.20 * base, proposed))
 
@@ -565,24 +562,6 @@ def test_ec_adjust_tiers():
     assert ec_adjust(5, 3, 6) == 3.5  # ratio 0.5 -> 0.7x band
     assert ec_adjust(5, 6, 6) == 5.0  # in band -> unchanged
     assert ec_adjust(5, 6, 0) == 5.0  # non-positive target -> unchanged
-
-
-# ---------------------------------------------------------------------------
-# ec_pid (pure PID -> threshold offset, anti-windup)
-# ---------------------------------------------------------------------------
-def test_ec_pid_direction_and_clamp():
-    base = 45.0
-    # EC above target -> positive offset (water sooner -> dilute)
-    off, integ, err = ec_pid(6.0, 5.0, base, 0.0, 0.0, (0.5, 0.1, 0.0))
-    assert off > 0 and err == 1.0 and integ == 1.0
-    # EC below target -> negative offset (deeper dryback -> stack)
-    off2, _, err2 = ec_pid(4.0, 5.0, base, 0.0, 0.0, (0.5, 0.1, 0.0))
-    assert off2 < 0 and err2 == -1.0
-    # anti-windup: a huge error + wound-up integral can't exceed +/-20% of base (9.0)
-    off3, integ3, _ = ec_pid(20.0, 5.0, base, 100.0, 0.0, (5.0, 1.0, 0.0))
-    assert abs(off3) <= 0.20 * base + 1e-6 and abs(integ3) <= 9.0 + 1e-6
-    # at target with no I -> zero
-    assert ec_pid(5.0, 5.0, base, 0.0, 0.0, (0.5, 0.0, 0.0))[0] == 0.0
 
 
 # ---------------------------------------------------------------------------

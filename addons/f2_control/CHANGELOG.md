@@ -2,7 +2,7 @@
 
 - **Requires Home Assistant 2026.5.0 or newer**, as the integration now does: `homeassistant: "2026.5.0"` in `config.yaml`. The Supervisor checks it on install and on every update, so on an older Home Assistant it offers no controller update, instead of moving the controller ahead of an integration HACS no longer offers there. No change to the controller or the state file.
 - **Its own name in what it says.** The blocked reason for a room switched off is `room off (kill switch)` (was `f2-control disabled (kill switch off)`), in the CS-207 notification and the zone status; the `engine` attribute on the sensors it publishes is `crop-steering-controller` (was `f2-control`); log lines start `[controller]`, and the first one is `Crop Steering Controller X.Y.Z starting`. Entity ids, notification ids, the slug and the state file are unchanged.
-- **The dashboard the app serves:** the P2 trigger's EC Stacking explainer no longer mentions a PID option that needs helpers nothing here creates. No change to the controller.
+- **The EC PID option is removed.** EC Stacking always takes its 1-point step; `input_boolean.crop_steering_ec_pid_enabled` and its gain helpers, which nothing here created, are no longer read. A zone's `ec_integral` and `ec_prev_err` are no longer kept: an old state file still loads, without them. The dashboard the app serves no longer mentions the option.
 
 # 2.28.0
 
