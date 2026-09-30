@@ -1,3 +1,7 @@
+# Unreleased
+
+- **Requires Home Assistant 2026.5.0 or newer**, as the integration now does: `homeassistant: "2026.5.0"` in `config.yaml`. The Supervisor checks it on install and on every update, so on an older Home Assistant it offers no controller update, instead of moving the controller ahead of an integration HACS no longer offers there. No change to the controller or the state file.
+
 # 2.28.0
 
 Pair with integration 2.28.0.
