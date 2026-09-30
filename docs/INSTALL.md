@@ -83,7 +83,7 @@ The controller used to be mirrored to `JakeTheRabbit/f2-control`. That mirror is
 6. Start the new app, turn on its Start on boot and Watchdog, and check its log, version, heartbeat and setup acceptance before turning the engines back on.
 7. After a day of normal running, uninstall the old app and remove the `f2-control` repository.
 
-The existing app slug `f2_control` and entity IDs are deliberately stable. Existing environment mapping remains supported. Older dashboard bookmarks retain room context and redirect to the new routes. After upgrade, verify the room descriptor and controller heartbeat, setup acknowledgement and plan capability before enabling control.
+The existing app slug `f2_control` and entity IDs are deliberately stable. A room set up from a `crop_steering.env` file keeps working without the file. Older dashboard bookmarks retain room context and redirect to the new routes. After upgrade, verify the room descriptor and controller heartbeat, setup acknowledgement and plan capability before enabling control.
 
 ## Optional tank display mappings
 

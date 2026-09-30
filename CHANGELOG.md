@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **HACS and the app store name Chill-Division as the maintainer.** They named JakeTheRabbit, who
   started Crop Steering, so an installation from this repository looked like one of theirs.
   Nothing else changes.
+- **Setup no longer imports a `crop_steering.env` file, and Configure no longer reloads one.** A
+  room set up from one keeps working exactly as before: after setup it only ever ran on what was
+  stored then. Change it in Configure or in Rooms & setup.
 
 ### 🔧 Technical notes
 
@@ -23,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   manifest of the latest release. `repository.yaml` `maintainer` is `Chill-Division`, which the app
   store lists for the repository. The manifest's `documentation` and `issue_tracker` links and
   `repository.yaml`'s `url` are unchanged.
+- The `.env` import is removed: `env_parser.py`, the first step's `config_method` choice, the
+  `load_env` step, Configure's `reload_env`, `_validate_env_entities` and their strings. So is the
+  `load_yaml` step, which no step led to. An entry with `config_method: "env"` loads unchanged:
+  nothing read the key or the file at runtime, and nothing rewrites the entry.
+  `test_upgrade_in_place` proves it on the env-era fixture, with no `crop_steering.env` present.
 
 ## [2.28.0] - 2026-09-29
 
