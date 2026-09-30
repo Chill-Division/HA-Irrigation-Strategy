@@ -93,7 +93,7 @@ def test_concurrent_room_setup_registers_one_panel_and_one_static_path(monkeypat
     assert len(calls) == len(paths) == 1
 
 
-def _panel_rig(monkeypatch, legacy=False):
+def _panel_rig(monkeypatch):
     from custom_components.crop_steering import setup_panel
 
     observed = SimpleNamespace(
@@ -150,11 +150,7 @@ def _panel_rig(monkeypatch, legacy=False):
         ("homeassistant.components.http", http),
     ):
         monkeypatch.setitem(sys.modules, name, module)
-    transport = (
-        SimpleNamespace(register_static_path=lambda *args: register_static([args]))
-        if legacy
-        else SimpleNamespace(async_register_static_paths=register_paths)
-    )
+    transport = SimpleNamespace(async_register_static_paths=register_paths)
     return setup_panel, SimpleNamespace(data={}, http=transport), observed
 
 
@@ -221,54 +217,3 @@ def test_unregister_then_register_keeps_the_existing_static_path(monkeypatch):
     assert observed.panels == {panel.PANEL}
     assert observed.path_attempts == 1 and observed.panel_attempts == 2
     assert observed.removals == [panel.PANEL]
-
-
-def test_ha_2024_3_legacy_static_path_registration_is_still_supported(monkeypatch):
-    panel, hass, observed = _panel_rig(monkeypatch, legacy=True)
-    asyncio.run(panel.async_setup_panel(hass))
-    asyncio.run(panel.async_setup_panel(hass))
-    assert observed.path_attempts == observed.panel_attempts == 1
-    assert observed.paths[0][0] == "/crop_steering"
-    assert observed.paths[0][2] is False
-
-
-def test_home_assistant_before_2026_5_has_no_async_panel_exists(monkeypatch):
-    """`frontend.async_panel_exists` was added in Home Assistant 2026.5.0. Every rig above hands
-    the code one, so none of them could notice that calling it unconditionally raised
-    AttributeError inside async_setup_entry on every older Home Assistant: the config entry
-    failed to set up, with no entities and no dashboard. tests_ha/ runs this for real; this
-    keeps the fallback covered once that tier moves on to a Home Assistant that has the helper.
-    """
-    from custom_components.crop_steering import setup_panel
-
-    registered = []
-    frontend = ModuleType("homeassistant.components.frontend")
-    frontend.DATA_PANELS = "frontend_panels"
-    frontend.async_register_built_in_panel = lambda hass, *a, **k: (
-        registered.append(k["frontend_url_path"]),
-        hass.data.setdefault("frontend_panels", {}).update({k["frontend_url_path"]: k}),
-    )
-    frontend.async_remove_panel = lambda *a: None
-    assert not hasattr(frontend, "async_panel_exists")  # as on 2024.3 ... 2026.4
-    components = ModuleType("homeassistant.components")
-    components.frontend = frontend
-    http = ModuleType("homeassistant.components.http")
-    http.StaticPathConfig = lambda *a: a
-    monkeypatch.setitem(sys.modules, "homeassistant.components", components)
-    monkeypatch.setitem(sys.modules, "homeassistant.components.frontend", frontend)
-    monkeypatch.setitem(sys.modules, "homeassistant.components.http", http)
-
-    async def register(_items):
-        return None
-
-    def hass(panels):
-        return SimpleNamespace(
-            data={"frontend_panels": panels},
-            http=SimpleNamespace(async_register_static_paths=register),
-        )
-
-    asyncio.run(setup_panel.async_setup_panel(hass({})))
-    assert registered == ["crop-steering"]
-    # ...and the fallback still protects a panel somebody else already owns.
-    asyncio.run(setup_panel.async_setup_panel(hass({"crop-steering": "another owner"})))
-    assert registered == ["crop-steering"]
