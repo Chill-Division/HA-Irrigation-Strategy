@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🌱 In plain English
 
+- **Home Assistant 2026.5 or newer is required.** It was 2024.10, two years old. On an older Home
+  Assistant, HACS and the app store offer no update to Crop Steering or its controller until Home
+  Assistant itself is updated, and what is installed keeps working. The code and the extra test
+  run that only the older versions needed are gone.
 - **HACS and the app store name Chill-Division as the maintainer.** They named JakeTheRabbit, who
   started Crop Steering, so an installation from this repository looked like one of theirs.
   Nothing else changes.
@@ -23,6 +27,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Technical notes
 
+- **Minimum Home Assistant 2026.5.0** (was 2024.10.0):
+  - `hacs.json` `homeassistant` is `2026.5.0`. The controller app's `config.yaml` sets
+    `homeassistant: "2026.5.0"` too, and the Supervisor checks it on install and on every update,
+    so on an older Home Assistant the controller cannot move ahead of the integration.
+  - `setup_panel` calls `frontend.async_panel_exists` (2026.5.0+) without the panel-table fallback,
+    and registers its static path through `async_register_static_paths` only.
+  - `stock_api` takes the time zone from `dt_util.get_default_time_zone`.
+  - The oldest-supported Real Home Assistant leg runs 2026.5.0 on Python 3.14 (plugin 0.13.329),
+    without the `josepy` and `pycares` pins. `tests/test_requirements_stated.py` checks the app's
+    minimum as well.
 - `manifest.json` `codeowners` is `["@Chill-Division"]`: HACS shows it as the author, reading the
   manifest of the latest release. `repository.yaml` `maintainer` is `Chill-Division`, which the app
   store lists for the repository. The manifest's `documentation` and `issue_tracker` links and
