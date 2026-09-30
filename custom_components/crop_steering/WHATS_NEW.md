@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- Set how long your pump runs before a zone's valve opens, for a pump that takes a few seconds to reach pressure.
+
 ## 2.28.0 - 2026-09-29
 
 - The peak VWC target, maintenance trigger, field capacity and rescue level are used exactly as you set them, up to 100% (the rescue level up to 65%).

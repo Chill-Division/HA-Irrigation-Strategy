@@ -6,6 +6,7 @@
 - **The dashboard the app serves:** a zone added in Rooms & setup starts at a 3.2 L pot with one 4 L/hr dripper per plant. No change to the controller.
 - **Links go to Chill-Division/HA-Irrigation-Strategy**: the app's `url` and its Documentation tab. **The dashboard the app serves:** the setup page's install buttons and What's new's release notes link, and **Add controller repository** now opens the right My Home Assistant link. No change to the controller.
 - **The dashboard the app serves:** only `dashboard.html` and the `index.html` its sidebar entry opens. The 13 pages that redirected the original author's old bookmarks (`f2.html`, `office.html`, …) are gone, and so are the old `?room=` and `?view=` names. No change to the controller.
+- **Pump prime and main-line lead from the room's settings.** The pump runs `number.crop_steering_<prefix>pump_prime_time` (was a fixed 2 s) before the main line opens, and the main line `..._main_line_lead_time` (was 1 s) before the zone valve. Both are read before anything opens and capped at 20 s and 10 s; under an integration without them, 2 s and 1 s as before. The dashboard the app serves shows them under Pump and valves. No change to the state file.
 
 # 2.28.0
 

@@ -50,6 +50,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   others only redirected old bookmarks; so did the old room and page names in dashboard links
   (`?room=f2`, `?view=climate`). The app's sidebar entry, the dashboard in the sidebar and the demo
   site open as before.
+- **How long the pump runs before a zone opens is a setting.** *Pump prime time* (how long the
+  pump runs before the main line and a zone's valve open) and *Main line lead time* (how long the
+  main line is open before the zone's valve) were fixed at 2 and 1 seconds, so a pump that takes 4
+  seconds to reach pressure opened each valve onto a line still filling. Both are on the Irrigation
+  plan's room settings, under Pump and valves. Until they are changed, nothing is different.
 
 ### 🔧 Technical notes
 
@@ -114,6 +119,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   resolves by room id only (`room:`, `room:f1_`), without the slug or `f2` aliases; `?view=` is
   no longer read; Settings' Advanced workflows links go straight to their pages. `F1_ALIASES`, for
   an old install's `sensor.crop_steering_system_*` ids, stays.
+- `number.crop_steering_<prefix>pump_prime_time` (0-20 s, default 2) and `..._main_line_lead_time`
+  (0-10 s, default 1), room-wide. The controller reads both before a shot opens anything
+  (`_lead_time`; optional, so under an older integration it keeps 2 s and 1 s without holding the
+  room), capped at those maximums, which keep a whole open sequence well inside
+  `INFLIGHT_OPEN_WINDOW_S`. A shot's duration and litres still count from the zone valve opening.
+  The dashboard groups them under Pump and valves, and setup's pump and main-line hints name them.
 
 ## [2.28.0] - 2026-09-29
 

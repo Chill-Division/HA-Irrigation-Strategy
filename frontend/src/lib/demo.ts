@@ -177,6 +177,8 @@ export function createDemo(now = Date.now()): States {
     const events: LogEvent[] = [];
     number(prefix, "dripper_flow_rate", 4, 0.5, 12, 0.5, "L/h");
     number(prefix, "max_shot_duration", 120, 5, 3600, 1, "s");
+    number(prefix, "pump_prime_time", 2, 0, 20, 0.5, "s");
+    number(prefix, "main_line_lead_time", 1, 0, 10, 0.5, "s");
     number(prefix, "lights_on_hour", index ? 8 : 10, 0, 23, 1, "h");
     number(prefix, "lights_off_hour", index ? 20 : 22, 0, 23, 1, "h");
     for (let id = 1; id <= 3; id++) {

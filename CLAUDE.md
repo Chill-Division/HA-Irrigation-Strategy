@@ -91,7 +91,7 @@ P3 (Pre-lights-off):  emergency-only; dry back overnight → P0 at lights-on
 ## Hardware control sequence
 
 ```
-Safety checks → Pump prime (2s) → Mainline (1s) → Zone valve → Irrigate → Shutdown (reverse)
+Safety checks → Pump prime (Pump Prime Time, 2 s unless set) → Mainline (Main Line Lead Time, 1 s unless set) → Zone valve → Irrigate → Shutdown (reverse)
 ```
 
 Valve close is read-back verified; failure triggers an emergency pump stop and aborts
