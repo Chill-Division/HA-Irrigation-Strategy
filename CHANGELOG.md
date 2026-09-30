@@ -32,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Crop Steering was first written for; they now say a 10 L pot and a 2 L/hr emitter. The entity
   reference listed that room's own settings as the defaults (6 L pots, 4 L/hr drippers, lights
   10:00 to 22:00, a 200 L daily budget and more); it now lists what a new room starts at.
+- **A new room starts at a 3.2 L (0.9 gal) pot with one 4 L/hr dripper per plant**, in setup and
+  in its settings. Each place used to start somewhere different: 5, 6 or 10 L, 1.2 to 2 L/hr, one
+  or two drippers. A room already set up keeps its own numbers.
 
 ### 🔧 Technical notes
 
@@ -66,6 +69,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `substrate_volume` 10 (range 0.1-200), `dripper_flow_rate` 1.2, `drippers_per_plant` 2 (range
   1-20), `field_capacity` 70, `lights_on_hour` 12, `lights_off_hour` 0, `zone_N_plant_count` 4
   (range 1-1000) and `zone_N_max_daily_volume` 20.
+- Sizing defaults are 3.2 L, 4 L/hr and 1 dripper per plant: the wizard's schema and
+  `_build_parameters`, the Configure form's fallbacks, `number.DEFAULT_VALUES` (were 10 / 1.2 / 2),
+  `setup_api.setup_sizing`'s last fallback, and the dashboard's new-zone draft (was 5 L / 2 L/hr).
+  A number restores its state first and seeds from the room's recorded setup answers second, so
+  only a room with neither starts at these. `tests_ha/test_sizing_defaults.py` proves a new room
+  gets them and a 2.18 room keeps its 6 L / 2 L/hr. The controller's `substrate_l` / `flow_lps`
+  fallback options are unchanged.
 
 ## [2.28.0] - 2026-09-29
 

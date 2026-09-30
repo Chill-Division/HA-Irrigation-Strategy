@@ -67,9 +67,9 @@ The active EC target = the row for the current phase **and** the zone's steering
 ### Substrate & schedule
 | Entity | Range | Default | Unit | What it does |
 |---|---|---|---|---|
-| `substrate_volume` | 0.1-200 | 10 | L | Substrate volume per plant: converts shot % → mL → valve seconds. |
-| `dripper_flow_rate` | 0.1-50 | 1.2 | L/hr | Per-dripper flow: the other half of the % → seconds conversion. |
-| `drippers_per_plant` | 1-20 | 2 | - | Drippers feeding each plant. |
+| `substrate_volume` | 0.1-200 | 3.2 | L | Substrate volume per plant: converts shot % → mL → valve seconds. |
+| `dripper_flow_rate` | 0.1-50 | 4 | L/hr | Per-dripper flow: the other half of the % → seconds conversion. |
+| `drippers_per_plant` | 1-20 | 1 | - | Drippers feeding each plant. |
 | `field_capacity` | 40-100 | 70 | % | VWC at/above which irrigation is blocked (over-water guard / P1 clamp). |
 | `vegetative_dryback_target` | 5-80 | 50 | % | Overnight dryback target in vegetative mode. |
 | `generative_dryback_target` | 5-70 | 40 | % | Overnight dryback target in generative mode. |
