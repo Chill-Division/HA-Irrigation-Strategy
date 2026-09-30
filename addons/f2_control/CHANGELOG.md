@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** Today's events say who changed a setting and what it was, under the zone's own name. No change to the controller.
+
 # 2.29.0
 
 Pair with integration 2.29.0.
