@@ -63,6 +63,12 @@ The active EC target = the row for the current phase **and** the zone's steering
 | `max_shot_duration` | 5-3600 | 900 | s | Longest a single shot may run. The controller refuses to water a room whose cap is missing or below 5 s (CS-203). |
 | `watchdog_hours` | 0-12 | 3 | h | Lights-on backstop: a zone below its P2 trigger that has had no water for this long gets a watchdog shot, or an urgent alert (CS-207) when watering is blocked. `0` turns it off. |
 
+### Pump & valves
+| Entity | Range | Default | Unit | What it does |
+|---|---|---|---|---|
+| `pump_prime_time` | 0-20 | 2 | s | How long the pump runs before the main line and the zone valve open, so the line is at pressure when water starts. A shot's time and water count from the zone valve opening. |
+| `main_line_lead_time` | 0-10 | 1 | s | How long the main-line valve is open before the zone valve opens. |
+
 ### Substrate & schedule
 | Entity | Range | Default | Unit | What it does |
 |---|---|---|---|---|

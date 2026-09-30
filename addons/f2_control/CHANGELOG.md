@@ -1,3 +1,7 @@
+# Unreleased
+
+- **Pump prime and main-line lead from the room's settings.** The pump runs `number.crop_steering_<prefix>pump_prime_time` (was a fixed 2 s) before the main line opens, and the main line `..._main_line_lead_time` (was 1 s) before the zone valve. Both are read before anything opens and capped at 20 s and 10 s; under an integration without them, 2 s and 1 s as before. The dashboard the app serves shows them under Pump and valves. No change to the state file.
+
 # 2.28.0
 
 Pair with integration 2.28.0.
