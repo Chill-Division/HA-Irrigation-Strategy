@@ -83,7 +83,15 @@ describe("setting words", () => {
         description: settingWords("p2_vwc_threshold")!.help,
       },
     );
-    for (const name of [...PHASE_GROUPS, "Substrate", "Safety"])
+    for (const name of [...PHASE_GROUPS, "Substrate", "Safety", "Pump and valves"])
       expect(GROUP_HELP[name]).toBeTruthy();
+  });
+  it("keeps the pump's prime and the main line's lead together, room-wide", () => {
+    const states = createDemo(Date.UTC(2026, 8, 25, 12));
+    const room = buildRoom(states, discoverRooms(states)[0]);
+    for (const key of ["pump_prime_time", "main_line_lead_time"]) {
+      const setting = room.settings.find((s) => s.entityId === `number.crop_steering_${key}`);
+      expect(setting, key).toMatchObject({ group: "Pump and valves", unit: "s" });
+    }
   });
 });

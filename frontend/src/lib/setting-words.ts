@@ -71,6 +71,7 @@ export const GROUP_HELP: Record<string, string> = {
   "Hardware sizing": "What turns a shot’s percentage into litres and seconds.",
   Schedule: "When the lights come on and go off. A grow-day runs from one lights-on to the next.",
   Safety: "Limits that hold, shorten or add watering.",
+  "Pump and valves": "How long the pump and the shared main line run before a zone's valve opens.",
 };
 
 const OF_SUBSTRATE = "as a percentage of each plant’s substrate volume";
@@ -191,6 +192,16 @@ const WORDS: Record<string, SettingWords> = {
     label: "Dripper flow",
     short: "Dripper flow",
     help: "Litres per hour from each dripper.",
+  },
+  pump_prime_time: {
+    label: "Pump prime time",
+    short: "Pump prime",
+    help: "Seconds the pump runs before the main line and the zone’s valve open, so the line is at pressure when water starts. Set it to how long your pump takes to reach pressure. A shot’s time and water count from the zone’s valve opening.",
+  },
+  main_line_lead_time: {
+    label: "Main line lead time",
+    short: "Main line lead",
+    help: "Seconds the shared main-line valve is open before the zone’s valve opens.",
   },
   lights_on_hour: {
     label: "Lights on",
