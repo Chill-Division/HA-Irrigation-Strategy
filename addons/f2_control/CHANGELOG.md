@@ -1,3 +1,7 @@
+# Unreleased
+
+- **A readable log.** Each line starts with the local date and time (no `[controller]` tag) and names the room and zone as the operator named them. Every minute a zone that does not fire logs its readings, water today, what holds it and what it waits for (`next_text`); a phase change logs why, a shot what kind it is, its seconds, about its litres and why, in `log_words.py`'s words for decide()'s texts. A setting read with a new value is logged with who changed it, from Home Assistant's logbook (`/api/logbook`), a person by name, an automation or script by name; Auto setpoints' own writes as "Auto setpoints lowered …". No change to what is decided, published or saved.
+
 # 2.29.0
 
 Pair with integration 2.29.0.
