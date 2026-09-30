@@ -55,6 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   main line is open before the zone's valve) were fixed at 2 and 1 seconds, so a pump that takes 4
   seconds to reach pressure opened each valve onto a line still filling. Both are on the Irrigation
   plan's room settings, under Pump and valves. Until they are changed, nothing is different.
+- **The per-plant daily minimum is gone.** Like the EC PID option, only a Home Assistant helper
+  from the original author's own setup could switch it on, so it never ran anywhere else. The
+  watchdog is still the backstop that waters a zone left dry by day.
 
 ### 🔧 Technical notes
 
@@ -125,6 +128,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   room), capped at those maximums, which keep a whole open sequence well inside
   `INFLIGHT_OPEN_WINDOW_S`. A shot's duration and litres still count from the zone valve opening.
   The dashboard groups them under Pump and valves, and setup's pump and main-line hints name them.
+- The daily-minimum floor is removed from `decide()` (its last rule, kind `min_daily`), with
+  `ZoneParams.min_daily_volume` and `drown_ceiling`, their bounds, `validate_params`' min <= max
+  clamp, and `min_daily` in `CAP_EXEMPT` and `PLAN_HOLD_EXEMPT`. The controller no longer reads
+  `input_number.crop_steering_<prefix>zone_N_min_daily_ml_per_plant` or `min_floor_drown_ceiling`,
+  and the dashboard has no label for the latter. It fired only when no other rule did and only
+  above a default of 0, so no other decision changes; the engine's tests still run all 96
+  statements of `decide()` and 71 of its 72 branches.
 
 ## [2.28.0] - 2026-09-29
 

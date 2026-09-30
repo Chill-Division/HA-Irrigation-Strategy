@@ -260,9 +260,9 @@ def test_present_setpoint_is_not_flagged():
     assert c._n_defaulted == 0
 
 
-def test_engine_only_knobs_never_flag_missing_setpoints():
-    # `min_floor_drown_ceiling` (and any optional=True knob) is deliberately NOT an
-    # integration entity. Building params on a healthy install must not raise the
+def test_optional_settings_never_flag_missing_setpoints():
+    # A setting read with optional=True may be missing under an older integration and then
+    # takes its default. Building params on a healthy install must not raise the
     # "setpoint entities missing" alert — that would be a permanent false alarm.
     c, fake = _build(
         {"num_zones": 1, "hardware": {"pump": "switch.p", "mainline": "switch.m",

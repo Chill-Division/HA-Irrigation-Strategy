@@ -45,7 +45,6 @@ CAP_EXEMPT = {
     "p2_topup": False,
     "p3_emergency": True,
     "watchdog": True,
-    "min_daily": False,  # never over the budget by construction: min_daily_volume <= max_daily_volume
 }
 
 
@@ -82,19 +81,12 @@ class ZoneParams:
     #                                     it soaks down to the probe before moisture is judged again. Judged
     #                                     sooner, the reading has not moved yet and shots stack a minute apart
     #                                     (seen live: three in four minutes). 0 = off, as before.
-    min_daily_volume: float = 0.0   # MIN litres/zone/day floor during lights-on (per-plant water safety; 0 = off).
-    #                                 GUARANTEED + FRONT-STACKED + SENSOR-INDEPENDENT: every plant gets this much,
-    #                                 delivered from lights-on as fast as spacing allows, regardless of the VWC
-    #                                 threshold — a lying/dead probe cannot suppress it. Clamped < max_daily_volume.
     p1_min_shots: int = 0           # P1 cannot graduate on "target reached" until this many ramp shots have
     #                                 landed (0 = off). The ramp runs as configured; max shots still bounds it.
     additional_dryback: float | None = None  # P0 ends once VWC is this % below its lights-on reading:
     #                                 Athena's 1-5% "additional dryback" before the first shot. None: the
     #                                 P3 dryback_target, as before (a P3-sized number that the latest-first-
     #                                 shot time always beat).
-    drown_ceiling: float = 90.0     # the ONLY VWC gate on the min-daily floor: a hard anti-drown limit well above
-    #                                 field capacity. Below it, the floor fires regardless of the probe; at/above it
-    #                                 the floor holds (never flood). 90 ~= unreachable in coco -> truly probe-blind.
 
 
 @dataclass
@@ -255,7 +247,7 @@ def decide(s: ZoneSnapshot, p: ZoneParams):
             return phase, round(p2_thr, 1), False, 0.0, Reason(reason, "hold_high_ec")
 
     # PRIORITY 2 — normal per-phase rules. While steering is held only the P3 emergency runs: a held plan
-    # stops the steering, never the water-safety rules (the watchdog and the floor below run either way).
+    # stops the steering, never the water-safety rules (the watchdog below runs either way).
     if not fire and not s.steering_held:
         if phase == "P0":
             # P0 is the morning dryback: it fires only a genuine EC flush, gated like every other flush.
@@ -296,23 +288,7 @@ def decide(s: ZoneSnapshot, p: ZoneParams):
     if not fire and watchdog_due:
         fire, size, ir, kind = True, p.p2_shot_size, watchdog_ir, "watchdog"
 
-    # PRIORITY 4 — MINIMUM DAILY VOLUME floor (per-plant water safety, GUARANTEED + FRONT-STACKED +
-    # SENSOR-INDEPENDENT): every enabled zone MUST put through at least min_daily_volume L per photoperiod.
-    # It fires from lights-on as fast as the anti-short-cycle spacing allows (so the minimum lands early /
-    # front-stacked) and REGARDLESS of the VWC threshold — a lying or dead probe cannot starve a plant.
-    # The ONLY VWC gate is the hard anti-drown ceiling (never flood). Feed-water + dosing safety still apply
-    # in the IO shell (we never water with bad feed, even for the floor). 0 = off.
-    if (not fire and p.min_daily_volume > 0 and s.lights_on
-            and s.daily_vol < p.min_daily_volume
-            and s.vwc < p.drown_ceiling
-            and s.minutes_since_shot >= p.p2_min_interval_min):
-        fire, size, ir, kind = True, p.p2_shot_size, f"MIN-DAILY floor {s.daily_vol:.1f}<{p.min_daily_volume:.1f}L (guaranteed)", "min_daily"
-
     # ---- SAFETY: daily cap is a BUDGET, not a wall — exemptions are by kind (CAP_EXEMPT) ----
-    # NOTE: the MIN-DAILY floor above can never be blocked by this cap — the floor only fires while
-    # daily_vol < min_daily_volume, and validate_params() clamps min_daily_volume <= max_daily_volume,
-    # so floor-fires => daily_vol < min <= max => the cap's (daily_vol >= max) test is always false.
-    # The two are mutually exclusive by construction; the floor's "guaranteed" contract holds.
     if fire and not CAP_EXEMPT[kind] and s.daily_vol >= p.max_daily_volume:
         if watchdog_due:
             # The routine shot is over budget, but the zone has had no water for watchdog_hours in
@@ -336,7 +312,7 @@ def waiting_for(s: ZoneSnapshot, p: ZoneParams) -> list:
     {"in_min"}, or both when a shot needs both. The EC reading is the settled one when there is one,
     as decide() uses. A held plan (steering_held) leaves out the routine shots it stops. It says what
     the engine checks, not what will happen: the controller's gates (switches, feed water, the daily
-    water limit), the EC flush and rescue rules, the watchdog, the daily minimum and P2's early move
+    water limit), the EC flush and rescue rules, the watchdog and P2's early move
     to P3 in the last three hours before lights-off are not in it, and nothing is forecast.
     """
     settled = s.ec_settled is not None and math.isfinite(s.ec_settled)
@@ -476,8 +452,7 @@ _PARAM_BOUNDS = {
     "p1_max_shots": (1.0, 40.0), "p1_time_between_min": (1.0, 120.0),
     "p2_time_between_min": (0.0, 120.0),
     "p0_max_wait_min": (5.0, 240.0), "p3_emergency_shot": (0.5, 15.0),
-    "max_daily_volume": (10.0, 2000.0), "min_daily_volume": (0.0, 500.0),
-    "drown_ceiling": (50.0, 100.0), "additional_dryback": (1.0, 40.0),
+    "max_daily_volume": (10.0, 2000.0), "additional_dryback": (1.0, 40.0),
 }
 
 
@@ -499,12 +474,6 @@ def validate_params(p):
     if p.p1_min_shots > eff_p1max:
         fixes["p1_min_shots"] = eff_p1max
         warns.append(f"p1_min_shots={p.p1_min_shots:g} > p1_max_shots={eff_p1max:g} -> clamped to {eff_p1max:g}")
-    # the floor can never exceed the cap (else it would fight the budget block)
-    eff_min = fixes.get("min_daily_volume", p.min_daily_volume)
-    eff_max = fixes.get("max_daily_volume", p.max_daily_volume)
-    if eff_min > eff_max:
-        fixes["min_daily_volume"] = eff_max
-        warns.append(f"min_daily_volume={eff_min:g} > max_daily_volume={eff_max:g} -> clamped to {eff_max:g}")
     return (dataclasses.replace(p, **fixes) if fixes else p), warns
 
 

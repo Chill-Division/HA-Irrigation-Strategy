@@ -601,13 +601,6 @@ def test_validate_p1_max_shots_stays_int():
     assert vp.p1_max_shots == 40 and isinstance(vp.p1_max_shots, int)
 
 
-def test_validate_min_daily_le_max():
-    vp, w = validate_params(P(min_daily_volume=400, max_daily_volume=300))
-    assert vp.min_daily_volume == 300 and any("min_daily_volume" in x for x in w)
-
-
-# ---------------------------------------------------------------------------
-# cross_zone_outliers
 # ---------------------------------------------------------------------------
 def test_cross_zone_outliers():
     def vs(v):
