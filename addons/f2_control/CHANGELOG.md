@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** a zone added in Rooms & setup starts at a 3.2 L pot with one 4 L/hr dripper per plant. No change to the controller.
+
 # 2.28.0
 
 Pair with integration 2.28.0.

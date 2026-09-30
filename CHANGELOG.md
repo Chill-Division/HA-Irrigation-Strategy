@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **HACS and the app store name Chill-Division as the maintainer.** They named JakeTheRabbit, who
   started Crop Steering, so an installation from this repository looked like one of theirs.
   Nothing else changes.
+- **A new room starts at a 3.2 L (0.9 gal) pot with one 4 L/hr dripper per plant**, in setup and
+  in its settings. Each place used to start somewhere different: 5, 6 or 10 L, 1.2 to 2 L/hr, one
+  or two drippers. A room already set up keeps its own numbers.
 - **Setup's examples and the entity reference describe any room, not the first one.** Setup's
   hints for pot size and dripper flow gave a 6 L rockwool block and a 4 L/hr emitter, the room
   Crop Steering was first written for; they now say a 10 L pot and a 2 L/hr emitter. The entity
@@ -28,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   manifest of the latest release. `repository.yaml` `maintainer` is `Chill-Division`, which the app
   store lists for the repository. The manifest's `documentation` and `issue_tracker` links and
   `repository.yaml`'s `url` are unchanged.
+- Sizing defaults are 3.2 L, 4 L/hr and 1 dripper per plant: the wizard's schema and
+  `_build_parameters`, the Configure form's fallbacks, `number.DEFAULT_VALUES` (were 10 / 1.2 / 2),
+  `setup_api.setup_sizing`'s last fallback, and the dashboard's new-zone draft (was 5 L / 2 L/hr).
+  A number restores its state first and seeds from the room's recorded setup answers second, so
+  only a room with neither starts at these. `tests_ha/test_sizing_defaults.py` proves a new room
+  gets them and a 2.18 room keeps its 6 L / 2 L/hr. The controller's `substrate_l` / `flow_lps`
+  fallback options are unchanged.
 - `strings.json` / `translations/en.json`: the `substrate_volume` and `dripper_flow_rate` hints,
   in setup and Configure, use a 10 L pot and a 2 L/hr emitter. `docs/ENTITIES.md` follows
   `number.py`: `p1_target_vwc` 65, `p1_time_between_shots` 15, `p2_vwc_threshold` 60,
