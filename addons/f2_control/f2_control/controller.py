@@ -42,7 +42,6 @@ from crop_steering_engine import (
     ZoneSnapshot,
     validate_params,
     pick_sibling,
-    ec_pid,
     cross_zone_outliers,
     detect_vmax,
     zone_safety_status,
@@ -912,8 +911,6 @@ class Controller:
             "ec_settled_at": None,
             "last_phase_change": datetime.now(),
             "ec_offset": 0.0,
-            "ec_integral": 0.0,
-            "ec_prev_err": 0.0,
             "last_ec_steer": None,
             "last_daily_reset": None,
             "water_history": None,
@@ -935,8 +932,6 @@ class Controller:
             "daily_vol",
             "ec_smooth",
             "ec_offset",
-            "ec_integral",
-            "ec_prev_err",
         ):
             if d.get(k) is not None:
                 s[k] = d[k]
@@ -1349,8 +1344,6 @@ class Controller:
             "ec_settled": s.get("ec_settled"),
             "ec_settled_at": esa.isoformat() if isinstance(esa, datetime) else None,
             "ec_offset": float(s.get("ec_offset") or 0.0),
-            "ec_integral": float(s.get("ec_integral") or 0.0),
-            "ec_prev_err": float(s.get("ec_prev_err") or 0.0),
             "last_shot": ls.isoformat() if isinstance(ls, datetime) else None,
             "last_shot_is_anchor": bool(s.get("last_shot_is_anchor")),
             "last_phase_change": lpc.isoformat() if isinstance(lpc, datetime) else None,
@@ -1781,7 +1774,7 @@ class Controller:
         reads the feed front passing it (6-8 mS/cm during the 22 Sep ramp, on zones whose quiet readings
         were ~4.5). Between settled readings the last one stands. None while the probe itself reads
         nothing valid, and before the first settled reading (decide() then uses the raw reading, as it
-        always did). Only settled readings feed ec_smooth, and through it the EC offset step / PID."""
+        always did). Only settled readings feed ec_smooth, and through it the EC offset step."""
         if ec is None:
             return None
         last = st.get("last_shot")
@@ -3782,7 +3775,6 @@ class Controller:
             if new_phase == "P0":
                 st["daily_vol"], st["shots"] = 0.0, 0
                 st["ec_offset"], st["last_ec_steer"] = 0.0, None
-                st["ec_integral"], st["ec_prev_err"] = 0.0, 0.0
                 st["last_daily_reset"] = gds
             st["phase"] = new_phase
             st["last_phase_change"] = now
@@ -3908,7 +3900,6 @@ class Controller:
                 # below clears it as well, but only after decide() has read the P2 threshold (its P0
                 # bypass test) with yesterday's offset baked in.
                 st["ec_offset"], st["last_ec_steer"] = 0.0, None
-                st["ec_integral"], st["ec_prev_err"] = 0.0, 0.0
             snap, p = self._snapshot(room, zone, now, lights_on, lights_just_on)
             params[zone] = p
             if snap is None:
@@ -3943,10 +3934,6 @@ class Controller:
                 if new_phase == "P0":
                     st["daily_vol"], st["shots"], st["peak"] = 0.0, 0, snap.vwc
                     st["ec_offset"], st["last_ec_steer"] = 0.0, None
-                    st["ec_integral"], st["ec_prev_err"] = (
-                        0.0,
-                        0.0,
-                    )  # no cross-photoperiod PID windup
                     st["last_daily_reset"] = self._grow_day_start(room, now)
                     room._vmax_wetup[zone] = []  # fresh wet-up curve for today's ramp
                 if new_phase == "P1":
@@ -3967,32 +3954,12 @@ class Controller:
                 base = self._zone_num(room, zone, "p2_vwc_threshold", 45)
                 les = st.get("last_ec_steer")
                 if les is None or (now - les).total_seconds() >= 1800:
-                    if self._on("input_boolean.crop_steering_ec_pid_enabled", False):
-                        gains = (
-                            self._num("input_number.crop_steering_ec_pid_kp", 0.4),
-                            self._num("input_number.crop_steering_ec_pid_ki", 0.15),
-                            self._num("input_number.crop_steering_ec_pid_kd", 0.0),
-                        )
-                        off, integ, perr = ec_pid(
-                            snap.ec_smooth,
-                            p.ec_target_p2,
-                            base,
-                            float(st.get("ec_integral", 0.0)),
-                            float(st.get("ec_prev_err", 0.0)),
-                            gains,
-                        )
-                        st["ec_offset"], st["ec_integral"], st["ec_prev_err"] = (
-                            off,
-                            integ,
-                            perr,
-                        )
-                    else:
-                        st["ec_offset"] = self._step_ec_offset(
-                            float(st.get("ec_offset", 0.0)),
-                            snap.ec_smooth,
-                            p.ec_target_p2,
-                            base,
-                        )
+                    st["ec_offset"] = self._step_ec_offset(
+                        float(st.get("ec_offset", 0.0)),
+                        snap.ec_smooth,
+                        p.ec_target_p2,
+                        base,
+                    )
                     st["last_ec_steer"] = now
                     self._save_state()
             # Vmax advisory: watch the P1 wet-up for the field-capacity ceiling.
