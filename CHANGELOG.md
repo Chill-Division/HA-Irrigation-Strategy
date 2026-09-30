@@ -13,18 +13,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🌱 In plain English
 
+- **Home Assistant 2026.5 or newer is required.** It was 2024.10, two years old. On an older Home
+  Assistant, HACS and the app store offer no update to Crop Steering or its controller until Home
+  Assistant itself is updated, and what is installed keeps working. The code and the extra test
+  run that only the older versions needed are gone.
 - **HACS and the app store name Chill-Division as the maintainer.** They named JakeTheRabbit, who
   started Crop Steering, so an installation from this repository looked like one of theirs.
   Nothing else changes.
+- **Messages name the controller, not "f2-control".** It was named after the room it was first
+  written for. When a room is switched off, the "hasn't been watered" notification and the zone's
+  line on the dashboard now say "room off (kill switch)", not "f2-control disabled (kill switch
+  off)", and the controller's log lines start with "[controller]".
 - **The maintenance trigger's explanation no longer mentions a PID option.** Only the original
   author's own setup could turn it on: it needs Home Assistant helpers that nothing here creates.
 
 ### 🔧 Technical notes
 
+- **Minimum Home Assistant 2026.5.0** (was 2024.10.0):
+  - `hacs.json` `homeassistant` is `2026.5.0`. The controller app's `config.yaml` sets
+    `homeassistant: "2026.5.0"` too, and the Supervisor checks it on install and on every update,
+    so on an older Home Assistant the controller cannot move ahead of the integration.
+  - `setup_panel` calls `frontend.async_panel_exists` (2026.5.0+) without the panel-table fallback,
+    and registers its static path through `async_register_static_paths` only.
+  - `stock_api` takes the time zone from `dt_util.get_default_time_zone`.
+  - The oldest-supported Real Home Assistant leg runs 2026.5.0 on Python 3.14 (plugin 0.13.329),
+    without the `josepy` and `pycares` pins. `tests/test_requirements_stated.py` checks the app's
+    minimum as well.
 - `manifest.json` `codeowners` is `["@Chill-Division"]`: HACS shows it as the author, reading the
   manifest of the latest release. `repository.yaml` `maintainer` is `Chill-Division`, which the app
   store lists for the repository. The manifest's `documentation` and `issue_tracker` links and
   `repository.yaml`'s `url` are unchanged.
+- The controller's own name in what it says: the blocked reason is `room off (kill switch)`, the
+  `engine` attribute on the sensors it publishes is `crop-steering-controller` (was `f2-control`;
+  nothing shipped reads it), its log prefix is `[controller]` (also in `run.sh`), and it starts
+  with `Crop Steering Controller X.Y.Z starting`. Ids are unchanged: the app slug `f2_control`,
+  `input_boolean.f2_control_enabled`, `sensor.f2_control_vitals` and the notification ids.
 - The EC Stacking line of the P2 trigger's explainer (`setting-words.ts`) drops "The PID option
   can move it up to 20%." The controller still runs its EC PID when
   `input_boolean.crop_steering_ec_pid_enabled` exists and is on, with gains from

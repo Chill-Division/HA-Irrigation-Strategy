@@ -169,18 +169,13 @@ jobs:
             homeassistant: '2026.9.3'
             install: '-r requirements-test-ha.txt'
             suffix: ''
-          # The oldest Home Assistant this repository claims to support: hacs.json, the README
-          # badge and docs/INSTALL.md all say 2024.10.0, and move with this leg. Before 2024.9.0
-          # the integration itself fails (unloading a room calls ConfigEntries.async_loaded_entries);
-          # on 2024.9.x the suite's automation test is written in the syntax 2024.10.0 introduced.
-          # josepy 2.0 (2025) removed an API that the acme release this Home Assistant pins still
-          # imports, so it is held at the josepy that was current when this Home Assistant shipped.
-          # So is pycares: from 5.0 (2025) it leaves a thread running after a DNS channel closes, and
-          # this plugin release fails any test that ends with a thread it did not start
-          # (tests_ha/test_refusal_reasons.py, which runs the real web server).
-          - python: '3.12'
-            homeassistant: '2024.10.0'
-            install: 'pytest-homeassistant-custom-component==0.13.171 josepy==1.14.0 pycares==4.4.0'
+          # The oldest Home Assistant this repository claims to support: hacs.json, the controller
+          # app's config.yaml, the README badge and docs/INSTALL.md all say 2026.5.0, and move with
+          # this leg (tests/test_requirements_stated.py). The sidebar panel calls
+          # frontend.async_panel_exists, which Home Assistant added in 2026.5.0.
+          - python: '3.14'
+            homeassistant: '2026.5.0'
+            install: 'pytest-homeassistant-custom-component==0.13.329'
             suffix: ' - oldest supported Home Assistant'
     steps:
       - uses: actions/checkout@v4
