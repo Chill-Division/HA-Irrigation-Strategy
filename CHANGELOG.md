@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **HACS and the app store name Chill-Division as the maintainer.** They named JakeTheRabbit, who
   started Crop Steering, so an installation from this repository looked like one of theirs.
   Nothing else changes.
+- **The EC PID option is gone.** Only Home Assistant helpers from the original author's own setup
+  could switch it on, so it never ran anywhere else. EC Stacking works as before, moving the
+  maintenance trigger 1 point at a time.
 
 ### 🔧 Technical notes
 
@@ -23,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   manifest of the latest release. `repository.yaml` `maintainer` is `Chill-Division`, which the app
   store lists for the repository. The manifest's `documentation` and `issue_tracker` links and
   `repository.yaml`'s `url` are unchanged.
+- The EC PID loop is removed: `crop_steering_engine.ec_pid`, the controller's branch that read
+  `input_boolean.crop_steering_ec_pid_enabled` and `input_number.crop_steering_ec_pid_kp` / `_ki` /
+  `_kd`, and the per-zone `ec_integral` / `ec_prev_err` it kept. EC Stacking always takes
+  `_step_ec_offset`'s 1-point step. A state file holding those two keys still loads
+  (`test_state_migration`); they are dropped and not written back.
 
 ## [2.28.0] - 2026-09-29
 

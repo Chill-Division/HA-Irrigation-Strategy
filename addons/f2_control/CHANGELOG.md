@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The EC PID option is removed.** EC Stacking always takes its 1-point step; `input_boolean.crop_steering_ec_pid_enabled` and its gain helpers, which nothing here created, are no longer read. A zone's `ec_integral` and `ec_prev_err` are no longer kept: an old state file still loads, without them.
+
 # 2.28.0
 
 Pair with integration 2.28.0.
