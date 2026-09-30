@@ -468,7 +468,7 @@ export function StockTanks({
               {Object.keys(doc.dosers ?? {}).length ? " the Reservoir did not mix" : ""} by hand,
               or{" "}
               <Button variant="link" className="inline-link" onClick={() => navigate("setup")}>
-                map one in Rooms & setup
+                map one in Settings → Rooms & hardware
               </Button>
               .
             </>

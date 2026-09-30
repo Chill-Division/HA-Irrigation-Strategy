@@ -38,8 +38,6 @@ await context.addInitScript(() =>
 );
 const states = {};
 const calls = [];
-/** The entity ids of each history request, in order. */
-const history = [];
 const errors = [];
 const checks = [];
 let failStates = false,
@@ -131,10 +129,7 @@ await context.route("**/*", async (route) => {
     const id = decodeURIComponent(url.pathname.slice("/api/states/".length));
     return states[id] ? reply(states[id]) : reply({}, 404);
   }
-  if (url.pathname.startsWith("/api/history/")) {
-    history.push(url.searchParams.get("filter_entity_id")?.split(",") ?? []);
-    return reply([]);
-  }
+  if (url.pathname.startsWith("/api/history/")) return reply([]);
   if (whatsNew && url.pathname.startsWith("/api/services/crop_steering/whats_new_")) {
     const action = url.pathname.split("/").pop(),
       body = req.postDataJSON() ?? {};
@@ -235,7 +230,7 @@ try {
     },
   );
   await check(
-    "an open dropdown can be read on a dark Home Assistant theme (steering mode, activity, sensors)",
+    "an open dropdown can be read on a dark Home Assistant theme (steering mode, activity, zone)",
     async () => {
       // Home Assistant's input fill is a translucent rgba of the text colour. The browser cannot
       // paint an option list with it and fell back to white under light text.
@@ -249,7 +244,7 @@ try {
           const [r, g, b] = colour.match(/[\d.]+/g).map(Number);
           return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
         };
-        for (const route of ["strategy", "activity", "sensors", "comparison"]) {
+        for (const route of ["strategy", "activity", "insights", "comparison"]) {
           await themed.goto(`${base}/dashboard.html?room=room:f1_#/${route}`, {
             waitUntil: "networkidle",
           });
@@ -352,66 +347,31 @@ try {
     );
     assert.deepEqual(order, ["attention-list", "metric-strip", "timeline", "overview-grid"]);
   });
-  await check("stale probe is unavailable in both overview and sensor diagnostics", async () => {
+  await check("stale probe is unavailable in zone diagnostics, with its age", async () => {
     const probe = "sensor.crop_steering_f1_vwc_zone_1";
     states[probe].last_updated = "2020-01-01T00:00:00Z";
     await page.getByRole("button", { name: "Refresh controller data" }).click();
     await page
       .getByRole("navigation", { name: "Main navigation" })
-      .getByRole("button", { name: "Sensors", exact: true })
+      .getByRole("button", { name: "Insights", exact: true })
       .click();
-    const row = page.getByRole("row").filter({ hasText: probe });
-    await visible(row.getByText("Stale or unverified", { exact: true }));
-    await visible(row.getByText("Unavailable", { exact: true }));
-    // Stale is amber; a sensor that reports is green; the count of those that do not is red, as
-    // one of them (zone 1's EC) is down.
-    assert.equal(
-      await row.locator(".pill", { hasText: "Stale or unverified" }).getAttribute("data-tone"),
-      "warn",
-    );
-    assert.equal(
-      await page
-        .locator(".sensor-summary .pill", { hasText: "unavailable" })
-        .getAttribute("data-tone"),
-      "off",
-    );
-    assert.equal(
-      await page
-        .getByRole("row")
-        .filter({ hasText: "sensor.crop_steering_f1_ec_zone_2" })
-        .locator(".pill")
-        .getAttribute("data-tone"),
-      "on",
-    );
-    await page
-      .getByRole("combobox", { name: "Filter sensor availability" })
-      .selectOption("unavailable");
-    await visible(row);
-  });
-  await check("sensors: every numeric sensor's recent line comes from one request", async () => {
-    const nav = page.getByRole("navigation", { name: "Main navigation" });
-    // Settings reads no history: anything asked for after this is the Sensors page's.
-    await nav.getByRole("button", { name: "Settings", exact: true }).click();
-    await visible(page.getByRole("heading", { name: "Settings", exact: true }));
-    await page.waitForTimeout(1000);
-    history.length = 0;
-    await nav.getByRole("button", { name: "Sensors", exact: true }).click();
-    await visible(page.getByRole("heading", { name: "Sensors", exact: true }));
-    await page.waitForFunction(() => document.querySelectorAll(".sensors-table tr").length > 1);
-    await page.waitForTimeout(1000);
-    const numeric = Object.values(states)
-      .filter(
-        (e) =>
-          e.entity_id.startsWith("sensor.crop_steering_f1_") &&
-          e.state.trim() &&
-          Number.isFinite(Number(e.state)),
-      )
-      .map((e) => e.entity_id)
-      .sort();
-    assert.ok(numeric.length > 1, "the fixture has several numeric sensors");
-    assert.ok(history.length >= 1, "the Sensors page asks for its sensors' readings");
-    // A later re-read may repeat it; it is never one request per row.
-    for (const ids of history) assert.deepEqual([...ids].sort(), numeric);
+    await visible(page.getByRole("heading", { name: "Probe coverage", exact: true }));
+    const cell = (zone, column) =>
+      page
+        .locator(".insights-page .data-table tbody tr")
+        .filter({ hasText: `Zone ${zone}` })
+        .locator("td")
+        .nth(column);
+    // Zone 1's moisture is stale and its EC is down: red, the stale one with its age. Zone 2's EC
+    // reports: green.
+    const reading = async (zone, column) => [
+      await cell(zone, column).locator(".pill").innerText(),
+      await cell(zone, column).locator(".pill").getAttribute("data-tone"),
+    ];
+    assert.deepEqual(await reading(1, 1), ["Unavailable / unverified", "off"]);
+    assert.match(await cell(1, 1).innerText(), /Reading \d+ d old$/);
+    assert.deepEqual(await reading(1, 2), ["Unavailable / unverified", "off"]);
+    assert.deepEqual(await reading(2, 2), ["Current", "on"]);
   });
   await check(
     "authentication failure preserves explicit offline state and disables writes",
@@ -446,15 +406,11 @@ try {
     await page.getByRole("button", { name: "Refresh controller data" }).click();
     await page
       .getByRole("navigation", { name: "Main navigation" })
-      .getByRole("button", { name: "Zones", exact: true })
-      .click();
-    await visible(page.getByRole("heading", { name: "No zones discovered", exact: true }));
-    assert.equal(await page.locator("#desktop-room").isDisabled(), true);
-    await page
-      .getByRole("navigation", { name: "Main navigation" })
       .getByRole("button", { name: "Overview", exact: true })
       .click();
     await visible(page.getByRole("heading", { level: 1, name: "Overview", exact: true }));
+    await visible(page.getByRole("heading", { name: "No zones discovered", exact: true }));
+    assert.equal(await page.locator("#desktop-room").isDisabled(), true);
   });
   await check(
     "named F2 stays distinct from default and unsupported tools cannot misroute",
@@ -488,8 +444,8 @@ try {
       );
       await page.goto(`${base}/dashboard.html?room=room:f2_#/help`, { waitUntil: "networkidle" });
       await page.locator("#desktop-room").selectOption("room:");
-      const planner = page.locator('a[href="#/grow-plan"]').first();
-      await visible(planner);
+      await visible(page.getByRole("heading", { name: "Help", exact: true }));
+      assert.equal(new URL(page.url()).hash, "#/help");
       assert.equal(await page.locator("#desktop-room").inputValue(), "room:");
     },
   );

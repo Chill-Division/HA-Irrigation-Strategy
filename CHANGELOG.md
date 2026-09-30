@@ -39,13 +39,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on their installation, not anything a grower can use.
 - **Links go to Chill-Division, Crop Steering's public home.** The README (its demo, screenshots
   and install buttons), the integration's documentation and issue links, **Learn more** on
-  Repairs cards, the app store, the setup page's install buttons and the release notes link in
-  What's new all pointed at JakeTheRabbit's or the maintainer's own repository. The setup page's
-  **Add controller repository** button now works: it opened a link Home Assistant does not have.
-  The GitHub Sponsor button, which went to JakeTheRabbit, is gone.
+  Repairs cards, the app store and the release notes link in What's new all pointed at
+  JakeTheRabbit's or the maintainer's own repository. The GitHub Sponsor button, which went to
+  JakeTheRabbit, is gone.
 - **Setup no longer imports a `crop_steering.env` file, and Configure no longer reloads one.** A
   room set up from one keeps working exactly as before: after setup it only ever ran on what was
-  stored then. Change it in Configure or in Rooms & setup.
+  stored then. Change it in Configure or in Rooms & hardware.
 - **The original author's old page addresses are gone.** `f2.html`, `office.html` and a dozen
   others only redirected old bookmarks; so did the old room and page names in dashboard links
   (`?room=f2`, `?view=climate`). The app's sidebar entry, the dashboard in the sidebar and the demo
@@ -58,6 +57,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The per-plant daily minimum is gone.** Like the EC PID option, only a Home Assistant helper
   from the original author's own setup could switch it on, so it never ran anywhere else. The
   watchdog is still the backstop that waters a zone left dry by day.
+- **A shorter menu: six entries instead of thirteen.** Overview, Irrigation plan, Insights, Feed,
+  Settings and Help. Pages that belong together are tabs of one entry: Insights holds Zone, Water,
+  Compare runs and Activity; Feed holds Reservoir (once the room has one mapped) and Stock tanks;
+  Settings holds General and Rooms & hardware (was Rooms & setup). Bookmarks keep working, and one
+  to a page that is gone opens the Overview.
+- **The room's switches are on the Overview.** Switching the room off, and watering off, moved from
+  Settings to the Overview's heading, beside the pills that say whether each is on, and the status
+  line's link for watering switched off opens the Overview. With the room off, the Overview's
+  banner leaves the switch to the heading; on every other page the banner keeps its own.
+- **The Zones and Sensors pages are gone.** The Overview's zone table has what the Zones page
+  showed, and a zone's name opens its details. Water use over the grow is under Insights, Water,
+  which also shares each zone's water today across its plants. The Sensors page repeated the
+  probes: Insights, Zone shows whether each zone's probes give a current reading and how old the
+  last one is.
+- **Less said twice.** The shot calculator is in one place, Insights, Water, not on Today, Schedule
+  and Insights. A setting's range, step and key are behind its **?**. Pot size, plants and
+  drippers are set only in Rooms & hardware. Help keeps the terms, the error codes and What's new:
+  its daily routine and tool links repeated the menu. Rooms & hardware drops its Installation tab,
+  which repeated the README's install buttons, and inside Home Assistant, Settings no longer shows
+  a connection form: the session is the connection.
+- **Today's grow day is twice as tall**, and how to read it is behind a **?** beside its title.
 
 ### 🔧 Technical notes
 
@@ -105,10 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Links to `JakeTheRabbit/HA-Irrigation-Strategy`, `jaketherabbit.github.io` and the
   `ChillingSilence` releases and images point at `Chill-Division/HA-Irrigation-Strategy`:
   `manifest.json` `documentation` / `issue_tracker`, `const.REPAIRS_DOCS_URL`, both `url:` fields,
-  `DOCS.md`, `setup.tsx`, `whats-new.ts` `RELEASES_URL`, README, INSTALL, USER_GUIDE,
-  SCREENSHOTS, the MCP README and the Pages workflow comment. `setup.tsx`'s app-store button uses
-  `supervisor_add_addon_repository` (was `supervisor_addon_repository`, not a My Home Assistant
-  redirect). INSTALL's move section covers a controller from either of JakeTheRabbit's
+  `DOCS.md`, `whats-new.ts` `RELEASES_URL`, README, INSTALL, USER_GUIDE, SCREENSHOTS, the MCP
+  README and the Pages workflow comment. INSTALL's move section covers a controller from either of JakeTheRabbit's
   repositories: this repository's app is `f50c47e4_f2_control`. `.github/FUNDING.yml` is removed.
 - The `.env` import is removed: `env_parser.py`, the first step's `config_method` choice, the
   `load_env` step, Configure's `reload_env`, `_validate_env_entities` and their strings. So is the
@@ -120,7 +138,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   deletes any other page it finds there, so a page it stops writing cannot stay committed. The 13
   stubs in `www/` and in the app, and the integration's `www/index.html`, are removed. `?room=`
   resolves by room id only (`room:`, `room:f1_`), without the slug or `f2` aliases; `?view=` is
-  no longer read; Settings' Advanced workflows links go straight to their pages. `F1_ALIASES`, for
+  no longer read. `F1_ALIASES`, for
   an old install's `sensor.crop_steering_system_*` ids, stays.
 - `number.crop_steering_<prefix>pump_prime_time` (0-20 s, default 2) and `..._main_line_lead_time`
   (0-10 s, default 1), room-wide. The controller reads both before a shot opens anything
@@ -135,6 +153,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the dashboard has no label for the latter. It fired only when no other rule did and only
   above a default of 0, so no other decision changes; the engine's tests still run all 96
   statements of `decide()` and 71 of its 72 branches.
+- The dashboard's pages are grouped in `App.tsx`'s `sections`, each with its tabs: a menu entry
+  opens its first tab, the toolbar (`<section> views`) switches between them, and the breadcrumb
+  and title read `Section › Tab`. Reservoir is hidden until the room descriptor carries one of
+  `RESERVOIR_KEYS`. A hash that is no page (`#/zones`, `#/sensors`) opens Overview.
+- Removed with the pages: `pages/zones.tsx`, `pages/sensors.tsx`, setup's `Installation`, Help's
+  daily routine and tool lists, Settings' room, watering and Advanced workflows sections, Insights'
+  summary tiles, tabs, catch-test calculator and room map, `ZoneTable`'s full mode (`compact`),
+  `DailyWaterSummary`, `recentReadings`, the `Hardware sizing` group help, and the CSS only they
+  used. Added `pages/water.tsx` (the Water use panel and `WaterDelivery`) and `WateringPower`;
+  `RoomOffBanner` takes `switchable`; Overview uses `useDrybackTrends`; the Water use panel's
+  Today cell adds `mL per plant` from `dailyWater`.
+- `SettingHelp` takes `limits` (`min–max unit · step`) and shows without the setting's words too.
+  The grow-day lane's plot is 80 px tall (was 40), and its hint is a popover.
+- Where to fix things, in the controller's notifications (the CS-208 text, the batch and sizing
+  holds, the alert footer), `feed.py`'s problems, `strings.json` / `translations/en.json` and
+  `docs/error-codes.json`: "Settings → Rooms & hardware", "Feed → Stock tanks", "Help → Error
+  codes" and "Overview". No entity id, service or state changes.
+- Browser checks follow the new pages. The Overview's two-screen limit at 1440×800 leaves out the
+  demo banner, which a live Overview does not have: without it the Overview is 1,574 px of 1,600
+  with the chart doubled (1,504 px before).
 
 ## [2.28.0] - 2026-09-29
 

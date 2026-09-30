@@ -205,12 +205,12 @@ def recipe(doc: dict, recipe_id=None) -> dict | None:
 def plan(doc: dict, mapped: dict[int, str]) -> dict:
     """What the controller runs for this room's next batch: the batch settings and, in the room's
     order, each doser's nutrient, mL and seconds for the stage in use. `problem` says why no batch
-    can run, or is None. `mapped` is the room's doser switches by number (Rooms & setup).
+    can run, or is None. `mapped` is the room's doser switches by number (Rooms & hardware).
     """
     stage = recipe(doc)
     doses, problem = [], None
     if not mapped:
-        problem = "No doser is mapped in Rooms & setup."
+        problem = "No doser is mapped in Settings → Rooms & hardware."
     elif stage is None:
         problem = "No feed stage is chosen."
     else:
@@ -219,7 +219,7 @@ def plan(doc: dict, mapped: dict[int, str]) -> dict:
         }
         missing = sorted(number for number in wanted if number not in mapped)
         if missing:
-            problem = f"{stage['name']} uses doser {missing[0]}, which has no switch in Rooms & setup."
+            problem = f"{stage['name']} uses doser {missing[0]}, which has no switch in Settings → Rooms & hardware."
         elif not wanted:
             problem = f"{stage['name']} doses nothing: give its nutrients some parts."
         for number in room_order(doc, mapped):

@@ -69,7 +69,7 @@ class StockStore:
 
     @property
     def fill_entity(self) -> str | None:
-        """The room's tank last-fill entity from Rooms & setup; None when unmapped."""
+        """The room's tank last-fill entity from Rooms & hardware; None when unmapped."""
         config = self.hass.data.get(DOMAIN, {}).get(self.entry.entry_id, {})
         hardware = config.get("hardware", {}) if isinstance(config, dict) else {}
         return hardware.get("tank_last_fill_sensor") or None
@@ -154,7 +154,7 @@ class StockStore:
         }
 
     def dosers(self) -> dict[str, dict]:
-        """The room's dosers from Rooms & setup, each with its switch and the nutrient the stage
+        """The room's dosers from Rooms & hardware, each with its switch and the nutrient the stage
         in use puts on it (None when it doses nothing in that stage)."""
         from .feed_api import mapped_dosers
 

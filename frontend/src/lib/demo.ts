@@ -78,7 +78,7 @@ export function createDemo(now = Date.now()): States {
       tank_fill_entity: `binary_sensor.demo_${prefix}tank_filling`,
       // Flower 2 mixes its own nutrient batches; Flower 1 has no reservoir mapped.
       ...(index ? {} : DEMO_RESERVOIR),
-      // Both rooms have been saved in Rooms & setup.
+      // Both rooms have been saved in Rooms & hardware.
       setup_revision: 1,
     });
     put(`switch.demo_${prefix}pump`, index ? "off" : "on");
@@ -93,7 +93,7 @@ export function createDemo(now = Date.now()): States {
     );
     put(`binary_sensor.demo_${prefix}tank_filling`, "off");
     // A probe's estimated pore EC as some probe firmware publishes it, unrounded. Nothing maps it,
-    // so it is only among the entities Rooms & setup offers.
+    // so it is only among the entities Rooms & hardware offers.
     if (!index)
       put("sensor.demo_substrate_estimated_pwec", 0.639473676681519, {
         friendly_name: "Demo Substrate Estimated pwEC",
@@ -114,7 +114,7 @@ export function createDemo(now = Date.now()): States {
           pause_s: 10,
           mix_s: 600,
           doses: [],
-          problem: "No doser is mapped in Rooms & setup.",
+          problem: "No doser is mapped in Settings → Rooms & hardware.",
         };
     for (const entity of Object.values(
       feedEntities(prefix, plan, feed ? feed.recipes.map((r) => r.name) : [], stamp),

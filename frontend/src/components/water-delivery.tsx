@@ -29,62 +29,6 @@ export interface WaterDeliveryProps {
 const quantity = (value: number | null, unit: string, digits = 1) =>
   value === null ? "Unavailable" : `${number(value, digits)} ${unit}`;
 
-export function DailyWaterSummary({
-  controller,
-  zones = controller.room.zones,
-}: {
-  controller: Controller;
-  zones?: Zone[];
-}) {
-  if (!zones.length) return null;
-  return (
-    <section className="panel wd-daily">
-      <div className="panel-heading">
-        <div>
-          <h2>Water delivered this grow-day</h2>
-          <p>Controller-recorded estimates, from each room’s lights-on boundary.</p>
-        </div>
-      </div>
-      <div
-        className="table-scroll"
-        tabIndex={0}
-        role="region"
-        aria-label="Daily water by zone and per plant"
-      >
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Zone</th>
-              <th>Configured plants</th>
-              <th>Zone total · all plants</th>
-              <th>Average per plant today</th>
-            </tr>
-          </thead>
-          <tbody>
-            {zones.map((zone) => {
-              const reading = dailyWater(zone, waterParameters(controller, zone.id).plant_count);
-              return (
-                <tr key={zone.id}>
-                  <td data-label="Zone">{zone.name}</td>
-                  <td data-label="Configured plants">{number(reading.plants, 0)}</td>
-                  <td data-label="Zone total · all plants">{quantity(reading.zoneL, "L", 2)}</td>
-                  <td data-label="Average per plant today">
-                    {quantity(reading.mlPerPlant, "mL", 1)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      <p className="wd-note">
-        Per-plant average = recorded zone litres ÷ current plant count. It assumes uniform
-        distribution; individual dripper delivery is not measured. A changed plant count can change
-        this average.
-      </p>
-    </section>
-  );
-}
 function CoreLimitNote({
   limit,
   unit,

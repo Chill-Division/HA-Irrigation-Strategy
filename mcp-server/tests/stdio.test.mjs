@@ -465,7 +465,7 @@ test("a declaration made elsewhere after the preview invalidates the proposal", 
   const ha = await mockHa(t),
     { client } = await stdio(t, ha, { CROP_STEERING_ALLOW_WRITES: "true" });
   const p = data(await setup(client, "room:", { room_name: "Flower" }));
-  ha.rooms[0].plumbing = "pump_valves"; // declared in Rooms & setup meanwhile, same revision
+  ha.rooms[0].plumbing = "pump_valves"; // declared in Rooms & hardware meanwhile, same revision
   error(await apply(client, p), /changed after preview/);
   assert.equal(ha.saveCount, 0);
 });

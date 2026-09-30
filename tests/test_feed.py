@@ -84,7 +84,8 @@ def test_a_doser_without_parts_is_skipped_and_one_without_a_switch_stops_the_bat
     assert [d["doser"] for d in plan["doses"]] == [4, 3, 1] and plan["problem"] is None
     plan = feed.plan(settings(), {n: e for n, e in MAPPED.items() if n != 3})
     assert (
-        plan["problem"] == "Flower uses doser 3, which has no switch in Rooms & setup."
+        plan["problem"]
+        == "Flower uses doser 3, which has no switch in Settings → Rooms & hardware."
     )
 
 
@@ -92,7 +93,7 @@ def test_a_doser_without_parts_is_skipped_and_one_without_a_switch_stops_the_bat
     "doc, mapped, problem",
     [
         ({}, MAPPED, "No feed stage is chosen."),
-        ({"stage": "flower"}, {}, "No doser is mapped in Rooms & setup."),
+        ({"stage": "flower"}, {}, "No doser is mapped in Settings → Rooms & hardware."),
         (
             {"stage": "flower", "strength": 0},
             MAPPED,
@@ -256,7 +257,7 @@ def test_only_the_rooms_mapped_dosers_count():
     ) == {2: "switch.b"}
     assert (
         rig(hardware={}).response()["plan"]["problem"]
-        == "No doser is mapped in Rooms & setup."
+        == "No doser is mapped in Settings → Rooms & hardware."
     )
 
 

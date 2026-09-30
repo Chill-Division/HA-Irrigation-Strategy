@@ -3,7 +3,7 @@
 
     python scripts/render_error_codes.py
 
-The dashboard's Help & tools page reads the same JSON, and tests/test_error_codes.py fails when the
+The dashboard's Help page reads the same JSON, and tests/test_error_codes.py fails when the
 committed page is not what this writes, so the two cannot drift. Edit the JSON, never the page.
 """
 import json
@@ -26,7 +26,7 @@ def render(catalog):
         "**Settings → Repairs**, ends with a code such as **CS-101** (the controller's regular status",
         "summary has none). Find the code below for what it",
         "means, what happens to watering meanwhile, the likely causes and what to do. The same list is",
-        "in the Crop Steering sidebar under **Help & tools → Error codes**.",
+        "in the Crop Steering sidebar under **Help → Error codes**.",
         "",
         "Most notifications are raised again, at most every 30 minutes, for as long as their cause lasts,",
         "and after 5 minutes when their code changes. A few are said once: CS-301 once per fault",

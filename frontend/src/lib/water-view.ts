@@ -48,7 +48,7 @@ export function WaterViewProvider({
   return createElement(WaterViewContext.Provider, { value }, children);
 }
 
-/** The zone's configured plant count, as the Zones page's per-plant water reads it; null when it
+/** The zone's configured plant count, as Overview's per-plant water reads it; null when it
  * is not a positive whole number. */
 export function zonePlants(controller: Controller, zoneId: number): number | null {
   const plants = waterParameters(controller, zoneId).plant_count;

@@ -1,19 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Activity,
   CalendarRange,
   ChartNoAxesCombined,
-  Wrench,
   ArrowUpRight,
   Beaker,
   ChevronRight,
   CircleHelp,
   Droplets,
-  FlaskConical,
   House,
-  Layers,
   Menu,
-  Radio,
   RefreshCw,
   Settings2,
   X,
@@ -38,7 +33,8 @@ import { useController } from "@/lib/use-controller";
 import { useHaTheme } from "@/lib/ha-theme";
 import { useHaShell } from "@/lib/ha-shell";
 import { errorText } from "@/lib/utils";
-import { roomIsActive, runningVersions } from "@/lib/model";
+import { descriptor, roomIsActive, runningVersions } from "@/lib/model";
+import { RESERVOIR_KEYS } from "@/lib/feed";
 import { RoomOffBanner } from "@/components/room-controls";
 import { ActivityPanel } from "@/components/activity-panel";
 import { StatusLines } from "@/components/status-line";
@@ -46,37 +42,74 @@ import { WaterViewProvider } from "@/lib/water-view";
 import { WhatsNewOnUpdate } from "@/components/whats-new";
 import { time, type Page } from "@/components/dashboard";
 import { Overview } from "@/pages/overview";
-import { Zones } from "@/pages/zones";
 import { Strategy, type Drafts } from "@/pages/strategy";
 import { ActivityPage } from "@/pages/activity";
-import { Sensors } from "@/pages/sensors";
 import { Settings } from "@/pages/settings";
 import { Help } from "@/pages/help";
 import { GrowPlanner } from "@/pages/grow-planner";
 import { Setup } from "@/pages/setup";
 import { Insights } from "@/pages/insights";
+import { Water } from "@/pages/water";
 import { Comparison } from "@/pages/comparison";
 import { StockTanks } from "@/pages/stock";
 import { Reservoir } from "@/pages/reservoir";
 
-const navigation = [
-  { id: "overview", label: "Overview", icon: House },
-  { id: "zones", label: "Zones", icon: Layers },
-  { id: "strategy", label: "Irrigation plan", icon: CalendarRange },
-  { id: "compare", label: "Compare runs", icon: ChartNoAxesCombined },
-  { id: "insights", label: "Insights", icon: ChartNoAxesCombined },
-  { id: "activity", label: "Activity", icon: Activity },
-  { id: "sensors", label: "Sensors", icon: Radio },
-  { id: "reservoir", label: "Reservoir", icon: Beaker },
-  { id: "stock", label: "Stock tanks", icon: FlaskConical },
-  { id: "setup", label: "Rooms & setup", icon: Wrench },
-  { id: "settings", label: "Settings", icon: Settings2 },
-  { id: "help", label: "Help & tools", icon: CircleHelp },
-] as const;
+/** The menu: six sections, each one page or a few tabs. A tab is a page with its own address. */
+const sections = [
+  { id: "overview", label: "Overview", icon: House, tabs: [{ id: "overview", label: "Overview" }] },
+  {
+    id: "plan",
+    label: "Irrigation plan",
+    icon: CalendarRange,
+    tabs: [
+      { id: "strategy", label: "Today" },
+      { id: "grow-plan", label: "Schedule" },
+    ],
+  },
+  {
+    id: "insights",
+    label: "Insights",
+    icon: ChartNoAxesCombined,
+    tabs: [
+      { id: "insights", label: "Zone" },
+      { id: "water", label: "Water" },
+      { id: "compare", label: "Compare runs" },
+      { id: "activity", label: "Activity" },
+    ],
+  },
+  {
+    id: "feed",
+    label: "Feed",
+    icon: Beaker,
+    tabs: [
+      { id: "reservoir", label: "Reservoir" },
+      { id: "stock", label: "Stock tanks" },
+    ],
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: Settings2,
+    tabs: [
+      { id: "settings", label: "General" },
+      { id: "setup", label: "Rooms & hardware" },
+    ],
+  },
+  { id: "help", label: "Help", icon: CircleHelp, tabs: [{ id: "help", label: "Help" }] },
+] as const satisfies readonly {
+  id: string;
+  label: string;
+  icon: typeof House;
+  tabs: readonly { id: Page; label: string }[];
+}[];
+type Section = (typeof sections)[number];
+const sectionOf = (page: Page): Section =>
+  sections.find((section) => section.tabs.some((tab) => tab.id === page)) ?? sections[0];
 function readPage(): Page {
   const hash = window.location.hash.replace(/^#\/?/, "").split("?")[0];
-  if (hash === "grow-plan" || navigation.some((n) => n.id === hash)) return hash as Page;
-  return "overview";
+  return sections.some((section) => section.tabs.some((tab) => tab.id === hash))
+    ? (hash as Page)
+    : "overview";
 }
 export default function App() {
   const controller = useController();
@@ -141,9 +174,19 @@ export default function App() {
       window.removeEventListener("beforeunload", beforeUnload);
     };
   }, []);
+  const section = sectionOf(page);
+  // A room without a reservoir has no Reservoir tab: Feed opens on its stock tanks.
+  const reservoirMapped = RESERVOIR_KEYS.some(
+    (key) => descriptor(controller.states, controller.room.room)?.attributes?.[key],
+  );
+  const tabsOf = (item: Section) =>
+    item.tabs.filter((tab) => tab.id !== "reservoir" || reservoirMapped || page === "reservoir");
+  const tab = section.tabs.find((item) => item.id === page);
+  const pageLabel =
+    section.tabs.length > 1 && tab ? `${section.label} › ${tab.label}` : section.label;
   useEffect(() => {
-    document.title = `${navigation.find((n) => n.id === (page === "grow-plan" ? "strategy" : page))?.label} · ${controller.room.room.name} · Crop Steering`;
-  }, [page, controller.room.room.name]);
+    document.title = `${pageLabel} · ${controller.room.room.name} · Crop Steering`;
+  }, [pageLabel, controller.room.room.name]);
   async function refresh() {
     setRefreshing(true);
     setRefreshError("");
@@ -207,18 +250,18 @@ export default function App() {
         </span>
       </div>
       <nav aria-label="Main navigation">
-        {navigation.map((item, index) => (
+        {sections.map((item) => (
           <button
             key={item.id}
-            className={`${(page === "grow-plan" ? "strategy" : page) === item.id ? "active" : ""} ${item.id === "settings" ? "nav-separated" : ""}`}
-            aria-current={
-              (page === "grow-plan" ? "strategy" : page) === item.id ? "page" : undefined
+            className={`${section.id === item.id ? "active" : ""} ${item.id === "settings" ? "nav-separated" : ""}`}
+            aria-current={section.id === item.id ? "page" : undefined}
+            onClick={() =>
+              section.id === item.id ? setMobile(false) : navigate(tabsOf(item)[0].id)
             }
-            onClick={() => navigate(item.id)}
           >
             <item.icon size={19} />
             <span>{item.label}</span>
-            {item.id === "strategy" && Object.keys(drafts).length > 0 && (
+            {item.id === "plan" && Object.keys(drafts).length > 0 && (
               <i className="nav-draft-count">{Object.keys(drafts).length}</i>
             )}
           </button>
@@ -236,7 +279,6 @@ export default function App() {
             <House size={17} /> Home Assistant
           </Button>
         )}
-        <span className="small">Configuration changes require review.</span>
         {!controller.demo && (
           <dl
             className="sidebar-versions"
@@ -303,9 +345,7 @@ export default function App() {
             </Button>
             <span>{controller.room.room.name}</span>
             <ChevronRight size={14} />
-            <strong>
-              {navigation.find((n) => n.id === (page === "grow-plan" ? "strategy" : page))?.label}
-            </strong>
+            <strong>{pageLabel}</strong>
           </div>
           <div className="connection-info">
             <span className={`connection-label ${controller.connection}`}>
@@ -367,32 +407,26 @@ export default function App() {
               </div>
             )}
             <StatusLines controller={controller} />
-            <RoomOffBanner controller={controller} />
+            <RoomOffBanner controller={controller} switchable={page !== "overview"} />
             {page === "overview" && (
               <Overview key={controller.roomId} controller={controller} navigate={navigate} />
             )}
-            {page === "zones" && (
-              <Zones key={controller.roomId} controller={controller} navigate={navigate} />
-            )}
-            {(page === "strategy" || page === "grow-plan") && (
-              <div className="toolbar" role="navigation" aria-label="Irrigation plan views">
-                <Button
-                  variant={page === "strategy" ? "default" : "outline"}
-                  aria-current={page === "strategy" ? "page" : undefined}
-                  onClick={() => navigate("strategy")}
-                >
-                  Today
-                </Button>
-                <Button
-                  variant={page === "grow-plan" ? "default" : "outline"}
-                  aria-current={page === "grow-plan" ? "page" : undefined}
-                  onClick={() => navigate("grow-plan")}
-                >
-                  Schedule
-                </Button>
-                <span className="muted small">
-                  One set of targets: edit today or schedule changes by date.
-                </span>
+            {tabsOf(section).length > 1 && (
+              <div
+                className="toolbar section-tabs"
+                role="navigation"
+                aria-label={`${section.label} views`}
+              >
+                {tabsOf(section).map((item) => (
+                  <Button
+                    key={item.id}
+                    variant={page === item.id ? "default" : "outline"}
+                    aria-current={page === item.id ? "page" : undefined}
+                    onClick={() => navigate(item.id)}
+                  >
+                    {item.label}
+                  </Button>
+                ))}
               </div>
             )}
             {page === "strategy" && (
@@ -421,6 +455,7 @@ export default function App() {
             {page === "insights" && (
               <Insights key={controller.roomId} controller={controller} navigate={navigate} />
             )}
+            {page === "water" && <Water key={controller.roomId} controller={controller} />}
             {page === "setup" && (
               <Setup
                 key={controller.roomId}
@@ -431,7 +466,6 @@ export default function App() {
             {page === "activity" && (
               <ActivityPage key={controller.roomId} controller={controller} />
             )}
-            {page === "sensors" && <Sensors key={controller.roomId} controller={controller} />}
             {page === "reservoir" && (
               <Reservoir
                 key={controller.roomId}
@@ -449,6 +483,7 @@ export default function App() {
                 theme={theme.preference}
                 setTheme={theme.setPreference}
                 themeSource={theme.source}
+                embedded={haShell.available}
               />
             )}
             {page === "help" && <Help controller={controller} />}

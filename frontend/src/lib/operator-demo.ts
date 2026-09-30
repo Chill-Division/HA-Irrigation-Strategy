@@ -94,9 +94,7 @@ export class OperatorDemo {
       room.safety = {
         ready: states[flag]?.state === "off",
         blockers:
-          states[flag]?.state === "off"
-            ? []
-            : ["Turn off this room's engine in Settings before changing mappings."],
+          states[flag]?.state === "off" ? [] : ["Switch watering off before changing mappings."],
       };
     }
     const candidates = Object.values(states).map((e) => ({

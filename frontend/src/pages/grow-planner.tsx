@@ -23,7 +23,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Heading, Empty, number } from "@/components/dashboard";
-import { WaterDelivery } from "@/components/water-delivery";
 import { PlanningCurve } from "@/components/planning-curve";
 import { PlanCellContext } from "@/components/plan-cell-context";
 import { RecipeLibrary } from "@/components/recipe-library";
@@ -863,7 +862,6 @@ export function GrowPlanner({
                   The curve is a setpoint planning model. Actual moisture, EC and shot timing depend
                   on sensor feedback. Editing a curve target updates both endpoints of this profile.
                 </p>
-                <WaterDelivery controller={controller} zoneId={zoneId} parameters={params} />
               </section>
               <section className="panel workspace-card">
                 <div className="workspace-section-heading">

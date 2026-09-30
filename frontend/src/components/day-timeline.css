@@ -250,6 +250,23 @@
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
+/* Nothing picked: kept for screen readers, not drawn. */
+.day-timeline .timeline-detail.empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.day-timeline .timeline-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .day-timeline .timeline-legend {
   display: flex;
   flex-wrap: wrap;

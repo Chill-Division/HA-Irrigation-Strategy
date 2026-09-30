@@ -477,12 +477,6 @@ nav button.nav-separated {
   font-weight: 550;
   margin-bottom: 8px;
 }
-.split-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-}
 .metric-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -785,6 +779,10 @@ nav button.nav-separated {
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
+/* A menu entry's pages, as tabs above the page: clear of the status line over them. */
+.section-tabs {
+  margin-top: 14px;
+}
 .search-field {
   position: relative;
   max-width: 350px;
@@ -799,55 +797,6 @@ nav button.nav-separated {
 }
 .search-field input {
   padding-left: 36px;
-}
-.segmented {
-  display: flex;
-  gap: 2px;
-  margin-left: auto;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 2px;
-  background: var(--surface);
-}
-.zone-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
-}
-.zone-card {
-  padding: 22px;
-}
-.zone-card > p {
-  font-size: var(--text-xs);
-  margin-top: 9px;
-}
-.zone-card-moisture {
-  font-size: 31px;
-  padding: 23px 0;
-}
-.zone-card-moisture > span:last-child {
-  display: block;
-  font-size: var(--text-xs);
-  color: var(--muted-foreground);
-  margin-top: 3px;
-}
-.zone-card-pair {
-  border-top: 1px solid var(--border);
-  padding: 17px 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 24px;
-}
-.zone-card-pair > span {
-  display: block;
-  font-size: var(--text-xs);
-  color: var(--muted-foreground);
-}
-.zone-card-pair strong {
-  display: block;
-  font-size: 17px;
-  color: var(--foreground);
-  padding-top: 5px;
 }
 .empty-state {
   padding: 42px 24px;
@@ -1068,14 +1017,6 @@ nav button.nav-separated {
   font-size: var(--text-xs);
   margin: 6px 0;
 }
-.setting-limit {
-  color: var(--muted-foreground);
-  font-size: var(--text-xs);
-}
-.setting-limit code {
-  font-size: var(--text-xs);
-  overflow-wrap: anywhere;
-}
 .setting-name {
   display: flex;
   flex-wrap: wrap;
@@ -1234,26 +1175,6 @@ nav button.nav-separated {
   color: var(--primary-strong);
   font-size: 12px;
 }
-.sensor-summary {
-  display: flex;
-  align-items: center;
-  gap: 10px 12px;
-  margin: 5px 0 26px;
-  font-size: 12px;
-  color: var(--muted-foreground);
-  flex-wrap: wrap;
-}
-.sensor-summary strong {
-  color: var(--foreground);
-}
-.sensors-table td:first-child {
-  white-space: normal;
-  min-width: 290px;
-}
-.sensors-table code {
-  overflow-wrap: anywhere;
-  font-size: var(--text-xs);
-}
 .activity-table td:nth-child(2) {
   white-space: normal;
   min-width: 250px;
@@ -1328,56 +1249,6 @@ nav button.nav-separated {
 .theme-options button > svg:last-child {
   margin-left: auto;
 }
-.tool-link-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  font-size: 12px;
-}
-.tool-link-list a {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: var(--primary-strong);
-}
-.help-intro {
-  display: flex;
-  gap: 19px;
-  padding: 24px;
-  background: var(--secondary);
-  border-radius: 8px;
-  margin-bottom: 25px;
-}
-.help-intro > svg {
-  color: var(--primary-strong);
-  flex-shrink: 0;
-}
-.help-intro p {
-  color: var(--secondary-foreground);
-  font-size: 12px;
-  margin-top: 8px;
-  max-width: 830px;
-}
-.help-intro h3 {
-  margin-top: 16px;
-}
-.daily-routine {
-  margin: 8px 0 0;
-  padding-left: 20px;
-  display: grid;
-  gap: 4px;
-}
-.daily-routine a {
-  color: var(--primary-strong);
-}
-.daily-routine a:hover {
-  text-decoration: underline;
-}
-.help-columns {
-  display: grid;
-  grid-template-columns: 1.25fr 1fr;
-  gap: 24px;
-}
 .glossary {
   margin: 0;
   padding: 0 24px;
@@ -1399,51 +1270,6 @@ nav button.nav-separated {
   color: var(--muted-foreground);
   font-size: 12px;
   line-height: 1.65;
-}
-.specialist-links {
-  padding: 0 22px;
-}
-.specialist-links a {
-  padding: 18px 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid var(--border);
-}
-.specialist-links a:last-child {
-  border: 0;
-}
-.specialist-links a > svg {
-  color: var(--primary-strong);
-  flex-shrink: 0;
-}
-.specialist-links a > span {
-  flex: 1;
-}
-.specialist-links strong {
-  font-size: 12px;
-  font-weight: 600;
-  display: block;
-}
-.specialist-links small {
-  display: block;
-  color: var(--muted-foreground);
-  font-size: var(--text-xs);
-  margin-top: 4px;
-}
-.help-note {
-  display: flex;
-  gap: 12px;
-  padding: 10px 5px;
-}
-.help-note > svg {
-  color: var(--primary-strong);
-  flex-shrink: 0;
-}
-.help-note p {
-  color: var(--muted-foreground);
-  font-size: var(--text-xs);
-  margin-top: 9px;
 }
 .error-codes {
   margin-top: 24px;
@@ -1632,9 +1458,6 @@ nav button.nav-separated {
     gap: 25px;
     grid-template-columns: 215px minmax(0, 1fr);
   }
-  .zone-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .strategy-layout {
     grid-template-columns: 160px minmax(0, 1fr);
     gap: 20px;
@@ -1666,10 +1489,6 @@ nav button.nav-separated {
   .brand-mark {
     width: 33px;
     height: 33px;
-  }
-  .help-columns {
-    grid-template-columns: 1fr;
-    gap: 0;
   }
   .metric-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1822,10 +1641,6 @@ nav button.nav-separated {
     max-width: 100%;
     font-size: 12px;
   }
-  .zone-grid {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
   .event-list {
     padding: 0 18px;
   }
@@ -1893,23 +1708,6 @@ nav button.nav-separated {
     flex: 1;
     padding: 15px;
   }
-  .sensor-summary {
-    gap: 13px;
-    font-size: var(--text-xs);
-  }
-  .help-intro {
-    padding: 20px;
-    gap: 12px;
-  }
-  .help-intro > svg {
-    width: 22px;
-  }
-  .help-intro h2 {
-    font-size: 16px;
-  }
-  .help-intro p {
-    font-size: var(--text-xs);
-  }
   .connection-banner {
     flex-wrap: wrap;
     padding: 13px;
@@ -1956,7 +1754,6 @@ nav button.nav-separated {
 #main-content,
 .main-inner,
 .overview-grid > *,
-.help-columns > *,
 .strategy-content {
   min-width: 0;
 }
@@ -2404,7 +2201,6 @@ nav button.active,
 .theme-options .chosen,
 .success-text,
 .success-banner,
-.tool-link-list a,
 .review-row b,
 .text-primary {
   color: var(--primary-strong);

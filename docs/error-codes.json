@@ -1,5 +1,5 @@
 {
-  "about": "Every alert from the Crop Steering controller app, and every Crop Steering card in Settings → Repairs, ends with a code such as CS-101 (the controller's regular status summary has none). This file is the one list of them. docs/ERROR_CODES.md and the dashboard's Help & tools page are both made from it; tests/test_error_codes.py keeps it in step with the code.",
+  "about": "Every alert from the Crop Steering controller app, and every Crop Steering card in Settings → Repairs, ends with a code such as CS-101 (the controller's regular status summary has none). This file is the one list of them. docs/ERROR_CODES.md and the dashboard's Help page are both made from it; tests/test_error_codes.py keeps it in step with the code.",
   "groups": [
     {
       "prefix": "CS-1",
@@ -74,7 +74,7 @@
       "fixes": [
         "Find the sensor named in the notification under Settings → Developer tools → States and check what it reads.",
         "Check the probe's device is powered and online.",
-        "In Crop Steering → Rooms & setup, check the zone's moisture sensor is the probe you expect.",
+        "In Crop Steering → Settings → Rooms & hardware, check the zone's moisture sensor is the probe you expect.",
         "If the notification says the reading is stamped in the future, set the clocks of the Home Assistant host and the controller app right."
       ]
     },
@@ -91,7 +91,7 @@
       ],
       "fixes": [
         "Check the probe's calibration in its own integration.",
-        "In Crop Steering → Rooms & setup, check the zone's moisture sensor is the moisture reading in %, not another entity from the same device."
+        "In Crop Steering → Settings → Rooms & hardware, check the zone's moisture sensor is the moisture reading in %, not another entity from the same device."
       ]
     },
     {
@@ -106,7 +106,7 @@
         "The EC probe is offline, or reads the same number for more than 20 minutes (a cube with no plant in it, as for CS-101)."
       ],
       "fixes": [
-        "Map an EC probe to the zone in Crop Steering → Rooms & setup, if the zone has one.",
+        "Map an EC probe to the zone in Crop Steering → Settings → Rooms & hardware, if the zone has one.",
         "Check the probe is online and its reading moves."
       ]
     },
@@ -115,7 +115,7 @@
       "title": "Setup change waiting, not watering",
       "source": "notification",
       "severity": "critical",
-      "meaning": "A changed setup was saved for the room (in Rooms & setup or Configure), or the controller is taking the room's setup on again after a restart. It only takes a setup on while every pump and valve it would drive is OFF, and, for a changed setup, the engine switch too. The notification lists the ones that are still on.",
+      "meaning": "A changed setup was saved for the room (in Settings → Rooms & hardware or Configure), or the controller is taking the room's setup on again after a restart. It only takes a setup on while every pump and valve it would drive is OFF, and, for a changed setup, the engine switch too. The notification lists the ones that are still on.",
       "watering": "Nothing in the room is watered until the controller has taken on the new setup.",
       "causes": [
         "The setup was saved while the engine switch was on.",
@@ -141,7 +141,7 @@
         "The integration is newer than the controller app and uses a plumbing layout the app doesn't know yet."
       ],
       "fixes": [
-        "In Crop Steering → Rooms & setup, map the missing switch, or change the plumbing to what the room really has. The detail in the notification says which.",
+        "In Crop Steering → Settings → Rooms & hardware, map the missing switch, or change the plumbing to what the room really has. The detail in the notification says which.",
         "If it names a layout the controller doesn't know, update the controller app.",
         "The hold clears by itself once the corrected setup is taken on (see CS-201)."
       ]
@@ -175,7 +175,7 @@
         "The controller app's flow_lps or substrate_l option is 0 or less, and the zone's own setting is missing, so the option is used."
       ],
       "fixes": [
-        "Set the zone's pot size, plant count, drippers per plant and dripper flow in Crop Steering → Rooms & setup.",
+        "Set the zone's pot size, plant count, drippers per plant and dripper flow in Crop Steering → Settings → Rooms & hardware.",
         "Check the controller app's flow_lps and substrate_l options are above 0."
       ]
     },
@@ -239,13 +239,13 @@
       "source": "notification",
       "severity": "warning",
       "meaning": "System Enabled and Auto Irrigation Enabled are retired: the room's Watering switch (its engine switch) is the one switch that stops watering. One of the two is still off, so the controller switched watering off in its place. It does so again, within a minute, while that switch stays off.",
-      "watering": "Stopped in the room, as if watering had been switched off in Settings: no shot starts, and a shot that was running stops within a few seconds. The controller keeps reading the probes and following the phases.",
+      "watering": "Stopped in the room, as if watering had been switched off in Overview: no shot starts, and a shot that was running stops within a few seconds. The controller keeps reading the probes and following the phases.",
       "causes": [
         "System Enabled or Auto Irrigation Enabled was switched off, by a person or an automation, before these switches were retired.",
         "An automation still switches one of them off to stop watering."
       ],
       "fixes": [
-        "Switch the named switch back on in Home Assistant (it is hidden: Settings → Entities, with hidden entities shown), then switch watering on in Crop Steering → Settings → Watering.",
+        "Switch the named switch back on in Home Assistant (it is hidden: Settings → Entities, with hidden entities shown), then switch watering on in Crop Steering → Overview.",
         "Change an automation that switches System Enabled or Auto Irrigation Enabled off to switch the room's Watering switch (its engine switch) off instead."
       ]
     },
@@ -282,7 +282,7 @@
       ],
       "fixes": [
         "Switch the pump on and off by hand in Home Assistant to check it responds.",
-        "Check the pump mapped in Crop Steering → Rooms & setup.",
+        "Check the pump mapped in Crop Steering → Settings → Rooms & hardware.",
         "If CS-301 was raised too, follow it."
       ]
     },
@@ -299,7 +299,7 @@
       ],
       "fixes": [
         "Switch the valve on and off by hand in Home Assistant to check it responds.",
-        "Check the main-line valve mapped in Crop Steering → Rooms & setup.",
+        "Check the main-line valve mapped in Crop Steering → Settings → Rooms & hardware.",
         "If CS-301 was raised too, follow it."
       ]
     },
@@ -316,7 +316,7 @@
       ],
       "fixes": [
         "Switch the valve on and off by hand in Home Assistant to check it responds.",
-        "Check the zone's valve mapped in Crop Steering → Rooms & setup.",
+        "Check the zone's valve mapped in Crop Steering → Settings → Rooms & hardware.",
         "If CS-301 was raised too, follow it."
       ]
     },
@@ -547,7 +547,7 @@
         "The zone was set up without a probe, or its probe was cleared."
       ],
       "fixes": [
-        "Map a moisture probe to the zone in Crop Steering → Rooms & setup (or Configure)."
+        "Map a moisture probe to the zone in Crop Steering → Settings → Rooms & hardware (or Configure)."
       ]
     },
     {
@@ -561,7 +561,7 @@
         "The probe is offline, renamed, or removed."
       ],
       "fixes": [
-        "Check the probe under Settings → Developer tools → States, and the zone's mapping in Rooms & setup."
+        "Check the probe under Settings → Developer tools → States, and the zone's mapping in Settings → Rooms & hardware."
       ]
     },
     {
@@ -627,7 +627,7 @@
         "A tank was refilled but Refilled was not pressed, so its level is still the old one."
       ],
       "fixes": [
-        "Refill the tank, then press Refilled on Crop Steering → Stock tanks.",
+        "Refill the tank, then press Refilled in Crop Steering → Feed → Stock tanks.",
         "Or set the level you read off the tank. The card clears itself once every tank is above its low mark."
       ]
     },
@@ -645,7 +645,7 @@
         "The controller app was stopped or restarted part-way."
       ],
       "fixes": [
-        "Check the reservoir: how full it is, and which nutrients went in (the Reservoir page shows the last batch).",
+        "Check the reservoir: how full it is, and which nutrients went in (Feed → Reservoir shows the last batch).",
         "Dose what is missing by hand, or empty and refill the reservoir and press Mix a Batch Now.",
         "If a switch failed, check that device before the next batch."
       ]
@@ -679,7 +679,7 @@
         "No feed stage is chosen, the stage's recipe doses nothing, or it uses a doser with no switch mapped.",
         "The room's watering switch is off, the room is switched off, a hardware hold is latched or a setup change is waiting.",
         "The pump, the main line, a zone valve, the fresh-water or recirculation solenoid or a doser reads on or offline: something else is using it.",
-        "The reservoir, its pump or its recirculation solenoid is not mapped in Rooms & setup.",
+        "The reservoir, its pump or its recirculation solenoid is not mapped in Settings → Rooms & hardware.",
         "Asked for by hand while the reservoir's level sensor read short of its almost-empty mark, or read nothing: its fill time could overflow it."
       ],
       "fixes": [

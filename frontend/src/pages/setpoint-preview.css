@@ -192,8 +192,7 @@
   .setpoint-preview:not(.is-expanded) .planning-phase-legend,
   .setpoint-preview:not(.is-expanded) .planning-assumptions,
   .setpoint-preview:not(.is-expanded) .planning-curve > p.muted,
-  .setpoint-preview:not(.is-expanded) .setpoint-preview-note,
-  .setpoint-preview:not(.is-expanded) .setpoint-water {
+  .setpoint-preview:not(.is-expanded) .setpoint-preview-note {
     display: none;
   }
   .setpoint-preview:not(.is-expanded) .planning-svg-wrap svg {

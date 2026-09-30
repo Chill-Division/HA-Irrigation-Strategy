@@ -57,3 +57,8 @@
 .setting-help dd {
   margin: 2px 0 0;
 }
+.setting-help-limits {
+  margin: 0 0 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+}

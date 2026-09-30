@@ -68,7 +68,6 @@ export const GROUP_HELP: Record<string, string> = {
     "Maintenance shots through the day, whenever the substrate dries below the trigger.",
   [PHASE_GROUPS[3]]: "The substrate dries back until the first shot of the next day.",
   Substrate: "What this substrate can hold.",
-  "Hardware sizing": "What turns a shot’s percentage into litres and seconds.",
   Schedule: "When the lights come on and go off. A grow-day runs from one lights-on to the next.",
   Safety: "Limits that hold, shorten or add watering.",
   "Pump and valves": "How long the pump and the shared main line run before a zone's valve opens.",

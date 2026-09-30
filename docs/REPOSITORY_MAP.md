@@ -14,7 +14,7 @@
 | tests | Integration and repository contract tests |
 | docs | Install, operation, architecture and release process |
 | docs/TESTING.md / docs/ENTITIES.md | Development checks and entity reference |
-| docs/error-codes.json | The one list of error codes (CS-101 …); docs/ERROR_CODES.md is written from it by scripts/render_error_codes.py, and the dashboard's Help & tools page imports it |
+| docs/error-codes.json | The one list of error codes (CS-101 …); docs/ERROR_CODES.md is written from it by scripts/render_error_codes.py, and the dashboard's Help page imports it |
 | img | Screenshots used by the README and docs |
 | repository.yaml | HA app repository discovery metadata; the controller app is installed from this repository only |
 

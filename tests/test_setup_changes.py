@@ -7,7 +7,7 @@ from custom_components.crop_steering.setup_api import setup_changes
 
 
 def room():
-    """A room as setup_room gives it: what Rooms & setup shows and sends back."""
+    """A room as setup_room gives it: what Rooms & hardware shows and sends back."""
     return {
         "room_name": "Crop Steering System",
         "active": True,

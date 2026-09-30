@@ -64,14 +64,13 @@ import "./zone-state.css";
 
 export type Page =
   | "overview"
-  | "zones"
   | "strategy"
   | "grow-plan"
   | "compare"
   | "insights"
+  | "water"
   | "setup"
   | "activity"
-  | "sensors"
   | "settings"
   | "reservoir"
   | "stock"
@@ -738,7 +737,7 @@ export function WaterUse({
         <span
           title={
             view === "plant" && zone.water.value !== null
-              ? "Water per plant needs this zone's plant count, in Rooms & setup"
+              ? "Water per plant needs this zone's plant count, in Settings → Rooms & hardware"
               : undefined
           }
         >
@@ -811,15 +810,12 @@ export function MoistureCell({ zone, target = true }: { zone: Zone; target?: boo
 export function ZoneTable({
   zones,
   onSelect,
-  compact = false,
   trends,
   limits = {},
   plants = {},
 }: {
   zones: Zone[];
   onSelect: (zone: Zone) => void;
-  /** Overview: the target rides under the moisture reading; ages without dates; no arrow column. */
-  compact?: boolean;
   /** Each zone's dryback; null while the readings load. */
   trends?: Record<number, DrybackTrend> | null;
   /** Each zone's daily water limit in litres. */
@@ -835,25 +831,19 @@ export function ZoneTable({
         tabIndex={0}
         aria-label="Zone readings and irrigation events"
       >
-        <table className={compact ? "data-table zone-table-compact" : "data-table"}>
+        <table className="data-table zone-table-compact">
           <thead>
             <tr>
               <th>Zone</th>
               <th>Current state</th>
               <th>Last irrigation</th>
               <th>Moisture</th>
-              {!compact && <th>VWC reference</th>}
               <th>Root-zone EC</th>
               <th title="VWC percentage points lost per hour">Dryback</th>
               <th>
                 Water today
                 {view === "plant" && <span className="cell-subtext">per plant</span>}
               </th>
-              {!compact && (
-                <th>
-                  <span className="sr-only">Details</span>
-                </th>
-              )}
             </tr>
           </thead>
           <tbody>
@@ -868,22 +858,15 @@ export function ZoneTable({
                   </button>
                 </td>
                 <td>
-                  {/* The Overview flags a zone that is not scheduled; enabled is the norm. */}
-                  <ZoneOperatingState zone={zone} showScheduling={!compact || zone.enabled !== true} />
+                  {/* Flags a zone that is not scheduled; enabled is the norm. */}
+                  <ZoneOperatingState zone={zone} showScheduling={zone.enabled !== true} />
                 </td>
                 <td>
-                  <LastIrrigation zone={zone} compact={compact} />
+                  <LastIrrigation zone={zone} compact />
                 </td>
                 <td className="numeric">
-                  {/* The full table names the target in its own column. */}
-                  <MoistureCell zone={zone} target={compact} />
+                  <MoistureCell zone={zone} />
                 </td>
-                {!compact && (
-                  <td className="numeric muted">
-                    <MetricValue metric={zone.target} />
-                    <span className="cell-subtext">{zone.target.label}</span>
-                  </td>
-                )}
                 <td className="numeric">
                   <MetricValue metric={zone.ec} />
                 </td>
@@ -897,18 +880,6 @@ export function ZoneTable({
                     plants={plants[zone.id] ?? null}
                   />
                 </td>
-                {!compact && (
-                  <td>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      aria-label={`View ${zone.name}`}
-                      onClick={() => onSelect(zone)}
-                    >
-                      <ArrowUpRight size={17} />
-                    </Button>
-                  </td>
-                )}
               </tr>
             ))}
           </tbody>

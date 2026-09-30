@@ -74,7 +74,7 @@ def restored_state_is_ours(entry, last_state) -> bool:
         return True
 
 
-# A room's reservoir and dosers, for nutrient batches (feed.py): mapped in Rooms & setup, driven by
+# A room's reservoir and dosers, for nutrient batches (feed.py): mapped in Rooms & hardware, driven by
 # the controller. Published in the descriptor only when mapped, like `plumbing`.
 MAX_DOSERS = 6
 DOSER_KEYS = tuple(f"doser_{number}_switch" for number in range(1, MAX_DOSERS + 1))

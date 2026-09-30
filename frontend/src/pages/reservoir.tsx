@@ -193,7 +193,7 @@ function BatchPanel({
   const low = almostEmpty(level, status?.emptyMm ?? plan.empty_mm);
   const steps = stepsOf(plan, status);
   const why = !mapped
-    ? "Map the reservoir in Rooms & setup first."
+    ? "Map the reservoir in Settings → Rooms & hardware first."
     : dirty
       ? "Save or discard your changes first."
       : running
@@ -796,8 +796,8 @@ export function Reservoir({
       {doc && !reservoir && !mapped.length && (
         <Empty
           title="No reservoir mapped"
-          detail="Map this room's reservoir level sensor, its fresh-water and recirculation solenoids and up to six dosers in Rooms & setup. The controller app then refills the reservoir, mixes and doses each batch."
-          action={<Button onClick={() => navigate("setup")}>Map them in Rooms & setup</Button>}
+          detail="Map this room's reservoir level sensor, its fresh-water and recirculation solenoids and up to six dosers in Settings → Rooms & hardware. The controller app then refills the reservoir, mixes and doses each batch."
+          action={<Button onClick={() => navigate("setup")}>Map them in Rooms & hardware</Button>}
         />
       )}
       {doc && draft && (reservoir || !!mapped.length) && (
@@ -887,7 +887,7 @@ export function Reservoir({
               <p className="muted">
                 No doser is mapped.{" "}
                 <Button variant="link" className="inline-link" onClick={() => navigate("setup")}>
-                  Map them in Rooms & setup
+                  Map them in Rooms & hardware
                 </Button>
                 .
               </p>

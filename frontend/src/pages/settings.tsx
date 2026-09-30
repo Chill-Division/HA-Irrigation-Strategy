@@ -43,11 +43,14 @@ export function Settings({
   theme,
   setTheme,
   themeSource,
+  embedded,
 }: {
   controller: Controller;
   theme: ThemePreference;
   setTheme: (value: ThemePreference) => void;
   themeSource: ThemeSource;
+  /** Inside Home Assistant, which is the connection: no form to connect with a token. */
+  embedded: boolean;
 }) {
   const water = useWaterView();
   const [waterBusy, setWaterBusy] = useState(false);
@@ -84,7 +87,6 @@ export function Settings({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [connected, setConnected] = useState(false);
-  const [review, setReview] = useState(false);
   const [resetDemo, setResetDemo] = useState(false);
   async function connect(event: React.FormEvent) {
     event.preventDefault();
@@ -124,144 +126,87 @@ export function Settings({
             </div>
           </section>
         )}
-        <section className="panel settings-section">
-          <div className="settings-label">
-            <h2>Home Assistant connection</h2>
-            <p>Use the current Home Assistant session or connect with a long-lived access token.</p>
-            <Pill
-              dot
-              tone={CONNECTION[controller.connection].tone}
-              data-connection={controller.connection}
-            >
-              {CONNECTION[controller.connection].label}
-            </Pill>
-          </div>
-          <form onSubmit={connect} className="connection-form">
-            <div>
-              <Label htmlFor="ha-url">Home Assistant URL</Label>
-              <Input
-                id="ha-url"
-                type="url"
-                placeholder="http://homeassistant.local:8123"
-                value={base}
-                onChange={(e) => setBase(e.target.value)}
-              />
-              <p className="small muted">
-                Leave blank to use the current origin and available session.
-              </p>
-            </div>
-            <div>
-              <Label htmlFor="ha-token">Long-lived access token</Label>
-              <Input
-                id="ha-token"
-                type="password"
-                autoComplete="off"
-                placeholder="Paste token for this tab"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-              />
-              <p className="small muted">
-                Kept only for the current tab session. Never added to a URL.
-              </p>
-            </div>
-            {controller.demo && (
-              <p className="notice-inline">
-                This tab is in isolated demo mode. Open a copy without the demo parameter to connect
-                to a live controller.
-              </p>
-            )}
-            {(error || controller.error) && (
-              <p className="form-error" role="alert">
-                {error || controller.error}
-              </p>
-            )}
-            {connected && controller.connection === "live" && (
-              <p className="success-text" role="status">
-                <Check size={16} />
-                Connection verified.
-              </p>
-            )}
-            <div className="form-actions">
-              <Button type="submit" disabled={busy || controller.demo}>
-                {busy && <LoaderCircle size={16} className="spin" />}
-                {busy ? "Connecting…" : "Connect"}
-              </Button>
-              {controller.connection === "live" && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    controller.disconnect();
-                    setConnected(false);
-                  }}
-                >
-                  Disconnect this tab
-                </Button>
-              )}
-            </div>
-          </form>
-        </section>
-        {controller.room.roomActiveEntity && (
+        {!embedded && (
           <section className="panel settings-section">
             <div className="settings-label">
-              <h2>Room on / off</h2>
+              <h2>Home Assistant connection</h2>
               <p>
-                Switch {controller.room.room.name} off when nothing is growing in it, and on again
-                when the next crop goes in.
+                Use the current Home Assistant session or connect with a long-lived access token.
               </p>
+              <Pill
+                dot
+                tone={CONNECTION[controller.connection].tone}
+                data-connection={controller.connection}
+              >
+                {CONNECTION[controller.connection].label}
+              </Pill>
             </div>
-            <div>
-              <RoomPower controller={controller} />
-              <p className="small muted mt-3">
-                Off: the controller will not water this room and raises no alerts for it, and a shot
-                already running stops within a few seconds. On within a day: it carries on where it
-                was. On after longer: daily counters and learned phase state reset for a fresh run.
-                This is not an emergency stop.
-              </p>
-            </div>
+            <form onSubmit={connect} className="connection-form">
+              <div>
+                <Label htmlFor="ha-url">Home Assistant URL</Label>
+                <Input
+                  id="ha-url"
+                  type="url"
+                  placeholder="http://homeassistant.local:8123"
+                  value={base}
+                  onChange={(e) => setBase(e.target.value)}
+                />
+                <p className="small muted">
+                  Leave blank to use the current origin and available session.
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="ha-token">Long-lived access token</Label>
+                <Input
+                  id="ha-token"
+                  type="password"
+                  autoComplete="off"
+                  placeholder="Paste token for this tab"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                />
+                <p className="small muted">
+                  Kept only for the current tab session. Never added to a URL.
+                </p>
+              </div>
+              {controller.demo && (
+                <p className="notice-inline">
+                  This tab is in isolated demo mode. Open a copy without the demo parameter to
+                  connect to a live controller.
+                </p>
+              )}
+              {(error || controller.error) && (
+                <p className="form-error" role="alert">
+                  {error || controller.error}
+                </p>
+              )}
+              {connected && controller.connection === "live" && (
+                <p className="success-text" role="status">
+                  <Check size={16} />
+                  Connection verified.
+                </p>
+              )}
+              <div className="form-actions">
+                <Button type="submit" disabled={busy || controller.demo}>
+                  {busy && <LoaderCircle size={16} className="spin" />}
+                  {busy ? "Connecting…" : "Connect"}
+                </Button>
+                {controller.connection === "live" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      controller.disconnect();
+                      setConnected(false);
+                    }}
+                  >
+                    Disconnect this tab
+                  </Button>
+                )}
+              </div>
+            </form>
           </section>
         )}
-        <section className="panel settings-section">
-          <div className="settings-label">
-            <h2>Watering</h2>
-            <p>
-              Lets the controller water {controller.room.room.name}. This is the room’s engine
-              switch
-              {controller.room.engine.entityId ? ` (${controller.room.engine.entityId})` : ""}.
-            </p>
-          </div>
-          <div>
-            <div className="split-row">
-              <Status
-                enabled={controller.room.engine.enabled}
-                label={
-                  controller.room.engine.enabled === true
-                    ? "Watering on"
-                    : controller.room.engine.enabled === false
-                      ? "Watering off"
-                      : undefined
-                }
-              />
-              <Button
-                variant="outline"
-                disabled={
-                  !controller.room.engine.entityId ||
-                  controller.room.engine.enabled === null ||
-                  !["live", "demo"].includes(controller.connection)
-                }
-                onClick={() => setReview(true)}
-              >
-                {controller.room.engine.enabled ? "Switch watering off…" : "Switch watering on…"}
-              </Button>
-            </div>
-            <p className="small muted mt-3">
-              Off: the controller opens no valve in this room, and a shot already running stops
-              within a few seconds. It keeps reading the probes and following the phases. A new room
-              starts with watering off, so nothing is watered before its hardware has been checked.
-              This is not an emergency stop.
-            </p>
-          </div>
-        </section>
         <section className="panel settings-section">
           <div className="settings-label">
             <h2>Appearance</h2>
@@ -332,7 +277,7 @@ export function Settings({
                   ? `For ${controller.room.room.name}: everyone who opens it sees water today this way, and the controller’s vitals notification follows it. `
                   : "This needs the updated Crop Steering integration. "}
                 Per plant is each zone’s water today, and its daily limit, divided by its plant
-                count from Rooms &amp; setup, as if every plant got the same. Water use over the
+                count from Rooms &amp; hardware, as if every plant got the same. Water use over the
                 grow stays in litres per zone.
               </p>
             </div>
@@ -381,26 +326,9 @@ export function Settings({
             )}
             <p className="small muted mt-3">
               {predictions.entityId
-                ? "Under each zone, what the controller will do next, as its Next: line on the Zones page says it: for example “shot when VWC < 61% (now 58%) · P3 by 22:00”."
+                ? "Under each zone, what the controller will do next, as each zone's Next: line on Overview says it: for example “shot when VWC < 61% (now 58%) · P3 by 22:00”."
                 : "This needs the updated Crop Steering integration. Until then the controller includes them."}
             </p>
-          </div>
-        </section>
-        <section className="panel settings-section">
-          <div className="settings-label">
-            <h2>Advanced workflows</h2>
-            <p>Planning, diagnostics and room configuration share this workspace.</p>
-          </div>
-          <div className="tool-link-list">
-            <a href="#/strategy">
-              Manual setpoints <ArrowUpRight size={16} />
-            </a>
-            <a href="#/sensors">
-              Climate detail <ArrowUpRight size={16} />
-            </a>
-            <a href="#/setup">
-              Room floor plan <ArrowUpRight size={16} />
-            </a>
           </div>
         </section>
       </div>
@@ -430,28 +358,6 @@ export function Settings({
           </DialogContent>
         </Dialog>
       )}
-      <ReviewDialog
-        open={review}
-        onOpenChange={setReview}
-        controller={controller}
-        title="Review watering"
-        items={
-          controller.room.engine.entityId
-            ? [
-                {
-                  change: {
-                    entityId: controller.room.engine.entityId,
-                    value: !controller.room.engine.enabled,
-                  },
-                  label: `${controller.room.room.name} watering`,
-                  before: controller.room.engine.enabled ? "On" : "Off",
-                  after: controller.room.engine.enabled ? "Off" : "On",
-                },
-              ]
-            : []
-        }
-        note="Switching watering off also stops a running shot within a few seconds. It is not an emergency stop: use the installation's physical shut-off for that."
-      />
     </>
   );
 }
