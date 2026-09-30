@@ -35,12 +35,12 @@ SETTING_NAMES = {
     "lights_off_hour": "Lights off",
 }
 _EC_TARGETS = {"0": "P0 EC target", "1": "P1 EC target", "2": "P2 EC target"}
-_MODES = {"veg": "vegetative", "gen": "generative"}
+_MODES = {"veg": "Veg", "vegetative": "Veg", "gen": "Gen", "generative": "Gen"}
 
 
 def setting_name(key):
     """A setting's short name from its key, a zone's without its "zone_N_": "p2_vwc_threshold" is
-    "Maintenance trigger", "ec_target_veg_p1" "P1 EC target (vegetative)". A key nobody has named
+    "Maintenance trigger", "ec_target_veg_p1" "P1 EC target (Veg)". A key nobody has named
     reads as its own words."""
     ec = re.fullmatch(r"ec_target_(?:(veg|gen)_)?p([012])", key)
     if ec:
@@ -49,7 +49,7 @@ def setting_name(key):
     dryback = re.fullmatch(r"(?:(vegetative|generative)_)?dryback_target", key)
     if dryback:
         mode = dryback.group(1)
-        return f"P3 dryback target ({mode})" if mode else "P3 dryback target"
+        return f"P3 dryback target ({_MODES[mode]})" if mode else "P3 dryback target"
     key = "max_shot_duration" if key == "maximum_shot_duration" else key
     return SETTING_NAMES.get(key) or key.replace("_", " ").capitalize()
 

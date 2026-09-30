@@ -142,10 +142,10 @@ def test_setting_names_are_the_dashboards():
     assert set(ec) == {"0", "1", "2"}
     for phase, name in ec.items():
         assert log_words.setting_name(f"ec_target_p{phase}") == name
-        assert log_words.setting_name(f"ec_target_veg_p{phase}") == f"{name} (vegetative)"
+        assert log_words.setting_name(f"ec_target_veg_p{phase}") == f"{name} (Veg)"
     dryback = re.search(r"const DRYBACK_WORDS: SettingWords = \{\n  label: \"[^\"]+\",\n  short: \"([^\"]+)\"", WORDS)
     assert log_words.setting_name("dryback_target") == dryback[1]
-    assert log_words.setting_name("generative_dryback_target") == f"{dryback[1]} (generative)"
+    assert log_words.setting_name("generative_dryback_target") == f"{dryback[1]} (Gen)"
     assert log_words.setting_name("maximum_shot_duration") == "Longest shot"
     assert log_words.setting_name("some_new_knob") == "Some new knob"
 
