@@ -99,8 +99,8 @@ const decisions = [
     "Z3 P1 P0 bypass VWC 32<=rewater 40 | P1 ramp VWC 32<49",
   ]),
   decision(at("22:08:57.611")),
-  decision(at("22:14:36.300"), ["Z2 P1 MIN-DAILY floor 0.0<8.4L (guaranteed)"]),
-  decision(at("22:18:13.309"), ["Z1 P1 MIN-DAILY floor 4.0<8.4L (guaranteed)"]),
+  decision(at("22:14:36.300"), ["Z2 P1 P1 ramp VWC 30<40"]),
+  decision(at("22:18:13.309"), ["Z1 P1 P1 ramp VWC 27<36"]),
   decision(at("22:19:13.984")),
 ];
 
@@ -154,7 +154,7 @@ describe("shots", () => {
         end: at("22:18:11.000"),
         open: false,
         phase: "P1",
-        reason: "MIN-DAILY floor 4.0<8.4L (guaranteed)",
+        reason: "P1 ramp VWC 27<36",
       },
     ]);
     // The phase changed in the same post, so the first P1 shot sits in the recorded P0 band.
@@ -176,7 +176,7 @@ describe("shots", () => {
     const shots = valveShots(row2, decisions, 2, START, at("22:30:00"));
     expect(shots.map(({ phase, reason, open }) => ({ phase, reason, open }))).toEqual([
       { phase: "P3", reason: "P3 emergency VWC 20<20", open: false },
-      { phase: "P1", reason: "MIN-DAILY floor 0.0<8.4L (guaranteed)", open: false },
+      { phase: "P1", reason: "P1 ramp VWC 30<40", open: false },
       { phase: null, reason: null, open: true },
     ]);
     expect(shots[0].start).toBe(START);
@@ -264,10 +264,7 @@ describe("blocks and holds", () => {
     decision(
       at("21:09:37.000"),
       [],
-      [
-        "Z1 P3 room off (kill switch)",
-        "Z2 P3 room off (kill switch)",
-      ],
+      ["Z1 P3 room off (kill switch)", "Z2 P3 room off (kill switch)"],
     ),
     decision(at("21:10:37.000")),
   ];

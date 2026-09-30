@@ -43,7 +43,6 @@ export const ZONE_PARAMETERS = new Set([
   "plant_count",
   "drippers_per_plant",
   "dripper_flow_rate",
-  "min_floor_drown_ceiling",
 ]);
 export const ROOM_PARAMETERS = new Set([
   "dripper_flow_rate",
@@ -295,7 +294,7 @@ function group(key: string) {
   if (/substrate|plant_count|dripper/.test(key)) return "Hardware sizing";
   if (/light.*hour/.test(key)) return "Schedule";
   if (key === "pump_prime_time" || key === "main_line_lead_time") return "Pump and valves";
-  if (/max_|maximum_shot_duration|maximum_ec|watchdog|irrigation_(ec|ph)|drown/.test(key))
+  if (/max_|maximum_shot_duration|maximum_ec|watchdog|irrigation_(ec|ph)/.test(key))
     return "Safety";
   return "General";
 }
