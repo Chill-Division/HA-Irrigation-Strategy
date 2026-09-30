@@ -29,21 +29,23 @@ def test_all_install_paths_ship_identical_dashboard():
         )
 
 
-def test_compatibility_entries_preserve_context_and_route_to_native_workspace():
-    for relative in (
-        "www/index.html",
-        "www/f2.html",
-        "www/f2-classic.html",
-        "addons/f2_control/www/public/index.html",
-    ):
+def test_each_folder_holds_the_dashboard_and_the_page_that_opens_it_only():
+    """The app's sidebar entry opens index.html (ingress serves it for "/"), and it is the demo
+    site's root; the integration's panel opens dashboard.html itself. The pages that redirected
+    the original author's old bookmarks are gone, and the build removes any page it no longer
+    writes, so none can linger committed."""
+    expected = {
+        "www": {"dashboard.html", "index.html"},
+        "addons/f2_control/www/public": {"dashboard.html", "index.html"},
+        "custom_components/crop_steering/www": {"dashboard.html"},
+    }
+    for relative, names in expected.items():
+        found = {page.name for page in (ROOT / relative).glob("*.html")}
+        assert found == names, relative
+    for relative in ("www/index.html", "addons/f2_control/www/public/index.html"):
         source = (ROOT / relative).read_text(encoding="utf-8")
-        assert "dashboard.html" in source
-        assert "location.search" in source
-        assert "location.hash" in source
-        assert "legacyViews" in source
-    classic = (ROOT / "www/f2-classic.html").read_text(encoding="utf-8")
-    assert '"room:f1_":"room:"' in classic
-    assert '"grow-plan"' in classic
+        assert "./dashboard.html" in source
+        assert "location.search" in source and "location.hash" in source
 
 
 def test_repository_metadata_does_not_expose_legacy_facility_config_as_an_app():
