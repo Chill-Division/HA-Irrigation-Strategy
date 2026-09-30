@@ -7,6 +7,7 @@
 - **Links go to Chill-Division/HA-Irrigation-Strategy**: the app's `url` and its Documentation tab. **The dashboard the app serves:** the setup page's install buttons and What's new's release notes link, and **Add controller repository** now opens the right My Home Assistant link. No change to the controller.
 - **The dashboard the app serves:** only `dashboard.html` and the `index.html` its sidebar entry opens. The 13 pages that redirected the original author's old bookmarks (`f2.html`, `office.html`, …) are gone, and so are the old `?room=` and `?view=` names. No change to the controller.
 - **Pump prime and main-line lead from the room's settings.** The pump runs `number.crop_steering_<prefix>pump_prime_time` (was a fixed 2 s) before the main line opens, and the main line `..._main_line_lead_time` (was 1 s) before the zone valve. Both are read before anything opens and capped at 20 s and 10 s; under an integration without them, 2 s and 1 s as before. The dashboard the app serves shows them under Pump and valves. No change to the state file.
+- **The per-plant daily minimum is removed.** `input_number.crop_steering_<prefix>zone_N_min_daily_ml_per_plant` and `number.crop_steering_<prefix>[zone_N_]min_floor_drown_ceiling`, which nothing here created, are no longer read, and `decide()` has no `min_daily` rule. No change to the state file.
 
 # 2.28.0
 
