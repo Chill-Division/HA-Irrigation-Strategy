@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The EC PID option is gone.** Only Home Assistant helpers from the original author's own setup
   could switch it on, so it never ran anywhere else, and the maintenance trigger's explanation no
   longer mentions it. EC Stacking works as before, moving the maintenance trigger 1 point at a time.
+- **Setup's examples and the entity reference describe any room, not the first one.** Setup's
+  hints for pot size and dripper flow gave a 6 L rockwool block and a 4 L/hr emitter, the room
+  Crop Steering was first written for; they now say a 10 L pot and a 2 L/hr emitter. The entity
+  reference listed that room's own settings as the defaults (6 L pots, 4 L/hr drippers, lights
+  10:00 to 22:00, a 200 L daily budget and more); it now lists what a new room starts at.
 
 ### 🔧 Technical notes
 
@@ -55,6 +60,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `_step_ec_offset`'s 1-point step. A state file holding those two keys still loads
   (`test_state_migration`); they are dropped and not written back. The EC Stacking line of the
   P2 trigger's explainer (`setting-words.ts`) drops "The PID option can move it up to 20%."
+- `strings.json` / `translations/en.json`: the `substrate_volume` and `dripper_flow_rate` hints,
+  in setup and Configure, use a 10 L pot and a 2 L/hr emitter. `docs/ENTITIES.md` follows
+  `number.py`: `p1_target_vwc` 65, `p1_time_between_shots` 15, `p2_vwc_threshold` 60,
+  `substrate_volume` 10 (range 0.1-200), `dripper_flow_rate` 1.2, `drippers_per_plant` 2 (range
+  1-20), `field_capacity` 70, `lights_on_hour` 12, `lights_off_hour` 0, `zone_N_plant_count` 4
+  (range 1-1000) and `zone_N_max_daily_volume` 20.
 
 ## [2.28.0] - 2026-09-29
 
