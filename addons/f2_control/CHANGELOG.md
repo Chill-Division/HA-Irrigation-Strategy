@@ -1,4 +1,6 @@
-# Unreleased
+# 2.29.2
+
+Pair with integration 2.29.2.
 
 - **The dashboard the app serves:** opens its demo workspace only with `?demo`, no longer by itself on a `github.io` address (the online demo is gone). No change to the controller.
 

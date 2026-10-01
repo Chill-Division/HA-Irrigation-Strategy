@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## 2.29.2 - 2026-10-01
+
+- Bug fixes and improvements.
+
 ## 2.29.1 - 2026-10-01
 
 - Today's events say who changed a setting (you, Auto setpoints or an automation) and what it was before.
