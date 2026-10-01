@@ -91,7 +91,7 @@ Every change is a draft until you review it. The draft line moves on the graph s
 ![Rooms and zones with their sensor mapping](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/rooms-setup.png)
 
 <details>
-<summary>More: phones, room off, Auto Setpoints, AI assistants</summary>
+<summary>More: phones, room off, Auto Setpoints</summary>
 
 **On a phone.** Every page works on a phone, in the Home Assistant app or a browser.
 
@@ -100,8 +100,6 @@ Every change is a draft until you review it. The draft line moves on the graph s
 **Room off.** Switch an empty room off from its Overview: readings stay visible, but there is no watering of any kind and no alerts. Switching it back on starts a clean day at the right point.
 
 **Auto Setpoints (off by default).** The controller learns each zone from its own shots: the highest moisture the probe actually reaches, how much a shot raises it, and how fast it dries by day and night. With Auto Setpoints on, it keeps that zone's targets reachable in small, bounded steps, and never while a plan is in charge.
-
-**AI assistants (optional).** An optional connector lets an AI assistant such as Claude read your rooms, readings and plans and prepare changes for you to review. It can never switch equipment. See [MCP.md](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/MCP.md).
 
 </details>
 
@@ -124,7 +122,6 @@ Both parts carry the same version number. Install and update them together.
 | **The controller app** | Home Assistant OS or Supervised, where it installs from the app store (amd64, aarch64 or armv7) and brings its own Python 3.12. Home Assistant Container and Core have no app store: there you run the controller yourself (see the [install guide](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/INSTALL.md)). |
 | **HACS** | 1.6.0 or newer for the guided download, or copy `custom_components/crop_steering` into Home Assistant by hand. |
 | **Hardware** | A switch Home Assistant can control for each zone's valve (and your pump and main line, if you have them), and a moisture probe per zone. EC probes and tank sensors are optional but recommended. |
-| **AI assistant connector** (optional) | Node.js 22 or newer, on the computer that runs your AI assistant. |
 | **Account** | A Home Assistant administrator, to set up rooms and change plans. |
 
 ## Install

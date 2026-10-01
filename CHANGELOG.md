@@ -9,6 +9,24 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **The AI-assistant connector is gone.** The optional connector that let an assistant such as
+  Claude read a room and prepare setup or plan changes is removed, with its guide. Nothing in Crop
+  Steering talks to an AI; the dashboard and the controller work exactly as before.
+
+### 🔧 Technical notes
+
+- Removed: `mcp-server/` (the stdio MCP server, its tests and its lockfile), `docs/MCP.md`, CI's
+  *MCP protocol and reviewed configuration workflows* job, and the source zip each GitHub release
+  attached (`crop_steering_mcp_source.zip`). The README, user guide, install guide, testing guide,
+  repository map and troubleshooting no longer mention it, nor does `health.py`.
+  `tests_ha/test_mcp_setup_contract.py` is now `test_setup_save_plumbing.py`: the same two real
+  Home Assistant checks of `setup_save` and declared plumbing, as the payload Rooms & hardware
+  sends. `tests/test_requirements_stated.py` no longer checks a Node.js version.
+
 ## [2.29.1] - 2026-10-01
 
 Integration and controller **2.29.1**.

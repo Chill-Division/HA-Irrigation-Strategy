@@ -215,29 +215,6 @@ After an update, the first person to open the dashboard sees **What's new**: the
 
 For an existing timed zone hold, Home Assistant exposes the `crop_steering.set_manual_override` action. The action refuses a signed-in user who is not an administrator (automations can still call it); the switch itself follows Home Assistant's own user permissions. Its timeout defaults to 60 minutes and accepts 1-1440 minutes; specify the intended zone and room slug (omit the room for the legacy default room). Clearing the hold is distinct from enabling zone/room scheduling. Turning its switch on directly creates an indefinite hold. See the action's fields in HA and the [entity reference](ENTITIES.md).
 
-## Connect an LLM with MCP
-
-The optional [MCP connection guide](MCP.md) describes the local stdio server, supported clients, token configuration and exact tools. It is separate from the dashboard and does not need to be enabled for normal use.
-
-The server uses `HA_URL` and `HA_TOKEN` from local configuration and starts read-only. Follow [MCP.md](MCP.md) for installation and your client's stdio command; do not paste the token into a chat message.
-
-| Tools                                       | Purpose                                                                                                                |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `list_rooms`                                | Discover real room IDs before selecting a scope.                                                                       |
-| `get_room_configuration`, `get_room_status` | Inspect the selected room's mappings/configuration and current state.                                                  |
-| `search_candidate_entities`                 | Find existing HA entities for a proposed mapping.                                                                      |
-| `get_room_plan`, `get_room_runs`            | Read the room's stored plan and run records.                                                                           |
-| `preview_setup`, `preview_plan`             | Prepare an exact setup change or draft-plan save and return its diff, room, revision, expiry and proposal token.       |
-| `apply_proposal`                            | Apply only the previously reviewed proposal using its token, room ID and expected revision, then read back the result. |
-
-A practical first request is: “List my rooms, inspect the selected room's mappings and report unavailable sources. Do not apply changes.” For editing, ask the model to prepare a proposal and show its entire diff before requesting approval.
-
-Application is available only when you deliberately configure `CROP_STEERING_ALLOW_WRITES=true`. Proposals expire after ten minutes and are single-use; changed revisions or an expired proposal require a fresh preview/review. Existing-room setup can update names, mappings and sizing; plan writes save drafts only. Backend validation and equipment-OFF requirements still apply to setup.
-
-Review the exact room, entities and revisions. A model's explanation is not evidence that HA accepted a change: inspect the tool's readback, and for setup wait for controller acknowledgement. Do not treat a failed or uncertain apply as permission to regenerate and apply a different proposal automatically.
-
-The MCP server is not a generic HA actuator interface and does not enable engines, open valves or activate plans. Keep credentials in the local client/server configuration described in that guide, not in prompts, screenshots or repository files. Existing broadly privileged HA MCP integrations are separate products with different permissions.
-
 ## When something does not look right
 
 | Symptom                                        | Next step                                                                                                                                                        |
