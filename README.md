@@ -6,7 +6,7 @@ It runs inside [Home Assistant](https://www.home-assistant.io/) and works with t
 
 **[Try the live demo](https://chill-division.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1)** (runs in your browser with sample data, nothing to install) · [Install](#install) · [User guide](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/USER_GUIDE.md)
 
-![Release](https://img.shields.io/badge/Release-2.29.0-blue)
+![Release](https://img.shields.io/badge/Release-2.29.1-blue)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.5+-41BDF5)
 ![HACS](https://img.shields.io/badge/HACS-Custom-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
