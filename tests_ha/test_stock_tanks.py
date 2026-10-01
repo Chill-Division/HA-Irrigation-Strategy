@@ -127,7 +127,7 @@ async def test_tanks_on_dosers_lose_what_each_doser_gave_in_the_reservoirs_batch
 
     from homeassistant.util import dt as dt_util
     from test_feed_batches import FLOWER, RESERVOIR
-    from test_mcp_setup_contract import _payload, _room
+    from test_setup_save_plumbing import _payload, _room
 
     hass.states.async_set("sensor.res_distance", "812", {"unit_of_measurement": "mm"})
     for entity in list(RESERVOIR.values())[1:]:
