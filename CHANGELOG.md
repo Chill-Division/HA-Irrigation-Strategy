@@ -9,6 +9,21 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **Today's grow day starts the day at P0 for a zone still in last night's P3.** In the minute or so
+  after lights-on before the controller's next check moves a zone to P0, the chart projected the
+  rest of the day as P3, and since 2.30.0 it drew no target line for it.
+
+### 🔧 Technical notes
+
+- Dashboard: `projectFrom` projects from P0 now for a zone whose P3 began before lights-on while the
+  lights are on (`since <= 0`, before the P3 cutoff); a P3 begun today, P2's early move, stays. Seen
+  in CI: the Overview's "targets layer is drawn" check failed between the demo's 10:00 lights-on and
+  its zones' move to P0.
+
 ## [2.30.0] - 2026-10-01
 
 Integration and controller **2.30.0**.
