@@ -1,5 +1,5 @@
 # NOTE: this is a SOURCE repository, not a Home Assistant config directory.
-# `custom_components/` and `www/` are SHIPPED deliverables and MUST NOT be ignored,
+# `custom_components/` and `addons/` are SHIPPED deliverables and MUST NOT be ignored,
 # or new platform modules / dashboards silently never get committed or released.
 
 # Stray HA runtime artifacts (only if someone runs HA from a checkout by mistake)

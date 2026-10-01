@@ -3,8 +3,7 @@ import { readFile, writeFile, mkdir, readdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 const root = fileURLToPath(new URL("../../", import.meta.url));
-const www = path.join(root, "www"),
-  addon = path.join(root, "addons/f2_control/www/public"),
+const addon = path.join(root, "addons/f2_control/www/public"),
   integration = path.join(root, "custom_components/crop_steering/www");
 const html = (await readFile(new URL("../dist/index.html", import.meta.url), "utf8")).replace(
   /^[\t ]+$/gm,
@@ -14,14 +13,13 @@ if (/<script[^>]+src=/.test(html) || /<link[^>]+rel="stylesheet"/.test(html))
   throw new Error("Primary dashboard must inline scripts and styles.");
 if (/url\(["']?https?:\/\//.test(html))
   throw new Error("Dashboard fonts/assets must not depend on external network requests.");
-// The page the app's sidebar entry opens (ingress serves index.html for "/"), and the demo site's
-// root. It keeps the query and the hash, and opens Overview when there is no hash.
+// The page the app's sidebar entry opens (ingress serves index.html for "/"). It keeps the query and
+// the hash, and opens Overview when there is no hash.
 const entry =
   '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Crop Steering</title></head><body><p>Opening Crop Steering…</p><noscript><a href="./dashboard.html">Open dashboard</a> · JavaScript is required.</noscript><script>\n' +
   'location.replace("./dashboard.html"+location.search+(location.hash||"#/overview"));\n' +
   "</script></body></html>\n";
 const pages = new Map([
-  [www, { "dashboard.html": html, "index.html": entry }],
   [addon, { "dashboard.html": html, "index.html": entry }],
   [integration, { "dashboard.html": html }],
 ]);
@@ -37,5 +35,5 @@ for (const [folder, files] of pages) {
 console.log(
   "Packaged " +
     Math.round(Buffer.byteLength(html) / 1024) +
-    " KiB native dashboard in integration, add-on and web.",
+    " KiB native dashboard in integration and add-on.",
 );
