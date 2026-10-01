@@ -30,4 +30,4 @@ def test_a_zone_moved_to_another_phase_this_minute_says_what_the_new_one_waits_f
     c.loop_once(datetime(2026, 9, 23, 23, 0))  # lights-off moves the zone to P3 on this pass
     phase, attrs = fake.sets["sensor.crop_steering_zone_1_waiting_for_app"]
     assert phase == c.rooms[0].state[1]["phase"] == "P3"
-    assert [item["rule"] for item in attrs["conditions"]] == ["p3_emergency", "lights_on"]
+    assert [item["rule"] for item in attrs["conditions"]] == ["p3_emergency", "p3_hold", "lights_on"]

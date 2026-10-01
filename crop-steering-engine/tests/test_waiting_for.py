@@ -111,13 +111,41 @@ def test_the_settled_ec_is_the_one_compared_as_decide_uses_it():
 
 
 def test_p3_rescues_exactly_below_its_floor_and_waits_for_lights_on():
+    # No peak seen, so no dryback to hold: the rescue level alone.
     p = P(p3_emergency_floor=40)
     for vwc in (39.9, 40.0):
-        s = S(phase="P3", vwc=vwc, lights_on=False, hours_to_lights_on=6)
+        s = S(phase="P3", vwc=vwc, peak_vwc=0, lights_on=False, hours_to_lights_on=6)
         items = waiting_for(s, p)
         assert rules(items) == ["p3_emergency", "lights_on"]
         assert decide(s, p)[2] == holds(by_rule(items, "p3_emergency")), vwc
     assert by_rule(items, "lights_on")["in_min"] == 360.0
+
+
+def test_p3_holds_exactly_below_the_dryback_target_and_says_which_dryback():
+    """A 30% dryback from an 86.5% peak ends at 60.55%: the hold fires just under it, not at it."""
+    p = P(p3_emergency_floor=50, dryback_target=30)
+    for vwc in (60.5, 60.55, 74.2):
+        s = S(phase="P3", vwc=vwc, peak_vwc=86.5, lights_on=False, hours_to_lights_on=6)
+        items = waiting_for(s, p)
+        assert rules(items) == ["p3_emergency", "p3_hold", "lights_on"]
+        hold = by_rule(items, "p3_hold")
+        assert (hold["value"], hold["dryback"], hold["shot"]) == (60.55, 30, True)
+        assert decide(s, p)[2] == holds(hold), vwc
+
+
+def test_p3_hold_waits_out_the_time_between_p2_shots_as_decide_does():
+    p = P(p3_emergency_floor=40, p2_time_between_min=5)
+    s = S(phase="P3", vwc=45, lights_on=False, minutes_since_shot=2)
+    assert by_rule(waiting_for(s, p), "p3_hold")["in_min"] == 3.0
+    assert decide(s, p)[2] is False
+    assert decide(S(phase="P3", vwc=45, lights_on=False, minutes_since_shot=5), p)[2] is True
+    # With no gap set there is nothing to wait out.
+    assert "in_min" not in by_rule(waiting_for(s, P(p3_emergency_floor=40)), "p3_hold")
+
+
+def test_a_held_plan_leaves_the_p3_hold_out():
+    items = waiting_for(S(phase="P3", vwc=45, lights_on=False, steering_held=True), P())
+    assert rules(items) == ["p3_emergency", "lights_on"]
 
 
 def test_a_wait_already_over_reads_zero_not_negative():

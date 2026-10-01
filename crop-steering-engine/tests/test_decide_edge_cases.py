@@ -454,10 +454,12 @@ def test_d1_offset_clamp_helper():
 # Watchdog + daily-cap budget (emergencies exempt)
 # ---------------------------------------------------------------------------
 def test_watchdog():
+    # A peak of 50 puts the P3 dryback hold at 40, under these readings: only the watchdog is in question.
     assert (
         fire(
             S(
                 phase="P3",
+                peak_vwc=50,
                 lights_on=True,
                 lights_just_on=False,
                 vwc=42,
@@ -472,7 +474,7 @@ def test_watchdog():
     # lights-off -> never
     assert (
         fire(
-            S(phase="P3", lights_on=False, vwc=42, ec=6, minutes_since_shot=200),
+            S(phase="P3", peak_vwc=50, lights_on=False, vwc=42, ec=6, minutes_since_shot=200),
             P(p2_threshold=45, p3_emergency_floor=40, watchdog_hours=3),
         )
         is False
@@ -482,6 +484,7 @@ def test_watchdog():
         fire(
             S(
                 phase="P3",
+                peak_vwc=50,
                 lights_on=True,
                 lights_just_on=False,
                 vwc=42,

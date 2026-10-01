@@ -32,7 +32,9 @@ def test_the_reason_is_still_the_same_text_and_now_says_which_rule_fired():
         (dict(phase="P2", vwc=55, ec=7.5, feed_ec=3, minutes_since_shot=30), {}, "p2_dilute"),
         (dict(phase="P2", vwc=40), {}, "p2_topup"),
         (dict(phase="P3", vwc=35, lights_on=False), {}, "p3_emergency"),
-        (dict(phase="P3", vwc=42, minutes_since_shot=200), dict(watchdog_hours=3), "watchdog"),
+        (dict(phase="P3", vwc=45, lights_on=False), {}, "p3_hold"),
+        # a peak of 50 holds the dryback at 40, under this reading: the watchdog's case alone
+        (dict(phase="P3", vwc=42, peak_vwc=50, minutes_since_shot=200), dict(watchdog_hours=3), "watchdog"),
     ],
 )
 def test_every_firing_rule_has_its_kind_and_the_documented_exemption(snap, params, kind):
