@@ -1,3 +1,7 @@
+# Unreleased
+
+- **Auto setpoints leaves P0 its morning dryback.** From its planned stop, through the night and P0, the maintenance trigger sits 2 points under where the dryback target ends (it was 2 points under where its plan expected the night to end: when that was shallower than the target, a night held at the target read under the trigger at lights-on, and P0 was skipped). It publishes the stop time as `p2_stop` on the zone's auto setpoints sensor. **The dashboard the app serves** labels the trigger after it "Maintenance stopped". No change to options or the state file.
+
 # 2.30.0
 
 Pair with integration 2.30.0.

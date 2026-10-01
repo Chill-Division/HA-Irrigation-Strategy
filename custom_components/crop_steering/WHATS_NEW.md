@@ -21,6 +21,11 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- With Auto setpoints on, the morning dryback before the first shot is no longer skipped after a night that reached its dryback target.
+- Today's grow day shows "Maintenance stopped" for the hours when Auto setpoints stops maintenance shots before lights-off.
+
 ## 2.30.0 - 2026-10-01
 
 - Overnight, a zone stops drying at your dryback target: a rescue-sized shot holds it there, where it used to dry on to the rescue level.
