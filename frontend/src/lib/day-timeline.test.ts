@@ -30,6 +30,7 @@ import {
   revisionAt,
   setpointChanges,
   setpointSteps,
+  stoppedTargets,
   timelineEntities,
   typicalDay,
   unprojected,
@@ -1010,6 +1011,40 @@ describe("how today is tracking", () => {
     });
     expect(typical.at(-1)!.hour).toBeCloseTo(6, 9);
     expect(typicalDay(days.slice(0, 2))).toEqual([]); // two days are not a typical one
+  });
+  it("marks P2's levels from Auto setpoints' planned stop as stopped, not as a trigger", () => {
+    const hour = (h: number) => START + h * 3_600_000;
+    const level = (phase: string, from: number, to: number, value: number) => ({
+      phase,
+      value,
+      start: hour(from),
+      end: hour(to),
+    });
+    // GR2, 1 Oct 2026, lights 07:00 (START) to 20:00: the band all day, then 80.1 -> 70.1 -> 62.2 at 17:00.
+    const steps = [
+      level("P2", 1.7, 10, 80.1),
+      level("P2", 10, 10 + 1 / 60, 70.1),
+      level("P2", 10 + 1 / 60, 13, 62.2),
+      level("P3", 13, 24, 60.6),
+    ];
+    const day = { start: START, end: hour(24) };
+    const lightsOn = new Date(START);
+    const clockAt = (h: number) =>
+      `${String((lightsOn.getHours() + h) % 24).padStart(2, "0")}:${String(lightsOn.getMinutes()).padStart(2, "0")}`;
+    expect(stoppedTargets(steps, clockAt(10), day).map((step) => !!step.stopped)).toEqual([
+      false,
+      true,
+      true,
+      false,
+    ]);
+    // A step set within the minute before the stop still counts; two minutes before is the day's.
+    const early = (seconds: number) => [{ ...steps[1], start: hour(10) - seconds * 1000 }];
+    expect(stoppedTargets(early(30), clockAt(10), day)[0].stopped).toBe(true);
+    expect(stoppedTargets(early(120), clockAt(10), day)[0].stopped).toBeUndefined();
+    // No stop (a zone not on Auto setpoints) marks nothing.
+    expect(stoppedTargets(steps, null, day).some((step) => step.stopped)).toBe(false);
+    // A stop that comes later in the grow day, past midnight, marks nothing earlier.
+    expect(stoppedTargets(steps, clockAt(23), day).some((step) => step.stopped)).toBe(false);
   });
   it("targets: P0's additional dryback under the peak, a setpoint changed mid-day, a plan's snapshot", () => {
     const threshold = "number.crop_steering_zone_2_p2_vwc_threshold";

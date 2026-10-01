@@ -47,6 +47,7 @@ describe("auto setpoint status", () => {
       holdDays: 3,
       frozenReason: null,
       drybackNote: null,
+      p2Stop: null,
     });
   });
   it.each(["pending", "reached", "plateau", "suspect", "short"])(
@@ -83,6 +84,13 @@ describe("auto setpoint status", () => {
     expect(parseAutoSetpoints(entity("tracking", { dryback_note: note }))!.drybackNote).toBe(note);
     expect(parseAutoSetpoints(entity("tracking", { dryback_note: null }))!.drybackNote).toBeNull();
     expect(parseAutoSetpoints(entity("tracking", { dryback_note: 3 }))!.drybackNote).toBeNull();
+  });
+  it("reads when today's plan stops maintenance shots, as a clock time or nothing", () => {
+    const stop = (value: unknown) =>
+      parseAutoSetpoints(entity("tracking", { p2_stop: value }))!.p2Stop;
+    expect(stop("17:00")).toBe("17:00");
+    expect(stop("00:30")).toBe("00:30");
+    for (const bad of [null, "24:00", "5pm", "17:0", 17, undefined]) expect(stop(bad)).toBeNull();
   });
   it("treats unknown states and malformed attributes defensively", () => {
     const status = parseAutoSetpoints(

@@ -284,6 +284,7 @@ export function createDemo(now = Date.now()): States {
           supervisor === "tracking"
             ? "8% dryback unreachable at this zone's uptake: about 6% tonight, with maintenance shots until 19:00"
             : null,
+        p2_stop: supervisor === "tracking" ? "19:00" : null,
         managed: index
           ? []
           : [

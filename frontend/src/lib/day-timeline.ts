@@ -719,6 +719,25 @@ const PHASE_TARGET: Record<string, TargetKey> = {
 };
 export interface TargetStep extends Level {
   phase: string;
+  /** A P2 level after Auto setpoints stopped the maintenance shots for the dryback: no trigger the
+   * day waters at, only a floor under the zone. */
+  stopped?: boolean;
+}
+/** Auto setpoints' planned stop on the grow day: the first `stop` (local "HH:MM") after lights-on.
+ * From there its P2 levels are marked `stopped`; a step set within a minute before still counts. */
+export function stoppedTargets(
+  targets: readonly TargetStep[],
+  stop: string | null,
+  day: Span,
+): TargetStep[] {
+  const match = stop && /^(\d\d):(\d\d)$/.exec(stop);
+  if (!match) return [...targets];
+  const on = new Date(day.start);
+  const minutes = (+match[1] * 60 + +match[2] - on.getHours() * 60 - on.getMinutes() + 1440) % 1440;
+  const at = day.start + minutes * 60_000;
+  return targets.map((step) =>
+    step.phase === "P2" && step.start >= at - 60_000 ? { ...step, stopped: true } : step,
+  );
 }
 /** What the controller aims at in each phase, as steps along `bands` (the recorded phases, then the
  * projected ones): in P0 its additional dryback and in P3 the dryback target, each as a VWC level
