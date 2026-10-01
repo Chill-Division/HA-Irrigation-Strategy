@@ -38,15 +38,15 @@ scale with your zone count, `N` = 1…zones.
 |---|---|---|---|---|
 | `p2_vwc_threshold` | 10-100 | 60 | % | Shoot a maintenance top-up when VWC falls below this. |
 | `p2_shot_size` | 0.5-30 | 5 | % | Size of a P2 maintenance shot. |
-| `p2_time_between_shots` | 0-60 | 5 | min | Least time from the last shot to a maintenance top-up, so each can soak down to the probes before moisture is read again (0 = off). EC dilution and rescue flushes keep their own 10-minute wait. |
+| `p2_time_between_shots` | 0-60 | 5 | min | Least time from the last shot to a maintenance top-up, so each can soak down to the probes before moisture is read again (0 = off). P3 dryback hold shots wait for it too; EC dilution and rescue flushes keep their own 10-minute wait. |
 | `p2_ec_high_threshold` | 0.5-3.0 | 1.2 | ×target | EC ratio above which the threshold is raised (water more to flush salts). |
 | `p2_ec_low_threshold` | 0.2-2.0 | 0.8 | ×target | EC ratio below which the threshold is lowered. |
 
 ### P3: pre-lights-off / overnight
 | Entity | Range | Default | Unit | What it does |
 |---|---|---|---|---|
-| `p3_emergency_vwc_threshold` | 10-65 | 40 | % | Overnight emergency floor: a rescue shot fires below this. |
-| `p3_emergency_shot_size` | 0.1-15 | 2 | % | Size of an emergency rescue shot. |
+| `p3_emergency_vwc_threshold` | 10-65 | 40 | % | Overnight emergency floor: a rescue shot fires below this, beneath the level P3 holds the dryback at. |
+| `p3_emergency_shot_size` | 0.1-15 | 2 | % | Size of an emergency rescue shot, and of each P3 shot that holds the dryback target. |
 
 ### EC targets: vegetative & generative (per phase)
 | Entity | Range | Default | Unit |
@@ -77,8 +77,8 @@ The active EC target = the row for the current phase **and** the zone's steering
 | `dripper_flow_rate` | 0.1-50 | 4 | L/hr | Per-dripper flow: the other half of the % → seconds conversion. |
 | `drippers_per_plant` | 1-20 | 1 | - | Drippers feeding each plant. |
 | `field_capacity` | 40-100 | 70 | % | VWC at/above which irrigation is blocked (over-water guard / P1 clamp). |
-| `vegetative_dryback_target` | 5-80 | 50 | % | Overnight dryback target in vegetative mode. |
-| `generative_dryback_target` | 5-70 | 40 | % | Overnight dryback target in generative mode. |
+| `vegetative_dryback_target` | 5-80 | 50 | % | Overnight dryback target in vegetative mode, % below the day's peak: P3 holds the zone there. |
+| `generative_dryback_target` | 5-70 | 40 | % | Overnight dryback target in generative mode, % below the day's peak: P3 holds the zone there. |
 | `lights_on_hour` | 0-23 | 12 | hour | Photoperiod start: P3→P0 + daily-counter reset fire here. |
 | `lights_off_hour` | 0-23 | 0 | hour | Photoperiod end: zones move to P3. |
 
@@ -101,7 +101,7 @@ for that zone. (3 zones × 24 = 72 entities on a 3-zone system.)
 | Entity | Range | Default | Unit | What it does |
 |---|---|---|---|---|
 | `zone_N_plant_count` | 1-1000 | 4 | - | Plants in the zone: scales total water volume. |
-| `zone_N_max_daily_volume` | 0-200 | 20 | L | Daily water budget for the zone. Top-ups and EC-correction shots stop at it, and a shot that would cross it gets only what is left; rescues (watchdog, P3 emergency, high-EC flushes) and the P1 ramp are exempt. |
+| `zone_N_max_daily_volume` | 0-200 | 20 | L | Daily water budget for the zone. Top-ups, P3 dryback hold shots and EC-correction shots stop at it, and a shot that would cross it gets only what is left; rescues (watchdog, P3 emergency, high-EC flushes) and the P1 ramp are exempt. |
 | `zone_N_substrate_volume` / `zone_N_drippers_per_plant` / `zone_N_dripper_flow_rate` | as the globals | from setup | - | Created only when setup sizes the zone itself; otherwise the room-wide value applies. |
 
 ---
@@ -183,8 +183,8 @@ The controller also publishes `sensor.f2_control_vitals`: the time of its last v
 | `ec_zone_N` | mS/cm | The zone's pore-water EC from its probes, combined as `zone_N_ec_method` says (`zone_N_ec` on older installs), with the same attributes. |
 | `zone_N_phase` | - | The zone's current phase (P0-P3). |
 | `zone_N_auto_setpoints` | - | Published by the controller: `off` / `learning` / `tracking` / `frozen`. Attributes: `learned_peak`, `gain`, `day_rate`, `night_rate`, `p1_outcome` (`pending` / `reached` / `short` / `plateau` / `suspect`), `hold_days`, `frozen_reason`, `last_change`, `managed` (the number entities it may rewrite). |
-| `zone_N_status` / `_status_app` | - | The controller's label for the zone, published on `zone_N_status_app` with a `reason` attribute and shown by `zone_N_status`, its only writer: `Drying back` / `Ramping` / `Optimal` / `Overnight dryback` (P0-P3, holding), `Flushing` / `Refilling` / `Topping up` / `Emergency` (watering), `Blocked: <why>`, `Blocked — EC/cap`, `Probe dead — copying`, `Room off`. `Controller not reporting` when the controller has not reported for 10 minutes. |
-| `zone_N_waiting_for_app` | - | Published by the controller each minute: what would move the zone next, by the engine's own rules and numbers (`crop_steering_engine.waiting_for`), shown as the zone's "Next:" on the dashboard. State: the phase the list is for (`none`, with an empty list, while the zone has no usable probe or the room is off). Attribute `conditions`, one item per rule: `rule` (`p0_timeout` / `p0_bypass` / `p0_dryback`, `p1_ramp` / `p1_done` / `p1_max_shots`, `p2_topup` / `p2_dilute` / `lights_off`, `p3_emergency` / `lights_on`), `shot` (it fires a shot), `to` (the phase it moves to), then a reading test (`metric` `vwc` or `ec`, `op`, `value`, `now`) or a wait (`in_min`, minutes after `at`); `p1_done` adds `shots_left`, `ec_max`, `ec_now`. Attribute `at`: when it was worked out. It lists the engine's routine rules, not a forecast: a held plan leaves out the shots it stops; the EC flushes, the watchdog and P2's early move to P3 in the last three hours before lights-off are not listed; a gate or switch that holds watering is in `zone_N_status`. |
+| `zone_N_status` / `_status_app` | - | The controller's label for the zone, published on `zone_N_status_app` with a `reason` attribute and shown by `zone_N_status`, its only writer: `Drying back` / `Ramping` / `Optimal` / `Overnight dryback` (P0-P3, holding), `Flushing` / `Refilling` / `Topping up` / `Emergency` / `Holding dryback` (watering), `Blocked: <why>`, `Blocked — EC/cap`, `Probe dead — copying`, `Room off`. `Controller not reporting` when the controller has not reported for 10 minutes. |
+| `zone_N_waiting_for_app` | - | Published by the controller each minute: what would move the zone next, by the engine's own rules and numbers (`crop_steering_engine.waiting_for`), shown as the zone's "Next:" on the dashboard. State: the phase the list is for (`none`, with an empty list, while the zone has no usable probe or the room is off). Attribute `conditions`, one item per rule: `rule` (`p0_timeout` / `p0_bypass` / `p0_dryback`, `p1_ramp` / `p1_done` / `p1_max_shots`, `p2_topup` / `p2_dilute` / `lights_off`, `p3_emergency` / `p3_hold` / `lights_on`), `shot` (it fires a shot), `to` (the phase it moves to), then a reading test (`metric` `vwc` or `ec`, `op`, `value`, `now`) or a wait (`in_min`, minutes after `at`); `p1_done` adds `shots_left`, `ec_max`, `ec_now`; `p3_hold` adds `dryback`, the P3 dryback target its level is worked out from. Attribute `at`: when it was worked out. It lists the engine's routine rules, not a forecast: a held plan leaves out the shots it stops; the EC flushes, the watchdog and P2's early move to P3 in the last three hours before lights-off are not listed; a gate or switch that holds watering is in `zone_N_status`. |
 | `zone_N_safety_status` | - | `safe` / fault. |
 | `zone_N_daily_water_usage` / `_daily_water_app` | L | Water today (resets at lights-on). |
 | `zone_N_weekly_water_usage` / `_weekly_water_app` | L | Rolling 7-day water. |

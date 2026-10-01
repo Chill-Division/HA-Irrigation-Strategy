@@ -1,3 +1,7 @@
+# Unreleased
+
+- **P3 holds the overnight dryback at its target.** The engine fires a `p3_hold` shot, the rescue shot's size, each time a P3 zone reads below the day's peak less its dryback target, no sooner than the time between P2 shots after the last shot; the daily water limit stops it, and so does a plan that holds steering, while the rescue level stays the floor beneath it. The log names it (`P3 dryback hold shot …`), a zone firing one is labelled `Holding dryback`, and its next line gives the level and the dryback. **The dashboard the app serves** shows the same. No new options; no change to the state file.
+
 # 2.29.2
 
 Pair with integration 2.29.2.
