@@ -255,7 +255,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **What it means.** The zone has had its daily water limit (max daily volume), counted from lights-on. A shot that would cross it gets only what is left; once too little is left for the shortest shot, routine shots stop.
 
-**Watering meanwhile.** Routine top-ups and EC-correction shots stop until lights-on starts the next day. The morning ramp, the overnight emergency shot, the no-water-for-hours safety shot and high-EC flushes still run. The exception is a zone with no usable moisture reading (CS-101, CS-102, CS-103): every shot it gets is copied or timed and none is exempt, so it gets no more water at all until lights-on, the overnight emergency shot included. Its notification says so.
+**Watering meanwhile.** Routine top-ups, the overnight shots that hold the dryback target and EC-correction shots stop until lights-on starts the next day. The morning ramp, the overnight emergency shot, the no-water-for-hours safety shot and high-EC flushes still run. The exception is a zone with no usable moisture reading (CS-101, CS-102, CS-103): every shot it gets is copied or timed and none is exempt, so it gets no more water at all until lights-on, the overnight emergency shot included. Its notification says so.
 
 **Likely causes**
 

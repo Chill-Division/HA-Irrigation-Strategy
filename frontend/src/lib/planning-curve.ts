@@ -465,10 +465,14 @@ interface PhaseRun {
   p1Done: number;
   /** The ramp's shot count or spacing is not known: P1 climbs to its target as one line. */
   jump: boolean;
+  /** The highest reading since lights-on before the run starts, which P3's dryback is measured
+   * from with the run's own; null when the run starts the day. */
+  peak?: number | null;
 }
 /** The engine's rules from `run.phase` to the end of P3: P0 dries on; P1 climbs one riser per
  * window, each taking its share of the rest of the climb, drying between them; P2 fires a shot each
- * time VWC falls to its threshold; P3 dries on, with an emergency shot at the floor. */
+ * time VWC falls to its threshold; P3 dries to the dryback target and is held there by shots the size
+ * of a rescue, with the rescue shot first at the floor. */
 function runPhases(
   plan: PlanningModel,
   parameters: Record<string, number>,
@@ -553,16 +557,31 @@ function runPhases(
       (now) => (now <= threshold ? { size: parameters.p2_shot_size ?? null } : null),
       usable(parameters.p2_shot_size) ? undefined : threshold,
     );
-  if (p3.end > p3.start)
-    dry(p3.start, p3.end, "P3", (now) =>
-      floor !== null && now <= floor
-        ? { size: parameters.p3_emergency_shot_size ?? null, emergency: true }
-        : null,
+  if (p3.end > p3.start) {
+    // The engine's hold: the day's peak less the relative dryback target.
+    const top = Math.max(run.peak ?? -Infinity, ...points.map((point) => point.value));
+    const dryback = parameters.dryback_target;
+    const hold = Number.isFinite(dryback) && top > 0 ? top * (1 - dryback / 100) : null;
+    const size = parameters.p3_emergency_shot_size ?? null;
+    dry(
+      p3.start,
+      p3.end,
+      "P3",
+      (now) =>
+        floor !== null && now <= floor
+          ? { size, emergency: true }
+          : hold !== null && now <= hold
+            ? { size }
+            : null,
+      // Without a shot size there is nothing to lift the zone: it holds the line at the target.
+      usable(size) || hold === null ? undefined : hold,
     );
+  }
   return { points, shots, value };
 }
 /** The whole day as the engine would run these setpoints: P0 dries on, P1 climbs shot by shot,
- * P2 fires a shot each time VWC falls to its threshold, P3 dries down to the next lights-on.
+ * P2 fires a shot each time VWC falls to its threshold, P3 dries down to its dryback target and is
+ * held there until the next lights-on.
  * Timing comes from the zone's dry-down rate, so it is a projection, not a schedule. */
 export function projectDay(
   plan: PlanningModel,
@@ -625,6 +644,8 @@ export function projectFrom(
     p1Shots: number;
     lastShot: number | null;
     peak: number | null;
+    /** The highest reading since lights-on, which P3's dryback is measured from. */
+    dayPeak?: number | null;
   },
   options: { rates?: DryRates; retention?: number | null; end?: number } = {},
 ): PlanningProjection | null {
@@ -695,6 +716,7 @@ export function projectFrom(
     p1Windows: windows,
     p1Done: done,
     jump: interval === null || maxShots === null,
+    peak: now.dayPeak ?? null,
   });
   const peak = Math.max(...run.points.map((point) => point.value));
   const dryback = parameters.dryback_target;

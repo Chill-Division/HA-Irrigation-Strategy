@@ -100,5 +100,8 @@ export function controllerZoneLabel(
   const held = entry("blocked");
   if (held !== null && held !== reason) return `Blocked: ${held}`.slice(0, 80);
   if (reason.includes("BLOCK")) return "Blocked — EC/cap";
-  return entry("fired") !== null ? FIRING[phase.state] : RESTING[phase.state];
+  const fired = entry("fired");
+  if (fired === null) return RESTING[phase.state];
+  // A shot that holds the overnight dryback at its target is not an emergency.
+  return fired.includes("P3 hold") ? "Holding dryback" : FIRING[phase.state];
 }

@@ -6,8 +6,8 @@
  * - the ramp stops at the lower of the peak VWC target and field capacity (decide()'s ceiling);
  * - the maintenance trigger is kept at least 3 points above the rescue level and 1 point under
  *   that ceiling (controller._params), whatever is typed;
- * - overnight the substrate dries toward the P3 dryback target, a % below the day's peak, and a
- *   rescue level above where that ends stops the dryback early;
+ * - overnight the substrate dries to the P3 dryback target, a % below the day's peak, and is held
+ *   there; a rescue level above where that ends stops the dryback early;
  * - by day it dries from the peak to the trigger before a maintenance shot.
  *
  * Advisory only: nothing here stops a value being saved.
@@ -66,7 +66,7 @@ export function levelWarning(param: string, levels: ZoneLevels): string | null {
     if (known(ceiling) && known(dryback) && ceiling > 0) {
       const daytime = ((ceiling - trigger) / ceiling) * 100;
       if (daytime > dryback)
-        return `by day the substrate dries ${pct(daytime)} below ${top} before a maintenance shot, further than the ${pct(dryback)} it dries back overnight`;
+        return `by day the substrate dries ${pct(daytime)} below ${top} before a maintenance shot, further than the ${pct(dryback)} it dries back overnight, so P3 may water it back up to ${pct(ends!)} after lights-off`;
     }
     return null;
   }

@@ -81,7 +81,7 @@ const TARGETS: Record<string, string> = {
   P0: "Dries back to", // a level worked out from the dryback target, not the setting itself
   P1: settingWords("p1_target_vwc")!.short,
   P2: settingWords("p2_vwc_threshold")!.short,
-  P3: settingWords("p3_emergency_vwc_threshold")!.short,
+  P3: "Held at", // the same, for the night: the zone dries to it and is held there
 };
 const MARKS = [
   ["key-shot", "Shot (valve open)"],
@@ -614,6 +614,8 @@ function Timeline({
     const newest = points.at(-1);
     const p0 = bands.find((band) => band.phase === "P0");
     const peak = p0 && points.filter((point) => point.time >= p0.start).map((point) => point.value);
+    // P3 holds its dryback from the day's peak, as the controller measures it.
+    const dayPeak = dayDryback(points, day.start, zone.vwc.value)?.peak ?? null;
     const projected =
       stopped || !phase || !newest || zone.vwc.value === null
         ? null
@@ -628,6 +630,7 @@ function Timeline({
               p1Shots,
               lastShot: shots.length ? hourOf(shots.at(-1)!.end) : null,
               peak: phase === "P0" && peak?.length ? Math.max(...peak) : null,
+              dayPeak,
             },
             {
               rates: dryRates(
