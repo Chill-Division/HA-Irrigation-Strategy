@@ -38,7 +38,11 @@ def desired(model, recipe, plan, p2_shot, ctx, ec_seen_max):
     """The setpoints this zone should hold RIGHT NOW: attainable, and scheduled by where the day is.
     `p2_shot` is the maintenance shot, % of substrate."""
     peak = plan.peak
-    low = round(plan.floor - 2.0, 1)  # a threshold the zone sits above: no P0 bypass, no top-ups
+    # A threshold the zone sits above, after the planned stop, overnight and through P0: no top-ups, no
+    # P0 bypass. Under where the dryback TARGET ends, not the plan's own floor: when the plan expects a
+    # shallower night, the night can still dry to the target (P3 holds the zone there, not lower), and
+    # a threshold above that skipped P0 at lights-on (seen live: "P0 bypass VWC 61<=rewater 63").
+    low = round(peak * (1.0 - recipe.dryback_pct / 100.0) - 2.0, 1)
     band_lo = round(peak - model.gain * p2_shot, 1)
     mins_on = ctx.get("minutes_since_lights_on")
     before_first_shot = ctx["shots_today"] == 0
@@ -50,7 +54,7 @@ def desired(model, recipe, plan, p2_shot, ctx, ec_seen_max):
         "p1_target_vwc": round(peak, 1),
         "field_capacity": max(40.0, round(peak + 2.0, 1)),
         "p2_vwc_threshold": band_lo if watering else low,
-        "p3_emergency_vwc_threshold": max(10.0, round(plan.floor - 5.0, 1)),
+        "p3_emergency_vwc_threshold": max(10.0, round(low - 3.0, 1)),  # the engine's ladder under it
         "dryback_target": ADDITIONAL_DRYBACK_PCT if (before_first_shot and not drying) else overnight,
         "p0_maximum_wait_time": float(recipe.p1_delay_min),
         "p1_initial_shot_size": recipe.p1_shot_pct,

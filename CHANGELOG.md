@@ -13,12 +13,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🌱 In plain English
 
+- **With Auto setpoints, mornings keep their P0.** When Auto setpoints stops the maintenance shots
+  for the dryback, it moves the maintenance trigger under the zone, and it stays there through the
+  night and P0. It used to sit 2 points under where its plan expected the night to end. When that
+  plan expected a shallower night than your dryback target, a night that reached the target (P3
+  now holds the zone there) left the zone under the trigger at lights-on, and P0 was skipped: no
+  morning dryback, the ramp at once (GR2, 1 Oct: "P0 bypass VWC 61<=rewater 63"). It now sits 2
+  points under where your dryback target ends: for GR2, 57.8% instead of 62.2%.
+- **Today's grow day says when the maintenance shots stopped.** From that time the trigger's line
+  reads "Maintenance stopped" instead of a trigger; hover it to see the level a top-up would still
+  fire under. The maintenance trigger's ? says what Auto setpoints does with it through the day.
 - **Today's grow day starts the day at P0 for a zone still in last night's P3.** In the minute or so
   after lights-on before the controller's next check moves a zone to P0, the chart projected the
   rest of the day as P3, and since 2.30.0 it drew no target line for it.
 
 ### 🔧 Technical notes
 
+- Controller: `setpoint_supervisor.desired` sets the post-stop, overnight and P0
+  `p2_vwc_threshold` to `peak × (1 − dryback_pct / 100) − 2` (was `plan.floor − 2`, the floor being
+  the achievable dryback), and its own rescue 3 under that. `auto_setpoints.status` publishes
+  `p2_stop` (`HH:MM`, `auto_setpoints.clock(plan.p2_stop_h)`) beside `dryback_note`. No new options
+  or state fields.
+- Dashboard: `parseAutoSetpoints` reads `p2Stop`; `stoppedTargets` marks the P2 target steps from
+  the stop on, for a tracking zone; the day chart labels them `Maintenance stopped`. The demo's
+  tracking zone publishes `p2_stop` with its dryback note.
+- Docs: `docs/ENTITIES.md` lists the auto setpoints sensor's `dryback_note` and `p2_stop`.
+- Tests: GR2's day in `test_auto_setpoints.py` (its plan gives the old 62.2% and the new 57.8%, and
+  `decide()` keeps P0 for a zone held at 60.6% under the new one, skipped it under the old);
+  `p2_stop` published and parsed; the stopped marking.
 - Dashboard: `projectFrom` projects from P0 now for a zone whose P3 began before lights-on while the
   lights are on (`since <= 0`, before the P3 cutoff); a P3 begun today, P2's early move, stays. Seen
   in CI: the Overview's "targets layer is drawn" check failed between the demo's 10:00 lights-on and

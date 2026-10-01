@@ -229,8 +229,15 @@ def wanted(learn, current, vwc, phase, plan_ctx):
     return want
 
 
-def status(learn, enabled, dryback_note=None):
-    """`dryback_note`: today's plan saying the P3 dryback target is out of reach (day_plan)."""
+def clock(hour):
+    """A plan's clock hour, which may run past midnight (past 24), as "HH:MM"."""
+    minutes = round(hour * 60) % 1440
+    return f"{minutes // 60:02d}:{minutes % 60:02d}"
+
+
+def status(learn, enabled, dryback_note=None, p2_stop=None):
+    """`dryback_note`: today's plan saying the P3 dryback target is out of reach (day_plan). `p2_stop`:
+    when today's plan stops maintenance shots for the dryback, "HH:MM" (the dashboard labels it)."""
     reason = frozen_reason(learn)
     state = "off" if not enabled else "frozen" if reason else "tracking" if model(learn) else "learning"
     return state, {
@@ -238,6 +245,7 @@ def status(learn, enabled, dryback_note=None):
         "night_rate": learn["night_rate"], "p1_outcome": learn["outcome"], "hold_days": learn["hold_days"],
         "frozen_reason": reason, "last_change": learn["last_change"],
         "dryback_note": dryback_note or None,
+        "p2_stop": p2_stop or None,
     }
 
 

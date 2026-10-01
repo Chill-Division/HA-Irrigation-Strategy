@@ -207,6 +207,9 @@ def test_the_steering_mode_sets_how_early_the_afternoon_s_maintenance_shots_may_
     assert au.day_plan(au.fresh(), CURRENT, ctx) is None  # nothing planned before the model is complete
     assert au.status(learn, True, plan.note)[1]["dryback_note"] == plan.note
     assert au.status(learn, True)[1]["dryback_note"] is None
+    assert au.status(learn, True, plan.note, au.clock(plan.p2_stop_h))[1]["p2_stop"] == "19:00"
+    assert au.status(learn, True)[1]["p2_stop"] is None
+    assert (au.clock(17.0), au.clock(25.5), au.clock(19.999)) == ("17:00", "01:30", "20:00")
 
 
 def test_nothing_is_wanted_until_something_has_been_learned():
@@ -297,3 +300,42 @@ def test_against_the_real_engine_a_plateau_hands_p1_over_to_p2_and_the_peak_carr
     assert sum(r["shot"] for r in a2) < sum(r["shot"] for r in b2)  # and the day as a whole uses less
     thresholds = {new for _h, s, _old, new, _w in changes if s == "p2_vwc_threshold"}
     assert len(thresholds) <= 3  # the band is set from a stable gain: no hourly creep
+
+
+def test_the_overnight_threshold_sits_under_where_the_dryback_target_ends_so_p0_still_runs():
+    """GR2, 1 Oct 2026: the plan reckoned only about 25% of a 30% dryback reachable and held the
+    threshold 2 points under that, 62.2%, from 17:00 through the night. The night dried to the target
+    anyway (P3 now holds the zone there), so at lights-on the zone read under the threshold and P0 was
+    skipped: "P0 bypass VWC 61<=rewater 63". The threshold now sits 2 points under where 30% ends."""
+    from crop_steering_engine import ZoneSnapshot, decide
+
+    import engine_twin as et
+
+    learn = dict(au.fresh(), peak=85.4, gain=0.6, day_rate=2.0, night_rate=1.38,
+                 day_n=au.MIN_RATE_DAYS, night_n=au.MIN_RATE_DAYS, outcome="reached", hold_days=2)
+    current = dict(p1_target_vwc=85.4, field_capacity=87.4, p2_vwc_threshold=80.1,
+                   p3_emergency_vwc_threshold=50.0, p2_shot_size=3.0)
+    ctx = dict(lights_on_h=7, lights_off_h=20, shots_today=8, dryback_pct=30.0, p0_wait_min=60,
+               p1_shot_pct=3.0, p1_gap_min=15, start_vwc=61.0, generative=False)
+    _recipe, plan = au.day_plan(learn, current, ctx)
+    assert round(plan.floor - 2.0, 1) == 62.2  # where the threshold used to sit
+    assert plan.note.endswith("with maintenance shots until 17:00")
+    night = au.wanted(learn, current, vwc=72.2, phase="P3", plan_ctx=dict(ctx, minutes_since_lights_on=None))
+    dawn = au.wanted(learn, current, vwc=60.6, phase="P0",
+                     plan_ctx=dict(ctx, minutes_since_lights_on=1, shots_today=0))
+    assert night["p2_vwc_threshold"] == dawn["p2_vwc_threshold"] == round(85.4 * 0.7 - 2.0, 1) == 57.8
+    assert "p3_emergency_vwc_threshold" not in night  # 50 already sits 3 under it
+
+    # The engine at lights-on, the zone held at its 30% dryback from today's 86.5% peak (60.55%).
+    def p0_tick(threshold):
+        p = et.params_from(dict(LIVE_Z1, p1_target_vwc=85.4, field_capacity=87.4, p2_vwc_threshold=threshold,
+                                dryback_target=30.0, p3_emergency_vwc_threshold=50.0, p0_dryback_drop_percent=3.0))
+        s = ZoneSnapshot(vwc=60.6, ec=3.0, phase="P0", peak_vwc=60.6, dryback_pct=0.0, dryback_rate=0.5,
+                         shot_count=0, phase_minutes=1.0, minutes_since_shot=600.0, daily_vol=0.0, ec_smooth=3.0,
+                         lights_on=True, lights_just_on=False, hours_to_lights_on=24.0, hours_to_lights_off=13.0,
+                         uptime_min=600.0)
+        return decide(s, p)[0]
+
+    assert p0_tick(62.2) == "P1"  # skipped, as it was
+    assert p0_tick(night["p2_vwc_threshold"]) == "P0"  # P0 runs: its 3% additional dryback first
+

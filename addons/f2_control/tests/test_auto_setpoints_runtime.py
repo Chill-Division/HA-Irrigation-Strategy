@@ -181,3 +181,5 @@ def test_a_dryback_the_nights_cannot_reach_keeps_the_zones_afternoon_by_its_stee
     assert (trigger == band) is (mode == "Vegetative")
     note = fake.sets["sensor.crop_steering_zone_1_auto_setpoints"][1]["dryback_note"]
     assert note.startswith("30% dryback unreachable at this zone's uptake") and note.endswith(stop)
+    # when the maintenance shots stop, for the dashboard's label
+    assert fake.sets["sensor.crop_steering_zone_1_auto_setpoints"][1]["p2_stop"] == stop

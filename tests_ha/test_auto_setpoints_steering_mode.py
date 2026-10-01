@@ -78,10 +78,12 @@ async def test_the_zones_steering_mode_keeps_its_afternoon_and_the_sensor_says_w
         if (dom, svc) == ("number", "set_value")
     }
     band = round(36.0 - 0.6 * p.p2_shot_size, 1)  # one maintenance shot under the peak
-    # A generative day dries from 16:00: 6 hours at 0.72 and the 12-hour night at 0.37, 24.3% of 36,
-    # and the trigger sits 2 points under where that ends.
-    drying = round(36.0 * (1 - (6 * 0.72 + 12 * 0.37) / 36.0) - 2.0, 1)
+    # A generative day stops its maintenance shots at 16:00, and the trigger goes 2 points under where
+    # the 30% dryback target ends, 36 x 0.7 - 2 = 23.2 (not under the 24.3% its nights can reach:
+    # P3 holds a night at the target, and a trigger above that skipped P0), at most 10 points a pass.
+    drying = max(34 - 10.0, round(36.0 * (1 - 0.30) - 2.0, 1))
     assert written[f"{ZONE}p2_vwc_threshold"] == (band if mode == "Vegetative" else drying)
     note = fake.sets[STATUS][1]["dryback_note"]
     assert note.startswith("30% dryback unreachable at this zone's uptake: about ")
     assert note.endswith(f"with maintenance shots until {stop}")
+    assert fake.sets[STATUS][1]["p2_stop"] == stop  # the dashboard's "Maintenance stopped" from here

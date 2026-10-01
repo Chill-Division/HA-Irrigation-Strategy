@@ -30,6 +30,7 @@ import {
   readings,
   setpointChanges,
   setpointSteps,
+  stoppedTargets,
   timelineEntities,
   typicalDay,
   unprojected,
@@ -83,6 +84,8 @@ const TARGETS: Record<string, string> = {
   P2: settingWords("p2_vwc_threshold")!.short,
   P3: "Held at", // the same, for the night: the zone dries to it and is held there
 };
+// A P2 level after Auto setpoints' planned stop (stoppedTargets): a floor, not a trigger.
+const STOPPED = "Maintenance stopped";
 const MARKS = [
   ["key-shot", "Shot (valve open)"],
   ["key-expected", "Expected shot"],
@@ -700,10 +703,13 @@ function Timeline({
       next,
       p1Shots,
       litres: (seconds) => estimateRuntime(flowInputs(water), seconds).requested?.zoneL ?? null,
-      targets: phaseTargets(
-        [...bands, ...ahead.filter((band) => band.end > band.start)],
-        setpoint,
-        [...points, ...(projection?.points ?? [])],
+      targets: stoppedTargets(
+        phaseTargets([...bands, ...ahead.filter((band) => band.end > band.start)], setpoint, [
+          ...points,
+          ...(projection?.points ?? []),
+        ]),
+        zone.auto?.state === "tracking" ? zone.auto.p2Stop : null,
+        day,
       ),
       projection,
       yesterday,
@@ -1136,7 +1142,11 @@ function LaneChart({
     }
     const step = targetAt(time);
     if (step)
-      parts.push(`${TARGETS[step.phase]} ${number(step.value)} %, what the controller aims at`);
+      parts.push(
+        step.stopped
+          ? `maintenance stopped for the dryback: a top-up only below ${number(step.value)} %`
+          : `${TARGETS[step.phase]} ${number(step.value)} %, what the controller aims at`,
+      );
     return parts.map((part) => ` · ${part}`).join("");
   };
   const vwcAt = (time: number) => {
@@ -1455,7 +1465,7 @@ function targetLabels(targets: TargetStep[], x: (time: number) => number, plot: 
   const labels: { x: number; value: number; text: string }[] = [];
   let free = 0;
   for (const step of targets) {
-    const text = `${TARGETS[step.phase]} ${number(step.value)}%`;
+    const text = step.stopped ? STOPPED : `${TARGETS[step.phase]} ${number(step.value)}%`;
     const width = text.length * 6.6 + 12;
     const left = Math.max(x(step.start) + 3, free);
     // A label may run on past a short step, but P0's lower dryback level only where it fits.

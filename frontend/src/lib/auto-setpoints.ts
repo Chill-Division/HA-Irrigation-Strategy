@@ -24,6 +24,8 @@ export interface AutoSetpointStatus {
   /** Today's plan cannot reach the P3 dryback target: what the zone gets instead, and until when
    * its maintenance shots run. */
   drybackNote: string | null;
+  /** When today's plan stops maintenance shots for the dryback, local "HH:MM". */
+  p2Stop: string | null;
 }
 const finite = (value: unknown): number | null => {
   const parsed =
@@ -62,6 +64,10 @@ export function parseAutoSetpoints(entity: EntityState | undefined): AutoSetpoin
     ),
     frozenReason: text(attributes.frozen_reason),
     drybackNote: text(attributes.dryback_note),
+    p2Stop:
+      typeof attributes.p2_stop === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(attributes.p2_stop)
+        ? attributes.p2_stop
+        : null,
   };
 }
 export const autoStateLabel = (state: AutoSetpointState) => state[0].toUpperCase() + state.slice(1);
