@@ -4,8 +4,7 @@ The minimum Home Assistant lives in six places: `hacs.json` (what HACS enforces 
 the controller app's `config.yaml` (what the Supervisor enforces for the app), the oldest leg of the
 Real Home Assistant job (what is tested), the README badge, the README's *What you need* table and
 docs/INSTALL.md. docs/TESTING.md says to move them together; this fails when one is left behind. The
-Python version the README names, and the Node version the AI-assistant connector's guide
-(docs/MCP.md) names, are read from where they are set.
+Python and HACS versions the README names are read from where they are set.
 """
 
 from __future__ import annotations
@@ -19,7 +18,6 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 README = (ROOT / "README.md").read_text(encoding="utf-8")
 INSTALL = (ROOT / "docs" / "INSTALL.md").read_text(encoding="utf-8")
-MCP = (ROOT / "docs" / "MCP.md").read_text(encoding="utf-8")
 
 
 def _legs() -> list[dict]:
@@ -91,12 +89,6 @@ def test_the_controller_architectures_are_the_ones_it_is_built_for():
     assert f"({named})" in _requirements_table(), named
 
 
-def test_hacs_and_node_are_the_versions_their_files_ask_for():
-    table = _requirements_table()
+def test_hacs_is_the_version_its_file_asks_for():
     hacs = json.loads((ROOT / "hacs.json").read_text(encoding="utf-8"))["hacs"]
-    assert f"{hacs} or newer for the guided download" in table
-    node = json.loads(
-        (ROOT / "mcp-server" / "package.json").read_text(encoding="utf-8")
-    )["engines"]["node"]
-    assert node.startswith(">="), node
-    assert f"Node.js {node[2:]} or newer" in MCP, "docs/MCP.md"
+    assert f"{hacs} or newer for the guided download" in _requirements_table()

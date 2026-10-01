@@ -8,7 +8,6 @@
 | ------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Crop Steering integration | Home Assistant custom integration                                   | Room/zone configuration, entities, stored plans, reviewed APIs and the native sidebar workspace.                                       |
 | Crop Steering Controller  | One existing/new Supervisor app, or a separately managed controller | Reads the configuration and sensors, makes irrigation decisions and sequences equipment.                                               |
-| Optional MCP server       | Your LLM client's local machine, over stdio                         | Reads scoped information and supports explicitly reviewed setup/draft-plan proposals. It is not required for the dashboard/controller. |
 
 Install the integration and controller together. HACS, the HA integration config flow and the Supervisor app store are separate steps. The guided links open those screens; they cannot pair devices, prove flow or bypass HA confirmations.
 
@@ -88,12 +87,6 @@ The existing app slug `f2_control` and entity IDs are deliberately stable. A roo
 In **Settings → Rooms & hardware → Shared room hardware**, map tank fill level to a percentage sensor and tank temperature to a temperature sensor. Choose a fill valve or binary sensor for filling status and a timestamp sensor or full date-and-time helper for **Last recorded tank fill**. Use an actual recorded fill event; an automation trigger time or sensor `last_changed` is not proof of filling. Shared tanks can be explicitly mapped to more than one room. The [tank mapping table](USER_GUIDE.md#tank-and-pump-display) lists the exact labels and configuration keys. A recorded fill can be operator-confirmed or float-confirmed according to its producer; it is not proof that dosing finished. Filling status must represent the fill valve or a genuine fill-active signal, not a mode-enable or dosing-lock helper.
 
 Save setup with the affected engines and irrigation equipment off, then verify the readings in **Overview** before restoring the previous engine state. Missing mappings remain labelled; an unavailable pump is never displayed as off. Existing controllers must be updated to publish irrigation timestamps with a timezone offset.
-
-## Optional LLM / MCP connection
-
-Normal installation does not require an LLM. The optional MCP package requires Node.js 22 or newer and a client that can launch a local stdio process. To connect one, follow [MCP.md](MCP.md) on the client machine after the HA integration is reachable. The documented server uses local stdio with locally configured `HA_URL` and `HA_TOKEN`. It is read-only by default. Setup changes or draft-plan saves require `CROP_STEERING_ALLOW_WRITES=true`, followed by exact proposal review. `preview_setup`/`preview_plan` produce a short-lived, single-use token; `apply_proposal` accepts only that token and its matching room/revision, then reads back the result. Follow the server guide for client configuration and validation evidence.
-
-This is separate from broad third-party HA MCP connectors. It does not expose arbitrary services, engine enabling, valve commands or grow-plan activation. Verify actual HA responses and setup acknowledgement after an approved configuration change.
 
 ## Restore a prior version
 

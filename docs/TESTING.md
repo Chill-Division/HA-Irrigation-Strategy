@@ -174,15 +174,6 @@ The workspace suite also covers day/week scheduling, reactive VWC/EC previews, p
 
 ## What it tests
 
-### MCP connector
-
-```sh
-npm ci --prefix mcp-server
-npm test --prefix mcp-server
-```
-
-The MCP suite uses a local fake HA server and the official MCP client. It checks protocol initialization, tool discovery, scoped reads and reviewed proposals, write opt-in, stale revisions, replay/expiry, failed readback and transport errors. It does not require credentials or actuate equipment. Live read-only checks are recorded separately from any configuration writes.
-
 ### 1. Pure decision core: `crop-steering-engine/tests/test_core.py`
 The `decide()` function with no HA and no I/O: phase transitions (P0→P1→P2→P3), the
 anti-lockout high-EC flush, the sensor-independent minimum-daily-water floor, EC steering,

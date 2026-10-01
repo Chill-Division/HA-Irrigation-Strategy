@@ -135,7 +135,7 @@ def _strategy_hold(plan, heartbeat):
 def moved_entities(hass: HomeAssistant, entry: ConfigEntry) -> list[tuple[str, str]]:
     """This room's entities that are not where the controller reads them -> [(now, expected)].
 
-    The controller, the dashboard and the MCP tools find a setting by its exact entity id
+    The controller and the dashboard find a setting by its exact entity id
     (`number.crop_steering_<room>zone_1_plant_count`). Home Assistant keeps whatever id an entity
     was first registered under, so a room created by stale code, an id edited in Settings, or a
     collision that left `..._2` behind, leaves the setting somewhere nothing looks: the controller

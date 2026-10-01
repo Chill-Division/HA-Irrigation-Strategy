@@ -7,7 +7,7 @@ that button once the plan can run."""
 import pytest
 from homeassistant.core import Context
 from homeassistant.exceptions import HomeAssistantError
-from test_mcp_setup_contract import _payload, _room, _service
+from test_setup_save_plumbing import _payload, _room, _service
 from test_setup_entry import _install
 
 DESCRIPTOR = "sensor.crop_steering_engine_config"

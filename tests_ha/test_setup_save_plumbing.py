@@ -1,14 +1,11 @@
-"""What the MCP tools send is what the REAL `crop_steering.setup_save` accepts.
+"""What Rooms & hardware saves is what the REAL `crop_steering.setup_save` accepts, for a room's
+declared plumbing. Since 2.19.0 the service refuses an active room whose mapped switches
+contradict its DECLARED plumbing, so a declared room gains or loses its pump only with its layout,
+in one save; and a room that never declared one must not become declared by an unrelated save.
 
-mcp-server/ has its own tests, against a mock of these services. A mock can only ever agree with
-whoever wrote it: since 2.19.0 the real service refuses an active room whose mapped switches
-contradict its DECLARED plumbing, the MCP payload had no `plumbing` in it at all, and both suites
-were green. (Review finding on JakeTheRabbit/HA-Irrigation-Strategy#47: a declared room could
-never gain or lose its pump through the MCP tools.)
-
-These tests build the payload the way mcp-server/src/workspace.ts does: read the room with
-`setup_read`, change fields, and send back `room_name`, `active`, `hardware`, `zones`, plus
-`plumbing` ONLY when the room has declared one.
+These build the payload the way the dashboard's `save()` (frontend/src/pages/setup.tsx) does: read
+the room with `setup_read`, change fields, and send back `room_name`, `active`, `hardware`,
+`zones`, plus `plumbing` ONLY when the room has declared one.
 """
 
 import pytest
@@ -39,7 +36,8 @@ async def _room(hass, admin):
 
 
 def _payload(room, **changes):
-    """mcp-server/src/workspace.ts `config(room)`, then the reviewed changes on top."""
+    """The room as `setup_read` gives it, as the dashboard's save sends it back, then the changes
+    on top."""
     payload = {
         "room_name": room["room_name"],
         "active": room["active"],
@@ -56,7 +54,7 @@ def _payload(room, **changes):
     }
 
 
-async def test_a_declared_room_loses_and_regains_its_pump_through_the_mcp_payload(
+async def test_a_declared_room_loses_and_regains_its_pump_with_its_layout_in_one_save(
     hass, hass_admin_user
 ):
     hass.states.async_set(PUMP, "off")
@@ -64,7 +62,7 @@ async def test_a_declared_room_loses_and_regains_its_pump_through_the_mcp_payloa
     room = await _room(hass, hass_admin_user)
     assert (room["plumbing"], room["plumbing_inferred"]) == ("pump_valves", "pump_valves")
 
-    # The mapping alone, which is all the tools could send before: refused, and nothing saved.
+    # The mapping alone: refused, and nothing saved.
     with pytest.raises(HomeAssistantError, match="pump"):
         await _service(
             hass, hass_admin_user, "setup_save", _payload(room, hardware={"pump_switch": ""})
@@ -85,7 +83,7 @@ async def test_a_declared_room_loses_and_regains_its_pump_through_the_mcp_payloa
     descriptor = hass.states.get(DESCRIPTOR).attributes
     assert descriptor["plumbing"] == "valves_only" and not descriptor["pump"]
 
-    # And back again. An unchanged declared layout travels with every save, as the tools send it.
+    # And back again. An unchanged declared layout travels with every save.
     await _service(
         hass,
         hass_admin_user,
@@ -100,7 +98,7 @@ async def test_a_declared_room_loses_and_regains_its_pump_through_the_mcp_payloa
     assert (await _room(hass, hass_admin_user))["plumbing"] == "pump_valves"
 
 
-async def test_an_upgraded_room_that_never_declared_is_not_declared_by_an_mcp_save(
+async def test_an_upgraded_room_that_never_declared_is_not_declared_by_a_save(
     hass, hass_admin_user
 ):
     """In-place upgrade. The payload carries no `plumbing` for a room that has none, so an
