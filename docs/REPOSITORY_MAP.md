@@ -7,7 +7,6 @@
 | custom_components/crop_steering | HA config flow, entities, setup/strategy/run APIs, storage and sidebar registration |
 | addons/f2_control | Companion controller app, hardware coordinator, runtime validation and tests |
 | crop-steering-engine | Pure decision core and its tests; vendored copy must remain identical |
-| www/dashboard.html | Generated static web application |
 | custom_components/crop_steering/www/dashboard.html | Identical generated application served by the integration |
 | addons/f2_control/www/public/dashboard.html | Identical generated application served through ingress |
 | tests | Integration and repository contract tests |
@@ -17,7 +16,7 @@
 | img | Screenshots used by the README and docs |
 | repository.yaml | HA app repository discovery metadata; the controller app is installed from this repository only |
 
-Edit source in frontend/src and run the build; do not hand-edit generated dashboards. Each folder holds `dashboard.html`, plus the `index.html` that opens it for the app's sidebar entry and the demo site. Runtime entity IDs, room prefixes and the f2_control app slug remain stable; friendly names can change without breaking references.
+Edit source in frontend/src and run the build; do not hand-edit generated dashboards. The integration's folder holds `dashboard.html`; the app's also holds the `index.html` that opens it for the app's sidebar entry. The browser checks load the app's copy. Runtime entity IDs, room prefixes and the f2_control app slug remain stable; friendly names can change without breaking references.
 
 The integration owns plan/configuration storage and per-room run metadata. Run records retain dates, stable zone/sensor IDs and timestamped reference targets; sensor readings stay in HA Recorder, with bounded authenticated history retrieval. Comparison and runtime calculators do not call actuator services.
 

@@ -15,7 +15,7 @@ The menu has six entries; where one holds more than one page, tabs across the to
 
 Existing `#/strategy` and `#/grow-plan` bookmarks open **Irrigation plan → Today** and **Schedule**; bookmarks to the retired Zones and Sensors pages open **Overview**.
 
-New installation? Start with [Install, upgrade and rollback](INSTALL.md). To try the interface without connecting equipment, open the [interactive demo](https://chill-division.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1).
+New installation? Start with [Install, upgrade and rollback](INSTALL.md).
 
 ## What each action changes
 
@@ -28,21 +28,6 @@ New installation? Start with [Install, upgrade and rollback](INSTALL.md). To try
 | Save a library recipe         | This browser/site/room library; no HA write.                           |
 | Save a run record             | Run metadata and its captured reference; no irrigation activation.     |
 | Save configuration            | HA room/zone setup; wait for controller acknowledgement.               |
-
-## Try the demo
-
-The demo is an isolated software demonstration. Its readings, history, example plans and run records are synthetic; they are not a recommended configuration or evidence from a real grow. A demo tab cannot connect to live Home Assistant.
-
-1. Open **Overview** and switch rooms. Inspect today's grow-day timeline, the zone states and the tank.
-2. Open **Irrigation plan → Today**, select a zone and choose **P3**. Edit its emergency floor and compare the moving draft line with the saved reference. Use the review dialog to inspect changes.
-3. Open **Irrigation plan → Schedule**. Select a zone and day/week, inspect its endpoint profile and change the steering balance. Compare the schedule and curve.
-4. Expand **Recipe library** to inspect **Demo • steady schedule** or **Demo • week-by-week changes**, or save your own copy. Samples are added only when that demo room has no stored library yet. Loading affects a local draft; the normal review/save remains separate.
-5. Open **Insights → Compare runs**. Select the illustrative current/previous runs and change the history range or target reference. The generated history remains labelled as demo data.
-6. Open **Settings → Rooms & hardware** to try entity search, room/zone names and mapping review. Demo actions do not call your HA server.
-
-A production recipe library starts empty. Demo recipes are interface examples and are stored separately from production libraries. Existing demo libraries, including deliberately empty or corrupt ones, are left unchanged.
-
-Use **Settings → Sample workspace → Reset demo session…** and review the confirmation to restore the sample rooms, readings, run records and planner drafts. This discards unsaved demo work and session changes to runs/room settings. All saved recipe libraries and live connection data are retained; reset does not restore recipes you deliberately removed. Export any session work you want to keep first.
 
 ## Read a room
 

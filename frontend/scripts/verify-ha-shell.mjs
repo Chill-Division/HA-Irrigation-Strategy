@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { chromium } from "playwright";
-const html = await readFile(new URL("../../www/dashboard.html", import.meta.url));
+const html = await readFile(new URL("../../addons/f2_control/www/public/dashboard.html", import.meta.url));
 const shell = `<!doctype html><html><body><home-assistant></home-assistant><script>
 window.events=[];const host=document.querySelector('home-assistant');
 host.hass={kioskMode:new URLSearchParams(location.search).has('existing')};

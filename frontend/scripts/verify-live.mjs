@@ -8,7 +8,7 @@ import { chromium } from "playwright";
 const root = fileURLToPath(new URL("../../", import.meta.url)),
   out = path.join(root, "output/playwright");
 await mkdir(out, { recursive: true });
-const html = await readFile(path.join(root, "www/dashboard.html"));
+const html = await readFile(path.join(root, "addons/f2_control/www/public/dashboard.html"));
 const server = createServer((req, res) => {
   res.writeHead(200, {
     "Content-Type": "text/html",

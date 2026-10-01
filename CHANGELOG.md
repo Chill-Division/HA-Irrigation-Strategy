@@ -13,12 +13,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🌱 In plain English
 
+- **The README says what Crop Steering does and how to install it, and little else.** It is half as
+  long, and it says plainly that no AI makes any decision: the controller waters by your setpoints
+  and fixed arithmetic, so the same readings and settings, at the same point in the day, give the
+  same decision every time. It no longer says Crop Steering doses no nutrients (it has mixed
+  nutrient batches since 2.26.0), and no longer points at the online demo or the AI-assistant
+  connector.
+- **The online demo is gone.** It showed the dashboard with sample data on a github.io page; the
+  screenshots show it instead. The sample data stays inside the dashboard, where its tests and the
+  screenshots use it.
 - **The AI-assistant connector is gone.** The optional connector that let an assistant such as
   Claude read a room and prepare setup or plan changes is removed, with its guide. Nothing in Crop
   Steering talks to an AI; the dashboard and the controller work exactly as before.
 
 ### 🔧 Technical notes
 
+- `README.md`: features, *What you need*, install and updating, documentation.
+- `.github/workflows/pages.yml` and the root `www/` it published are removed, and
+  `frontend/scripts/package.mjs` writes the dashboard to the integration and the app only. The
+  dashboard opens its demo workspace only with `?demo` (`isDemoLocation`), no longer by itself on
+  any `*.github.io` address. The browser checks load the app's copy
+  (`addons/f2_control/www/public`), the same `dashboard.html` with the `index.html` that opens it;
+  `tests/test_dashboard_layout.py`, CI's committed-build check and both hygiene checks follow.
 - Removed: `mcp-server/` (the stdio MCP server, its tests and its lockfile), `docs/MCP.md`, CI's
   *MCP protocol and reviewed configuration workflows* job, and the source zip each GitHub release
   attached (`crop_steering_mcp_source.zip`). The README, user guide, install guide, testing guide,

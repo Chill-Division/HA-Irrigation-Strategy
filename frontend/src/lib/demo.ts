@@ -14,10 +14,9 @@ import { numeric } from "./model";
 import { feedEntities, sampleFeed } from "./feed-demo";
 import { mappedNumbers, planOf } from "./feed";
 
-export function isDemoLocation(location: Pick<Location, "hostname" | "search">): boolean {
-  return (
-    new URLSearchParams(location.search).has("demo") || location.hostname.endsWith(".github.io")
-  );
+/** The demo workspace, which the browser checks and the screenshots use: opened with `?demo`. */
+export function isDemoLocation(location: Pick<Location, "search">): boolean {
+  return new URLSearchParams(location.search).has("demo");
 }
 const DOSER_SWITCHES: Record<string, string> = {
   "1": "switch.demo_doser_1",
