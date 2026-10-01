@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** Today's grow day projects the day from P0 for a zone still in last night's P3 after lights-on. No change to the controller.
+
 # 2.30.0
 
 Pair with integration 2.30.0.
