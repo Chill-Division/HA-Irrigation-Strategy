@@ -13,12 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🌱 In plain English
 
+- **The README says what Crop Steering does and how to install it, and little else.** It is half as
+  long, and it says plainly that no AI makes any decision: the controller waters by your setpoints
+  and fixed arithmetic, so the same readings and settings, at the same point in the day, give the
+  same decision every time. It no longer says Crop Steering doses no nutrients (it has mixed
+  nutrient batches since 2.26.0), and no longer points at the online demo or the AI-assistant
+  connector.
 - **The online demo is gone.** It showed the dashboard with sample data on a github.io page; the
   screenshots show it instead. The sample data stays inside the dashboard, where its tests and the
   screenshots use it.
 
 ### 🔧 Technical notes
 
+- `README.md`: features, *What you need*, install and updating, documentation. The connector keeps
+  its guide (`docs/MCP.md`); `tests/test_requirements_stated.py` reads the Node.js version from
+  there instead of from the README.
 - `.github/workflows/pages.yml` and the root `www/` it published are removed, and
   `frontend/scripts/package.mjs` writes the dashboard to the integration and the app only. The
   dashboard opens its demo workspace only with `?demo` (`isDemoLocation`), no longer by itself on
