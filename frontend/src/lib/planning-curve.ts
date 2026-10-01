@@ -668,6 +668,14 @@ export function projectFrom(
   const cutoff = Math.max(now.hour, plan.phases[3].start);
   const at = (hour: number) => Math.min(Math.max(hour, now.hour), cutoff);
   let phase: PlanningPhaseId = now.hour >= plan.phases[3].start ? "P3" : now.phase;
+  // Still in last night's P3 with the lights on (its band began before lights-on): the controller's
+  // next check starts P0, so the day runs from here. A P3 that began today, before lights-off, is P2's
+  // early move and stays.
+  let since = now.since;
+  if (phase === "P3" && now.since <= 0 && now.hour < plan.phases[3].start) {
+    phase = "P0";
+    since = now.hour;
+  }
   let p1Start = now.hour;
   if (phase === "P0") {
     // P0's own additional dryback, from the lights-on reading: the controller's 3% when unset.
@@ -679,7 +687,7 @@ export function projectFrom(
       now.value <= threshold
         ? now.hour
         : Math.min(
-            now.since + (hours("p0_maximum_wait_time") ?? 1),
+            since + (hours("p0_maximum_wait_time") ?? 1),
             level === null ? Infinity : now.hour + Math.max(0, now.value - level) / rates.day,
           ),
     );

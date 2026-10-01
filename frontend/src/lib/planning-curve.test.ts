@@ -477,6 +477,23 @@ describe("the projected day: every phase drawn the way the engine runs it", () =
     expect(html).toMatch(/P3 dries down to the 32% dryback target and \d+ shot\(s\) hold it there/);
     expect(html).not.toContain("short of the");
   });
+  it("starts the day at P0 for a zone still in last night's P3 after lights-on", () => {
+    const plan = buildPlanningCurve(live, 10, 22);
+    const from = (hour: number, since: number) =>
+      projectFrom(
+        plan,
+        live,
+        { hour, phase: "P3", since, value: 36, p1Shots: 0, lastShot: null, peak: null },
+        { rates: { day: 0.72, night: 0.37 } },
+      )!;
+    // 7 minutes after lights-on, in the P3 that began last night, above the 34% trigger: P0, the
+    // ramp and the day follow.
+    const morning = new Set(from(0.12, 0).points.map((point) => point.phase));
+    expect([...morning]).toEqual(["P0", "P1", "P2", "P3"]);
+    // P2's early move to P3 in the evening stays P3 until lights-on.
+    const evening = new Set(from(10.5, 10).points.map((point) => point.phase));
+    expect([...evening]).toEqual(["P3"]);
+  });
   it("holds a projection from now at the dryback measured from the day's own peak", () => {
     const parameters = { ...live, dryback_target: 20 };
     const from = projectFrom(

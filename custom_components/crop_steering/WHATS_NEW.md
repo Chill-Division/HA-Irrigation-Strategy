@@ -25,6 +25,7 @@ version being released.
 
 - With Auto setpoints on, the morning dryback before the first shot is no longer skipped after a night that reached its dryback target.
 - Today's grow day shows "Maintenance stopped" for the hours when Auto setpoints stops maintenance shots before lights-off.
+- Bug fixes and improvements.
 
 ## 2.30.0 - 2026-10-01
 

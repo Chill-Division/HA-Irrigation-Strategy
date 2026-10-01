@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Today's grow day says when the maintenance shots stopped.** From that time the trigger's line
   reads "Maintenance stopped" instead of a trigger; hover it to see the level a top-up would still
   fire under. The maintenance trigger's ? says what Auto setpoints does with it through the day.
+- **Today's grow day starts the day at P0 for a zone still in last night's P3.** In the minute or so
+  after lights-on before the controller's next check moves a zone to P0, the chart projected the
+  rest of the day as P3, and since 2.30.0 it drew no target line for it.
 
 ### 🔧 Technical notes
 
@@ -38,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests: GR2's day in `test_auto_setpoints.py` (its plan gives the old 62.2% and the new 57.8%, and
   `decide()` keeps P0 for a zone held at 60.6% under the new one, skipped it under the old);
   `p2_stop` published and parsed; the stopped marking.
+- Dashboard: `projectFrom` projects from P0 now for a zone whose P3 began before lights-on while the
+  lights are on (`since <= 0`, before the P3 cutoff); a P3 begun today, P2's early move, stays. Seen
+  in CI: the Overview's "targets layer is drawn" check failed between the demo's 10:00 lights-on and
+  its zones' move to P0.
 
 ## [2.30.0] - 2026-10-01
 
