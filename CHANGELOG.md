@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stays the floor beneath it. These shots stop when the daily water limit is spent, and a held plan
   stops them, as it does other routine shots. A zone's "Next:", the controller's log and Today's
   grow day show the level it is held at.
+- **Today's grow day draws P0's line where P0 really ends.** It was drawn from the overnight dryback
+  target, so a 30% dryback put it far below the zone, while the controller ends P0 on its own
+  additional dryback: 3% below the morning's highest reading unless you change it. The line is
+  there now.
 
 ### 🔧 Technical notes
 
@@ -51,6 +55,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `tests_ha/test_p3_hold.py`, in a real Home Assistant: an armed fresh room at night, a zone under
   its dryback target gets the shot through its valve, with its label and conditions published, and
   one above it gets nothing; the dashboard's unit tests.
+- Dashboard: `phaseTargets` draws P0's target from `p0_dryback_drop_percent` (`PHASE_TARGET.P0`, the
+  zone's or room's P0 Additional Dryback, 3% when missing, as the controller reads it), below the
+  highest reading since P0 began, where `decide()` ends P0; it was the steering mode's
+  `dryback_target`. `TargetKey` drops the rescue level, which no phase's line uses since the hold.
 
 ## [2.29.2] - 2026-10-01
 

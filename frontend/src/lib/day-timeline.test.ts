@@ -1011,12 +1011,13 @@ describe("how today is tracking", () => {
     expect(typical.at(-1)!.hour).toBeCloseTo(6, 9);
     expect(typicalDay(days.slice(0, 2))).toEqual([]); // two days are not a typical one
   });
-  it("targets: the P0 dryback level under the peak, a setpoint changed mid-day, a plan's snapshot", () => {
+  it("targets: P0's additional dryback under the peak, a setpoint changed mid-day, a plan's snapshot", () => {
     const threshold = "number.crop_steering_zone_2_p2_vwc_threshold";
     const rows = {
       [threshold]: [row("26.6", START - 3_600_000), row("27.2", START + 4 * 3_600_000)],
     };
     const parameters = {
+      p0_dryback_drop_percent: 3,
       dryback_target: 10,
       p1_target_vwc: 28.4,
       p2_vwc_threshold: 27.2,
@@ -1046,7 +1047,7 @@ describe("how today is tracking", () => {
         (start - START) / 3_600_000,
       ]),
     ).toEqual([
-      ["P0", 26 * 0.9, 0], // 10 % below the highest reading since P0 began
+      ["P0", 26 * 0.97, 0], // P0's own 3 % below the highest reading since P0 began
       ["P1", 28.4, 1],
       ["P2", 26.6, 2],
       ["P2", 27.2, 4], // changed at 4 h
@@ -1062,6 +1063,9 @@ describe("how today is tracking", () => {
     expect(phaseTargets(bands, planned, points).filter((step) => step.phase === "P2")).toEqual([
       { phase: "P2", value: 25, start: bands[2].start, end: bands[2].end },
     ]);
+    // P0 ends on its own additional dryback: the overnight target does not move its line.
+    const deeper = setpointSteps(rows, { ...parameters, dryback_target: 40 }, () => null, false);
+    expect(phaseTargets(bands, deeper, points)[0]).toMatchObject({ phase: "P0", value: 26 * 0.97 });
     // Last night's P3, carried into the start of the day, was held from a peak not in view.
     const carried: PhaseBand[] = [{ phase: "P3", start: START - 600_000, end: START }, ...bands];
     expect(phaseTargets(carried, manual, points).filter((step) => step.phase === "P3")).toEqual([
@@ -1074,10 +1078,10 @@ describe("how today is tracking", () => {
       { phase: "P0", start: now, end: START + 3_600_000 },
     ];
     expect(phaseTargets(ongoing, manual, points).map((step) => step.value)).toEqual([
-      26 * 0.9,
-      26 * 0.9,
+      26 * 0.97,
+      26 * 0.97,
     ]);
-    // Without a dryback target (no steering mode) P0 has no target.
+    // Without the setting P0 has no target (the day chart fills in the controller's 3% first).
     expect(
       phaseTargets(
         bands.slice(0, 1),

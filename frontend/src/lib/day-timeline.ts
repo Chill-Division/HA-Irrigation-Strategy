@@ -708,9 +708,10 @@ export function compareDays(
 }
 
 export type TargetKey =
-  "dryback_target" | "p1_target_vwc" | "p2_vwc_threshold" | "p3_emergency_vwc_threshold";
+  "p0_dryback_drop_percent" | "p1_target_vwc" | "p2_vwc_threshold" | "dryback_target";
 const PHASE_TARGET: Record<string, TargetKey> = {
-  P0: "dryback_target",
+  // P0 ends on its own additional dryback, as decide() measures it; not the overnight target.
+  P0: "p0_dryback_drop_percent",
   P1: "p1_target_vwc",
   P2: "p2_vwc_threshold",
   // The controller holds a P3 zone at its dryback target; the rescue level is the floor beneath.
@@ -720,9 +721,10 @@ export interface TargetStep extends Level {
   phase: string;
 }
 /** What the controller aims at in each phase, as steps along `bands` (the recorded phases, then the
- * projected ones): in P0 and P3 the dryback target as a VWC level below the highest reading since P0
- * began (P3 holds the zone there), in P1 the P1 target, in P2 the P2 threshold. `setpoint` gives
- * one setpoint over a span as steps: where it was changed, or a plan's value. */
+ * projected ones): in P0 its additional dryback and in P3 the dryback target, each as a VWC level
+ * below the highest reading since P0 began (P3 holds the zone there), in P1 the P1 target, in P2 the
+ * P2 threshold. `setpoint` gives one setpoint over a span as steps: where it was changed, or a plan's
+ * value. */
 export function phaseTargets(
   bands: readonly PhaseBand[],
   setpoint: (key: TargetKey, span: Span) => Level[],

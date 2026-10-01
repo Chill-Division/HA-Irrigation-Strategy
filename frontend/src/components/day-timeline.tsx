@@ -594,7 +594,13 @@ function Timeline({
     // Targets resolve as the controller's do: the zone's setpoint, else the room's, else the plan's
     // snapshot while one is armed. The dryback target is the steering mode's.
     const preview = buildSetpointPreview(room, states, zone.id, {}).saved;
-    const parameters = preview.parameters;
+    const parameters: Record<string, number> = {
+      ...preview.parameters,
+      // P0's additional dryback is the controller's 3% when the setting is missing.
+      p0_dryback_drop_percent: Number.isFinite(preview.parameters.p0_dryback_drop_percent)
+        ? preview.parameters.p0_dryback_drop_percent
+        : 3,
+    };
     const setpoint = setpointSteps(
       rows,
       parameters,
@@ -713,9 +719,7 @@ function Timeline({
       dryback: p0 ? morningDryback(points, p0) : null,
       overnight: phase === "P3" ? dayDryback(points, day.start, zone.vwc.value) : null,
       drybackTarget: Number.isFinite(parameters.dryback_target) ? parameters.dryback_target : null,
-      p0Target: Number.isFinite(parameters.p0_dryback_drop_percent)
-        ? parameters.p0_dryback_drop_percent
-        : 3,
+      p0Target: parameters.p0_dryback_drop_percent,
       setupNote: !moved
         ? null
         : layers.compare === "yesterday"
