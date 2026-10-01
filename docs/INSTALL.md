@@ -1,6 +1,6 @@
 # Installation, upgrade and rollback
 
-[Try the isolated demo](https://chill-division.github.io/HA-Irrigation-Strategy/dashboard.html?demo=1) · [Complete user guide](USER_GUIDE.md)
+[Complete user guide](USER_GUIDE.md)
 
 ## What gets installed
 

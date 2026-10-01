@@ -2,7 +2,7 @@
 
 When opened inside a compatible Home Assistant shell, Crop Steering temporarily collapses the HA sidebar. Use **Home Assistant** at the bottom of Crop Steering's navigation, or the house button in its top bar, to open the HA menu over the workspace. The top-bar button stays available on mobile.
 
-Leaving Crop Steering restores the prior kiosk state. This does not change Home Assistant's saved sidebar preference. Standalone demos and unsupported or cross-origin embeddings retain their normal navigation.
+Leaving Crop Steering restores the prior kiosk state. This does not change Home Assistant's saved sidebar preference. Standalone tabs and unsupported or cross-origin embeddings retain their normal navigation.
 
 ## Verified native panel behavior
 
