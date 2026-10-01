@@ -9,6 +9,23 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **The README says what Crop Steering does and how to install it, and little else.** It is half as
+  long, and it says plainly that no AI makes any decision: the controller waters by your setpoints
+  and fixed arithmetic, so the same readings and settings, at the same point in the day, give the
+  same decision every time. It no longer says Crop Steering doses no nutrients (it has mixed
+  nutrient batches since 2.26.0), and no longer points at the online demo or the AI-assistant
+  connector.
+
+### 🔧 Technical notes
+
+- `README.md`: features, *What you need*, install and updating, documentation. The connector keeps
+  its guide (`docs/MCP.md`); `tests/test_requirements_stated.py` reads the Node.js version from
+  there instead of from the README.
+
 ## [2.29.1] - 2026-10-01
 
 Integration and controller **2.29.1**.
