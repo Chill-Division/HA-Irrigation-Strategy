@@ -71,7 +71,7 @@ jobs:
       - name: Repo hygiene (no ignored shipped paths / tracked caches)
         run: |
           bad=0
-          for p in custom_components/crop_steering/__init__.py www addons/f2_control/config.yaml; do
+          for p in custom_components/crop_steering/__init__.py custom_components/crop_steering/www addons/f2_control/config.yaml; do
             if git check-ignore -q "$p"; then echo "IGNORED shipped path: $p"; bad=1; fi
           done
           if git ls-files | grep -E '__pycache__|\.pyc$|\.pytest_cache|\.ruff_cache'; then
@@ -217,13 +217,13 @@ jobs:
       - name: Compile and package standalone dashboard
         run: npm run build --prefix frontend
       - name: Committed dashboard is exactly what the source builds
-        # The dashboard ships as one ~1 MB minified file, committed in three places, that nobody
+        # The dashboard ships as one ~1 MB minified file, committed in two places, that nobody
         # can review by eye. The build is reproducible (locked dependencies, no timestamps), so
         # this proves the file a box will serve is the reviewed frontend/src and nothing else:
         # a stale bundle, a hand-edited bundle and a bundle carrying code that is not in the
         # source all fail here.
         run: |
-          paths="www custom_components/crop_steering/www addons/f2_control/www"
+          paths="custom_components/crop_steering/www addons/f2_control/www"
           if [ -n "$(git status --porcelain -- $paths)" ]; then
             echo "::error::The committed dashboard differs from a fresh build of frontend/src."
             echo "Run 'npm ci --prefix frontend && npm run build --prefix frontend' and commit the result."

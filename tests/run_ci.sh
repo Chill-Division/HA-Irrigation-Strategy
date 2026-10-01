@@ -30,7 +30,7 @@ engine_in_sync() {
 # no bytecode/cache may be tracked.
 repo_hygiene() {
   local bad=0
-  for p in custom_components/crop_steering/__init__.py www addons/f2_control/config.yaml; do
+  for p in custom_components/crop_steering/__init__.py custom_components/crop_steering/www addons/f2_control/config.yaml; do
     if git check-ignore -q "$p" 2>/dev/null; then echo "IGNORED shipped path: $p"; bad=1; fi
   done
   if git ls-files 2>/dev/null | grep -E '__pycache__|\.pyc$|\.pytest_cache|\.ruff_cache' | head -1; then
