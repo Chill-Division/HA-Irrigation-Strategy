@@ -388,11 +388,20 @@ def next_text(conditions, at):
             f"P3 by {when(off) or 'lights-off'}" if off else None,
         ]
         return " · ".join(part for part in parts if part)
-    rescue = find("p3_emergency")
-    if rescue:
+    rescue, hold = find("p3_emergency"), find("p3_hold")
+    if rescue and hold and (hold.get("value") or 0) <= (rescue.get("value") or 0):
+        hold = None  # a rescue level at or over the dryback's end fires first, every time
+    if rescue or hold:
         on = find("lights_on")
+        # Under the dryback's end, a hold shot may still wait out the time between P2 shots.
+        wait = when(hold) if hold else None
+        below = wait and hold.get("now") is not None and hold["now"] < (hold.get("value") or 0)
+        dryback = f"the {_num(hold.get('dryback'))}% dryback" if hold else ""
         parts = [
-            f"rescue shot if {test(rescue, '%', 'VWC')}{reading(rescue, '%')}",
+            (f"shot at {wait} (VWC {_num(hold['now'])}% under {_num(hold.get('value'))}%, {dryback})" if below
+             else f"shot when {test(hold, '%', 'VWC')}, {dryback}{reading(hold, '%')}") if hold else None,
+            # The reading is said once: with the hold, beside it.
+            f"rescue shot if {test(rescue, '%', 'VWC')}{'' if hold else reading(rescue, '%')}" if rescue else None,
             f"P0 at {when(on) or 'lights-on'}" if on else None,
         ]
         return " · ".join(part for part in parts if part)

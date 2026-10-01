@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- Overnight, a zone stops drying at your dryback target: a rescue-sized shot holds it there, where it used to dry on to the rescue level.
+
 ## 2.29.2 - 2026-10-01
 
 - Bug fixes and improvements.

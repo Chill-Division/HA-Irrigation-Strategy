@@ -308,6 +308,17 @@ describe("zone status text", () => {
       "Optimal",
     ]);
   });
+  it("tells a P3 shot that holds the dryback from a rescue", () => {
+    const states = fixture([integration(1, "Dry - Needs Water")]);
+    states["sensor.crop_steering_zone_1_phase"].state = "P3";
+    states[DECISION] = entity(DECISION, "Z1 P3 P3 hold dryback VWC 60.4<60.5 (30% of peak 86.5)", {
+      fired: ["Z1 P3 P3 hold dryback VWC 60.4<60.5 (30% of peak 86.5)"],
+      blocked: [],
+    });
+    expect(view(states).zones[0].status).toBe("Holding dryback");
+    states[DECISION].attributes.fired = ["Z1 P3 P3 emergency VWC 49<50"];
+    expect(view(states).zones[0].status).toBe("Emergency");
+  });
   it("never shows the fixed-threshold 'Dry - Needs Water' during P3, live or not", () => {
     const states = fixture([integration(1, "Dry - Needs Water")]);
     states["sensor.crop_steering_zone_1_phase"].state = "P3";

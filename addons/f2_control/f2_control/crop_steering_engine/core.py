@@ -44,6 +44,7 @@ CAP_EXEMPT = {
     "p2_dilute": False,
     "p2_topup": False,
     "p3_emergency": True,
+    "p3_hold": False,  # holds the overnight dryback at its target: steering, not a rescue
     "watchdog": True,
 }
 
@@ -60,8 +61,8 @@ class ZoneParams:
     p1_incr: float
     p1_max_shots: int
     p1_time_between_min: float
-    dryback_target: float       # P3 overnight dryback, % below the day's peak (and P0's, when
-    #                             additional_dryback is not given)
+    dryback_target: float       # P3 overnight dryback, % below the day's peak, where P3 holds the zone
+    #                             (and P0's, when additional_dryback is not given)
     p0_max_wait_min: float
     ec_target_p0: float
     ec_target_p1: float
@@ -121,6 +122,12 @@ class ZoneSnapshot:
 def p0_dryback(p: ZoneParams) -> float:
     """How far below its lights-on reading P0 lets a zone dry before the ramp starts."""
     return p.dryback_target if p.additional_dryback is None else p.additional_dryback
+
+
+def p3_hold_level(s: ZoneSnapshot, p: ZoneParams) -> float | None:
+    """The VWC P3 holds a zone at overnight: the day's peak less the P3 dryback target, a relative %
+    (a 30% dryback from an 86.5% peak ends at 60.55%). None until a peak has been seen."""
+    return s.peak_vwc * (1.0 - p.dryback_target / 100.0) if s.peak_vwc > 0 else None
 
 
 def ec_adjust(size: float, ec: float | None, target: float) -> float:
@@ -279,6 +286,16 @@ def decide(s: ZoneSnapshot, p: ZoneParams):
                 fire, size, ir, kind = True, ec_adjust(p.p2_shot_size, ec, p.ec_target_p2), f"P2 top-up VWC {s.vwc:.0f}<{p2_thr:.0f}", "p2_topup"
     if not fire and phase == "P3" and s.vwc < p.p3_emergency_floor:
         fire, size, ir, kind = True, p.p3_emergency_shot, f"P3 emergency VWC {s.vwc:.0f}<{p.p3_emergency_floor:.0f}", "p3_emergency"
+    # P3 holds the overnight dryback at its target instead of letting a fast night dry on to the rescue
+    # level: a rescue-sized shot each time the zone dries to the hold level, the time between P2 shots
+    # apart. The P2 early move to P3 only ever starts the dryback sooner; this is what stops it. It
+    # steers, so a held plan stops it and the daily budget holds it (CAP_EXEMPT); the rescue stays the
+    # floor beneath it.
+    hold = p3_hold_level(s, p)
+    if (not fire and phase == "P3" and not s.steering_held and hold is not None and s.vwc < hold
+            and s.minutes_since_shot >= p.p2_time_between_min):
+        why = f"P3 hold dryback VWC {s.vwc:.1f}<{hold:.1f} ({p.dryback_target:g}% of peak {s.peak_vwc:.1f})"
+        fire, size, ir, kind = True, p.p3_emergency_shot, why, "p3_hold"
 
     # PRIORITY 3 — LIGHTS-ON WATERING WATCHDOG: backstop so no enabled zone ever starves. Never in P0: at
     # lights-on the whole night counts as "no water", and P0 is the dryback the day is meant to start with.
@@ -358,6 +375,12 @@ def waiting_for(s: ZoneSnapshot, p: ZoneParams) -> list:
         add("lights_off", to="P3", in_min=s.hours_to_lights_off * 60.0)
     elif s.phase == "P3":
         add("p3_emergency", shot=True, metric="vwc", op="<", value=p.p3_emergency_floor, now=s.vwc)
+        hold = p3_hold_level(s, p)
+        if hold is not None and not s.steering_held:
+            add("p3_hold", shot=True, metric="vwc", op="<", value=hold, now=s.vwc,
+                in_min=(p.p2_time_between_min - s.minutes_since_shot
+                        if p.p2_time_between_min > 0 else None),
+                dryback=round(p.dryback_target, 2))
         add("lights_on", to="P0", in_min=s.hours_to_lights_on * 60.0)
     return items
 
@@ -516,5 +539,7 @@ def zone_status_label(phase, fire, blocked, blind, reason=""):
     if "BLOCK" in (reason or ""):
         return "Blocked — EC/cap"
     if fire:
+        if "P3 hold" in (reason or ""):
+            return "Holding dryback"
         return {"P0": "Flushing", "P1": "Refilling", "P2": "Topping up", "P3": "Emergency"}.get(phase, "Watering")
     return {"P0": "Drying back", "P1": "Ramping", "P2": "Optimal", "P3": "Overnight dryback"}.get(phase, "Idle")

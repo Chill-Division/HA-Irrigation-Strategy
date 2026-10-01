@@ -180,6 +180,11 @@ _SHOTS = {
         r"P3 emergency VWC (\S+)<(\S+)",
         lambda m: f"VWC {m[1]}% under the {m[2]}% rescue level",
     ),
+    "p3_hold": (
+        "dryback hold shot",
+        r"P3 hold dryback VWC (\S+)<(\S+) \((\S+)% of peak (\S+)\)",
+        lambda m: f"VWC {m[1]}% under {m[2]}%, the {m[3]}% P3 dryback from today's {m[4]}% peak",
+    ),
     "watchdog": (
         "watchdog shot",
         r"WATCHDOG (\S+)h no water \(VWC (\S+)<(\S+)\)( — over the daily budget)?",

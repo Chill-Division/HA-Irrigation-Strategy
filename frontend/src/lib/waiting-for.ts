@@ -15,6 +15,8 @@ export interface WaitingCondition {
   shots_left?: number;
   ec_max?: number | null;
   ec_now?: number | null;
+  /** p3_hold: the P3 dryback target its level is worked out from, % of the day's peak. */
+  dryback?: number;
 }
 export interface Waiting {
   /** When the controller worked it out: a wait ends `in_min` after this. */
@@ -133,10 +135,29 @@ export function waitingText(waiting: Waiting, format: WaitingFormat): string {
   }
 
   const rescue = find("p3_emergency");
-  if (rescue) {
+  let hold = find("p3_hold");
+  // A rescue level at or over the dryback's end fires first, every time: then it is the only shot.
+  if (rescue && hold && (hold.value ?? 0) <= (rescue.value ?? 0)) hold = undefined;
+  if (rescue || hold) {
     const on = find("lights_on");
+    // Under the dryback's end, a hold shot may still wait out the time between P2 shots.
+    const wait = hold ? when(hold) : null;
+    const below =
+      wait !== null &&
+      hold?.now !== null &&
+      hold?.now !== undefined &&
+      hold.now < (hold.value ?? 0);
+    const dryback = `the ${n(hold?.dryback ?? NaN)}% dryback`;
     return [
-      `rescue shot if ${test(rescue, "%", "VWC")} (${now(rescue, "%")})`,
+      hold
+        ? below
+          ? `shot at ${wait} (VWC ${n(hold.now ?? NaN)}% under ${n(hold.value ?? NaN)}%, ${dryback})`
+          : `shot when ${test(hold, "%", "VWC")}, ${dryback} (${now(hold, "%")})`
+        : null,
+      // The reading is said once: with the hold, beside it.
+      rescue
+        ? `rescue shot if ${test(rescue, "%", "VWC")}${hold ? "" : ` (${now(rescue, "%")})`}`
+        : null,
       on ? `P0 at ${when(on) ?? "lights-on"}` : null,
     ]
       .filter(Boolean)

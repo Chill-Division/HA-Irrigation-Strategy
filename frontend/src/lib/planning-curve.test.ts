@@ -424,7 +424,8 @@ describe("the projected day: every phase drawn the way the engine runs it", () =
     expect(project(live).shots.filter((shot) => shot.phase === "P2")).toHaveLength(0);
   });
   it("P3 dries down through the night at the slower rate and the next day starts where it ends", () => {
-    const day = project(live);
+    // A 30% dryback from the 40% peak ends at 28%, under where this night ends: nothing holds it.
+    const day = project({ ...live, dryback_target: 30 });
     expect(valueAt(day, 24)).toBe(day.lightsOnVwc);
     expect(day.points.at(-1)!.hour).toBe(24);
     expect(valueAt(day, 12) - valueAt(day, 24)).toBeCloseTo(0.37 * 12, 1);
@@ -438,11 +439,65 @@ describe("the projected day: every phase drawn the way the engine runs it", () =
     expect(day.drybackVwc).toBeCloseTo(36);
   });
   it("fires the emergency shot if the night would cross the P3 floor", () => {
-    const day = project({ ...live, p3_emergency_vwc_threshold: 31 });
+    // The rescue level, 31%, sits over where a 30% dryback ends (28%): the rescue comes first.
+    const day = project({ ...live, dryback_target: 30, p3_emergency_vwc_threshold: 31 });
     const emergency = day.shots.filter((shot) => shot.emergency);
     expect(emergency.length).toBeGreaterThan(0);
     expect(emergency[0].phase).toBe("P3");
     expect(emergency[0].to - emergency[0].from).toBeCloseTo(2);
+    expect(day.shots.filter((shot) => shot.phase === "P3" && !shot.emergency)).toHaveLength(0);
+  });
+  it("holds P3 at the dryback target with shots the size of a rescue", () => {
+    // A 20% dryback from the 40% peak ends at 32%; the night would dry to under 31% without it.
+    const day = project({ ...live, dryback_target: 20 });
+    const night = day.points.filter((point) => point.phase === "P3");
+    const holds = day.shots.filter((shot) => shot.phase === "P3");
+    expect(holds.length).toBeGreaterThan(0);
+    for (const shot of holds) {
+      expect(shot.emergency).toBeFalsy();
+      expect(shot.from).toBeLessThanOrEqual(32);
+      expect(shot.from).toBeGreaterThan(31.9);
+      expect(shot.to - shot.from).toBeCloseTo(2);
+    }
+    expect(Math.min(...night.map((point) => point.value))).toBeGreaterThan(31.9);
+    // Without a shot size there is nothing to lift the zone: the line holds at the target.
+    const unsized = project({ ...live, dryback_target: 20, p3_emergency_shot_size: NaN });
+    const flat = unsized.points.filter((point) => point.phase === "P3");
+    expect(Math.min(...flat.map((point) => point.value))).toBeCloseTo(32, 5);
+  });
+  it("says a held night reached its dryback target, not that it fell short of it", () => {
+    // At the nominal 1 point an hour overnight the night reaches 32%, a 20% dryback from 40%.
+    const html = renderToStaticMarkup(
+      createElement(PlanningCurve, {
+        parameters: { ...live, dryback_target: 20 },
+        lightsOn: 10,
+        lightsOff: 22,
+      }),
+    );
+    expect(html).toMatch(/P3 dries down to the 32% dryback target and \d+ shot\(s\) hold it there/);
+    expect(html).not.toContain("short of the");
+  });
+  it("holds a projection from now at the dryback measured from the day's own peak", () => {
+    const parameters = { ...live, dryback_target: 20 };
+    const from = projectFrom(
+      buildPlanningCurve(parameters, 10, 22),
+      parameters,
+      {
+        hour: 13,
+        phase: "P3",
+        since: 12,
+        value: 34,
+        p1Shots: 0,
+        lastShot: null,
+        peak: null,
+        dayPeak: 44,
+      },
+      { rates: { day: 0.72, night: 0.37 } },
+    )!;
+    // 20% below the day's 44% peak is 35.2%, and the zone already reads 34%: held from the start.
+    expect(from.shots[0].phase).toBe("P3");
+    expect(from.shots[0].from).toBeCloseTo(34, 1);
+    expect(Math.min(...from.points.map((point) => point.value))).toBeGreaterThan(33.9);
   });
   it("stays sane when shot count, spacing or sizes are not supplied", () => {
     const sparse = { p1_target_vwc: 65, p2_vwc_threshold: 55, dryback_target: 20 };

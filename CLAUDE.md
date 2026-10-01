@@ -80,7 +80,8 @@ local Python installs. CI is unaffected.
 P0 (Morning dryback): after lights-on, wait for an X% VWC DROP FROM PEAK → P1
 P1 (Ramp-up):         progressive shots to the per-zone target → P2
 P2 (Maintenance):     top-up when VWC drops below the per-zone threshold → P3
-P3 (Pre-lights-off):  emergency-only; dry back overnight → P0 at lights-on
+P3 (Pre-lights-off):  dry back to the dryback target and hold it there with rescue-sized shots;
+                      the rescue level is the floor beneath → P0 at lights-on
 ```
 
 - A "grow-day" is one **photoperiod**. The daily water + shot counters reset at the

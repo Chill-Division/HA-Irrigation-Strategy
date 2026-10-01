@@ -1050,7 +1050,7 @@ describe("how today is tracking", () => {
       ["P1", 28.4, 1],
       ["P2", 26.6, 2],
       ["P2", 27.2, 4], // changed at 4 h
-      ["P3", 20, 12],
+      ["P3", 26 * 0.9, 12], // held at the dryback target: 10 % below the day's peak
     ]);
     // A plan armed: its snapshot's values, whatever the numbers recorded.
     const planned = setpointSteps(
@@ -1061,6 +1061,11 @@ describe("how today is tracking", () => {
     );
     expect(phaseTargets(bands, planned, points).filter((step) => step.phase === "P2")).toEqual([
       { phase: "P2", value: 25, start: bands[2].start, end: bands[2].end },
+    ]);
+    // Last night's P3, carried into the start of the day, was held from a peak not in view.
+    const carried: PhaseBand[] = [{ phase: "P3", start: START - 600_000, end: START }, ...bands];
+    expect(phaseTargets(carried, manual, points).filter((step) => step.phase === "P3")).toEqual([
+      { phase: "P3", value: 26 * 0.9, start: bands[3].start, end: bands[3].end },
     ]);
     // In P0 now: the projected rest of P0 keeps the level from the peak since P0 began.
     const now = START + 1_800_000;

@@ -128,7 +128,7 @@ const WORDS: Record<string, SettingWords> = {
   p2_time_between_shots: {
     label: "Time between P2 shots",
     short: "Time between P2 shots",
-    help: "Lets each maintenance shot soak down to the probes before moisture is read again. 0 turns it off.",
+    help: "Lets each maintenance shot, and each overnight dryback hold shot, soak down to the probes before moisture is read again. 0 turns it off.",
   },
   p3_emergency_vwc_threshold: {
     label: "Rescue shot when below",
@@ -139,7 +139,7 @@ const WORDS: Record<string, SettingWords> = {
   p3_emergency_shot_size: {
     label: "Rescue shot size",
     short: "Rescue shot",
-    help: `Each rescue shot, ${OF_SUBSTRATE}.`,
+    help: `Each rescue shot, and each shot holding the P3 dryback target, ${OF_SUBSTRATE}.`,
   },
   field_capacity: {
     label: "Full saturation (most it holds)",
@@ -231,7 +231,7 @@ const DRYBACK_WORDS: SettingWords = {
   label: "P3 dryback target",
   short: "P3 dryback target",
   tag: "dries",
-  help: "How far to dry back overnight, relative to the day’s peak: a 30% dryback from a 60% peak ends at 42%.",
+  help: "How far to dry back overnight, relative to the day’s peak: a 30% dryback from a 60% peak ends at 42%, and P3 holds it there.",
 };
 
 // The "?" text. Quotes are the handbook's own words, with its printed page; the rest is what the
@@ -308,7 +308,7 @@ const DETAILS: Record<string, SettingDetail> = {
     what: "The least time from the last shot to a maintenance shot.",
     when: "Under the maintenance trigger, a maintenance shot fires only once this long has passed since the last shot of any kind, so its water can reach the probes before moisture is read again. Read sooner, moisture has not moved yet and shots stack a minute apart. 0 turns it off: a shot every time the controller checks and moisture reads below the trigger.",
     affects:
-      "How fast a zone below its trigger is brought back up: one maintenance shot each time this passes until moisture reads at the trigger. Dilution and rescue flushes keep their own 10-minute wait; the watchdog and P3 rescue shots do not wait for this.",
+      "How fast a zone below its trigger is brought back up: one maintenance shot each time this passes until moisture reads at the trigger. P3 shots that hold the dryback target wait for it too. Dilution and rescue flushes keep their own 10-minute wait; the watchdog and P3 rescue shots do not wait for this.",
     athena:
       "Athena spaces P1 shots 15 to 30 minutes apart so each can soak in (p. 36); it gives no spacing for P2 events.",
   },
@@ -316,14 +316,14 @@ const DETAILS: Record<string, SettingDetail> = {
     what: "The overnight safety level. It is not an Athena setting.",
     when: "Each time the controller checks in P3, a rescue shot fires if moisture reads below it. The daily water limit does not hold rescue shots.",
     affects:
-      "It can cut the P3 dryback short: if the P3 dryback target ends below this level, a rescue shot fires before the substrate gets there. The maintenance trigger is always kept at least 3 points above it.",
+      "It can cut the P3 dryback short: if the P3 dryback target ends below this level, a rescue shot fires before the substrate gets there. Otherwise it is the floor beneath the level P3 holds the zone at. The maintenance trigger is always kept at least 3 points above it.",
     auto: AUTO,
     athena:
       "“Caution: make sure to monitor the drybacks in larger plants to avoid drying back past wilting point” (p. 41). Set this above the wilting point.",
   },
   p3_emergency_shot_size: {
-    what: `The size of each rescue shot, ${OF_SUBSTRATE}.`,
-    when: "Every P3 rescue shot. The daily water limit does not hold them.",
+    what: `The size of each rescue shot, and of each shot that holds the P3 dryback target, ${OF_SUBSTRATE}.`,
+    when: "Every P3 shot: a rescue below the rescue level, which the daily water limit does not hold, and a hold at the P3 dryback target, which it does.",
   },
   field_capacity: {
     what: "The wettest the substrate can be: the ceiling for the peak VWC target.",
@@ -356,10 +356,10 @@ const EC_DETAILS: Record<string, SettingDetail> = {
 };
 const DRYBACK_DETAIL: SettingDetail = {
   what: "How far the substrate should dry back overnight, as a percentage of the day’s peak: a relative change. A 30% dryback from a 65% peak ends at 45.5%. The zone’s steering mode picks the vegetative or generative one.",
-  when: "Overnight nothing waters toward it: the substrate simply dries. In the last 3 hours before lights-off, maintenance shots stop early if drying this far by lights-on needs the rest of the night (and no more than 12 hours). The drying after lights-on, before the first shot, is P0’s own additional dryback.",
+  when: "Overnight the substrate dries to it and is held there: each time the controller checks in P3 and moisture reads below where it ends, a shot the size of a rescue shot fires, once the time between P2 shots has passed since the last shot. The daily water limit holds these shots. In the last 3 hours before lights-off, maintenance shots stop early if drying this far by lights-on needs the rest of the night (and no more than 12 hours). The drying after lights-on, before the first shot, is P0’s own additional dryback.",
   affects: "When P2 ends, and so substrate EC: a bigger dryback raises it.",
   athena:
-    "P3 dryback targets: vegetative 30 to 40% (less stress), generative 40 to 50% (more stress), “based on a relative change” (p. 39). By growth stage, the veg stage dries back 50% the first time, then 25% (p. 40). “The grower can control the amount of dryback by adding or subtracting P2 shots at the end of the day” (p. 37): stopping maintenance shots early is how the controller does that.",
+    "P3 dryback targets: vegetative 30 to 40% (less stress), generative 40 to 50% (more stress), “based on a relative change” (p. 39). By growth stage, the veg stage dries back 50% the first time, then 25% (p. 40). “The grower can control the amount of dryback by adding or subtracting P2 shots at the end of the day” (p. 37): stopping maintenance shots early is how the controller does that. Holding the dryback with shots overnight is this controller’s own, not Athena’s.",
 };
 
 const MODE: Record<string, string> = {

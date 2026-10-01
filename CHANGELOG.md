@@ -9,6 +9,49 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **The overnight dryback stops at your dryback target.** Overnight a zone used to be watered only
+  below its rescue level, so a night that dried faster than the day went straight past the target:
+  a 30% dryback from an 86.5% peak should end at 60.6%, but a zone drying 2.3 points an hour from
+  74.2% at 9 pm was on course for about 51% by lights-on, with its next shot at the 50% rescue
+  level. Now, each time a zone dries to where its dryback target ends, it gets a shot the size of
+  its rescue shot, no sooner than the time between P2 shots after the last one, and the rescue level
+  stays the floor beneath it. These shots stop when the daily water limit is spent, and a held plan
+  stops them, as it does other routine shots. A zone's "Next:", the controller's log and Today's
+  grow day show the level it is held at.
+
+### 🔧 Technical notes
+
+- Engine: in P3, after the `p3_emergency` check, `decide()` fires `p3_hold` below
+  `p3_hold_level()` = `peak_vwc × (1 − dryback_target / 100)` (None until a peak is seen), sized
+  `p3_emergency_shot`, once `minutes_since_shot ≥ p2_time_between_min`, never while `steering_held`;
+  `CAP_EXEMPT["p3_hold"] = False`. Its reason reads `P3 hold dryback VWC 60.4<60.5 (30% of peak
+  86.5)`. `waiting_for()` lists `p3_hold` (with `in_min` while the P2 gap runs, and `dryback`), and
+  `zone_status_label` says `Holding dryback` for it. The predictive move to P3 is unchanged: it only
+  ever starts the dryback sooner. The vendored copy follows.
+- Controller: `next_text` and `log_words` say the hold (`shot when VWC < 60.55%, the 30% dryback
+  (now 74.2%) · rescue shot if VWC < 50% · P0 at 07:00`; `P3 dryback hold shot 2% for 57 s (~0.3 L):
+  VWC 41.0% under 49.0%, the 30% P3 dryback from today's 70.0% peak`). A rescue level at or over the
+  hold level fires first, so it is said alone. No new options or state fields.
+- Dashboard: `waitingText` mirrors `next_text`, and `controllerZoneLabel` says `Holding dryback`.
+  Today's grow day draws P3's target at the hold level (`Held at`), from the day's peak, and none
+  for last night's P3 carried into the morning; its projected night (`runPhases`, and `projectFrom`
+  with the day's peak) holds there with rescue-sized shots. The plan graph counts hold and rescue
+  shots apart and warns of a short dryback from the night's lowest point, not the lights-on reading.
+  The trigger-below-the-dryback warning adds that P3 may water the zone back up, and the dryback
+  target, rescue level, rescue shot and P2 time-between-shots explainers say what the hold does.
+- Docs: `README.md`, `CLAUDE.md`, `docs/ENTITIES.md`, `docs/SYSTEM_OVERVIEW.md`,
+  `docs/GROW_PLANS.md`, and the daily-limit code's "Watering meanwhile" in `docs/error-codes.json`
+  and `docs/ERROR_CODES.md`.
+- Tests: `crop-steering-engine/tests/test_p3_hold.py`, with the `waiting_for` and kind tables;
+  `addons/f2_control/tests` (`next_text`, `log_words`, the published conditions);
+  `tests_ha/test_p3_hold.py`, in a real Home Assistant: an armed fresh room at night, a zone under
+  its dryback target gets the shot through its valve, with its label and conditions published, and
+  one above it gets nothing; the dashboard's unit tests.
+
 ## [2.29.2] - 2026-10-01
 
 Integration and controller **2.29.2**.

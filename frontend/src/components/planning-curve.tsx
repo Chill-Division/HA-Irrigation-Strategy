@@ -225,6 +225,15 @@ export function PlanningCurve({
     projection?.shots ??
     plan.p1Steps.map((step) => ({ ...step, phase: "P1" as PlanningPhaseId, emergency: false }));
   const shotCount = (phase: PlanningPhaseId) => shots.filter((shot) => shot.phase === phase).length;
+  // P3's shots: those holding the dryback at its target, and the rescues at the rescue level.
+  const nightShots = (rescue: boolean) =>
+    shots.filter((shot) => shot.phase === "P3" && !!shot.emergency === rescue).length;
+  // The night's lowest projected VWC: where the dryback got to, before any shot that holds it.
+  const nightLow = Math.min(
+    ...(projection?.points ?? [])
+      .filter((point) => point.phase === "P3")
+      .map((point) => point.value),
+  );
   // These two describe the straight schematic, which the projected day replaces.
   const warnings = projection
     ? plan.warnings.filter(
@@ -606,7 +615,11 @@ export function PlanningCurve({
                     strokeOpacity={shot.emergency ? 0.35 : 0}
                   >
                     <title>
-                      {shot.emergency ? "Rescue shot" : `${shot.phase} shot`}{" "}
+                      {shot.emergency
+                        ? "Rescue shot"
+                        : shot.phase === "P3"
+                          ? "Dryback hold shot"
+                          : `${shot.phase} shot`}{" "}
                       {inPhase.indexOf(shots[index]) + 1} of {inPhase.length} ·{" "}
                       {planningClock(lightsOn, shot.hour)}
                       {shot.size === null ? "" : ` · ${trim(shot.size, 2)}% of substrate`} ·{" "}
@@ -824,10 +837,14 @@ export function PlanningCurve({
               ? `P1 fires ${shotCount("P1")} shots, ${parameters.p1_time_between_shots} minutes apart, to ${trim(parameters.p1_target_vwc)}%.`
               : `P1 climbs to ${trim(parameters.p1_target_vwc)}% (shot count or spacing not set, so no steps are drawn).`}{" "}
             P2 fires a {trim(parameters.p2_shot_size)}% shot each time VWC falls below{" "}
-            {trim(parameters.p2_vwc_threshold)}%: {shotCount("P2") || "none"} projected. P3 dries
-            down overnight to {trim(projection.lightsOnVwc)}%
-            {shotCount("P3") ? `, with ${shotCount("P3")} rescue shot(s) at the rescue level` : ""}.
-            Hover any riser for its time and size.
+            {trim(parameters.p2_vwc_threshold)}%: {shotCount("P2") || "none"} projected.{" "}
+            {nightShots(false) && drybackVwc !== null
+              ? `P3 dries down to the ${trim(drybackVwc)}% dryback target and ${nightShots(false)} shot(s) hold it there, ${trim(projection.lightsOnVwc)}% at lights-on`
+              : `P3 dries down overnight to ${trim(projection.lightsOnVwc)}%`}
+            {nightShots(true)
+              ? `, with ${nightShots(true)} rescue shot(s) at the rescue level`
+              : ""}
+            . Hover any riser for its time and size.
           </p>
           <p>
             Dry-down: {projection.rates.day} points/h lights-on (
@@ -862,7 +879,7 @@ export function PlanningCurve({
               a finer sawtooth.
             </p>
           )}
-          {drybackVwc !== null && projection.lightsOnVwc > drybackVwc + 0.5 && (
+          {drybackVwc !== null && nightLow > drybackVwc + 0.5 && (
             <p className="planning-projection-warning">
               At this dry-down the zone reaches lights-on at {trim(projection.lightsOnVwc)}%, which
               is {trim(projection.lightsOnVwc - drybackVwc)} points short of the {trim(drybackVwc)}%
@@ -880,7 +897,8 @@ export function PlanningCurve({
       )}
       <p className="muted small" style={{ padding: "0 16px 12px", margin: 0 }}>
         The rescue level stays separate from the dry-down; routine watering stops at the P3
-        boundary.
+        boundary, and overnight a shot the size of a rescue shot holds the zone at its dryback
+        target.
         {Number.isFinite(parameters.p3_emergency_shot_size)
           ? ` Its ${parameters.p3_emergency_shot_size}% rescue shot is conditional on controller safety checks.`
           : ""}

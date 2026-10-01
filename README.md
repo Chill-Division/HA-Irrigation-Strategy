@@ -15,7 +15,7 @@ Crop Steering waters a grow room automatically. Every minute it reads each zone'
 
 ## Features
 
-- **The four-phase day, for every zone.** P0: the morning dryback. P1: small shots, a few minutes apart, up to your peak target. P2: a top-up whenever moisture falls to your trigger. P3: the overnight dryback, with a rescue shot only if a zone gets too dry. The day's counters start again at lights-on.
+- **The four-phase day, for every zone.** P0: the morning dryback. P1: small shots, a few minutes apart, up to your peak target. P2: a top-up whenever moisture falls to your trigger. P3: the overnight dryback, held at your dryback target, with a rescue shot if a zone still gets too dry. The day's counters start again at lights-on.
 - **Shots sized from your hardware.** Each zone's pot size, plant count, drippers and dripper flow turn a shot's percentage into litres and seconds, within a daily water limit and a maximum shot length.
 - **A plan for the whole grow.** Steer each zone week by week, or day by day, between vegetative and generative; the targets change at lights-on. Keep the plans that worked in a recipe library.
 - **The grow day on one chart.** Each zone's phases, shots, holds and setting changes since lights-on, against its targets, yesterday and the projected rest of the day. Every setting change says who made it and what it replaced.

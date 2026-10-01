@@ -713,35 +713,40 @@ const PHASE_TARGET: Record<string, TargetKey> = {
   P0: "dryback_target",
   P1: "p1_target_vwc",
   P2: "p2_vwc_threshold",
-  P3: "p3_emergency_vwc_threshold",
+  // The controller holds a P3 zone at its dryback target; the rescue level is the floor beneath.
+  P3: "dryback_target",
 };
 export interface TargetStep extends Level {
   phase: string;
 }
 /** What the controller aims at in each phase, as steps along `bands` (the recorded phases, then the
- * projected ones): in P0 the dryback target as a VWC level below the highest reading since P0
- * began, in P1 the P1 target, in P2 the P2 threshold, in P3 the emergency floor. `setpoint` gives
+ * projected ones): in P0 and P3 the dryback target as a VWC level below the highest reading since P0
+ * began (P3 holds the zone there), in P1 the P1 target, in P2 the P2 threshold. `setpoint` gives
  * one setpoint over a span as steps: where it was changed, or a plan's value. */
 export function phaseTargets(
   bands: readonly PhaseBand[],
   setpoint: (key: TargetKey, span: Span) => Level[],
   points: readonly Reading[],
 ): TargetStep[] {
-  let since = -Infinity;
+  let since = -Infinity,
+    daytime = false;
   return bands.flatMap((band, index) => {
     // P0's peak counts from when the phase began, through a recorded band and its projected rest.
     const before = bands[index - 1];
     if (band.phase === "P0" && !(before?.phase === "P0" && before.end === band.start))
       since = band.start;
+    // A P3 band before the day's own phases is last night's, held from a peak not in view.
+    if (band.phase !== "P3") daytime = true;
+    else if (!daytime) return [];
     return setpoint(PHASE_TARGET[band.phase], band).flatMap((level) => {
-      if (band.phase !== "P0") return [{ ...level, phase: band.phase }];
+      if (band.phase !== "P0" && band.phase !== "P3") return [{ ...level, phase: band.phase }];
       const peak = Math.max(
         ...points
           .filter((point) => point.time >= since && point.time <= level.end)
           .map((point) => point.value),
       );
       return Number.isFinite(peak)
-        ? [{ ...level, value: peak * (1 - level.value / 100), phase: "P0" }]
+        ? [{ ...level, value: peak * (1 - level.value / 100), phase: band.phase }]
         : [];
     });
   });

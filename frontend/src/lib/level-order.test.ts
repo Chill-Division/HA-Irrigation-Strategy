@@ -35,7 +35,7 @@ describe("a zone's moisture levels against each other", () => {
   it("says when the day dries further than the night", () => {
     // (87 − 55) / 87 is 36.8% below the peak before a maintenance shot; overnight only 30%.
     expect(levelWarning("p2_vwc_threshold", { ...GR2, trigger: 55 })).toBe(
-      "by day the substrate dries 36.8% below the 87% peak target before a maintenance shot, further than the 30% it dries back overnight",
+      "by day the substrate dries 36.8% below the 87% peak target before a maintenance shot, further than the 30% it dries back overnight, so P3 may water it back up to 60.9% after lights-off",
     );
   });
   it("says when the rescue level would stop tonight's dryback, from either setting", () => {
