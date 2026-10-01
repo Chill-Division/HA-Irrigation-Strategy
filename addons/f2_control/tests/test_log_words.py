@@ -101,6 +101,10 @@ def test_a_phase_change_says_why(snap, words):
         (S(phase="P2", vwc=40), ("maintenance shot", "VWC 40% under the 45% maintenance trigger")),
         (S(phase="P3", vwc=35, lights_on=False), ("rescue shot", "VWC 35% under the 40% rescue level")),
         (
+            S(phase="P3", vwc=45, lights_on=False),
+            ("dryback hold shot", "VWC 45.0% under 48.0%, the 20% P3 dryback from today's 60.0% peak"),
+        ),
+        (
             S(phase="P2", vwc=40, ec=None, ec_smooth=None),
             (
                 "maintenance shot",
