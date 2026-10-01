@@ -8,7 +8,7 @@ import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
-const publicRoot = path.join(root, "www");
+const publicRoot = path.join(root, "addons/f2_control/www/public");
 const out = path.join(root, "output/playwright");
 // The README's screenshots, from the same demo the checks drive.
 const img = (name) => path.join(root, "img", name);

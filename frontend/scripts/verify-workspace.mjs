@@ -11,7 +11,7 @@ await mkdir(out, { recursive: true });
 let server;
 let url = process.env.WORKSPACE_URL;
 if (!url) {
-  const dashboard = await readFile(new URL("../../www/dashboard.html", import.meta.url));
+  const dashboard = await readFile(new URL("../../addons/f2_control/www/public/dashboard.html", import.meta.url));
   server = createServer((req, res) => {
     const pathname = new URL(req.url, "http://localhost").pathname;
     if (pathname !== "/" && pathname !== "/dashboard.html") {

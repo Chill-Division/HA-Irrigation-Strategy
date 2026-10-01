@@ -7,7 +7,7 @@ import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 const out = fileURLToPath(new URL("../../output/playwright/", import.meta.url));
 await mkdir(out, { recursive: true });
-const html = await readFile(new URL("../../www/dashboard.html", import.meta.url));
+const html = await readFile(new URL("../../addons/f2_control/www/public/dashboard.html", import.meta.url));
 const server = createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/html", "Cache-Control": "no-store" });
   res.end(html);

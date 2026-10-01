@@ -4,7 +4,7 @@ import { createServer } from "node:http";
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
-const html = await readFile(new URL("../../www/dashboard.html", import.meta.url));
+const html = await readFile(new URL("../../addons/f2_control/www/public/dashboard.html", import.meta.url));
 const out = new URL("../../output/playwright/", import.meta.url);
 const file = (name) => new URL(name, out).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 // The README's screenshots.
