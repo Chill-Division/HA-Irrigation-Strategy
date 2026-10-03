@@ -517,6 +517,42 @@ try {
     await noOverflow();
     await page.setViewportSize({ width: 1440, height: 1000 });
   });
+  await check("feed schedule: each week its recipe from Week 1's day; a pick holds until next week", async () => {
+    await go("reservoir");
+    await page.reload({ waitUntil: "networkidle" }); // the same address: a fresh demo, no refill running
+    await page.getByRole("button", { name: "Add a feed recipe" }).click(); // Vege
+    const panel = page.locator("[data-feed-schedule]");
+    // Three weeks that began 8 days ago: today is in week 2.
+    const began = new Date(Date.now() - 8 * 86_400_000);
+    const day = (d) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    await panel.getByLabel("Week 1 starts on").fill(day(began));
+    for (let i = 0; i < 3; i++) await panel.getByRole("button", { name: "One more week" }).click();
+    await panel.locator('[data-week="1"] select').selectOption({ label: "Vege" });
+    assert.equal(await panel.locator("[data-week]").count(), 3);
+    assert.equal(await panel.locator('[data-week="2"]').getAttribute("data-now"), "");
+    await expectVisible(panel.getByText(/This week: Week 2 of 3, Flower\. Week 3 \(Flower\) starts on /));
+    await expectVisible(page.locator("[data-stage-source]"));
+    // Picked by hand while it runs: held only until the next week, and the page says so.
+    await page.getByLabel("Stage in use").selectOption({ label: "Vege" });
+    await expectVisible(page.locator("[data-stage-held]").getByText(/Held by hand only until Week 3 starts on/));
+    await expectVisible(panel.getByText(/If you don't want the scheduled recipe, remove the schedule/));
+    await axe("feed schedule with a stage held by hand");
+    const bar = page.getByRole("region", { name: "Unsaved changes" });
+    await bar.getByRole("button", { name: "Save" }).click();
+    await expectVisible(page.getByText("Saved. The controller app runs the next batch"));
+    await expectVisible(page.locator("[data-batch-status]").getByText("Next refill: Vege, 150 L."));
+    // Removed, the stage in use stays as it was, picked by hand.
+    await panel.getByRole("button", { name: "Remove the schedule" }).click();
+    await expectVisible(panel.getByText(/No schedule: the stage in use is the one picked by hand/));
+    assert.equal(await page.getByLabel("Stage in use").inputValue(), await page.getByLabel("Stage in use").locator("option", { hasText: "Vege" }).getAttribute("value"));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await panel.getByRole("button", { name: "One more week" }).click();
+    await noOverflow();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await bar.getByRole("button", { name: "Discard" }).click(); // leave nothing unsaved behind
+    await bar.waitFor({ state: "hidden" });
+  });
   await check("tests: a zone's test shot says what it gives, and is asked for once confirmed", async () => {
     await go("setup");
     const tests = page.locator("[data-room-tests]");

@@ -253,9 +253,11 @@ class CropSteeringSelect(SelectEntity, RestoreEntity):
 
 
 class CropSteeringFeedStageSelect(SelectEntity):
-    """The feed stage in use: the name of one of the room's feed recipes. The recipes and the stage
-    live in the room's feed store; choosing here saves it there, and the controller doses that
-    recipe in the next batch. Unavailable until the room has a feed recipe."""
+    """The feed stage in use: the name of one of the room's feed recipes, the feed schedule's this
+    week, or one picked by hand. The recipes, the schedule and the stage live in the room's feed
+    store; picking here saves it there (with the schedule running, until its next week starts),
+    and the controller doses that recipe in the next batch. Unavailable until there is one.
+    """
 
     _attr_should_poll = False
     _attr_icon = "mdi:flask-round-bottom-outline"
@@ -286,7 +288,7 @@ class CropSteeringFeedStageSelect(SelectEntity):
             return None
         from .feed import recipe
 
-        chosen = recipe(manager.data)
+        chosen = recipe(manager.data, manager.in_use())
         return chosen["name"] if chosen else None
 
     @property

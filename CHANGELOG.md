@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gives, so 3 and 5 parts of 240 mL read 720 and 1,200 rather than 719.9 and 1,199.9. Beside a
   recipe's mL per litre per part, **1 part** sets the same as mL of nutrient in each fill, and the
   recipe says what that gives (Bloom: 5 × 240 = 1,200 mL).
+- **A feed schedule by week.** Strains differ (a week or three of veg, eight or ten of flower), so
+  each grow gets its own: the day Week 1 starts, its number of weeks and each week's recipe (Week 1
+  Vege, Weeks 2–6 Bloom, Weeks 7–8 Fade). The stage in use changes by itself at midnight as each week
+  starts, and the next refill doses that week's recipe; after the last week, its recipe carries on. A
+  stage picked by hand while it runs holds only until the next week starts, and the page says so;
+  removing the schedule keeps the stage in use as it was.
 
 ### 🔧 Technical notes
 
@@ -55,6 +61,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   order (Fade's doser in place of Core's), a recipe without an order taking the room's; in a real
   Home Assistant, a feed document stored by 2.31 loading in place with each recipe in the room's
   order, and a recipe saved with its own order changing the plan sensor's order.
+- Integration (`feed.py`, `feed_api.py`): the feed document gains `schedule` (`start`, the day Week 1
+  starts, and `weeks`, a recipe id each, at most `MAX_WEEKS` = 52, each a recipe the room has) and
+  `held_until`; one stored before them loads with no schedule. `schedule_week`, `held`, `in_use` and
+  `pick` give the stage in use; `plan(doc, mapped, today)` doses it and adds `week`, `weeks`,
+  `schedule_start`, `held_until` and `source`. The store's `today()` is Home Assistant's date;
+  `start()` rewrites the plan sensor and the stage select at its midnight
+  (`async_track_time_change`), and the select picks through `pick`. Stock tanks read the stage in
+  use. No change to the controller: it doses the plan's stage, as before.
+- Dashboard: the Reservoir page's Feed schedule (the day Week 1 starts, the number of weeks, a recipe
+  for each week, this week marked); the stage in use follows it, and one picked by hand says until
+  when it holds. `scheduleWeek`, `inUse`, `pickStage` and `removeSchedule` mirror `feed.py`.
+- Tests: the schedule's weeks (the owner's example), a pick held until the next week, the checks, an
+  old document with none; in a real Home Assistant, the plan sensor and the select moving on at the
+  midnight that starts a week, a pick in the select holding until then, and a document stored before
+  the schedule loading with none; the dashboard's helpers and a browser check.
 
 ## [2.31.0] - 2026-10-03
 

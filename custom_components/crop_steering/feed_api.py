@@ -3,8 +3,9 @@
 Response-only services addressed by canonical room id, like the stock tank services. Reading is
 open to any signed-in user; changing the settings or a feed recipe, or asking for a batch, needs an
 administrator. What the controller app runs is published as sensor.crop_steering_<prefix>feed_plan,
-rewritten whenever the settings change; the feed stage in use is also a select, so it can be changed
-from Home Assistant. A batch is asked for by pressing the room's Mix a Batch Now button (button.py),
+rewritten whenever the settings change and at each midnight (Home Assistant's), when the feed
+schedule's week, or a stage held by hand, may move the stage in use; that stage is also a select, so it
+can be picked from Home Assistant. A batch is asked for by pressing the room's Mix a Batch Now button (button.py),
 which the controller reads; feed_mix presses it for the dashboard. With `force`, the dashboard's test
 refill says the person checked that the fill fits: for FORCE_S the plan sensor carries
 `mix_force_until`, and the controller does not refuse that press for a fill that might not fit.
@@ -76,8 +77,32 @@ class FeedStore:
                 f"{error}"
             )
 
+    @staticmethod
+    def today():
+        """Today in Home Assistant's time zone: the feed schedule's weeks start at its midnight."""
+        from homeassistant.util import dt as dt_util
+
+        return dt_util.now().date()
+
     def plan(self) -> dict:
-        return feed.plan(self.data, self.mapped)
+        return feed.plan(self.data, self.mapped, self.today())
+
+    def in_use(self):
+        """The recipe in use today, by id (feed.in_use)."""
+        return feed.in_use(self.data, self.today())
+
+    def start(self):
+        """At each midnight, tell the entities: the schedule's week, or the end of a stage held by
+        hand, may have moved the stage in use. Returns the unsubscribe."""
+        from homeassistant.core import callback
+        from homeassistant.helpers.dispatcher import async_dispatcher_send
+        from homeassistant.helpers.event import async_track_time_change
+
+        @callback
+        def new_day(_now):
+            async_dispatcher_send(self.hass, f"{SIGNAL}_{self.entry.entry_id}")
+
+        return async_track_time_change(self.hass, new_day, hour=0, minute=0, second=1)
 
     def response(self):
         return {
@@ -139,7 +164,8 @@ class FeedStore:
         return {**self.response(), "requested": pressed.state if pressed else None}
 
     async def set_stage(self, name: str):
-        """The feed stage chosen by its recipe's name (the select in Home Assistant)."""
+        """The feed stage picked by its recipe's name (the select in Home Assistant). With the feed
+        schedule running, it holds until the schedule's next week starts (feed.pick)."""
         async with self._lock:
             if self.error:
                 raise ValueError(self.error)
@@ -148,9 +174,11 @@ class FeedStore:
             )
             if match is None:
                 raise ValueError(f"No feed recipe is called {name}")
-            if match["id"] != self.data["stage"]:
-                draft = deepcopy(self.data)
-                draft["stage"] = match["id"]
+            draft = feed.pick(deepcopy(self.data), match["id"], self.today())
+            if (draft["stage"], draft["held_until"]) != (
+                self.data["stage"],
+                self.data.get("held_until"),
+            ):
                 await self._commit(draft)
 
     async def _commit(self, draft):
@@ -188,6 +216,9 @@ async def async_setup_feed(hass, entry):
     manager = FeedStore(hass, entry)
     await manager.async_init()
     hass.data.setdefault(DOMAIN, {}).setdefault("_feed", {})[entry.entry_id] = manager
+    unsubscribe = manager.start()
+    if unsubscribe:
+        entry.async_on_unload(unsubscribe)
 
     async def handle(call):
         if call.service != "feed_get":

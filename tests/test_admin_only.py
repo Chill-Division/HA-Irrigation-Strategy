@@ -129,6 +129,7 @@ def rig(monkeypatch):
     batches = SimpleNamespace(
         room_id=ROOM,
         async_init=AsyncMock(),
+        start=MagicMock(return_value=None),
         response=MagicMock(return_value={"recipes": []}),
         save=AsyncMock(return_value={"recipes": []}),
         mix=AsyncMock(return_value={"recipes": []}),

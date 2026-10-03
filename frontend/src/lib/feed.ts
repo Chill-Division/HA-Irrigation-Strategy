@@ -44,6 +44,19 @@ export interface FeedPlan extends FeedSettings {
   doses: PlannedDose[];
   /** Why no batch can run, or null. */
   problem: string | null;
+  /** The feed schedule's week today (null without one running), and how many it has. */
+  week?: number | null;
+  weeks?: number;
+  schedule_start?: string | null;
+  /** Until when a stage picked by hand holds over the schedule, or null. */
+  held_until?: string | null;
+  /** How the stage in use came: the schedule's week, held by hand, or picked by hand. */
+  source?: "schedule" | "held" | "hand";
+}
+/** Each week of the grow's recipe, by id, from the day Week 1 starts (YYYY-MM-DD). */
+export interface FeedSchedule {
+  start: string | null;
+  weeks: string[];
 }
 /** What the editor changes and feed_save takes. */
 export interface FeedDraft extends FeedSettings {
@@ -51,8 +64,11 @@ export interface FeedDraft extends FeedSettings {
   /** The room's dosing order from before each recipe had its own: a recipe without one takes it. */
   order: number[];
   recipes: FeedRecipe[];
-  /** The id of the recipe in use. */
+  /** The recipe picked by hand, by id: the stage in use without a schedule running. */
   stage: string | null;
+  schedule: FeedSchedule;
+  /** A stage picked by hand while the schedule runs holds until this day (YYYY-MM-DD). */
+  held_until: string | null;
 }
 export interface FeedDocument extends FeedDraft {
   schema_version: 1;
@@ -118,6 +134,9 @@ export const draftOf = (doc: FeedDocument): FeedDraft =>
     // An integration from before each recipe had its own order sends the room's.
     recipes: doc.recipes.map((recipe) => ({ ...recipe, order: recipe.order ?? doc.order ?? [] })),
     stage: doc.stage,
+    // And one from before the feed schedule, none.
+    schedule: doc.schedule ?? { start: null, weeks: [] },
+    held_until: doc.held_until ?? null,
   });
 
 export const mappedNumbers = (mapped: Record<string, string>) =>
@@ -159,9 +178,69 @@ export function doseOf(draft: FeedDraft, recipe: FeedRecipe, doser: number) {
   return { ml, seconds: flow > 0 ? round1((ml / flow) * 60) : 0 };
 }
 
+const DAY_MS = 86_400_000;
+/** Today on this device, YYYY-MM-DD. */
+export function localDay(at = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`;
+}
+const dayNumber = (day: string) =>
+  Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10));
+const dayOf = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+/** `day` (YYYY-MM-DD) and `days` later. */
+export const addDays = (day: string, days: number) => dayOf(dayNumber(day) + days * DAY_MS);
+export const MAX_WEEKS = 52;
+
+/** feed.py schedule_week(): the feed schedule's week on `today` and the recipe it doses then, or
+ * null without a schedule (no first day, or no weeks) or before it starts. After its last week, the
+ * last week's recipe carries on. */
+export function scheduleWeek(
+  draft: Pick<FeedDraft, "schedule">,
+  today: string,
+): { week: number; recipe: string } | null {
+  const { start, weeks } = draft.schedule ?? { start: null, weeks: [] };
+  if (!start || !weeks.length) return null;
+  const days = Math.round((dayNumber(today) - dayNumber(start)) / DAY_MS);
+  if (days < 0) return null;
+  const week = Math.floor(days / 7) + 1;
+  return { week, recipe: weeks[Math.min(week, weeks.length) - 1] };
+}
+/** The day the schedule's `week` starts. */
+export const weekStarts = (draft: Pick<FeedDraft, "schedule">, week: number) =>
+  addDays(draft.schedule.start!, 7 * (week - 1));
+/** feed.py held(): until when a stage picked by hand holds over the schedule, or null. */
+export function heldUntil(draft: Pick<FeedDraft, "schedule" | "held_until">, today: string) {
+  return draft.held_until && scheduleWeek(draft, today) && today < draft.held_until
+    ? draft.held_until
+    : null;
+}
+/** feed.py in_use(): the recipe in use on `today`, by id. */
+export function inUse(draft: FeedDraft, today: string): string | null {
+  const now = scheduleWeek(draft, today);
+  return !now || heldUntil(draft, today) ? draft.stage : now.recipe;
+}
+/** feed.py pick(): a stage picked by hand holds, with the schedule running, until its next week
+ * starts (this week's own recipe ends a hold); without one, it is the stage. */
+export function pickStage(draft: FeedDraft, id: string | null, today: string): FeedDraft {
+  const now = scheduleWeek(draft, today);
+  return {
+    ...draft,
+    stage: id,
+    held_until: now && id !== now.recipe ? weekStarts(draft, now.week + 1) : null,
+  };
+}
+/** No schedule any more: the stage in use today stays, picked by hand from now on. */
+export const removeSchedule = (draft: FeedDraft, today: string): FeedDraft => ({
+  ...draft,
+  stage: inUse(draft, today),
+  schedule: { start: null, weeks: [] },
+  held_until: null,
+});
+
 /** feed.py plan(): what the next batch would dose, in its recipe's order, or why none can run. */
-export function planOf(draft: FeedDraft, mapped: number[]): FeedPlan {
-  const stage = draft.recipes.find((r) => r.id === draft.stage) ?? null;
+export function planOf(draft: FeedDraft, mapped: number[], today = localDay()): FeedPlan {
+  const id = inUse(draft, today);
+  const stage = draft.recipes.find((r) => r.id === id) ?? null;
   const doses: PlannedDose[] = [];
   let problem: string | null = null;
   if (!mapped.length) problem = "No doser is mapped in Settings → Rooms & hardware.";
@@ -181,12 +260,19 @@ export function planOf(draft: FeedDraft, mapped: number[]): FeedPlan {
     if (!problem && !doses.some((d) => d.ml > 0))
       problem = `${stage.name}'s strength is 0: nothing would be dosed.`;
   }
+  const now = scheduleWeek(draft, today),
+    held = heldUntil(draft, today);
   return {
     stage: stage?.name ?? null,
     stage_id: stage?.id ?? null,
     ...Object.fromEntries(Object.keys(SETTINGS).map((k) => [k, draft[k as keyof FeedSettings]])),
     doses,
     problem,
+    week: now?.week ?? null,
+    weeks: draft.schedule?.weeks.length ?? 0,
+    schedule_start: draft.schedule?.start ?? null,
+    held_until: held,
+    source: held ? "held" : now ? "schedule" : "hand",
   } as FeedPlan;
 }
 
@@ -238,6 +324,16 @@ export function draftErrors(draft: FeedDraft, maxRecipes = 12): string[] {
         `${label} comes to ${total.toFixed(1)} mL per litre; more than ${MAX_ML_PER_L} is refused as a likely typo in its strength or parts.`,
       );
   }
+  const ids = new Set(draft.recipes.map((recipe) => recipe.id));
+  const weeks = draft.schedule?.weeks ?? [];
+  if (weeks.length > MAX_WEEKS) errors.push(`A feed schedule has at most ${MAX_WEEKS} weeks.`);
+  const gone = weeks.flatMap((id, i) => (ids.has(id) ? [] : [i + 1]));
+  if (gone.length)
+    errors.push(
+      `Week${gone.length === 1 ? "" : "s"} ${gone.join(", ")} of the feed schedule ${gone.length === 1 ? "uses" : "use"} a recipe that is removed: choose another.`,
+    );
+  if (draft.schedule?.start && !/^\d{4}-\d{2}-\d{2}$/.test(draft.schedule.start))
+    errors.push("The day Week 1 starts on must be a date.");
   return errors;
 }
 

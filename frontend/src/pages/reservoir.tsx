@@ -6,6 +6,7 @@ import {
   Check,
   GripVertical,
   LoaderCircle,
+  Minus,
   Plus,
   Sparkles,
   Trash2,
@@ -22,18 +23,26 @@ import {
   draftOf,
   duration,
   flowOf,
+  heldUntil,
+  inUse,
   levelPct,
+  localDay,
   mappedNumbers,
+  MAX_WEEKS,
   moveTo,
   newRecipe,
   NUTRIENT_LINES,
   partMl,
   perLitre,
+  pickStage,
   planOf,
+  removeSchedule,
   RESERVOIR_KEYS,
+  scheduleWeek,
   doserOrder,
   SETTINGS,
   STAGE_NAMES,
+  weekStarts,
   type FeedDocument,
   type FeedDraft,
   type FeedPlan,
@@ -723,6 +732,195 @@ function RecipeCard({
   );
 }
 
+/** "Mon 5 Oct", for a day (YYYY-MM-DD). */
+const dayLabel = (day: string) =>
+  new Date(`${day}T12:00:00`).toLocaleDateString(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+
+/** The feed schedule: each week of the grow's recipe, from the day Week 1 starts (feed.py). Strains
+ * differ, so the weeks are as many as the grow needs; after the last, its recipe carries on. */
+function FeedSchedulePanel({
+  draft,
+  today,
+  onChange,
+}: {
+  draft: FeedDraft;
+  today: string;
+  onChange: (next: FeedDraft) => void;
+}) {
+  const id = useId();
+  const { start, weeks } = draft.schedule;
+  const recipes = draft.recipes;
+  const name = (recipe: string | null) => recipes.find((r) => r.id === recipe)?.name || "no recipe";
+  // A colour for each recipe, kept clear of red, amber and green (they mean state).
+  const tone = (recipe: string) =>
+    Math.max(
+      0,
+      recipes.findIndex((r) => r.id === recipe),
+    ) % 6;
+  const now = scheduleWeek(draft, today);
+  const held = heldUntil(draft, today);
+  const setSchedule = (change: Partial<FeedDraft["schedule"]>) =>
+    onChange({ ...draft, schedule: { ...draft.schedule, ...change } });
+  const count = (wanted: number) => {
+    if (!Number.isFinite(wanted)) return;
+    const target = Math.max(0, Math.min(MAX_WEEKS, Math.round(wanted)));
+    // A week added doses what the last one did; the first, the stage in use.
+    const fill = weeks[weeks.length - 1] ?? inUse(draft, today) ?? recipes[0]?.id;
+    if (target > weeks.length && !fill) return;
+    setSchedule({
+      weeks:
+        target > weeks.length
+          ? [...weeks, ...Array<string>(target - weeks.length).fill(fill!)]
+          : weeks.slice(0, target),
+    });
+  };
+  const next = now ? weeks[Math.min(now.week, weeks.length - 1)] : null;
+  const status = !weeks.length
+    ? "No schedule: the stage in use is the one picked by hand. Add weeks to start one."
+    : !start
+      ? "Set the day Week 1 starts on to run it."
+      : !now
+        ? `Starts on ${dayLabel(start)} with ${name(weeks[0])}. Until then, the stage is the one picked by hand.`
+        : held
+          ? `This week ${name(draft.stage)} is held by hand, until Week ${now.week + 1} starts on ${dayLabel(held)}; then the schedule's ${name(next)} takes over again. If you don't want the scheduled recipe, remove the schedule.`
+          : now.week < weeks.length
+            ? `This week: Week ${now.week} of ${weeks.length}, ${name(now.recipe)}. Week ${now.week + 1} (${name(weeks[now.week])}) starts on ${dayLabel(weekStarts(draft, now.week + 1))}.`
+            : now.week === weeks.length
+              ? `This week: Week ${now.week} of ${weeks.length}, ${name(now.recipe)}. After it, ${name(now.recipe)} carries on.`
+              : `Week ${now.week}: the schedule's ${weeks.length} weeks are done, and ${name(now.recipe)} carries on.`;
+  return (
+    <section className="panel workspace-card res-schedule" data-feed-schedule>
+      <div className="workspace-section-heading">
+        <div>
+          <h2>Feed schedule</h2>
+          <p className="muted small">
+            Each week of the grow doses its own recipe, from the day Week 1 starts; after the last
+            week, its recipe carries on. Strains differ: give this grow as many weeks as it needs.
+          </p>
+        </div>
+        {!!weeks.length && (
+          <Button variant="outline" onClick={() => onChange(removeSchedule(draft, today))}>
+            Remove the schedule
+          </Button>
+        )}
+      </div>
+      {!recipes.length ? (
+        <p className="muted">Add a feed recipe below first: each week doses one.</p>
+      ) : (
+        <>
+          <div className="res-schedule-controls">
+            <div>
+              <Label htmlFor={`${id}-start`}>Week 1 starts on</Label>
+              <Input
+                id={`${id}-start`}
+                type="date"
+                value={start ?? ""}
+                onChange={(event) => setSchedule({ start: event.target.value || null })}
+              />
+            </div>
+            <div>
+              <Label htmlFor={`${id}-weeks`}>Weeks</Label>
+              <div className="res-week-count">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="One week fewer"
+                  disabled={!weeks.length}
+                  onClick={() => count(weeks.length - 1)}
+                >
+                  <Minus size={16} />
+                </Button>
+                <Input
+                  id={`${id}-weeks`}
+                  type="number"
+                  min={0}
+                  max={MAX_WEEKS}
+                  step={1}
+                  value={String(weeks.length)}
+                  onChange={(event) => count(Number(event.target.value))}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="One more week"
+                  disabled={weeks.length >= MAX_WEEKS}
+                  onClick={() => count(weeks.length + 1)}
+                >
+                  <Plus size={16} />
+                </Button>
+              </div>
+            </div>
+          </div>
+          {!!weeks.length && (
+            <div
+              className="res-weeks-scroll"
+              tabIndex={0}
+              role="region"
+              aria-label="The feed schedule's weeks"
+            >
+              <ol className="res-weeks">
+                {weeks.map((recipe, index) => {
+                  const week = index + 1;
+                  const current =
+                    !!now &&
+                    (now.week === week || (now.week > weeks.length && week === weeks.length));
+                  return (
+                    <li
+                      key={index}
+                      className="res-week"
+                      data-week={week}
+                      data-tone={tone(recipe)}
+                      data-now={current ? "" : undefined}
+                    >
+                      <Label htmlFor={`${id}-week-${week}`}>
+                        Week {week}
+                        {current && <span className="res-week-now"> · now</span>}
+                      </Label>
+                      {start && (
+                        <small className="muted">{dayLabel(weekStarts(draft, week))}</small>
+                      )}
+                      <select
+                        id={`${id}-week-${week}`}
+                        className="res-select"
+                        value={recipe}
+                        onChange={(event) =>
+                          setSchedule({
+                            weeks: weeks.map((item, at) =>
+                              at === index ? event.target.value : item,
+                            ),
+                          })
+                        }
+                      >
+                        {!recipes.some((r) => r.id === recipe) && (
+                          <option value={recipe}>Removed recipe</option>
+                        )}
+                        {recipes.map((r, at) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name || `Recipe ${at + 1}`}
+                          </option>
+                        ))}
+                      </select>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
+          <p className="muted small res-schedule-status" data-schedule-status>
+            {status}
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
+
 export function Reservoir({
   controller,
   navigate,
@@ -774,8 +972,13 @@ export function Reservoir({
       : null;
   const mapped = doc ? mappedNumbers(doc.mapped) : [];
   const errors = draft && doc ? draftErrors(draft, doc.max_recipes) : [];
-  const preview = draft ? planOf(draft, mapped) : null;
-  const stage = draft?.recipes.find((r) => r.id === draft.stage);
+  const today = localDay();
+  const preview = draft ? planOf(draft, mapped, today) : null;
+  // The stage in use today: the feed schedule's this week, or the one picked by hand.
+  const using = draft ? inUse(draft, today) : null;
+  const stage = draft?.recipes.find((r) => r.id === using);
+  const week = draft ? scheduleWeek(draft, today) : null;
+  const holding = draft ? heldUntil(draft, today) : null;
 
   async function save() {
     if (!doc || !draft) return;
@@ -883,19 +1086,20 @@ export function Reservoir({
             pct={pct}
             mapped={reservoir}
           />
+          <FeedSchedulePanel draft={draft} today={today} onChange={setDraft} />
           <div className="res-columns">
             <section className="panel workspace-card res-stage">
               <h2>Feed stage</h2>
               <p className="muted small">
-                The recipe the next batch mixes. Change it when the room moves to its next stage,
-                and swap the bottles on the dosers if that stage uses other nutrients.
+                The recipe the next batch mixes: the feed schedule&apos;s this week, or one picked
+                here. Swap the bottles on the dosers if that stage uses other nutrients.
               </p>
               <Label htmlFor={`${listId}-stage`}>Stage in use</Label>
               <select
                 id={`${listId}-stage`}
                 className="res-select"
-                value={draft.stage ?? ""}
-                onChange={(event) => setDraft({ ...draft, stage: event.target.value || null })}
+                value={using ?? ""}
+                onChange={(event) => setDraft(pickStage(draft, event.target.value || null, today))}
               >
                 <option value="">None: no batches</option>
                 {draft.recipes.map((recipe, index) => (
@@ -904,6 +1108,20 @@ export function Reservoir({
                   </option>
                 ))}
               </select>
+              {week &&
+                (holding ? (
+                  <p className="workspace-message" data-stage-held>
+                    Held by hand only until Week {week.week + 1} starts on {dayLabel(holding)}; then
+                    the feed schedule takes over again. If you don&apos;t want the scheduled recipe,
+                    remove the schedule.
+                  </p>
+                ) : (
+                  <p className="muted small" data-stage-source>
+                    From the feed schedule: Week {week.week}. Another picked here holds only until
+                    the schedule&apos;s next week starts, on{" "}
+                    {dayLabel(weekStarts(draft, week.week + 1))}.
+                  </p>
+                ))}
               {preview?.problem ? (
                 <p className="workspace-message" data-feed-problem>
                   {preview.problem}

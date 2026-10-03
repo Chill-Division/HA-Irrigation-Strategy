@@ -3,7 +3,7 @@ runs from them (custom_components/crop_steering/feed.py, feed_api.py)."""
 
 import asyncio
 import copy
-from datetime import timedelta
+from datetime import date, timedelta
 import sys
 import types
 
@@ -403,3 +403,115 @@ def test_a_test_refill_run_anyway_says_so_on_the_plan_before_its_press(dispatche
 async def _press(order, calls, args):
     order.append("press")
     calls.append(args[:3])
+
+
+# ------------------------------------------------------------------ the feed schedule
+VEGE = {**copy.deepcopy(FLOWER), "id": "vege", "name": "Vege"}
+FADE = {**copy.deepcopy(FLOWER), "id": "fade", "name": "Fade"}
+# The owner's example: Week 1 Vege, Weeks 2-6 Bloom, Weeks 7-8 Fade, from Monday 5 October.
+WEEKS = ["vege"] + ["flower"] * 5 + ["fade"] * 2
+START = date(2026, 10, 5)
+
+
+def scheduled(**changes):
+    return settings(
+        **{
+            "recipes": [copy.deepcopy(FLOWER), VEGE, FADE],
+            "stage": "vege",
+            "schedule": {"start": START.isoformat(), "weeks": WEEKS},
+            **changes,
+        }
+    )
+
+
+def test_the_schedule_gives_each_week_its_recipe_and_the_last_carries_on():
+    doc = scheduled()
+    on = lambda days: feed.in_use(doc, START + timedelta(days=days))  # noqa: E731
+    assert feed.schedule_week(doc, START - timedelta(days=1)) is None  # not begun
+    assert (on(0), on(6), on(7), on(41), on(42), on(55)) == (
+        "vege",  # week 1, its first day
+        "vege",  # and its last
+        "flower",  # week 2
+        "flower",  # week 6
+        "fade",  # week 7
+        "fade",  # week 8
+    )
+    # After the last week, its recipe carries on.
+    assert feed.schedule_week(doc, START + timedelta(days=70)) == (11, "fade")
+    plan = feed.plan(doc, MAPPED, START + timedelta(days=9))
+    assert (plan["stage"], plan["week"], plan["weeks"], plan["source"]) == (
+        "Flower",
+        2,
+        8,
+        "schedule",
+    )
+    assert plan["schedule_start"] == "2026-10-05" and plan["held_until"] is None
+
+
+def test_without_a_schedule_or_before_it_starts_the_stage_is_the_one_picked_by_hand():
+    assert feed.in_use(settings(stage="flower"), START) == "flower"
+    early = scheduled()
+    # Before it starts, the stage picked by hand, as before.
+    assert feed.in_use(early, START - timedelta(days=3)) == "vege"
+    assert feed.plan(early, MAPPED, START - timedelta(days=3))["source"] == "hand"
+    # Weeks with no first day are no schedule.
+    half = scheduled(schedule={"start": None, "weeks": WEEKS})
+    assert feed.schedule_week(half, START) is None
+
+
+def test_a_stage_picked_by_hand_holds_until_the_schedules_next_week():
+    doc = scheduled()
+    wednesday = START + timedelta(days=9)  # week 2: Flower
+    feed.pick(doc, "fade", wednesday)
+    assert doc["held_until"] == "2026-10-19"  # week 3 starts
+    assert feed.in_use(doc, wednesday) == "fade"
+    plan = feed.plan(doc, MAPPED, wednesday)
+    assert (plan["stage"], plan["source"], plan["held_until"]) == (
+        "Fade",
+        "held",
+        "2026-10-19",
+    )
+    # Week 3: the schedule takes over again.
+    assert feed.in_use(doc, date(2026, 10, 19)) == "flower"
+    feed.pick(doc, "flower", wednesday)  # this week's own recipe: no hold
+    assert doc["held_until"] is None
+    without = feed.pick(settings(), "flower", wednesday)
+    assert without["stage"] == "flower" and without["held_until"] is None
+
+
+@pytest.mark.parametrize(
+    "schedule, reason",
+    [
+        (
+            {"start": "2026-10-05", "weeks": ["vege", "gone"]},
+            "Week 2 of the feed schedule uses a feed recipe that is not there",
+        ),
+        ({"start": "5/10/2026", "weeks": ["vege"]}, "first week must be a date"),
+        ({"start": None, "weeks": ["vege"] * 53}, "at most 52 weeks"),
+        ("weekly", "The feed schedule must be an object"),
+    ],
+)
+def test_a_schedule_that_does_not_make_sense_is_refused(schedule, reason):
+    with pytest.raises(ValueError, match=reason):
+        scheduled(schedule=schedule)
+
+
+def test_a_document_saved_before_the_schedule_loads_with_none():
+    doc = settings()
+    assert doc["schedule"] == {"start": None, "weeks": []} and doc["held_until"] is None
+    assert feed.plan(doc, MAPPED, START)["source"] == "hand"
+
+
+def test_the_select_picks_a_stage_that_holds_until_next_week(dispatcher):
+    """The stubs' today is 1 January 2026, a Thursday in week 1 of a schedule from 29 December."""
+    store = rig()
+    save(
+        store,
+        recipes=[copy.deepcopy(FLOWER), VEGE],
+        stage="vege",
+        schedule={"start": "2025-12-29", "weeks": ["vege", "flower"]},
+    )
+    assert store.in_use() == "vege" and store.plan()["week"] == 1
+    asyncio.run(store.set_stage("Flower"))
+    assert store.data["held_until"] == "2026-01-05" and store.in_use() == "flower"
+    assert store.plan()["source"] == "held"

@@ -19,6 +19,11 @@ part in 145 L is 725 mL Core, 1208 mL Bloom, 242 mL Balance and 121 mL Cleanse.
 
 Each recipe has its own dosing order: a stage can use a doser the others leave out (Fade in place of
 Core). A recipe saved before it had one takes the room's order, which this module kept until then.
+
+The stage in use: a feed schedule gives each week of the grow a recipe (Week 1 Vege, Weeks 2-6 Bloom,
+Weeks 7-8 Fade), from the day its first week starts; after its last week, that week's recipe carries on.
+A stage picked by hand while it runs holds until the schedule's next week starts. Without a schedule,
+the stage is the one picked by hand.
 """
 
 from __future__ import annotations
@@ -26,10 +31,12 @@ from __future__ import annotations
 import math
 import re
 import uuid
+from datetime import date, timedelta
 
 from .room import DOSER_KEYS, MAX_DOSERS, RESERVOIR_KEYS  # noqa: F401 (the one list)
 
 MAX_RECIPES = 12
+MAX_WEEKS = 52  # a feed schedule's weeks
 NAME_LEN = 40
 DEFAULT_FLOW = 600.0  # mL/min, a doser's flow until it is calibrated
 # field -> (lowest, highest, whole number)
@@ -83,7 +90,10 @@ def empty() -> dict:
         # The room's dosing order, from before each recipe had its own: a recipe without one takes it.
         "order": [],
         "recipes": [],
-        "stage": None,
+        "stage": None,  # the recipe picked by hand
+        # Each week's recipe from the day the first week starts; none = no schedule.
+        "schedule": {"start": None, "weeks": []},
+        "held_until": None,  # a stage picked by hand while the schedule runs holds until this day
     }
 
 
@@ -218,6 +228,84 @@ def clean(payload, old: dict | None = None) -> dict:
         )
     stage = payload.get("stage", old.get("stage"))
     doc["stage"] = stage if stage in ids else None
+    schedule = payload.get("schedule", old.get("schedule")) or {}
+    if not isinstance(schedule, dict):
+        raise ValueError("The feed schedule must be an object")
+    weeks = schedule.get("weeks") or []
+    if not isinstance(weeks, list) or len(weeks) > MAX_WEEKS:
+        raise ValueError(f"A feed schedule has at most {MAX_WEEKS} weeks")
+    for number, recipe_id in enumerate(weeks, start=1):
+        if recipe_id not in ids:
+            raise ValueError(
+                f"Week {number} of the feed schedule uses a feed recipe that is not there"
+            )
+    doc["schedule"] = {
+        "start": _day(schedule.get("start"), "The feed schedule's first week"),
+        "weeks": list(weeks),
+    }
+    doc["held_until"] = _day(
+        payload.get("held_until", old.get("held_until")), "A stage held by hand"
+    )
+    return doc
+
+
+def _day(value, what) -> str | None:
+    """A day, YYYY-MM-DD, or None."""
+    if value in (None, ""):
+        return None
+    try:
+        return date.fromisoformat(str(value)).isoformat()
+    except ValueError:
+        raise ValueError(f"{what} must be a date") from None
+
+
+def schedule_week(doc: dict, today: date) -> tuple[int, str] | None:
+    """The feed schedule's week today and the recipe it doses then, by id; None without a schedule
+    (no first day, or no weeks) or before it starts. Week 1 is the 7 days from its first day; after
+    its last week, the last week's recipe carries on."""
+    schedule = doc.get("schedule") or {}
+    start, weeks = schedule.get("start"), schedule.get("weeks") or []
+    if not start or not weeks:
+        return None
+    days = (today - date.fromisoformat(start)).days
+    if days < 0:
+        return None
+    week = days // 7 + 1
+    return week, weeks[min(week, len(weeks)) - 1]
+
+
+def week_starts(doc: dict, week: int) -> date:
+    """The day the feed schedule's `week` starts."""
+    return date.fromisoformat(doc["schedule"]["start"]) + timedelta(days=7 * (week - 1))
+
+
+def held(doc: dict, today: date) -> str | None:
+    """Until when a stage picked by hand holds over the schedule (YYYY-MM-DD), or None."""
+    until = doc.get("held_until")
+    if until and schedule_week(doc, today) and today < date.fromisoformat(until):
+        return until
+    return None
+
+
+def in_use(doc: dict, today: date) -> str | None:
+    """The recipe in use today, by id: the schedule's this week, unless a stage picked by hand still
+    holds; without a schedule running, the stage picked by hand."""
+    now = schedule_week(doc, today)
+    if now is None or held(doc, today):
+        return doc.get("stage")
+    return now[1]
+
+
+def pick(doc: dict, recipe_id, today: date) -> dict:
+    """A stage picked by hand, in `doc`: with the schedule running it holds until the schedule's next
+    week starts (this week's own recipe ends a hold); without one it is the stage."""
+    doc["stage"] = recipe_id
+    now = schedule_week(doc, today)
+    doc["held_until"] = (
+        week_starts(doc, now[0] + 1).isoformat()
+        if now is not None and recipe_id != now[1]
+        else None
+    )
     return doc
 
 
@@ -254,12 +342,16 @@ def recipe(doc: dict, recipe_id=None) -> dict | None:
     return next((item for item in doc.get("recipes", []) if item["id"] == wanted), None)
 
 
-def plan(doc: dict, mapped: dict[int, str]) -> dict:
+def plan(doc: dict, mapped: dict[int, str], today: date | None = None) -> dict:
     """What the controller runs for this room's next batch: the batch settings and, in the order of
-    the stage in use, each doser's nutrient, mL (whole) and seconds for that stage. `problem` says why no batch
+    the stage in use, each doser's nutrient, mL (whole) and seconds for that stage. `today` (the day
+    in Home Assistant's time zone) picks the stage in use; `week`, `weeks`, `schedule_start`,
+    `held_until` and `source` ("schedule", "held" or "hand") say how. `problem` says why no batch
     can run, or is None. `mapped` is the room's doser switches by number (Rooms & hardware).
     """
-    stage = recipe(doc)
+    today = today or date.today()
+    stage = recipe(doc, in_use(doc, today))
+    now, holding = schedule_week(doc, today), held(doc, today)
     doses, problem = [], None
     if not mapped:
         problem = "No doser is mapped in Settings → Rooms & hardware."
@@ -288,10 +380,16 @@ def plan(doc: dict, mapped: dict[int, str]) -> dict:
             )
         if not problem and not any(dose["ml"] > 0 for dose in doses):
             problem = f"{stage['name']}'s strength is 0: nothing would be dosed."
+    schedule = doc.get("schedule") or {}
     return {
         "stage": stage["name"] if stage else None,
         "stage_id": stage["id"] if stage else None,
         **{key: doc[key] for key in SETTINGS},
         "doses": doses,
         "problem": problem,
+        "week": now[0] if now else None,
+        "weeks": len(schedule.get("weeks") or []),
+        "schedule_start": schedule.get("start"),
+        "held_until": holding,
+        "source": "held" if holding else "schedule" if now else "hand",
     }
