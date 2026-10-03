@@ -31,6 +31,9 @@ export interface BatchStatus {
   stage: string | null;
   /** When the step in progress ends (epoch ms). */
   until: number | null;
+  /** When the fresh water stops (epoch ms), the doses going in before then; null once it has, and from
+   * an older controller, which stopped it before the first dose. */
+  fillUntil: number | null;
   doser: number | null;
   nutrient: string | null;
   doses: BatchDose[];
@@ -91,6 +94,7 @@ export function readBatchStatus(states: States, prefix: string): BatchStatus | n
     step,
     stage: text(a.stage),
     until: time(a.until),
+    fillUntil: time(a.fill_until),
     doser: finite(a.doser),
     nutrient: text(a.nutrient),
     doses: Array.isArray(a.doses)

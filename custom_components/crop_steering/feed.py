@@ -3,8 +3,9 @@
 Pure, no Home Assistant, so the rules are testable on their own (feed_api.py stores and serves them).
 
 A batch refills the room's reservoir with fresh water for a set time, and half-way through starts the
-pump through the recirculation line. Once the fresh water stops it doses each doser the stage's recipe
-uses, in that recipe's order, one after the other a pause apart, then recirculates a little longer.
+pump through the recirculation line. A pause later, while the fresh water still runs, it doses each
+doser the stage's recipe uses, in that recipe's order, one after the other a pause apart, and it
+recirculates until the fresh water stops, and at least a little after the last dose.
 The controller app runs it; this module says what it runs.
 
 The reservoir's level: a distance sensor above the water reads further as it empties. Its distances

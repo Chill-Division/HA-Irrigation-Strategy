@@ -34,12 +34,13 @@
 .res-steps {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-start;
   gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.res-steps li {
+.res-steps > li {
   display: grid;
   grid-template-columns: auto 1fr;
   column-gap: 8px;
@@ -51,12 +52,17 @@
   background: var(--muted);
   font-size: var(--text-sm);
 }
-.res-steps li[data-state="now"] {
+.res-steps > li[data-state="now"] {
   border-color: var(--primary);
   background: var(--secondary);
 }
-.res-steps li[data-state="done"] {
+.res-steps > li[data-state="done"] {
   color: var(--muted-foreground);
+}
+/* The fill's mixing half, with the doses that go in during it inside it, as wide as they are. */
+.res-steps-group > ol {
+  grid-column: 1 / -1;
+  margin-top: 8px;
 }
 .res-step-dot {
   display: inline-flex;
@@ -68,12 +74,12 @@
   border-radius: 999px;
   border: 1.5px solid var(--muted-foreground);
 }
-.res-steps li[data-state="now"] .res-step-dot {
+.res-steps > li[data-state="now"] > .res-step-dot {
   border-color: var(--primary);
   background: var(--primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
 }
-.res-steps li[data-state="done"] .res-step-dot {
+.res-steps > li[data-state="done"] > .res-step-dot {
   border-color: var(--success);
   background: var(--success);
   color: var(--surface);

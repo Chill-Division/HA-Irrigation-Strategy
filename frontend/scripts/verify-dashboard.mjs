@@ -431,10 +431,12 @@ try {
     const batch = page.locator("[data-batch-status]");
     await expectVisible(batch);
     assert.equal(await batch.getAttribute("data-batch-status"), "idle");
-    // Fill, fill and mix (the pump from half-way), one chip per dose in the room's order, recirculate.
+    // Fill, then fill and mix (the pump from half-way) with a chip inside it for each dose, in the
+    // recipe's order: the doses go in while it fills, and all fit, so it ends with the fill.
     const steps = () => batch.locator(".res-step-label").allInnerTexts();
     const fill = ["Fill", "Fill and mix"];
-    assert.deepEqual(await steps(), [...fill, "Core", "Bloom", "Balance", "Cleanse", "Recirculate"]);
+    assert.deepEqual(await steps(), [...fill, "Core", "Bloom", "Balance", "Cleanse"]);
+    assert.equal(await batch.locator(".res-steps-group .res-step-label").count(), 5);
     // The level is the distance between the distances when full and empty: 640 mm of 125-850 is 29%.
     await expectVisible(
       batch.getByRole("img", { name: "The reservoir is 29% full; it keeps at least 5%" }),
@@ -504,7 +506,7 @@ try {
     assert.equal(await bar.count(), 0);
     const stages = await page.getByLabel("Stage in use").locator("option").allInnerTexts();
     assert.deepEqual(stages, ["None: no batches", "Flower", "Vege"]);
-    assert.deepEqual(await steps(), [...fill, "Cleanse", "Bloom", "Balance", "Core", "Recirculate"]);
+    assert.deepEqual(await steps(), [...fill, "Cleanse", "Bloom", "Balance", "Core"]);
 
     await batch.getByRole("button", { name: "Refill by hand…" }).click();
     await tests.getByRole("button", { name: "Run a test refill" }).click();

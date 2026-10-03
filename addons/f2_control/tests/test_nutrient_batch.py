@@ -1,7 +1,8 @@
 """A room's reservoir refill, run by the controller: the fresh water for its fill time, the pump and the
 recirculation line joining it half-way once the level shows it is filling, each doser run in the
-room's order for its planned seconds a pause apart as soon as the fresh water stops, a short
-recirculation after the last, and everything switched off in the right order. It starts when "Mix a
+recipe's order for its planned seconds a pause apart while it still fills (the first one pause after
+the pump starts), recirculation until the fill's end and at least a little after the last dose, and
+everything switched off in the right order. It starts when "Mix a
 Batch Now" is pressed, or by itself when the room's next round of shots would take the reservoir under
 its minimum; it refuses to start, and stops part-way, with a reason, whenever that is not safe.
 
@@ -40,6 +41,9 @@ FLOWER = {
         {"doser": 1, "label": "Cleanse", "ml": 50.0, "seconds": 5.0},
     ],
 }
+# A fill long enough for its doses: its second half (60 s) holds the first one's pause, both doses and
+# the pause between them (35 s), and the mix after the last (10 s).
+ROOMY = {**FLOWER, "fill_s": 120}
 
 
 def mm(pct):
@@ -148,23 +152,28 @@ def _to_end(c, fake, room, pct=88.0):
 
 
 # ---------------------------------------------------------------- the sequence
-def test_a_pressed_button_fills_starts_the_pump_half_way_doses_in_order_and_switches_off_in_order():
-    c, fake, room = _room()
+def test_a_pressed_button_fills_starts_the_pump_half_way_doses_while_it_fills_and_switches_off_in_order():
+    c, fake, room = _room(plan=ROOMY)
     _tick(c, room)  # the button as first seen: never pressed
     assert room.batch["step"] == "idle"
     _press(c, fake, room)
     assert room.batch["step"] == "filling" and fake.states[FRESH][0] == "on"
     fake.calls.clear()
+    _level(fake, 88.0)
+    while room.batch["step"] != "dosing":
+        _step_on(c, room)
+    # the first dose goes in while the fresh water still runs, the tank circulating
+    assert [fake.states[e][0] for e in (FRESH, PUMP, RECIRC, DOSER[2])] == ["on"] * 4
     _to_end(c, fake, room)
     assert _switched(fake) == [
         (RECIRC, "turn_on"),  # half-way, with the fresh water still running: the line before the pump
         (PUMP, "turn_on"),
-        (FRESH, "turn_off"),  # the fill ends, and dosing starts at once
-        (DOSER[2], "turn_on"),  # the room's order: Bloom first
+        (DOSER[2], "turn_on"),  # one pause later, the recipe's order: Bloom first
         (DOSER[2], "turn_off"),
         (DOSER[1], "turn_on"),
         (DOSER[1], "turn_off"),
-        (PUMP, "turn_off"),  # after the last recirculation the pump stops before its line closes
+        (FRESH, "turn_off"),  # the fill ends
+        (PUMP, "turn_off"),  # and the pump stops before its line closes
         (RECIRC, "turn_off"),
     ]
     last = room.batch["last"]
@@ -173,11 +182,11 @@ def test_a_pressed_button_fills_starts_the_pump_half_way_doses_in_order_and_swit
     assert all(fake.states[e][0] == "off" for e in (FRESH, RECIRC, PUMP, *DOSER.values()))
 
 
-def test_each_step_lasts_what_the_plan_says():
-    c, fake, room = _room()
+def test_each_step_lasts_what_the_plan_says_and_it_is_all_done_when_the_fill_ends():
+    c, fake, room = _room(plan=ROOMY)
     _tick(c, room)
     _press(c, fake, room)
-    start = _Clock.now()
+    began = start = _Clock.now()
     seen = []
     _level(fake, 88.0)
     while room.batch["step"] != "idle":
@@ -185,10 +194,35 @@ def test_each_step_lasts_what_the_plan_says():
         seen.append((room.batch["step"], round((until - start).total_seconds())))
         _step_on(c, room)
         start = _Clock.now()
-    # the 60 s fill in two halves, Bloom 10 s, a 10 s pause, Cleanse 5 s, then 10 s of recirculation;
-    # each measured from when its step began (the switch read-backs take a second or so each)
+    # half the 120 s fill, a pause before the first dose, Bloom 10 s, a 10 s pause, Cleanse 5 s, each
+    # measured from when its step began (the switch read-backs take a second or so each); then it
+    # recirculates until the fill's end, and the whole refill takes its fill time
     assert [step for step, _ in seen] == ["filling", "filling_mixing", "dosing", "pausing", "dosing", "mixing"]
-    assert [seconds for _, seconds in seen] == pytest.approx([30, 30, 10, 10, 5, 10], abs=3)
+    assert [seconds for _, seconds in seen[:5]] == pytest.approx([60, 10, 10, 10, 5], abs=3)
+    assert seen[5][1] >= 10
+    assert (_Clock.now() - began).total_seconds() == pytest.approx(120, abs=3)
+
+
+def test_doses_that_outlast_the_fill_go_on_after_the_fresh_water_stops_on_time():
+    # 40 s: its second half is over part-way through Bloom
+    c, fake, room = _room(plan={**FLOWER, "fill_s": 40})
+    _tick(c, room)
+    _press(c, fake, room)
+    _level(fake, 88.0)
+    while room.batch["step"] != "dosing":
+        _step_on(c, room)
+    fill_end = datetime.fromisoformat(room.batch["fill_end"])
+    assert fill_end < datetime.fromisoformat(room.batch["until"])
+    # the loop wakes when the fill ends, not when Bloom does
+    assert c._sleep_for(_Clock.now()) == pytest.approx((fill_end - _Clock.now()).total_seconds(), abs=0.5)
+    _Clock.current = fill_end
+    _tick(c, room)
+    assert room.batch["step"] == "dosing" and room.batch["fill_end"] is None
+    assert [fake.states[e][0] for e in (FRESH, DOSER[2], PUMP)] == ["off", "on", "on"]
+    _to_end(c, fake, room)
+    last = room.batch["last"]
+    assert last["result"] == "done" and last["dosed"] == {"2": 100.0, "1": 50.0}
+    assert all(fake.states[e][0] == "off" for e in (FRESH, RECIRC, PUMP, *DOSER.values()))
 
 
 def test_half_way_a_reservoir_that_is_not_filling_stops_before_the_pump_runs_from_it():
@@ -602,10 +636,11 @@ def test_switching_watering_off_mid_dose_stops_it_and_counts_what_went_in():
     while room.batch["step"] != "dosing":
         _step_on(c, room)
     _later(4)  # Bloom has run about 4 of its 10 s
+    assert fake.states[FRESH][0] == "on"  # the doses go in while it fills
     fake.set_state(KILL, "off")
     _tick(c, room)
     assert room.batch["step"] == "idle"
-    assert all(fake.states[e][0] == "off" for e in (DOSER[2], PUMP, RECIRC))
+    assert all(fake.states[e][0] == "off" for e in (DOSER[2], FRESH, PUMP, RECIRC))
     assert 30 <= room.batch["last"]["dosed"]["2"] <= 70  # 100 mL in 10 s, stopped part-way
     (note,) = _alerts(fake, "CS-701")
     assert "while dosing" in note["message"] and "was switched off" in note["message"]
@@ -665,8 +700,13 @@ def test_while_it_refills_the_rooms_shots_wait_and_other_rooms_while_it_fills_or
     assert c._batch_hold(other) == "waiting for GR1's reservoir refill (filling and mixing)"
     _step_on(c, room)
     assert c._batch_hold(other) == "waiting for GR1's reservoir refill (dosing)"
-    _step_on(c, room)  # between dosers: nothing timed runs
-    assert c._batch_hold(room) == "refilling its reservoir (between dosers)"
+    _step_on(c, room)  # between dosers, with the fresh water still running
+    assert c._batch_hold(other) == "waiting for GR1's reservoir refill (between dosers)"
+    while room.batch["step"] != "mixing":
+        _step_on(c, room)
+    # recirculating once the fill has ended and the last dose is in: nothing timed runs
+    assert room.batch["fill_end"] is None
+    assert c._batch_hold(room) == "refilling its reservoir (mixing)"
     assert c._batch_hold(other) is None
 
 
@@ -748,7 +788,11 @@ def test_the_status_sensor_says_how_full_it_is_what_runs_and_what_went_in():
     until = datetime.fromisoformat(attrs["until"])
     assert state == "filling" and until.utcoffset() is not None and attrs["due"] is None
     assert abs((until - datetime.fromisoformat(room.batch["until"]).astimezone()).total_seconds()) < 1
+    # when the fresh water stops: the doses go in before then
+    fill_until = datetime.fromisoformat(attrs["fill_until"])
+    assert abs((fill_until - datetime.fromisoformat(room.batch["fill_end"]).astimezone()).total_seconds()) < 1
     _to_end(c, fake, room)
+    assert fake.sets[STATUS][1]["fill_until"] is None
     last = fake.sets[STATUS][1]["last"]
     assert last["result"] == "done" and datetime.fromisoformat(last["at"]).utcoffset() is not None
     assert last["dosed"] == {"2": 100.0, "1": 50.0}
