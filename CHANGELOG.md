@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sensor has not reported for 10 minutes it counts as reading nothing: no refill starts on that old
   value, by itself or asked for; a refill already filling stops half-way, before the pump runs; and
   after 5 more minutes a notice says so. The Overview and the Reservoir page show no reading too.
+- **Each feed recipe doses in its own order.** A stage can use a doser the others leave out (the
+  Fade bottle's doser in place of Core's, in the Fade weeks): drag a recipe's rows into the order
+  they dose. The Dosers section keeps only each doser's flow. A recipe saved before this keeps the
+  order the room had.
+- **Whole millilitres, and what 1 part is.** Doses are to the whole mL, which is as fine as a doser
+  gives, so 3 and 5 parts of 240 mL read 720 and 1,200 rather than 719.9 and 1,199.9. Beside a
+  recipe's mL per litre per part, **1 part** sets the same as mL of nutrient in each fill, and the
+  recipe says what that gives (Bloom: 5 × 240 = 1,200 mL).
 
 ### 🔧 Technical notes
 
@@ -35,6 +43,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard: once the controller publishes `batch_status`, the Reservoir page, the Tests dialog and
   the Overview's tank card take its level (null = no reading) rather than the sensor's own state.
 - Error codes: CS-705's meaning and causes name a sensor that stopped reporting.
+- Integration (`feed.py`): each recipe has `order`, its dosers in the order they dose, checked like
+  the room's; one stored or sent without it takes the room's `order`, which is kept for that.
+  `plan()` doses in `recipe_order(stage, mapped)` and gives each dose's `ml` to the whole mL
+  (`whole_ml`, halves up). No change to the controller: it doses in the plan's order.
+- Dashboard: a recipe's rows drag (or move with arrows) into its order, each with its turn; the
+  Dosers section keeps each doser's flow. **1 part (mL)** beside the strength sets the strength from
+  mL of nutrient per fill (`partMl`); doses and totals show whole mL. `doseOf` and `planOf` round as
+  `feed.py` does.
+- Tests: whole mL (the owner's 1.655 mL/L per part in 145 L gives 720 and 1,200), a recipe's own
+  order (Fade's doser in place of Core's), a recipe without an order taking the room's; in a real
+  Home Assistant, a feed document stored by 2.31 loading in place with each recipe in the room's
+  order, and a recipe saved with its own order changing the plan sensor's order.
 
 ## [2.31.0] - 2026-10-03
 

@@ -2,6 +2,7 @@
 
 - **The dashboard the app serves:** each zone's line on Today's grow day wraps on a laptop too. No change to the controller.
 - **A level sensor that stops reporting is not trusted.** The reservoir's level reads as nothing once its sensor's `last_reported` (Home Assistant moves it at every report, the same value or not) is more than 10 minutes old: no refill starts on it, a refill filling stops at the half-way check, and CS-705 follows. No new options; no change to the state file. **The dashboard the app serves** shows the controller's level, or none.
+- **The dashboard the app serves:** each feed recipe has its own dosing order, set by dragging its rows; doses show whole mL, with what 1 part is. The controller doses in the feed plan's order, as before, and the plan's doses are now whole mL. No change to the controller.
 
 # 2.31.0
 
