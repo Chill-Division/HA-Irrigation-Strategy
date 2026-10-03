@@ -87,9 +87,12 @@ export function RoomTests({
         : null;
   // What the controller checks before a refill asked for by hand (controller.py _fill_overflow).
   const sensor = attributes.reservoir_distance_sensor;
-  const level =
-    status?.levelMm ??
-    (typeof sensor === "string" && sensor ? levelMm(controller.states[sensor]) : null);
+  // The controller's reading once it reports, as on the Reservoir page.
+  const level = status
+    ? status.levelMm
+    : typeof sensor === "string" && sensor
+      ? levelMm(controller.states[sensor])
+      : null;
   const plan = doc?.plan;
   // An integration from before the reservoir's distances sends none.
   const levelSetUp =
@@ -98,7 +101,11 @@ export function RoomTests({
     !!plan &&
     (plan.full_mm ?? 0) > 0 &&
     plan.full_mm < plan.empty_mm;
-  const pct = plan ? (status?.levelPct ?? levelPct(level, plan.full_mm ?? 0, plan.empty_mm)) : null;
+  const pct = !plan
+    ? null
+    : status
+      ? status.levelPct
+      : levelPct(level, plan.full_mm ?? 0, plan.empty_mm);
   const refusal = plan
     ? fillRefusal(pct, levelSetUp, plan.batch_l, plan.min_pct ?? 0, status?.litresPerPct ?? null)
     : null;

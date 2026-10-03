@@ -45,6 +45,20 @@ describe("room tank telemetry", () => {
     expect(tank.lastFill.timestamp).toBe("2026-09-08T06:00:00.000Z");
     // Flower 1 has no reservoir level: its mapped level sensor in %.
     expect(tankTelemetry(states, { ...room, prefix: "f1_" }, now).level.value).toBe(72);
+    // The controller's reading is the one: a sensor it no longer reads (stopped reporting) still shows
+    // its last value in Home Assistant, but the card says it is not reading.
+    const status = states["sensor.crop_steering_batch_status"];
+    states[status.entity_id] = {
+      ...status,
+      attributes: { ...status.attributes, level_mm: null, level_pct: null },
+    };
+    expect(tankTelemetry(states, room, now).level).toMatchObject({
+      value: null,
+      issue: "Unavailable",
+    });
+    // Before the controller reports, the sensor's own reading, worked out the same way.
+    delete states[status.entity_id];
+    expect(tankTelemetry(states, room, now).level.value).toBe(29);
     states["sensor.demo_reservoir_distance"] = {
       ...states["sensor.demo_reservoir_distance"],
       state: "unavailable",

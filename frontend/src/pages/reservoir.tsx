@@ -697,9 +697,13 @@ export function Reservoir({
   const reservoir = RESERVOIR_KEYS.some((key) => attributes[key]);
   const status = readBatchStatus(controller.states, controller.room.room.prefix);
   const sensor = attributes.reservoir_distance_sensor;
-  const level =
-    status?.levelMm ??
-    (typeof sensor === "string" && sensor ? levelMm(controller.states[sensor]) : null);
+  // Once the controller reports, its reading is the one: none there (the sensor reads nothing, or has
+  // not reported for 10 minutes) is none here, whatever the sensor still shows.
+  const level = status
+    ? status.levelMm
+    : typeof sensor === "string" && sensor
+      ? levelMm(controller.states[sensor])
+      : null;
   const mapped = doc ? mappedNumbers(doc.mapped) : [];
   const errors = draft && doc ? draftErrors(draft, doc.max_recipes) : [];
   const preview = draft ? planOf(draft, mapped) : null;
@@ -769,8 +773,11 @@ export function Reservoir({
       .map(([n]) => Number(n));
     return [...roomOrder(draft!.order, mapped), ...used.sort((a, b) => a - b)];
   };
-  const pct =
-    status?.levelPct ?? (doc ? levelPct(level, doc.plan.full_mm ?? 0, doc.plan.empty_mm) : null);
+  const pct = status
+    ? status.levelPct
+    : doc
+      ? levelPct(level, doc.plan.full_mm ?? 0, doc.plan.empty_mm)
+      : null;
 
   return (
     <>
