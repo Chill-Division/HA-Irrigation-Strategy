@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The reservoir's level reads again while it holds steady.** 2.32.0 judged the level sensor's last report from the REST state's `last_reported`, which Home Assistant does not renew in the JSON it serves while a sensor reports the same value: a level steady for 10 minutes read as nothing (no refill by hand, the next shot not held at the minimum). `ha_reported` now reads it live through the template API; when that can't be told, the reading stands. No new options; no change to the state file.
+
 # 2.32.0
 
 Pair with integration 2.32.0.
