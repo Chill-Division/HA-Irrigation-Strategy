@@ -21,7 +21,7 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
-## Unreleased
+## 2.32.0 - 2026-10-03
 
 - On a laptop, each zone's line on Today's grow day now wraps, so you can read all of it without pointing at it.
 - A reservoir level sensor that stops reporting for 10 minutes counts as not reading, so no refill starts on an old reading.

@@ -1,6 +1,6 @@
 # Crop Steering for Home Assistant
 
-![Release](https://img.shields.io/badge/Release-2.31.0-blue)
+![Release](https://img.shields.io/badge/Release-2.32.0-blue)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.5+-41BDF5)
 ![HACS](https://img.shields.io/badge/HACS-Custom-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
