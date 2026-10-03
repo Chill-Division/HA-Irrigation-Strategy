@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- On a laptop, each zone's line on Today's grow day now wraps, so you can read all of it without pointing at it.
+
 ## 2.31.0 - 2026-10-03
 
 - The reservoir never runs dry: a refill starts before the next shots would take it under its minimum, or watering waits there.

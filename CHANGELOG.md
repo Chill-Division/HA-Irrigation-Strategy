@@ -9,6 +9,20 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **Each zone's line on Today's grow day wraps on a laptop too.** On a wide screen it stopped at
+  the edge with "…", and the rest was only in its tooltip; now all of it shows, as on a phone. A
+  room with several zones can make the Overview a little taller.
+
+### 🔧 Technical notes
+
+- Dashboard: `.timeline-zone-line` is no longer `nowrap` with an ellipsis at 1024 px and wider.
+  The Overview's two-screen browser checks (`verify-dashboard.mjs`, `verify-tank-status.mjs`) leave
+  what the zone lines add by wrapping out of the height they measure.
+
 ## [2.31.0] - 2026-10-03
 
 Integration and controller **2.31.0**.

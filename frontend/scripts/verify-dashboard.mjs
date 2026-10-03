@@ -1154,8 +1154,14 @@ try {
       const demo = banner
         ? banner.nextElementSibling.getBoundingClientRect().top - banner.getBoundingClientRect().top
         : 0;
+      // Each zone's line on the grow day wraps so it can be read whole: what it adds is not counted.
+      const wrapped = [...document.querySelectorAll(".timeline-zone-line")].reduce(
+        (sum, line) =>
+          sum + line.getBoundingClientRect().height - parseFloat(getComputedStyle(line).lineHeight),
+        0,
+      );
       return {
-        height: document.documentElement.scrollHeight - demo,
+        height: document.documentElement.scrollHeight - demo - wrapped,
         window: innerHeight,
         zonesTop: top(".overview-grid > .panel"),
         tankTop: top("[data-tank-status]"),
@@ -1165,7 +1171,7 @@ try {
     });
     assert.ok(
       layout.height <= 2 * layout.window,
-      `Overview is ${layout.height}px tall without the demo banner, in a ${layout.window}px window`,
+      `Overview is ${layout.height}px tall without the demo banner and the zone lines' wrapping, in a ${layout.window}px window`,
     );
     assert.equal(layout.zonesTop, layout.tankTop, "zones and tank share a row");
     assert.equal(layout.tableScrolls, false, "the zone table scrolls sideways");

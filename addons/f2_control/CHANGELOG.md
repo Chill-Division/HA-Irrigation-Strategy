@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** each zone's line on Today's grow day wraps on a laptop too. No change to the controller.
+
 # 2.31.0
 
 Pair with integration 2.31.0.
