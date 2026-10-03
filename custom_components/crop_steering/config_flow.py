@@ -172,18 +172,6 @@ def _hardware_schema(
     _ent("vpd_sensor", _sensor_one())
     _ent("water_level_sensor", _sensor_one())
     _ent("tank_temperature_sensor", _sensor_one())
-    _ent(
-        "tank_last_fill_sensor",
-        selector.EntitySelector(
-            selector.EntitySelectorConfig(domain=["sensor", "input_datetime"])
-        ),
-    )
-    _ent(
-        "tank_fill_entity",
-        selector.EntitySelector(
-            selector.EntitySelectorConfig(domain=["switch", "binary_sensor"])
-        ),
-    )
     out[
         vol.Optional(
             "notification_service", default=hardware.get("notification_service") or ""
@@ -233,8 +221,6 @@ def _build_hardware(data: dict) -> dict:
         "vpd_sensor": data.get("vpd_sensor", ""),
         "water_level_sensor": data.get("water_level_sensor", ""),
         "tank_temperature_sensor": data.get("tank_temperature_sensor", ""),
-        "tank_last_fill_sensor": data.get("tank_last_fill_sensor", ""),
-        "tank_fill_entity": data.get("tank_fill_entity", ""),
         "notification_service": data.get("notification_service", ""),
     }
 

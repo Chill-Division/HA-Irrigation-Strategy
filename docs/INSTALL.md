@@ -84,7 +84,7 @@ The existing app slug `f2_control` and entity IDs are deliberately stable. A roo
 
 ## Optional tank display mappings
 
-In **Settings → Rooms & hardware → Shared room hardware**, map tank fill level to a percentage sensor and tank temperature to a temperature sensor. Choose a fill valve or binary sensor for filling status and a timestamp sensor or full date-and-time helper for **Last recorded tank fill**. Use an actual recorded fill event; an automation trigger time or sensor `last_changed` is not proof of filling. Shared tanks can be explicitly mapped to more than one room. The [tank mapping table](USER_GUIDE.md#tank-and-pump-display) lists the exact labels and configuration keys. A recorded fill can be operator-confirmed or float-confirmed according to its producer; it is not proof that dosing finished. Filling status must represent the fill valve or a genuine fill-active signal, not a mode-enable or dosing-lock helper.
+In **Settings → Rooms & hardware → Shared room hardware**, map tank fill level to a percentage sensor and tank temperature to a temperature sensor. Shared tanks can be explicitly mapped to more than one room. The [tank mapping table](USER_GUIDE.md#tank-and-pump-display) lists the exact labels and configuration keys. The tank card's **Refill** and **Last refill** need no mapping: they are the controller's own record of the refills it runs for a room's reservoir (**Feed → Reservoir**).
 
 Save setup with the affected engines and irrigation equipment off, then verify the readings in **Overview** before restoring the previous engine state. Missing mappings remain labelled; an unavailable pump is never displayed as off. Existing controllers must be updated to publish irrigation timestamps with a timezone offset.
 

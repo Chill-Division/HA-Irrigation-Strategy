@@ -164,8 +164,6 @@ def build_engine_config(
         # Read-only overview mappings. No ambient-temperature fallback.
         "water_level_sensor": hw.get("water_level_sensor", ""),
         "tank_temperature_sensor": hw.get("tank_temperature_sensor", ""),
-        "tank_last_fill_sensor": hw.get("tank_last_fill_sensor", ""),
-        "tank_fill_entity": hw.get("tank_fill_entity", ""),
         # Only when mapped: a room without a reservoir publishes the descriptor it always did.
         **{key: hw[key] for key in RESERVOIR_KEYS if hw.get(key)},
     }

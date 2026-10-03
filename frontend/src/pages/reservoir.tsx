@@ -963,8 +963,8 @@ export function Reservoir({
   const reservoir = RESERVOIR_KEYS.some((key) => attributes[key]);
   const status = readBatchStatus(controller.states, controller.room.room.prefix);
   const sensor = attributes.reservoir_distance_sensor;
-  // Once the controller reports, its reading is the one: none there (the sensor reads nothing, or has
-  // not reported for 10 minutes) is none here, whatever the sensor still shows.
+  // Once the controller reports, its reading is the one: none there (the sensor reads nothing to it)
+  // is none here, whatever the sensor shows now.
   const level = status
     ? status.levelMm
     : typeof sensor === "string" && sensor

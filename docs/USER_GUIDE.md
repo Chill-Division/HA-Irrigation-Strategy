@@ -57,19 +57,15 @@ To move a zone to another phase, open it from **Overview** and pick one under **
 
 Choose **Map sensors** on the tank panel, or open **Settings → Rooms & hardware → Shared room hardware**. These are explicit mappings; the dashboard does not guess that a room-temperature probe is a tank probe.
 
-| Setup label             | Configuration key         | Select                                                                                                                |
-| ----------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Room pump               | `pump_switch`             | The room pump's actual HA switch. The controller descriptor publishes this as `pump`.                                 |
-| Tank fill level (%)     | `water_level_sensor`      | A percentage sensor, 0-100. A litres value is not a percentage.                                                       |
-| Tank temperature        | `tank_temperature_sensor` | A tank-water temperature sensor in °C, °F or K; its unit is retained.                                                 |
-| Tank filling status     | `tank_fill_entity`        | A fill-valve switch or binary sensor whose on/off state represents fill activity.                                     |
-| Last recorded tank fill | `tank_last_fill_sensor`   | A timestamp sensor with a dated, timezone-aware state, or an `input_datetime` helper with both date and time enabled. |
+| Setup label         | Configuration key         | Select                                                                                |
+| ------------------- | ------------------------- | ------------------------------------------------------------------------------------- |
+| Room pump           | `pump_switch`             | The room pump's actual HA switch. The controller descriptor publishes this as `pump`. |
+| Tank fill level (%) | `water_level_sensor`      | A percentage sensor, 0-100. A litres value is not a percentage.                       |
+| Tank temperature    | `tank_temperature_sensor` | A tank-water temperature sensor in °C, °F or K; its unit is retained.                 |
 
-**Tank EC (display)** and **Tank pH (display)** only populate the panel. **Feed-water EC** and **Feed-water pH** are separate mappings used by configured control gates. Mapping a tank display does not enable those gates or nutrient dosing.
+**Refill** and **Last refill** are the controller's own record of the refills it runs for the room's reservoir (**Feed → Reservoir**), so there is nothing to map for them: what its refill is doing now (not running, filling, dosing, mixing) and when the last one ended, marked *stopped* if it stopped part-way. A room without a reservoir has neither row; they read **Unavailable** until the controller app has reported for the room.
 
-**Last recorded fill** has the meaning supplied by your existing recording automation: for example, a verified full-float event or an operator's explicit “mark filled” action. A full date/time helper uses its timestamp attribute; a sensor's `last_changed`, an automation's `last_triggered`, a fill-mode enable flag and a dosing interlock are not equivalent to a fill record. The panel does not create a fill-recording automation for you.
-
-Use your own installation's recording source. Some systems record an operator confirmation; others record a full-float event or the end of a fill/dose workflow. The label intentionally says **recorded fill** because those meanings differ. A percentage source may itself be an estimate; drawing it as a tank does not turn it into a measured level. Tank readings and switch reports do not prove dose completion, water quality suitability or physical delivery.
+A percentage source may itself be an estimate; drawing it as a tank does not turn it into a measured level. Tank readings and switch reports do not prove dose completion, water quality suitability or physical delivery.
 
 Unmapped inputs show **Not mapped**; invalid readings show **Unavailable**, **Check units** or **Out of range**. An unknown pump is not shown as off and an unknown tank is not drawn empty. When disconnected, the panel identifies retained readings as last received.
 

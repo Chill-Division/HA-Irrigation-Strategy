@@ -80,8 +80,6 @@ export function createDemo(now = Date.now()): States {
       },
       water_level_sensor: `sensor.demo_${prefix}tank_level`,
       tank_temperature_sensor: `sensor.demo_${prefix}tank_temperature`,
-      tank_last_fill_sensor: `sensor.demo_${prefix}tank_last_fill`,
-      tank_fill_entity: `binary_sensor.demo_${prefix}tank_filling`,
       // Flower 2 mixes its own nutrient batches; Flower 1 has no reservoir mapped.
       ...(index ? {} : DEMO_RESERVOIR),
       // Both rooms have been saved in Rooms & hardware.
@@ -92,12 +90,6 @@ export function createDemo(now = Date.now()): States {
     put(`sensor.demo_${prefix}tank_temperature`, index ? 19.2 : 17.6, {
       unit_of_measurement: "°C",
     });
-    put(
-      `sensor.demo_${prefix}tank_last_fill`,
-      new Date(now - (index ? 5 : 2) * 3600_000).toISOString(),
-      { device_class: "timestamp" },
-    );
-    put(`binary_sensor.demo_${prefix}tank_filling`, "off");
     // A probe's estimated pore EC as some probe firmware publishes it, unrounded. Nothing maps it,
     // so it is only among the entities Rooms & hardware offers.
     if (!index)
