@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 from copy import deepcopy
-from datetime import datetime
 import logging
 import math
 
@@ -33,8 +32,6 @@ HARDWARE_DOMAINS = {
     "vpd_sensor": {"sensor"},
     "water_level_sensor": {"sensor"},
     "tank_temperature_sensor": {"sensor"},
-    "tank_last_fill_sensor": {"sensor", "input_datetime"},
-    "tank_fill_entity": {"switch", "binary_sensor"},
     # The reservoir and its dosers, for nutrient batches (feed.py): the controller drives these.
     "reservoir_distance_sensor": {"sensor"},
     "fresh_water_switch": {"switch"},
@@ -230,43 +227,6 @@ def _entity(hass, eid, domains, kind=None):
     return eid
 
 
-def _tank_timestamp(hass, eid):
-    """Validate an explicit last-fill reading; never infer an event from state metadata."""
-    state = hass.states.get(eid)
-    unit = state.attributes.get("unit_of_measurement")
-    device_class = state.attributes.get("device_class")
-    if (unit is not None and str(unit).strip()) or device_class not in (
-        None,
-        "",
-        "timestamp",
-    ):
-        raise ValueError(f"{eid}: last fill requires a unitless timestamp sensor")
-    if eid.startswith("input_datetime."):
-        if (
-            state.attributes.get("has_date") is not True
-            or state.attributes.get("has_time") is not True
-        ):
-            raise ValueError(
-                f"{eid}: last fill helper must have both date and time enabled"
-            )
-        timestamp = state.attributes.get("timestamp")
-        if type(timestamp) not in (int, float) or not math.isfinite(timestamp):
-            raise ValueError(
-                f"{eid}: last fill helper requires a finite epoch timestamp"
-            )
-        return
-    if state.state in (None, "", "unknown", "unavailable"):
-        return  # The mapping can be saved offline; the overview must show it as unknown.
-    try:
-        value = datetime.fromisoformat(state.state.replace("Z", "+00:00"))
-    except (TypeError, ValueError, AttributeError):
-        raise ValueError(
-            f"{eid}: last fill requires an ISO timestamp with timezone"
-        ) from None
-    if value.tzinfo is None or value.utcoffset() is None:
-        raise ValueError(f"{eid}: last fill timestamp must include a timezone")
-
-
 def prepare_setup(hass, payload, old=None, entry_id=None):
     """Normalize a complete edit while retaining old fields and immutable IDs."""
     old = old or {}
@@ -395,8 +355,6 @@ def prepare_setup(hass, payload, old=None, entry_id=None):
                     "reservoir_distance_sensor": "distance",
                 }.get(key),
             )
-            if key == "tank_last_fill_sensor":
-                _tank_timestamp(hass, value)
         hw[key] = value or ""
     shared = {
         hw.get("pump_switch"),
@@ -586,8 +544,7 @@ def read_setup(hass):
                 "device_class": s.attributes.get("device_class"),
             }
             for s in hass.states.async_all()
-            if s.entity_id.split(".")[0]
-            in {"sensor", "switch", "light", "binary_sensor", "input_datetime"}
+            if s.entity_id.split(".")[0] in {"sensor", "switch", "light"}
         ],
     }
 
@@ -689,8 +646,6 @@ HARDWARE_WORDS = {
     "vpd_sensor": "VPD sensor",
     "water_level_sensor": "tank level sensor",
     "tank_temperature_sensor": "tank temperature sensor",
-    "tank_last_fill_sensor": "tank last-fill sensor",
-    "tank_fill_entity": "tank filling status",
     "reservoir_distance_sensor": "reservoir level sensor",
     "fresh_water_switch": "fresh-water solenoid",
     "recirc_switch": "recirculation solenoid",
