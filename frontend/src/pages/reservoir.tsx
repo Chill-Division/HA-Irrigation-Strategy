@@ -1,4 +1,12 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -75,7 +83,7 @@ const nutrientName = (recipe: FeedRecipe | undefined, doser: number) =>
   recipe?.doses[String(doser)]?.label || `Doser ${doser}`;
 const HINTS: Record<keyof FeedSettings, string> = {
   fill_s:
-    "How long the fresh-water solenoid runs for a refill. Half-way through, the pump and recirculation start.",
+    "How long the fresh-water solenoid runs for a refill. Half-way through, the pump and recirculation start, and the doses go in while it fills.",
   batch_l:
     "The litres that fill adds. The doses are worked out for these: what is left in the reservoir is already mixed.",
   full_mm:
@@ -84,8 +92,10 @@ const HINTS: Record<keyof FeedSettings, string> = {
     "The level sensor's distance to the water when the reservoir is empty. 0 means no level: no automatic refills, no minimum.",
   min_pct:
     "A refill comes before any shot would take the reservoir under this; without automatic refills, watering waits here. 0 turns it off.",
-  pause_s: "A gap between one doser and the next, so each mixes in before the next goes in.",
-  mix_s: "The pump and recirculation keep running this long after the last dose.",
+  pause_s:
+    "A gap before the first doser, once the pump runs, and between one doser and the next, so each mixes in before the next goes in.",
+  mix_s:
+    "The least the pump and recirculation run after the last dose. Normally the fill is still going, and they run until it ends.",
 };
 
 /** Seconds that tick while a step counts down. */
@@ -140,47 +150,90 @@ interface Stage {
   detail: string;
   state: StepState;
 }
-/** A refill's steps in order: fill, fill and mix, each dose, mix. Running, each is done, now or
- * next. An older controller's "settling" reads as the fill's mixing half. */
-function stepsOf(plan: FeedPlan, status: BatchStatus | null): Stage[] {
+interface Steps {
+  fill: Stage;
+  /** The fill's second half, the pump and recirculation running: the doses go in during it. */
+  fillMix: Stage;
+  doses: Stage[];
+  /** How long the doses take once the pump runs: a pause before the first and between each. */
+  dosing: number;
+  /** Recirculating after the last dose, when that outlasts the fill; null when it ends with it. */
+  mix: Stage | null;
+}
+/** A refill's steps: the fill, then the fill's mixing half with each dose going in during it, and,
+ * when the doses outlast the fill, recirculating after the last. Running, each is done, now or next.
+ * An older controller's "settling" reads as the fill's mixing half; one that reports no fill_until
+ * stopped the fresh water before the first dose. */
+function stepsOf(plan: FeedPlan, status: BatchStatus | null): Steps {
   const running = status?.step && status.step !== "idle" ? status : null;
   const doses = running?.doses.length
     ? running.doses
     : plan.doses.map((d) => ({ ...d, dosed: null }));
-  const order = ["filling", "filling_mixing", "dosing", "mixing"];
-  const step =
-    running?.step === "pausing"
-      ? "dosing"
-      : running?.step === "settling"
-        ? "filling_mixing"
-        : running?.step;
-  const at = running ? order.indexOf(step!) : -1;
-  const phase = (index: number): StepState =>
-    at < 0 ? "next" : index < at ? "done" : index === at ? "now" : "next";
-  return [
-    { key: "fill", label: "Fill", detail: duration(plan.fill_s / 2), state: phase(0) },
-    {
+  const step = running?.step === "settling" ? "filling_mixing" : running?.step;
+  const before = !running || step === "filling" || step === "filling_mixing";
+  const given = doses.filter((dose) => dose.seconds > 0);
+  const dosing =
+    given.reduce((sum, dose) => sum + dose.seconds, 0) + given.length * (plan.pause_s || 0);
+  const fits = dosing + (plan.mix_s || 0) <= plan.fill_s / 2;
+  return {
+    fill: {
+      key: "fill",
+      label: "Fill",
+      detail: duration(plan.fill_s / 2),
+      state: !running ? "next" : step === "filling" ? "now" : "done",
+    },
+    fillMix: {
       key: "fill-mix",
       label: "Fill and mix",
       detail: duration(plan.fill_s / 2),
-      state: phase(1),
+      state:
+        !running || step === "filling"
+          ? "next"
+          : step === "filling_mixing" || running.fillUntil !== null
+            ? "now"
+            : "done",
     },
-    ...doses.map((dose) => ({
+    doses: doses.map((dose) => ({
       key: `dose-${dose.doser}`,
       label: dose.label,
       detail: `${number(dose.ml, 0)} mL · ${duration(dose.seconds)}`,
-      state: (at > 2
-        ? "done"
-        : at < 2
-          ? "next"
-          : running?.step === "dosing" && running.doser === dose.doser
+      state: (before
+        ? "next"
+        : step === "mixing"
+          ? "done"
+          : step === "dosing" && running!.doser === dose.doser
             ? "now"
             : dose.dosed !== null
               ? "done"
               : "next") as StepState,
     })),
-    { key: "mix", label: "Recirculate", detail: duration(plan.mix_s), state: phase(3) },
-  ];
+    dosing,
+    mix: fits
+      ? null
+      : {
+          key: "mix",
+          label: "Recirculate",
+          detail: `${duration(plan.mix_s)} after the last dose`,
+          state: step === "mixing" && running!.fillUntil === null ? "now" : "next",
+        },
+  };
+}
+
+function StepItem({ step, children }: { step: Stage; children?: ReactNode }) {
+  return (
+    <li data-state={step.state} className={children ? "res-steps-group" : undefined}>
+      <span className="res-step-dot" aria-hidden="true">
+        {step.state === "done" ? <Check size={12} /> : null}
+      </span>
+      <span className="res-step-label">
+        {step.label}
+        {step.state === "now" && <span className="sr-only"> (now)</span>}
+        {step.state === "done" && <span className="sr-only"> (done)</span>}
+      </span>
+      <span className="res-step-detail">{step.detail}</span>
+      {children}
+    </li>
+  );
 }
 
 function BatchPanel({
@@ -250,20 +303,24 @@ function BatchPanel({
         </div>
       </div>
       <ol className="res-steps" aria-label={running ? "This batch's steps" : "What a batch does"}>
-        {steps.map((step) => (
-          <li key={step.key} data-state={step.state}>
-            <span className="res-step-dot" aria-hidden="true">
-              {step.state === "done" ? <Check size={12} /> : null}
-            </span>
-            <span className="res-step-label">
-              {step.label}
-              {step.state === "now" && <span className="sr-only"> (now)</span>}
-              {step.state === "done" && <span className="sr-only"> (done)</span>}
-            </span>
-            <span className="res-step-detail">{step.detail}</span>
-          </li>
-        ))}
+        <StepItem step={steps.fill} />
+        <StepItem step={steps.fillMix}>
+          {!!steps.doses.length && (
+            <ol className="res-steps" aria-label="The doses, going in while it fills">
+              {steps.doses.map((dose) => (
+                <StepItem key={dose.key} step={dose} />
+              ))}
+            </ol>
+          )}
+        </StepItem>
+        {steps.mix && <StepItem step={steps.mix} />}
       </ol>
+      {steps.mix && (
+        <p className="muted small">
+          The doses take {duration(steps.dosing)}, longer than the fill&rsquo;s mixing half (
+          {duration(plan.fill_s / 2)}): the last of them go in after the fresh water stops.
+        </p>
+      )}
       <div className="res-batch-body">
         <div className="res-level">
           <Vessel pct={pct} min={minimum} />

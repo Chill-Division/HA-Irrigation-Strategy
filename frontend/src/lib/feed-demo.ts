@@ -200,7 +200,8 @@ export class FeedDemo {
           attributes: {
             ...status.attributes,
             stage: doc.plan.stage,
-            until: new Date(now.getTime() + doc.plan.fill_s * 1000).toISOString(),
+            until: new Date(now.getTime() + (doc.plan.fill_s * 1000) / 2).toISOString(),
+            fill_until: new Date(now.getTime() + doc.plan.fill_s * 1000).toISOString(),
             doses: doc.plan.doses.map((d) => ({ ...d, dosed: null })),
             armed: false,
             blocked: null,
