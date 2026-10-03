@@ -197,8 +197,6 @@ const hardwareFields = [
   ["light_entity", "Room lights", "light"],
   ["water_level_sensor", "Tank fill level (%)", "level"],
   ["tank_temperature_sensor", "Tank temperature", "temperature"],
-  ["tank_last_fill_sensor", "Last recorded tank fill", "timestamp"],
-  ["tank_fill_entity", "Tank filling status", "binary"],
 ] as const;
 /** The reservoir and dosers a room's nutrient batches use (Feed → Reservoir); the controller app
  * switches these. */
@@ -291,13 +289,9 @@ export function Setup({
       .filter((c) =>
         kind === "switch"
           ? c.domain === "switch"
-          : kind === "timestamp"
-            ? ["sensor", "input_datetime"].includes(c.domain)
-            : kind === "binary"
-              ? ["switch", "binary_sensor"].includes(c.domain)
-              : kind === "light"
-                ? ["light", "switch"].includes(c.domain)
-                : c.domain === "sensor",
+          : kind === "light"
+            ? ["light", "switch"].includes(c.domain)
+            : c.domain === "sensor",
       )
       .sort((a, b) => {
         const preferred = (c: SetupCandidate) =>

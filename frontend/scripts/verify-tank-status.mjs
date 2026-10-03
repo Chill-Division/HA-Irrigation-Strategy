@@ -54,6 +54,10 @@ try {
   assert.match(await tank.innerText(), /17.6 °C/);
   assert.doesNotMatch(await tank.innerText(), /mS\/cm|\bpH\b/, "no tank EC or pH any more");
   assert.ok(await tank.locator("time").getAttribute("datetime"));
+  // The refills are the controller's own record: none running, and when the last one ended.
+  assert.equal(await tank.locator("[data-refill-state]").getAttribute("data-refill-state"), "idle");
+  assert.match(await tank.innerText(), /Refill\s+Not running/);
+  assert.doesNotMatch(await tank.innerText(), /Not mapped/, "nothing on the card asks to be mapped");
   assert.ok(await page.locator('[data-last-irrigation="1"]:visible').getAttribute("datetime"));
   // The tank and its first reading sit as far below the heading as the tank sits from the left.
   const inset = await tank.evaluate((panel) => {
@@ -144,10 +148,13 @@ try {
     () => document.querySelector("[data-tank-level]")?.getAttribute("data-tank-level") === "72",
   );
   assert.equal(await page.locator("[data-pump-state]").getAttribute("data-pump-state"), "off");
+  // Flower 1 has no reservoir: nothing refills it, so the card has no refill rows.
+  assert.equal(await page.locator("[data-refill-state]").count(), 0);
   assert.deepEqual(errors, []);
   assert.deepEqual(forbidden, []);
   const checks = [
     "graphical mapped tank readings, no tank EC or pH",
+    "refills from the controller's record, none for a room without a reservoir",
     "zone event timestamps",
     "mobile layout and accessibility, light and dark",
     "Overview two screens at most, zones beside the tank, Map sensors on the heading's line",

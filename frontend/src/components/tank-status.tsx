@@ -13,6 +13,7 @@ export function TankStatus({
   onConfigure: () => void;
 }) {
   const tank = tankTelemetry(controller.states, controller.room.room);
+  const refill = tank.refill;
   const clipId = useId();
   const connected = ["live", "demo"].includes(controller.connection);
   const value = (r: TankReading, digits = 1) =>
@@ -81,35 +82,39 @@ export function TankStatus({
             <dt>Pump{lastKnown}</dt>
             <dd>{pump}</dd>
           </div>
-          <div>
-            <dt>Filling{lastKnown}</dt>
-            <dd>
-              {tank.fill.on === null
-                ? tank.fill.issue
-                : tank.fill.on
-                  ? "Filling now"
-                  : "Not filling"}
-            </dd>
-          </div>
-          <div>
-            <dt>Last fill</dt>
-            <dd>
-              {tank.lastFill.timestamp ? (
-                <time dateTime={tank.lastFill.timestamp}>
-                  {new Date(tank.lastFill.timestamp).toLocaleString([], {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  })}
-                </time>
-              ) : (
-                tank.lastFill.issue
-              )}
-            </dd>
-          </div>
+          {refill && (
+            <>
+              <div
+                className={connected && refill.running ? "is-on" : undefined}
+                data-refill-state={refill.running ? "running" : refill.now ? "idle" : "unknown"}
+              >
+                <dt>Refill{lastKnown}</dt>
+                <dd>{refill.now ?? refill.issue}</dd>
+              </div>
+              <div>
+                <dt>Last refill</dt>
+                <dd>
+                  {refill.lastAt ? (
+                    <>
+                      <time dateTime={refill.lastAt}>
+                        {new Date(refill.lastAt).toLocaleString([], {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })}
+                      </time>
+                      {refill.lastStopped && " · stopped"}
+                    </>
+                  ) : (
+                    (refill.issue ?? "None yet")
+                  )}
+                </dd>
+              </div>
+            </>
+          )}
         </dl>
         <p className="tank-note">
-          Pump is the switch’s report, not measured flow. Last fill is a recorded fill, not a sensor
-          update.
+          Pump is the switch’s report, not measured flow.
+          {refill && " Refills are the controller’s own record."}
         </p>
       </div>
     </section>

@@ -1,7 +1,7 @@
 import type { Room, States } from "./types";
 import { descriptor } from "./model";
-import { levelPct } from "./feed";
-import { levelMm, readBatchStatus } from "./feed-status";
+import { RESERVOIR_KEYS, levelPct } from "./feed";
+import { STEP_LABELS, levelMm, readBatchStatus } from "./feed-status";
 
 export interface TankReading {
   entityId: string | null;
@@ -10,7 +10,19 @@ export interface TankReading {
   issue: string | null;
 }
 
-export function tankTelemetry(states: States, room: Room, now = Date.now()) {
+/** The refills the controller runs for the room's reservoir, as it records them. */
+export interface RefillRecord {
+  /** What its refill is doing now: "Not running", "Filling", "Dosing"…; null before it reports. */
+  now: string | null;
+  running: boolean;
+  /** When its last refill ended (ISO); null before the first. */
+  lastAt: string | null;
+  /** That refill stopped part-way. */
+  lastStopped: boolean;
+  issue: string | null;
+}
+
+export function tankTelemetry(states: States, room: Room) {
   const config = descriptor(states, room)?.attributes || {};
   const mapped = (key: string) =>
     typeof config[key] === "string" && config[key] ? String(config[key]) : null;
@@ -39,31 +51,10 @@ export function tankTelemetry(states: States, room: Room, now = Date.now()) {
       issue: !entityId ? "Not mapped" : !["on", "off"].includes(state || "") ? "Unavailable" : null,
     };
   };
-  const fillId = mapped("tank_last_fill_sensor");
-  const fillEntity = fillId ? states[fillId] : undefined;
-  const raw = fillEntity?.state || "";
-  const attrs = fillEntity?.attributes;
-  const time =
-    fillId?.startsWith("input_datetime.") &&
-    attrs?.has_date === true &&
-    attrs?.has_time === true &&
-    typeof attrs.timestamp === "number" &&
-    !["unknown", "unavailable", ""].includes(raw)
-      ? attrs.timestamp * 1000
-      : /^\d{4}-\d{2}-\d{2}T.+(?:Z|[+-]\d{2}:\d{2})$/i.test(raw)
-        ? Date.parse(raw)
-        : NaN;
-  const fillIssue = !fillId
-    ? "Not mapped"
-    : !Number.isFinite(time) || time <= 0 || Number.isNaN(new Date(time).getTime())
-      ? "Unavailable"
-      : time > now
-        ? "Future timestamp"
-        : null;
   // The reservoir's own level once its distances when full and when empty are set (Feed →
-  // Reservoir): the controller's, once it reports one, so the card shows what it acts on (none for a
-  // sensor that has not reported for 10 minutes, whatever that still shows); before that, the
-  // distance sensor's reading worked out the same way. Otherwise a mapped level sensor in %.
+  // Reservoir): the controller's, once it reports one, so the card shows what it acts on (none when
+  // the sensor reads nothing to it, whatever that shows now); before that, the distance sensor's
+  // reading worked out the same way. Otherwise a mapped level sensor in %.
   const plan = states[`sensor.crop_steering_${room.prefix}feed_plan`]?.attributes;
   const distanceId = mapped("reservoir_distance_sensor");
   const full = Number(plan?.full_mm),
@@ -83,15 +74,23 @@ export function tankTelemetry(states: States, room: Room, now = Date.now()) {
         issue: pct === null ? "Unavailable" : null,
       }
     : reading("water_level_sensor", ["%"], 0, 100);
+  // A room with a reservoir: the controller's record of the refills it runs (batch_status). None for
+  // a room without one, which nothing refills.
+  const step = status?.step ?? null;
+  const refill: RefillRecord | null =
+    status || RESERVOIR_KEYS.some((key) => mapped(key))
+      ? {
+          now: step === null ? null : step === "idle" ? "Not running" : STEP_LABELS[step],
+          running: step !== null && step !== "idle",
+          lastAt: status?.last?.at ? new Date(status.last.at).toISOString() : null,
+          lastStopped: !!status?.last && status.last.result !== "done",
+          issue: step === null ? "Unavailable" : null,
+        }
+      : null;
   return {
     level,
     temperature: reading("tank_temperature_sensor", ["°c", "°f", "k"]),
     pump: binary("pump"),
-    fill: binary("tank_fill_entity"),
-    lastFill: {
-      entityId: fillId,
-      timestamp: fillIssue ? null : new Date(time).toISOString(),
-      issue: fillIssue,
-    },
+    refill,
   };
 }
