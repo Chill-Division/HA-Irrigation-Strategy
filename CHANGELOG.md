@@ -9,6 +9,33 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **The reservoir's level reads while it holds still, for real this time.** 2.32.0 counted a level
+  sensor that had not reported for 10 minutes as reading nothing, and 2.32.1 only fixed how that
+  was read. But Home Assistant's ESPHome integration drops a reading that repeats the last one, so
+  an ultrasonic over a still reservoir, reading the same distance every few seconds, looks to Home
+  Assistant as if it had stopped: GR2's level read "No reading" for hours. That rule is gone. The
+  level reads nothing only when Home Assistant has no reading at all (unavailable or unknown). To
+  have an ultrasonic whose echoes fail show as unknown, give it ESPHome's `timeout` filter (the user
+  guide says how).
+
+### 🔧 Technical notes
+
+- Controller: `_level_now` is `level_mm(ha_get(...))` again: `LEVEL_STALE_S`, `ha_reported` (the
+  template API call) and `HAState.last_reported` are removed. Home Assistant's ESPHome integration
+  ignores a state that repeats the last unless the sensor has `force_update`, so neither
+  `last_updated` nor `last_reported` tells a steady sensor from a silent one. CS-705's text is as it
+  was before 2.32.0. No new options; no change to the state file.
+- Dashboard: CS-705's help (Help page) names a timeout filter's unknown as a cause and says to add
+  one; the Reservoir page, the Tests dialog and the tank card still take the controller's level.
+- Docs: the user guide on still reservoirs and ESPHome's `timeout` filter; entities.
+- Tests: a reservoir whose level has not changed for three hours reads, through the cached REST
+  JSON of a real Home Assistant and in the add-on suite, and one reading unknown or unavailable does
+  not.
+
 ## [2.32.1] - 2026-10-03
 
 Integration and controller **2.32.1**.

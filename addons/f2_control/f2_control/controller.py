@@ -65,13 +65,11 @@ def log(*a):
 
 class HAState(tuple):
     """What ha_get returns: (state, attributes, last_updated), unpacked exactly as it always was, plus
-    `last_changed`: when the state VALUE last changed, as Home Assistant reports it (None if unknown),
-    and `last_reported`: when its source last reported it, the same value or not (None if unknown)."""
+    `last_changed`: when the state VALUE last changed, as Home Assistant reports it (None if unknown)."""
 
-    def __new__(cls, state=None, attributes=None, last_updated=None, last_changed=None, last_reported=None):
+    def __new__(cls, state=None, attributes=None, last_updated=None, last_changed=None):
         obj = super().__new__(cls, (state, {} if attributes is None else attributes, last_updated))
         obj.last_changed = last_changed
-        obj.last_reported = last_reported
         return obj
 
 
@@ -82,8 +80,7 @@ def ha_get(entity, timeout=8):
         if r.status_code != 200:
             return HAState()
         d = r.json()
-        return HAState(d.get("state"), d.get("attributes", {}), d.get("last_updated"), d.get("last_changed"),
-                       d.get("last_reported"))
+        return HAState(d.get("state"), d.get("attributes", {}), d.get("last_updated"), d.get("last_changed"))
     except Exception:
         return HAState()
 
@@ -129,27 +126,6 @@ def ha_history(entity, since, timeout=12):
             return None
         rows = (r.json() or [[]])[0]
         return [(row.get("state"), row.get("last_changed")) for row in rows] or None
-    except Exception:
-        return None
-
-
-_ENTITY_ID = re.compile(r"^[a-z_]+\.[a-z0-9_]+$")
-
-
-def ha_reported(entity, timeout=8):
-    """When `entity` last reported a value, the same one or not: Home Assistant's last_reported, read
-    live through its template API, as an aware datetime; None when it can't be told (not an entity id,
-    no such entity, or the template API refused). The REST state's own last_reported cannot be used:
-    Home Assistant caches a state's JSON and, when a sensor reports the same value again, moves
-    last_reported on the state without renewing that copy, so a steady sensor looks silent there."""
-    if not isinstance(entity, str) or not _ENTITY_ID.match(entity):
-        return None
-    template = "{{ states.%s.last_reported.isoformat() if states.%s else '' }}" % (entity, entity)
-    try:
-        r = _S.post(f"{BASE}/template", headers=HDR, json={"template": template}, timeout=timeout)
-        if r.status_code != 200:
-            return None
-        return _aware(r.text.strip())
     except Exception:
         return None
 
@@ -482,9 +458,6 @@ LEARN_RISE_PCT = 10.0  # a refill that raised it less than this does not teach i
 # this low, or the room's minimum if higher: a timed fill into a fuller reservoir could overflow it.
 UNLEARNED_FILL_FROM_PCT = 10.0
 LEVEL_MISSING_PASSES = 5  # passes the level sensor may read nothing before it is reported (CS-705)
-# A level sensor that has not reported for this long reads as nothing: it has gone, and the value Home
-# Assistant still shows (an ultrasonic that filters out its failed echoes keeps its last one) is stale.
-LEVEL_STALE_S = 600.0
 # Between passes, while a batch fills or doses, how often it is checked for a reason to stop (the
 # room's watering switched off, a switch gone off): the fresh water stops within seconds, not a pass.
 BATCH_WATCH_S = 5.0
@@ -2181,11 +2154,10 @@ class Controller:
                     f"res_level_{room.slug}",
                     "CS-705",
                     "reservoir level not reading",
-                    f"The reservoir's level sensor ({res['distance']}) has had no usable reading for "
-                    f"{missing} minutes: it reads nothing, or has not reported for over "
-                    f"{LEVEL_STALE_S / 60:.0f} minutes, so what it last showed can't be trusted. Watering "
-                    "carries on, but the controller can't tell how much is left: no refill starts, "
-                    "and nothing keeps the reservoir above its minimum. Check the sensor.",
+                    f"The reservoir's level sensor ({res['distance']}) has read nothing for "
+                    f"{missing} minutes. Watering carries on, but the controller can't tell how much is "
+                    "left: no refill starts, and nothing keeps the reservoir above its minimum. Check "
+                    "the sensor.",
                     room=room,
                 )
             elif not missing:
@@ -2193,17 +2165,12 @@ class Controller:
         return {"plan": plan, "mm": mm, "pct": pct, "min": (plan or {}).get("min_pct", 0.0) or 0.0}
 
     def _level_now(self, entity):
-        """The level sensor's distance now, in mm (level_mm), or None: it reads nothing, or it has not
-        reported for LEVEL_STALE_S (ha_reported: Home Assistant moves last_reported at every report,
-        the same value or not). When its last report can't be told, the reading stands, as it
-        did before this check: a steady level is not mistaken for a sensor that has gone."""
-        mm = level_mm(ha_get(entity))
-        if mm is None:
-            return None
-        reported = ha_reported(entity)
-        if reported is not None and (datetime.now(timezone.utc) - reported).total_seconds() > LEVEL_STALE_S:
-            return None
-        return mm
+        """The level sensor's distance now, in mm (level_mm), or None when it reads nothing (unavailable,
+        unknown, not a number). How long since it last changed says nothing: a still reservoir reads
+        the same, and Home Assistant's ESPHome integration drops a reading that repeats the last, so a
+        steady sensor and a silent one look alike from here. A sensor whose readings have failed is the
+        sensor's to report (ESPHome's `timeout` filter sends unknown)."""
+        return level_mm(ha_get(entity))
 
     def _refill_due(self, room):
         """Would the room's next round of shots take its reservoir under its minimum: True or False,

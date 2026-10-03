@@ -8,7 +8,6 @@ its minimum; it refuses to start, and stops part-way, with a reason, whenever th
 The level is a distance sensor above the water: 125 mm when full and 850 mm when empty here, as on the
 owner's GR1 reservoir (the ESPHome template it replaces worked the same percentage out)."""
 from datetime import datetime, timedelta, timezone
-import types
 
 import pytest
 
@@ -216,76 +215,19 @@ def test_half_way_a_level_that_reads_nothing_stops_it_too():
     assert "reservoir reads nothing" in _alerts(fake, "CS-702")[0]["message"]
 
 
-def _reported(fake, pct, minutes_ago):
-    """The level sensor reads `pct`, last reported `minutes_ago` by the controller's clock."""
-    at = (_Clock.current - timedelta(minutes=minutes_ago)).astimezone(timezone.utc).isoformat()
-    fake.set_state(DISTANCE, mm(pct), {"unit_of_measurement": "mm"}, last_updated=at)
-
-
-def test_a_level_sensor_that_has_not_reported_for_ten_minutes_reads_as_nothing():
-    """An ultrasonic that filters out its failed echoes keeps showing its last good value in Home
-    Assistant: 4%, but from 11 minutes ago. Nothing goes by it: no refill starts on it, by itself or
-    asked for, before anything is switched on."""
+def test_a_still_reservoir_reads_however_long_since_its_level_last_changed():
+    """GR2, 3 October: the reservoir held at 664.56 mm for hours and the ultrasonic read it every 5 s,
+    but Home Assistant's ESPHome integration drops a reading that repeats the last, so the state was
+    hours old. 2.32.0 and 2.32.1 read that as a sensor gone. A level is no reading only when Home
+    Assistant has none: unavailable, unknown (what ESPHome's timeout filter sends), not a number."""
     c, fake, room = _room(pct=4.0, auto="on")
-    _reported(fake, 4.0, minutes_ago=11)
-    for _ in range(3):
-        _tick(c, room)
-    assert room._res["pct"] is None and c._refill_due(room) is None
-    _press(c, fake, room)
-    assert room.batch["step"] == "idle" and _switched(fake) == []
-    assert f"the reservoir level ({DISTANCE}) reads nothing" in _alerts(fake, "CS-703")[0]["message"]
-    _reported(fake, 4.0, minutes_ago=9)  # reported within ten minutes: it counts
+    hours_ago = (_Clock.current - timedelta(hours=3)).astimezone(timezone.utc).isoformat()
+    fake.set_state(DISTANCE, mm(30.0), {"unit_of_measurement": "mm"}, last_updated=hours_ago)
     _tick(c, room)
-    assert room._res["pct"] == pytest.approx(4.0)
-
-
-REAL_HA_REPORTED = controller.ha_reported  # as imported: each rig puts the fake's in its place
-
-
-class _Response:
-    def __init__(self, status, text=""):
-        self.status_code, self.text = status, text
-
-
-def test_its_last_report_is_read_live_through_the_template_api(monkeypatch):
-    """Home Assistant's REST state keeps the last_reported it was first served with while a sensor
-    reports the same value again (2.32.0 read a steady level as gone); a template reads it live."""
-    asked = []
-
-    def post(url, headers=None, json=None, timeout=None):
-        asked.append((url, json["template"]))
-        return _Response(200, "2026-10-03T05:00:00.250000+00:00\n")
-
-    monkeypatch.setattr(controller, "_S", types.SimpleNamespace(post=post))
-    assert REAL_HA_REPORTED(DISTANCE) == datetime(2026, 10, 3, 5, 0, 0, 250000, tzinfo=timezone.utc)
-    url, template = asked[0]
-    assert url.endswith("/template") and f"states.{DISTANCE}.last_reported" in template
-    # Refused, no such entity, or not an entity id: it can't be told.
-    monkeypatch.setattr(controller, "_S", types.SimpleNamespace(post=lambda *a, **k: _Response(401)))
-    assert REAL_HA_REPORTED(DISTANCE) is None
-    monkeypatch.setattr(controller, "_S", types.SimpleNamespace(post=lambda *a, **k: _Response(200, "")))
-    assert REAL_HA_REPORTED("sensor.gone") is None
-    assert REAL_HA_REPORTED("sensor.x }}{{ 1") is None and len(asked) == 1
-
-
-def test_when_its_last_report_cannot_be_told_the_reading_stands(monkeypatch):
-    """A steady level is never mistaken for a sensor that has gone."""
-    c, fake, room = _room(pct=4.0)
-    _reported(fake, 4.0, minutes_ago=30)
-    monkeypatch.setattr(controller, "ha_reported", lambda entity, timeout=8: None)
+    assert room._res["pct"] == pytest.approx(30.0)
+    fake.set_state(DISTANCE, "unknown", {"unit_of_measurement": "mm"})
     _tick(c, room)
-    assert room._res["pct"] == pytest.approx(4.0)
-
-
-def test_half_way_a_level_sensor_that_stopped_reporting_stops_the_fill():
-    c, fake, room = _room(plan={**FLOWER, "fill_s": 1500}, pct=4.0)  # half-way is 12.5 minutes in
-    _reported(fake, 4.0, minutes_ago=0)
-    _tick(c, room)
-    _press(c, fake, room)
-    assert room.batch["step"] == "filling"
-    _step_on(c, room)  # nothing reported since the fill began
-    assert room.batch["last"]["result"] == "stopped: the reservoir did not fill"
-    assert PUMP not in [entity for entity, service in _switched(fake) if service == "turn_on"]
+    assert room._res["pct"] is None
 
 
 def test_without_a_level_set_up_the_fill_goes_by_time_alone():
@@ -605,9 +547,7 @@ def test_a_level_that_reads_nothing_for_five_minutes_is_said_once_and_watering_c
     assert not _alerts(fake, "CS-705")
     _tick(c, room)
     (note,) = _alerts(fake, "CS-705")
-    assert f"level sensor ({DISTANCE}) has had no usable reading for 5 minutes: it reads nothing, or has not "\
-        "reported for over 10 minutes" in note["message"]
-    assert "Watering carries on" in note["message"]
+    assert f"level sensor ({DISTANCE}) has read nothing for 5 minutes. Watering carries on" in note["message"]
     _tick(c, room)
     assert len(_alerts(fake, "CS-705")) == 1
     _level(fake, 60.0)
