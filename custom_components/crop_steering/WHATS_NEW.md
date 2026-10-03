@@ -21,7 +21,7 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
-## Unreleased
+## 2.31.0 - 2026-10-03
 
 - The reservoir never runs dry: a refill starts before the next shots would take it under its minimum, or watering waits there.
 - Set the reservoir sensor's distances when full and empty, and the Reservoir page and the Overview show how full it is.
