@@ -1,4 +1,6 @@
-# Unreleased
+# 2.33.0
+
+Pair with integration 2.33.0.
 
 - **The dashboard the app serves:** the tank card's Refill and Last refill are the controller's own record of the refills it runs (`batch_status`), not two mapped sensors. No change to the controller.
 
