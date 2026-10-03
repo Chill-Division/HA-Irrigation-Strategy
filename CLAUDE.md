@@ -61,8 +61,9 @@ local Python installs. CI is unaffected.
   fail-closed hardware writes (aborts shot on valve/pump fault), P2 EC-correction min-interval (anti-short-cycle),
   daily caps,
   sensor-fusion republish, 30-min operator vitals, and nutrient batches for a room with a
-  reservoir mapped (refill, circulate, dose each doser in order, mix: `_batch_tick`, from the
-  integration's `sensor.crop_steering_<prefix>feed_plan`).
+  reservoir mapped (refill with the pump from half-way, dose each doser in order, recirculate:
+  `_batch_tick`, from the integration's `sensor.crop_steering_<prefix>feed_plan`), keeping the
+  reservoir above its minimum (a refill planned from the next round of shots, or watering held).
 - Shot volume is substrate litres per plant x plants x shot fraction. Duration is shot litres divided by total flow L/s (plants x drippers/plant x L/h/dripper / 3600), followed by the explicit safety cap. Validate positive flow without a hidden clamp.
 - Add-on config: `addons/f2_control/config.yaml`. Options set via Supervisor UI.
 

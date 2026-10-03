@@ -3,7 +3,15 @@ import type { EntityState, States } from "./types";
 
 /** A room's nutrient batch as the controller app reports it: sensor.crop_steering_<prefix>batch_status
  * (controller.py _batch_publish). The state is the step; idle while no batch runs. */
-export const BATCH_STEPS = ["filling", "settling", "dosing", "pausing", "mixing"] as const;
+// "settling" is an older controller's step (circulating before the first dose).
+export const BATCH_STEPS = [
+  "filling",
+  "filling_mixing",
+  "dosing",
+  "pausing",
+  "mixing",
+  "settling",
+] as const;
 export type BatchStep = "idle" | (typeof BATCH_STEPS)[number];
 export interface BatchDose extends PlannedDose {
   /** mL it gave in the batch running now; null before its turn. */
@@ -27,7 +35,18 @@ export interface BatchStatus {
   nutrient: string | null;
   doses: BatchDose[];
   levelMm: number | null;
+  /** How full the reservoir is, %, as the controller works it out; null without a level. */
+  levelPct: number | null;
+  fullMm: number | null;
   emptyMm: number | null;
+  /** The least it keeps, %. */
+  minPct: number | null;
+  /** What 1% of the reservoir holds, learned from refills; null until one has gone all the way. */
+  litresPerPct: number | null;
+  /** Would the room's next round of shots take it under its minimum; null when it can't tell. */
+  due: boolean | null;
+  /** The litres that round takes. */
+  nextRoundL: number | null;
   auto: boolean;
   armed: boolean;
   last: LastBatch | null;
@@ -39,7 +58,8 @@ export interface BatchStatus {
 export const STEP_LABELS: Record<BatchStep, string> = {
   idle: "Idle",
   filling: "Filling",
-  settling: "Circulating before dosing",
+  filling_mixing: "Filling and mixing",
+  settling: "Mixing",
   dosing: "Dosing",
   pausing: "Between dosers",
   mixing: "Mixing",
@@ -91,7 +111,13 @@ export function readBatchStatus(states: States, prefix: string): BatchStatus | n
         })
       : [],
     levelMm: finite(a.level_mm),
+    levelPct: finite(a.level_pct),
+    fullMm: finite(a.full_mm),
     emptyMm: finite(a.empty_mm),
+    minPct: finite(a.min_pct),
+    litresPerPct: finite(a.litres_per_pct),
+    due: typeof a.due === "boolean" ? a.due : null,
+    nextRoundL: finite(a.next_round_l),
     auto: a.auto === true,
     armed: a.armed !== false,
     last: last
@@ -126,11 +152,30 @@ export function levelMm(entity: EntityState | undefined): number | null {
   return Number.isFinite(value) && factor !== undefined ? value * factor : null;
 }
 
-/** Is the reservoir almost empty: its sensor reads at or past the mark (distances grow as it empties).
- * null when there is no reading or no mark. */
-export function almostEmpty(levelMm: number | null, emptyMm: number | null): boolean | null {
-  if (levelMm === null || emptyMm === null || emptyMm <= 0) return null;
-  return levelMm >= emptyMm;
+/** Before a refill asked for by hand: why the controller would refuse it as one that could overflow
+ * the reservoir (controller.py _fill_overflow), or null. `pct` is how full it reads (null without a
+ * level), `levelSetUp` whether its level sensor and both distances are set, `litresPerPct` what 1%
+ * holds once a refill has shown it. Before that, one starts only from 10% (or the minimum, if
+ * higher) so the fill cannot overflow. */
+export function fillRefusal(
+  pct: number | null,
+  levelSetUp: boolean,
+  fillLitres: number,
+  minPct: number,
+  litresPerPct: number | null,
+): string | null {
+  if (pct === null)
+    return levelSetUp ? "The level sensor has no reading, so a fill could overflow it." : null;
+  if (litresPerPct) {
+    const rise = fillLitres / litresPerPct;
+    return pct + rise > 100
+      ? `The reservoir reads ${Math.round(pct)}%, and its ${fillLitres} L fill adds about ${Math.round(rise)}%, so it could overflow.`
+      : null;
+  }
+  const from = Math.max(10, minPct || 0);
+  return pct > from
+    ? `The reservoir reads ${Math.round(pct)}%: until a refill has shown how far its ${fillLitres} L fill raises it, a refill asked for by hand starts only from ${from}% or less.`
+    : null;
 }
 
 /** "3 min 20 s left", counted to `until`; null once it has passed or when unknown. */

@@ -2,13 +2,18 @@
 
 Pure, no Home Assistant, so the rules are testable on their own (feed_api.py stores and serves them).
 
-A batch refills the room's reservoir with fresh water for a set time, then runs the pump through the
-recirculation line and, after a short settle, doses each doser in the room's order, one after the
-other, then keeps mixing for a while. The controller app runs it; this module says what it runs.
+A batch refills the room's reservoir with fresh water for a set time, and half-way through starts the
+pump through the recirculation line. Once the fresh water stops it doses each doser in the room's
+order, one after the other a pause apart, then recirculates a little longer. The controller app runs
+it; this module says what it runs.
+
+The reservoir's level: a distance sensor above the water reads further as it empties. Its distances
+when full and when empty make that a percentage, as the controller works it out, and the reservoir
+keeps at least the minimum: a refill comes before a shot that would take it lower.
 
 The amounts: a feed recipe gives each nutrient a number of parts, and the stage a strength in mL per
-litre per part. The batch size scales them: a doser gives parts x strength x batch litres, and runs
-for that at its flow (600 mL/min unless calibrated otherwise). Athena Flower at 3 : 5 : 1 : 0.5 and
+litre per part. The fill's litres scale them (what is left in the reservoir is already mixed): a doser
+gives parts x strength x fill litres, and runs for that at its flow (600 mL/min unless calibrated otherwise). Athena Flower at 3 : 5 : 1 : 0.5 and
 1.667 mL/L per part in 145 L is 725 mL Core, 1208 mL Bloom, 242 mL Balance and 121 mL Cleanse.
 """
 
@@ -26,23 +31,37 @@ DEFAULT_FLOW = 600.0  # mL/min, a doser's flow until it is calibrated
 # field -> (lowest, highest, whole number)
 SETTINGS = {
     "fill_s": (10, 7200, True),  # how long the fresh water runs
-    "batch_l": (1, 5000, False),  # the litres the doses are worked out for
+    "batch_l": (
+        1,
+        5000,
+        False,
+    ),  # the litres the fill adds: what the doses are worked out for
+    "full_mm": (
+        0,
+        10000,
+        False,
+    ),  # the level sensor's distance to the water when full; 0 = not set
     "empty_mm": (
         0,
         10000,
         False,
-    ),  # "almost empty" distance; 0 = not set, no automatic batch
-    "settle_s": (0, 600, True),  # pump and recirc running before the first dose
+    ),  # and when empty; 0 = not set (until 2.30, "almost empty at")
+    "min_pct": (
+        0,
+        50,
+        False,
+    ),  # the least the reservoir keeps: a refill comes first; 0 = off
     "pause_s": (0, 600, True),  # between one doser and the next
-    "mix_s": (0, 7200, True),  # mixing after the last dose
+    "mix_s": (0, 7200, True),  # recirculating after the last dose
 }
 DEFAULTS = {
     "fill_s": 600,
     "batch_l": 100.0,
+    "full_mm": 0.0,
     "empty_mm": 0.0,
-    "settle_s": 20,
+    "min_pct": 5.0,
     "pause_s": 10,
-    "mix_s": 600,
+    "mix_s": 10,
 }
 FLOW = (1.0, 10000.0)  # mL/min
 STRENGTH = (0.0, 20.0)  # mL per litre per part
@@ -106,6 +125,11 @@ def clean(payload, old: dict | None = None) -> dict:
     for key, (low, high, whole) in SETTINGS.items():
         value = payload.get(key, old.get(key, DEFAULTS[key]))
         doc[key] = _number(value, low, high, whole, key.replace("_", " "))
+    if 0 < doc["empty_mm"] <= doc["full_mm"]:
+        raise ValueError(
+            "The distance when full must be less than the distance when empty: the level sensor "
+            "is above the water, so it reads further as the reservoir empties"
+        )
     dosers = payload.get("dosers", old.get("dosers", {}))
     if not isinstance(dosers, dict):
         raise ValueError("Dosers must be an object")

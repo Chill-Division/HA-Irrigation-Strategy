@@ -1,5 +1,7 @@
 import type { Room, States } from "./types";
 import { descriptor } from "./model";
+import { levelPct } from "./feed";
+import { levelMm } from "./feed-status";
 
 export interface TankReading {
   entityId: string | null;
@@ -58,8 +60,25 @@ export function tankTelemetry(states: States, room: Room, now = Date.now()) {
       : time > now
         ? "Future timestamp"
         : null;
+  // The reservoir's own level once its distances when full and when empty are set (Feed →
+  // Reservoir): the distance sensor's reading as the controller works it out, so the card shows what
+  // the controller acts on. Otherwise a mapped level sensor in %.
+  const plan = states[`sensor.crop_steering_${room.prefix}feed_plan`]?.attributes;
+  const distanceId = mapped("reservoir_distance_sensor");
+  const full = Number(plan?.full_mm),
+    empty = Number(plan?.empty_mm);
+  const own = distanceId && full > 0 && full < empty;
+  const pct = own ? levelPct(levelMm(states[distanceId]), full, empty) : null;
+  const level: TankReading = own
+    ? {
+        entityId: distanceId,
+        value: pct === null ? null : Math.round(pct * 10) / 10,
+        unit: "%",
+        issue: pct === null ? "Unavailable" : null,
+      }
+    : reading("water_level_sensor", ["%"], 0, 100);
   return {
-    level: reading("water_level_sensor", ["%"], 0, 100),
+    level,
     temperature: reading("tank_temperature_sensor", ["°c", "°f", "k"]),
     pump: binary("pump"),
     fill: binary("tank_fill_entity"),

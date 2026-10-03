@@ -38,6 +38,7 @@ from crop_steering_engine import (
     EC_SETTLE_MIN,
     Reason,
     decide,
+    next_shot_size,
     waiting_for,
     ZoneParams,
     ZoneSnapshot,
@@ -439,13 +440,24 @@ RESERVOIR_KEYS = (
     "recirc_switch",
     *(f"doser_{number}_switch" for number in range(1, 7)),
 )
-# A batch's steps: filling (the fresh water runs), settling (pump and recirculation on before the
-# first dose), dosing (one doser on), pausing (between dosers) and mixing (after the last dose).
-BATCH_STEPS = ("filling", "settling", "dosing", "pausing", "mixing")
+# A batch's steps: filling (the fresh water runs), filling_mixing (its second half, with the pump and
+# the recirculation line running too), dosing (one doser on), pausing (between dosers) and mixing
+# (recirculating after the last dose). settling, an older controller's circulation before the first
+# dose, is still known in a saved record, so a batch a restart interrupted there is switched off.
+BATCH_STEPS = ("filling", "filling_mixing", "dosing", "pausing", "mixing", "settling")
 # Steps that end by switching off something that must not run long: the fresh water, a doser. While
 # one runs in any room, no room starts a shot, which would hold this loop past the moment to stop it.
-BATCH_TIMED = ("filling", "dosing")
-BATCH_LOW_PASSES = 3  # passes the reservoir must read almost empty before an automatic batch
+BATCH_TIMED = ("filling", "filling_mixing", "dosing")
+# How each step reads where a shot waits for it, and in the log.
+BATCH_STEP_WORDS = {"filling": "filling", "filling_mixing": "filling and mixing", "dosing": "dosing",
+                    "pausing": "between dosers", "mixing": "mixing", "settling": "mixing"}
+BATCH_LOW_PASSES = 3  # passes a refill must read due before an automatic one starts (one bad echo)
+FILL_RISE_PCT = 5.0  # half-way through its fill, the reservoir must read at least this much fuller
+LEARN_RISE_PCT = 10.0  # a refill that raised it less than this does not teach its litres per 1%
+# Before a refill has shown how much its fill raises the level, one asked for by hand starts only from
+# this low, or the room's minimum if higher: a timed fill into a fuller reservoir could overflow it.
+UNLEARNED_FILL_FROM_PCT = 10.0
+LEVEL_MISSING_PASSES = 5  # passes the level sensor may read nothing before it is reported (CS-705)
 # Between passes, while a batch fills or doses, how often it is checked for a reason to stop (the
 # room's watering switched off, a switch gone off): the fresh water stops within seconds, not a pass.
 BATCH_WATCH_S = 5.0
@@ -480,8 +492,11 @@ def fresh_batch():
         "dosed": {},  # doser -> mL it gave
         "last_request": None,  # the "Mix a Batch Now" press last dealt with
         "last": None,  # how the last batch ended
-        "low_seen": 0,  # passes in a row the reservoir read almost empty
-        "armed": True,  # an automatic batch may start: false after one, until the level reads fuller
+        "low_seen": 0,  # passes in a row a refill read due
+        "armed": True,  # an automatic batch may start: false after one, until a refill reads not due
+        "litres_per_pct": None,  # what 1% of the reservoir holds, learned from refills; None until one
+        "start_pct": None,  # the level when the batch running now started, or None
+        "fill_end": None,  # when its fresh water stops
         "interrupted": None,  # stopped by the app stopping: said once when it starts again
         "switches": None,  # what this batch drives, taken when it starts (so a restart can stop them)
     }
@@ -497,6 +512,12 @@ def restore_batch(saved):
         value = saved.get(key, default)
         wanted = kinds.get(key)
         if wanted is not None and type(value) is not wanted:
+            continue
+        if key in ("litres_per_pct", "start_pct") and value is not None and not (
+            type(value) in (int, float) and math.isfinite(value) and (value > 0 or key == "start_pct")
+        ):
+            continue
+        if key == "fill_end" and value is not None and not isinstance(value, str):
             continue
         if key in ("plan", "last", "interrupted", "switches") and value is not None and not isinstance(
             value, dict
@@ -514,10 +535,11 @@ def feed_plan(attrs):
     if not isinstance(attrs, dict):
         return None
     try:
-        plan = {
-            key: float(attrs[key])
-            for key in ("fill_s", "batch_l", "empty_mm", "settle_s", "pause_s", "mix_s")
-        }
+        plan = {key: float(attrs[key]) for key in ("fill_s", "batch_l", "pause_s", "mix_s")}
+        # The reservoir's distances and minimum: an integration from before them has none (0: no
+        # level, no minimum); settle_s is an older integration's, read and not used.
+        for key in ("full_mm", "empty_mm", "min_pct", "settle_s"):
+            plan[key] = float(attrs.get(key) or 0.0)
         doses = []
         for dose in attrs.get("doses") or []:
             number, ml, seconds = int(dose["doser"]), float(dose["ml"]), float(dose["seconds"])
@@ -544,6 +566,16 @@ def level_mm(reading):
         str(attrs.get("unit_of_measurement", "")).strip().lower()
     )
     return value * factor if factor is not None and math.isfinite(value) else None
+
+
+def level_pct(mm, full_mm, empty_mm):
+    """How full the reservoir is, %: 100 at its distance when full, 0 at its distance when empty (the
+    sensor is above the water, so the distance grows as it empties), clamped between. None without a
+    reading, or without both distances in the right order."""
+    if mm is None or not 0 < full_mm < empty_mm:
+        return None
+    mm = min(max(mm, full_mm), empty_mm)
+    return 100.0 - (mm - full_mm) / (empty_mm - full_mm) * 100.0
 
 
 def _when(value):
@@ -1978,13 +2010,71 @@ class Controller:
     def _batch_hold(self, room):
         """Why a shot waits for a nutrient batch, or None. A room's batch holds its every shot (the
         pump is mixing), and one filling or dosing in any room holds every room's (BATCH_TIMED)."""
-        if room.batch["step"] != "idle":
-            return f"mixing a nutrient batch ({room.batch['step']})"
+        step = room.batch["step"]
+        if step != "idle":
+            return f"refilling its reservoir ({BATCH_STEP_WORDS.get(step, step)})"
         for other in self.rooms:
             if other is not room and other.batch["step"] in BATCH_TIMED:
                 name = getattr(other, "room_name", None) or other.slug
-                return f"waiting for {name}'s nutrient batch ({other.batch['step']})"
+                words = BATCH_STEP_WORDS.get(other.batch["step"], other.batch["step"])
+                return f"waiting for {name}'s reservoir refill ({words})"
         return None
+
+    def _shot_litres(self, room, zone, size):
+        """What a shot of `size` % takes from the reservoir: that much of the zone's substrate."""
+        substrate = self._substrate_l(room, zone)
+        return size / 100.0 * substrate if math.isfinite(substrate) and substrate > 0 else 0.0
+
+    def _reservoir_block(self, room, zone, size):
+        """Why a shot waits for the reservoir, or None: it would take the reservoir under its minimum,
+        with what this pass's shots have taken (or, before a refill has shown what 1% holds, the
+        reservoir already reads under it). With automatic refills on the shot waits for one, which the
+        next passes start (_refill_due counts the litres waiting); without, or when one cannot start,
+        watering is held, and said so (CS-704), until it reads enough again."""
+        reading = getattr(room, "_res", None)
+        if not reading or reading["pct"] is None or reading["min"] <= 0:
+            return None
+        per_pct = room.batch.get("litres_per_pct")
+        litres = (getattr(room, "_drawn_l", 0.0) or 0.0) + self._shot_litres(room, zone, size)
+        if reading["pct"] - (litres / per_pct if per_pct else 0.0) >= reading["min"]:
+            return None
+        room._waiting_l = max(getattr(room, "_waiting_l", 0.0) or 0.0, litres)
+        level = f"the reservoir reads {reading['pct']:.0f}%"
+        why = (f"{level}, and this shot would take it under its {reading['min']:g}% minimum" if per_pct
+               else f"{level}, under its {reading['min']:g}% minimum")
+        if not self._on(f"switch.crop_steering_{room.prefix}auto_batches", False):
+            cannot = "automatic refills are off"
+        elif not room.batch["armed"]:
+            cannot = "the last refill did not raise it"
+        else:
+            cannot = self._batch_refusal(room, room.hw["reservoir"], reading["plan"])
+        if cannot is None:
+            return f"waiting for a reservoir refill: {why}"
+        self._alert(
+            f"res_low_{room.slug}",
+            "CS-704",
+            "watering held, reservoir too low",
+            f"{why[:1].upper()}{why[1:]}, so no zone is watered from it: a pump that runs it dry loses "
+            f"its prime. It can't refill by itself now: {cannot}. Refill it (Mix a Batch Now, or by "
+            "hand); watering goes on by itself once it reads enough.",
+            room=room,
+        )
+        return f"reservoir too low: {why} ({cannot})"
+
+    def _plan_next_round(self, room, snaps, params):
+        """Litres the room's next round of shots takes from its reservoir: every zone's next routine
+        shot as the engine would size it from where the zone is now (next_shot_size), or a maintenance
+        shot for a zone without a probe. What a refill is planned against (_refill_due)."""
+        litres = 0.0
+        for zone in room.zones:
+            p = params.get(zone)
+            if p is None:
+                continue
+            st, snap = room.state[zone], snaps.get(zone)
+            size = (next_shot_size(dataclasses.replace(snap, phase=st["phase"], shot_count=st["shots"]), p)
+                    if snap is not None else p.p2_shot_size)
+            litres += self._shot_litres(room, zone, size)
+        return litres
 
     def _batch_tick(self, room, now):
         """Start, move on or stop this room's nutrient batch, and report it. First in every pass; the
@@ -2008,6 +2098,7 @@ class Controller:
                 "batch.",
                 room=room,
             )
+        room._res = self._reservoir_reading(room, res) if res is not None else None
         if batch["step"] != "idle":
             if res is None:
                 self._batch_stop(room, now, "its reservoir is no longer mapped in Settings → Rooms & hardware")
@@ -2018,17 +2109,82 @@ class Controller:
         if res is not None:
             self._batch_publish(room, now, res)
 
+    def _reservoir_reading(self, room, res):
+        """The room's reservoir this pass: its feed plan, the level sensor's distance (mm) and how full
+        that is (%), and its minimum. Says once (CS-705) when a level that is set up reads nothing."""
+        plan = feed_plan(ha_get(f"sensor.crop_steering_{room.prefix}feed_plan")[1])
+        mm = level_mm(ha_get(res["distance"])) if res.get("distance") else None
+        full, empty = (plan["full_mm"], plan["empty_mm"]) if plan else (0.0, 0.0)
+        pct = level_pct(mm, full, empty)
+        if res.get("distance") and 0 < full < empty:
+            missing = getattr(room, "_res_missing", 0) + 1 if mm is None else 0
+            room._res_missing = missing
+            if missing >= LEVEL_MISSING_PASSES:
+                self._alert(
+                    f"res_level_{room.slug}",
+                    "CS-705",
+                    "reservoir level not reading",
+                    f"The reservoir's level sensor ({res['distance']}) has read nothing for "
+                    f"{missing} minutes. Watering carries on, but the controller can't tell how much is "
+                    "left: no refill starts by itself, and nothing keeps the reservoir above its "
+                    "minimum. Check the sensor.",
+                    room=room,
+                )
+            elif not missing:
+                self._resolve_alert(f"res_level_{room.slug}")
+        return {"plan": plan, "mm": mm, "pct": pct, "min": (plan or {}).get("min_pct", 0.0) or 0.0}
+
+    def _refill_due(self, room):
+        """Would the room's next round of shots take its reservoir under its minimum: True or False,
+        None when it can't tell (no level, or no minimum). The round is every zone's next shot
+        (_plan_next_round), in % of the reservoir once a refill has shown what 1% holds; before that,
+        the level alone: due once it reads under the minimum."""
+        reading = getattr(room, "_res", None)
+        if not reading or reading["pct"] is None or reading["min"] <= 0:
+            return None
+        per_pct = room.batch.get("litres_per_pct")
+        litres = max(getattr(room, "_next_round_l", 0.0) or 0.0, getattr(room, "_waiting_l", 0.0) or 0.0)
+        need = litres / per_pct if per_pct else 0.0
+        return reading["pct"] - need < reading["min"]
+
+    def _fill_overflow(self, room, plan, requested):
+        """Why the fill could overflow the reservoir now, or None. Once a refill has shown what 1%
+        holds, the fill must fit under 100%; before that, one asked for by hand starts only from
+        UNLEARNED_FILL_FROM_PCT (or the minimum, if higher). A level that is set up and reads nothing
+        could be anything; without a level set up there is nothing to check."""
+        reading = getattr(room, "_res", None) or {}
+        pct = reading.get("pct")
+        if pct is None:
+            distance = (room.hw.get("reservoir") or {}).get("distance")
+            if distance and 0 < plan.get("full_mm", 0.0) < plan.get("empty_mm", 0.0):
+                return f"the reservoir level ({distance}) reads nothing, so a fill could overflow it"
+            return None
+        per_pct = room.batch.get("litres_per_pct")
+        if per_pct:
+            rise = plan["batch_l"] / per_pct
+            if pct + rise > 100.0:
+                return (f"the reservoir reads {pct:.0f}%, and its {plan['batch_l']:g} L fill adds about "
+                        f"{rise:.0f}%, so it could overflow")
+            return None
+        start = max(UNLEARNED_FILL_FROM_PCT, plan.get("min_pct") or 0.0)
+        if requested and pct > start:
+            return (f"the reservoir reads {pct:.0f}%: until a refill has shown how far its "
+                    f"{plan['batch_l']:g} L fill raises it, one is asked for by hand only from {start:.0f}% or "
+                    "less, so it cannot overflow")
+        return None
+
     def _batch_idle(self, room, now, res):
         """No batch running: start one when "Mix a Batch Now" was pressed, or, with automatic batches
         on, when the reservoir has read almost empty for BATCH_LOW_PASSES passes in a row."""
         batch = room.batch
-        plan = feed_plan(ha_get(f"sensor.crop_steering_{room.prefix}feed_plan")[1])
-        empty = plan["empty_mm"] if plan else 0.0
-        level = level_mm(ha_get(res["distance"])) if res.get("distance") else None
-        low = level is not None and empty > 0 and level >= empty
-        if level is not None and empty > 0 and not low and not batch["armed"]:
-            batch["armed"] = True  # it reads fuller again: the next time it runs low may start a batch
-            self._save_state()
+        plan = room._res["plan"]
+        due = self._refill_due(room)
+        if not due:
+            self._resolve_alert(f"res_low_{room.slug}")  # watering is not held for it (any more)
+        if due is False:
+            if not batch["armed"]:
+                batch["armed"] = True  # the next time it runs short may start a batch
+                self._save_state()
         requested = False
         pressed = ha_get(f"button.crop_steering_{room.prefix}mix_batch")[0]
         if pressed not in (None, "", "unavailable") and pressed != batch["last_request"]:
@@ -2044,23 +2200,14 @@ class Controller:
                     room, now, f"Mix a Batch Now pressed at {pressed[:16]} was not acted on: too long ago"
                 )
         auto = False
-        if low and batch["armed"] and self._on(f"switch.crop_steering_{room.prefix}auto_batches", False):
+        if due and batch["armed"] and self._on(f"switch.crop_steering_{room.prefix}auto_batches", False):
             batch["low_seen"] += 1
             auto = batch["low_seen"] >= BATCH_LOW_PASSES
         else:
             batch["low_seen"] = 0
         if not (requested or auto):
             return
-        why = self._batch_refusal(room, res, plan)
-        if not why and not low and res.get("distance") and empty > 0:
-            # Asked for by hand with the reservoir not yet almost empty: its fill time is for an
-            # almost empty one, and would overflow it.
-            why = (
-                f"the reservoir level ({res['distance']}) reads nothing"
-                if level is None
-                else f"the reservoir reads {level:.0f} mm from the top, short of its almost-empty mark "
-                f"({empty:.0f} mm), so its {plan['fill_s']:g} s fill could overflow it"
-            )
+        why = self._batch_refusal(room, res, plan) or self._fill_overflow(room, plan, requested)
         if why:
             batch["low_seen"] = 0
             self._alert(
@@ -2068,14 +2215,23 @@ class Controller:
                 "CS-703",
                 "a nutrient batch could not start",
                 "A nutrient batch was "
-                + ("asked for" if requested else "due, the reservoir reading almost empty,")
+                + ("asked for" if requested else "due, the reservoir running short,")
                 + f" but could not start: {why}. Nothing was switched on. Once that is sorted, press "
                 "Mix a Batch Now"
                 + (", or wait for the next automatic one." if not requested else "."),
                 room=room,
             )
             return
-        self._batch_start(room, now, res, plan, "asked for" if requested else "the reservoir read almost empty")
+        self._batch_start(room, now, res, plan, "asked for" if requested else self._refill_why(room))
+
+    def _refill_why(self, room):
+        """Why an automatic refill starts, in words: the level and what the next round needs."""
+        reading = room._res
+        need = getattr(room, "_next_round_l", 0.0) or 0.0
+        if room.batch.get("litres_per_pct") and need:
+            return (f"the reservoir reads {reading['pct']:.0f}%, and the next round of shots ({need:.1f} L) "
+                    f"would take it under its {reading['min']:g}% minimum")
+        return f"the reservoir reads {reading['pct']:.0f}%, under its {reading['min']:g}% minimum"
 
     def _batch_refusal(self, room, res, plan):
         """Why a batch cannot start now, or None."""
@@ -2140,12 +2296,18 @@ class Controller:
             },
         )
         on_at = datetime.now()
-        batch["until"] = (on_at + timedelta(seconds=plan["fill_s"])).isoformat()
+        # The fill runs in two halves: the fresh water alone, then the pump and the recirculation line
+        # with it (_batch_step), once the level shows it is filling.
+        batch.update(
+            start_pct=(getattr(room, "_res", None) or {}).get("pct"),
+            fill_end=(on_at + timedelta(seconds=plan["fill_s"])).isoformat(),
+            until=(on_at + timedelta(seconds=plan["fill_s"] / 2.0)).isoformat(),
+        )
         self._save_state()  # before anything opens: a crash from here on stops it at the next start
         if not self._batch_switch(res["fresh"], "on"):
             return self._batch_stop(room, now, f"the fresh water ({res['fresh']}) did not switch on")
         self._batch_note(
-            room, now, f"nutrient batch {plan.get('stage')} started ({why}): filling for {plan['fill_s']:g} s"
+            room, now, f"reservoir refill started, {plan.get('stage')} ({why}): fresh water for {plan['fill_s']:g} s"
         )
 
     def _batch_switch(self, entity, want):
@@ -2163,8 +2325,11 @@ class Controller:
             return "a hardware fault was latched"
         batch = room.batch
         switches = batch.get("switches") or {}
-        need = [switches.get("fresh")] if batch["step"] == "filling" else [switches.get("recirc"), switches.get("pump")]
-        if batch["step"] == "dosing":
+        step = batch["step"]
+        need = [switches.get("fresh")] if step in ("filling", "filling_mixing") else []
+        if step != "filling":
+            need += [switches.get("recirc"), switches.get("pump")]
+        if step == "dosing":
             need.append(self._batch_doser(room))
         for entity in (e for e in need if e):
             state = str(ha_get(entity)[0]).lower()
@@ -2188,17 +2353,24 @@ class Controller:
             return
         step = batch["step"]
         if step == "filling":
-            if not self._switch_off_confirmed([switches["fresh"]]):
-                return self._batch_stop(room, now, f"the fresh water ({switches['fresh']}) did not switch off")
+            # Half-way: the level must show it is filling before the pump runs from it.
+            start = batch.get("start_pct")
+            level = (level_pct(level_mm(ha_get(res["distance"])), plan.get("full_mm", 0.0), plan.get("empty_mm", 0.0))
+                     if res.get("distance") and start is not None else None)
+            if start is not None and (level is None or level < start + FILL_RISE_PCT):
+                return self._batch_stop(room, now, (start, level), did_not_fill=True)
             # the recirculation line first, then the pump: it never runs against a closed line
             if not (self._batch_switch(switches["recirc"], "on") and self._batch_switch(switches["pump"], "on")):
                 return self._batch_stop(room, now, "the pump or the recirculation solenoid did not switch on")
-            batch.update(step="settling", until=(datetime.now() + timedelta(seconds=plan["settle_s"])).isoformat())
-        elif step == "settling":
-            if res.get("distance") and plan["empty_mm"] > 0:
-                level = level_mm(ha_get(res["distance"]))
-                if level is None or level >= plan["empty_mm"]:
-                    return self._batch_stop(room, now, level, did_not_fill=True)
+            batch.update(step="filling_mixing", until=batch.get("fill_end") or datetime.now().isoformat())
+            self._batch_note(room, now, "reservoir refill half-way"
+                             + (f", filling ({start:.0f}% → {level:.0f}%)" if start is not None else "")
+                             + ": pump and recirculation on")
+        elif step == "filling_mixing":
+            if not self._switch_off_confirmed([switches["fresh"]]):
+                return self._batch_stop(room, now, f"the fresh water ({switches['fresh']}) did not switch off")
+            self._batch_dose(room, now, 0)
+        elif step == "settling":  # an older controller's step, saved part-way: dose as it would have
             self._batch_dose(room, now, 0)
         elif step == "dosing":
             self._batch_dose_done(room, now)
@@ -2267,6 +2439,8 @@ class Controller:
             off = [*(switches.get("dosers") or {}).values(), switches.get("fresh"), switches.get("pump"), switches.get("recirc")]
         elif step == "filling":
             off = [switches.get("fresh")]
+        elif step == "filling_mixing":
+            off = [switches.get("fresh"), switches.get("pump"), switches.get("recirc")]
         elif step == "dosing":
             off = [self._batch_doser(room), switches.get("pump"), switches.get("recirc")]
         else:
@@ -2277,20 +2451,22 @@ class Controller:
         if step == "dosing" and not every_switch:
             self._batch_given(room, off_at)
         stage = (batch.get("plan") or {}).get("stage") or "no stage"
-        where = {"filling": "filling", "settling": "starting to mix", "dosing": "dosing",
-                 "pausing": "dosing", "mixing": "mixing"}.get(step, step)
+        where = {"filling": "filling", "filling_mixing": "filling", "settling": "starting to mix",
+                 "dosing": "dosing", "pausing": "dosing", "mixing": "mixing"}.get(step, step)
         given = ", ".join(f"doser {n} {ml:g} mL" for n, ml in batch["dosed"].items()) or "nothing"
         if did_not_fill:
+            start, level = why
             self._batch_finish(room, now, "stopped: the reservoir did not fill")
             self._alert(
                 f"batch_{room.slug}",
                 "CS-702",
                 "the reservoir did not fill",
-                "The fresh water ran for its fill time, but the reservoir still reads "
-                + ("nothing" if why is None else f"{why:.0f} mm")
-                + " from the top, at or past its almost-empty mark, so no nutrient was dosed into it "
-                f"(batch {stage}). Check the water supply, the fresh-water solenoid and the level sensor, "
-                "then press Mix a Batch Now.",
+                "The fresh water ran for half its fill time, but the reservoir reads "
+                + ("nothing" if level is None else f"{level:.0f}%")
+                + f" (it started at {start:.0f}%): it is not filling. The fresh water was switched off "
+                f"and the pump never started, so nothing was mixed or dosed (refill {stage}). Watering "
+                "stays held while the reservoir is under its minimum. Check the water supply, the "
+                "fresh-water solenoid and the level sensor, then press Mix a Batch Now.",
                 room=room,
             )
         else:
@@ -2314,9 +2490,26 @@ class Controller:
         batch = room.batch
         plan = batch.get("plan") or {}
         batch["last"] = {"at": now.isoformat(), "result": result, "stage": plan.get("stage"), "dosed": dict(batch["dosed"])}
-        batch.update(step="idle", until=None, on_at=None, index=0)
+        learned = self._learn_litres(room, plan) if result == "done" else None
+        batch.update(step="idle", until=None, on_at=None, index=0, start_pct=None, fill_end=None)
         self._save_state()
-        self._batch_note(room, now, f"nutrient batch {plan.get('stage')} {result}")
+        self._batch_note(room, now, f"reservoir refill {plan.get('stage')} {result}" + (f"; {learned}" if learned else ""))
+
+    def _learn_litres(self, room, plan):
+        """What 1% of the reservoir holds, from a refill that went all the way: its fill's litres over
+        how far the level rose. Averaged with what earlier refills showed. Returns what was learned,
+        in words, or None (no level, or too small a rise to go by)."""
+        batch, res = room.batch, room.hw.get("reservoir") or {}
+        start = batch.get("start_pct")
+        end = (level_pct(level_mm(ha_get(res["distance"])), plan.get("full_mm", 0.0), plan.get("empty_mm", 0.0))
+               if res.get("distance") else None)
+        if start is None or end is None or end - start < LEARN_RISE_PCT or not plan.get("batch_l"):
+            return None
+        sample = plan["batch_l"] / (end - start)
+        old = batch.get("litres_per_pct")
+        batch["litres_per_pct"] = round(sample if not old else 0.7 * old + 0.3 * sample, 3)
+        return (f"its {plan['batch_l']:g} L raised it from {start:.0f}% to {end:.0f}%: about "
+                f"{batch['litres_per_pct']:.2f} L per 1%")
 
     def _batch_note(self, room, now, text):
         tag = "" if room.prefix == "" else f"{room.slug} "
@@ -2328,7 +2521,8 @@ class Controller:
         dashboard shows of it."""
         batch = room.batch
         running = batch["step"] != "idle"
-        plan = (batch.get("plan") if running else feed_plan(ha_get(f"sensor.crop_steering_{room.prefix}feed_plan")[1])) or {}
+        reading = getattr(room, "_res", None) or {}
+        plan = (batch.get("plan") if running else reading.get("plan")) or {}
         dose = plan["doses"][batch["index"]] if running and batch["step"] == "dosing" else None
         ha_set(
             f"sensor.crop_steering_{room.prefix}batch_status",
@@ -2341,8 +2535,15 @@ class Controller:
                 "doser": dose["doser"] if dose else None,
                 "nutrient": dose["label"] if dose else None,
                 "doses": [{**d, "dosed": batch["dosed"].get(str(d["doser"]))} for d in plan.get("doses") or []],
-                "level_mm": level_mm(ha_get(res["distance"])) if res.get("distance") else None,
+                "level_mm": reading.get("mm"),
+                "level_pct": None if reading.get("pct") is None else round(reading["pct"], 1),
+                "full_mm": plan.get("full_mm"),
                 "empty_mm": plan.get("empty_mm"),
+                "min_pct": plan.get("min_pct"),
+                "litres_per_pct": batch.get("litres_per_pct"),
+                # will the room's next round of shots take it under its minimum (None: can't tell)
+                "due": self._refill_due(room) if not running else None,
+                "next_round_l": round(getattr(room, "_next_round_l", 0.0) or 0.0, 2),
                 "auto": self._on(f"switch.crop_steering_{room.prefix}auto_batches", False),
                 "armed": batch["armed"],
                 "last": {**batch["last"], "at": _shown(batch["last"].get("at"))} if batch["last"] else None,
@@ -2707,6 +2908,12 @@ class Controller:
         number is always there, because the entity ids and the log say zone N."""
         name = getattr(room, "zone_names", {}).get(zone)
         return f"{name} (Z{zone})" if name else f"Zone {zone}"
+
+    def _resolve_alert(self, key):
+        """Take down notification f2_{key} once what it said is over."""
+        if self._alerted.pop(key, None) is not None:
+            self._alert_codes.pop(key, None)
+            ha_call("persistent_notification", "dismiss", notification_id=f"f2_{key}")
 
     def _alert_due(self, key, code=None):
         """Whether `key` may be raised now: out of its 30-minute repeat window, or raised under a
@@ -4144,6 +4351,7 @@ class Controller:
             )
             room._blind_zones.add(zone)
         room._blind_zones = {z for z in room._blind_zones if z not in snaps}
+        room._drawn_l = room._waiting_l = 0.0  # this pass's shots, and any waiting for a refill
         if room._beat is None or not room._beat[1]:
             self._report_before_acting(room, decisions, snaps, now)
         pub = {}
@@ -4168,6 +4376,8 @@ class Controller:
             # would have stopped (ZoneSnapshot.steering_held), so the hold is said here instead.
             block = (self._blocked(room, zone, reason) if fire
                      else strategy_block(getattr(room, "strategy_snapshot", None), zone))
+            if fire and not block:
+                block = self._reservoir_block(room, zone, size)
             acted = self._act_zone(
                 room,
                 zone,
@@ -4180,6 +4390,8 @@ class Controller:
             )
             if acted is not None:  # held back at the daily budget after all: publish what happened
                 fire, size, reason = decisions[zone] = acted
+            if fire and not block:
+                room._drawn_l += self._shot_litres(room, zone, size)
             snap = snaps.get(zone)
             # Estimated hours to the next P2 top-up: time for VWC to dry from now down to the
             # (EC-adjusted) re-water threshold at the current dryback rate. Only meaningful in P2;
@@ -4217,6 +4429,7 @@ class Controller:
                 room=room,
                 zone=z,
             )
+        room._next_round_l = self._plan_next_round(room, snaps, params)
         room._was_lights_on = lights_on
         return pub
 

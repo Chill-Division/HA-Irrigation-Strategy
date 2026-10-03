@@ -16,7 +16,7 @@ Captured in September 2026 from the compiled application with isolated demo data
 
 ## Feed: Reservoir
 
-![Nutrient batches: a batch's steps, the reservoir level, automatic batches and the feed stage in use](../img/reservoir.png)
+![Nutrient batches: a refill's steps, the reservoir level and its minimum, automatic refills and the feed stage in use](../img/reservoir.png)
 
 ## Feed: Stock tanks
 

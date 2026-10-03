@@ -25,7 +25,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 | CS-4xx | **Settings**: A setting is missing, out of range, or read from somewhere new. |
 | CS-5xx | **Checks across zones**: Advice from comparing a room's zones. |
 | CS-6xx | **Repairs cards**: Raised by the integration, under Settings → Repairs. |
-| CS-7xx | **Nutrient batches**: The room's reservoir refilled, mixed and dosed by the controller. |
+| CS-7xx | **Reservoir and nutrient batches**: The room's reservoir: its level, and the refills the controller fills, mixes and doses. |
 
 ## All codes
 
@@ -69,6 +69,8 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 | [CS-701](#cs-701) | Nutrient batch stopped part-way | Warning | Notification |
 | [CS-702](#cs-702) | The reservoir did not fill | Warning | Notification |
 | [CS-703](#cs-703) | A nutrient batch could not start | Warning | Notification |
+| [CS-704](#cs-704) | Watering held, reservoir too low | Critical | Notification |
+| [CS-705](#cs-705) | Reservoir level not reading | Warning | Notification |
 
 ## Sensors (CS-1xx)
 
@@ -815,7 +817,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 - Refill the tank, then press Refilled in Crop Steering → Feed → Stock tanks.
 - Or set the level you read off the tank. The card clears itself once every tank is above its low mark.
 
-## Nutrient batches (CS-7xx)
+## Reservoir and nutrient batches (CS-7xx)
 
 <a id="cs-701"></a>
 
@@ -823,9 +825,9 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 *Warning · Notification*
 
-**What it means.** The room's nutrient batch stopped before it finished. The notification says where it was (filling, starting to mix, dosing or mixing), why it stopped, and what each doser had given so far.
+**What it means.** The room's reservoir refill stopped before it finished. The notification says where it was (filling, dosing or mixing), why it stopped, and what each doser had given so far.
 
-**Watering meanwhile.** The room's watering carries on as usual from the reservoir, which holds whatever the batch had reached.
+**Watering meanwhile.** The room's watering carries on from the reservoir, which holds whatever the refill had reached, as long as that is above its minimum.
 
 **Likely causes**
 
@@ -846,9 +848,9 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 *Warning · Notification*
 
-**What it means.** The fresh water ran for its fill time, but the reservoir's level sensor still read at or past its almost-empty mark, so no nutrient was dosed.
+**What it means.** Half-way through its fill time the reservoir's level had not risen (or read nothing), so the fresh water was switched off before the pump started, and nothing was mixed or dosed.
 
-**Watering meanwhile.** The room's watering carries on from whatever is in the reservoir. No automatic batch starts again until the level reads fuller.
+**Watering meanwhile.** Held while the reservoir is under its minimum (CS-704). No automatic refill starts again until the reservoir reads enough.
 
 **Likely causes**
 
@@ -860,7 +862,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 - Check the water supply and the fresh-water solenoid.
 - Check that the level sensor's reading moves when the water level does.
-- Then press Mix a Batch Now.
+- Then press Mix a Batch Now, or refill it by hand.
 
 <a id="cs-703"></a>
 
@@ -868,9 +870,9 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 *Warning · Notification*
 
-**What it means.** A nutrient batch was asked for (Mix a Batch Now), or was due because the reservoir read almost empty with automatic batches on, but could not start. The notification names why. Nothing was switched on.
+**What it means.** A refill was asked for (Mix a Batch Now), or was due because the room's next shots would take the reservoir under its minimum with automatic refills on, but could not start. The notification names why. Nothing was switched on.
 
-**Watering meanwhile.** Unchanged.
+**Watering meanwhile.** Unchanged, until the reservoir reaches its minimum (CS-704).
 
 **Likely causes**
 
@@ -878,9 +880,51 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 - The room's watering switch is off, the room is switched off, a hardware hold is latched or a setup change is waiting.
 - The pump, the main line, a zone valve, the fresh-water or recirculation solenoid or a doser reads on or offline: something else is using it.
 - The reservoir, its pump or its recirculation solenoid is not mapped in Settings → Rooms & hardware.
-- Asked for by hand while the reservoir's level sensor read short of its almost-empty mark, or read nothing: its fill time could overflow it.
+- The fill could overflow the reservoir: it reads too full for the litres the fill adds, its level reads nothing, or, before a refill has shown how far the fill raises it, one asked for by hand reads above 10% (or its minimum).
 
 **Suggested fixes**
 
 - Deal with the reason the notification names, then press Mix a Batch Now.
-- For a reservoir that is not yet almost empty, wait for it to run down, or drain it first.
+- For a reservoir that is too full for a fill, wait for it to run down, or drain it first.
+
+<a id="cs-704"></a>
+
+### CS-704: Watering held, reservoir too low
+
+*Critical · Notification*
+
+**What it means.** A shot would take the room's reservoir under its minimum (or, before a refill has shown how much 1% holds, it already reads under it), and no refill can start by itself: automatic refills are off, the last one did not raise it, or something stops one. A pump that runs the reservoir dry loses its prime.
+
+**Watering meanwhile.** No zone in the room is watered from the reservoir until it reads enough again; then watering goes on by itself.
+
+**Likely causes**
+
+- The reservoir ran down with automatic refills switched off.
+- The last refill did not raise the level (CS-702).
+- A refill could not start (the notification says why).
+
+**Suggested fixes**
+
+- Refill it: press Mix a Batch Now, or fill it by hand.
+- To refill by itself next time, turn on automatic refills on the Feed → Reservoir page.
+- A pump that primes itself can go lower: set the reservoir's minimum to 0% to turn this off.
+
+<a id="cs-705"></a>
+
+### CS-705: Reservoir level not reading
+
+*Warning · Notification*
+
+**What it means.** The reservoir's level sensor has read nothing for 5 minutes, with the room's distances when full and when empty set.
+
+**Watering meanwhile.** Carries on, but the controller can't tell how much is left: no refill starts by itself, and nothing keeps the reservoir above its minimum.
+
+**Likely causes**
+
+- The sensor's device is offline, or reports unknown or unavailable.
+- The sensor mapped in Settings → Rooms & hardware was renamed or removed.
+
+**Suggested fixes**
+
+- Check the level sensor and its device in Home Assistant.
+- Check the reservoir by eye until it reads again.

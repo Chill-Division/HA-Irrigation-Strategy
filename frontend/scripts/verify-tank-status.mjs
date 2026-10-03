@@ -47,7 +47,9 @@ try {
   await page.goto(`${origin}/dashboard.html?demo=1#/overview`);
   const tank = page.locator("[data-tank-status]");
   await tank.waitFor();
-  assert.equal(await tank.locator("[data-tank-level]").getAttribute("data-tank-level"), "42");
+  // The reservoir's own level, as the controller works it out: 640 mm between 125 (full) and 850
+  // (empty) is 29%, ahead of the room's level sensor in % (42).
+  assert.equal(await tank.locator("[data-tank-level]").getAttribute("data-tank-level"), "29");
   assert.equal(await tank.locator("[data-pump-state]").getAttribute("data-pump-state"), "on");
   assert.match(await tank.innerText(), /17.6 °C/);
   assert.doesNotMatch(await tank.innerText(), /mS\/cm|\bpH\b/, "no tank EC or pH any more");

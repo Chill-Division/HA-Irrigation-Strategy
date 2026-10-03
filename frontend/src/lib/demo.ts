@@ -106,7 +106,7 @@ export function createDemo(now = Date.now()): States {
         unit_of_measurement: "mS/cm",
       });
     // What the integration publishes for every room's nutrient batches, and, for Flower 2, what the
-    // controller reports: its reservoir reads 640 mm from the top, short of its almost-empty mark.
+    // controller reports: its reservoir reads 640 mm to the water, 29% full, plenty above its 5%.
     const feed = index ? null : sampleFeed();
     const plan = feed
       ? planOf(feed, mappedNumbers(DOSER_SWITCHES))
@@ -115,10 +115,11 @@ export function createDemo(now = Date.now()): States {
           stage_id: null,
           fill_s: 600,
           batch_l: 100,
+          full_mm: 0,
           empty_mm: 0,
-          settle_s: 20,
+          min_pct: 5,
           pause_s: 10,
-          mix_s: 600,
+          mix_s: 10,
           doses: [],
           problem: "No doser is mapped in Settings → Rooms & hardware.",
         };
@@ -145,7 +146,13 @@ export function createDemo(now = Date.now()): States {
         nutrient: null,
         doses: plan.doses.map((d) => ({ ...d, dosed: null })),
         level_mm: 640,
+        level_pct: 29,
+        full_mm: plan.full_mm,
         empty_mm: plan.empty_mm,
+        min_pct: plan.min_pct,
+        litres_per_pct: 2.07,
+        due: false,
+        next_round_l: 7.7,
         auto: true,
         armed: true,
         last: {

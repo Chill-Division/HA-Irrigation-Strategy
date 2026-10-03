@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The reservoir never runs dry.** With the reservoir's distances when full and empty set (Feed → Reservoir), the controller reads its level as a percentage and keeps it above its minimum (5% unless changed): it plans a refill from the room's next round of shots (`next_shot_size`), starts one between shots with automatic refills on, holds a shot that would still take it under, and, with none coming, holds watering and says so (CS-704). A refill runs its fresh water, starts the line and the pump half-way once the level has risen (else CS-702), doses as soon as the fresh water stops and recirculates `mix_s` (10 s) more. It learns what 1% holds from each refill and refuses a fill by hand that would not fit. A level sensor reading nothing for 5 minutes is said (CS-705); watering carries on. The batch record keeps `litres_per_pct`; an older one loads without it, and one saved `settling` is still switched off at the next start. **The dashboard the app serves** shows the level and the new steps.
+
 # 2.30.1
 
 Pair with integration 2.30.1.

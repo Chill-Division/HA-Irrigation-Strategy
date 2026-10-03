@@ -9,6 +9,67 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **The reservoir never runs dry.** A pump that does not prime itself stops working once its
+  reservoir runs dry, so the reservoir now keeps a minimum (5% unless you change it; 0 turns it
+  off). The controller plans ahead: once the room's next round of shots would take the reservoir
+  under it, a refill starts, between shots. In the middle of a P1 ramp that is right after the shot
+  before, since the next is bigger; once the ramp is done it plans for P2's shot. A shot that still
+  would not fit waits for the refill. With automatic refills off, watering waits at the minimum and
+  a notice says so until the reservoir reads enough again.
+- **The level is a percentage.** Set the level sensor's distance to the water when the reservoir is
+  full and when it is empty (an ultrasonic sensor on the lid reads further as it empties), and the
+  Reservoir page and the Overview's tank card show how full it is, worked out as an ESPHome template
+  would. Each refill shows how much 1% holds: its fill litres over how far the level rose.
+- **A refill runs the way it should.** The fresh water runs for its fill time; half-way through,
+  once the level shows it is filling, the pump starts through the recirculation line; as soon as
+  the fresh water stops each doser runs in turn, 10 s apart, and it recirculates 10 s more before
+  the pump stops. A refill that is not filling half-way stops before the pump runs from it. "Batch
+  size" is now "Fill litres": the litres the fill adds, which the doses are worked out for.
+- **Safer by hand.** A refill asked for by hand runs only when its fill fits under 100%, and the
+  controller app's log says which room's refill other rooms are waiting for. If the level sensor
+  reads nothing for 5 minutes, watering carries on and a notice says so.
+
+### 🔧 Technical notes
+
+- Integration (`feed.py`): the feed settings gain `full_mm` and `min_pct` (5); `empty_mm` is the
+  distance when empty (a stored "almost empty at" mark loads as that); `settle_s` is gone (a stored
+  one is dropped); `mix_s` defaults to 10. `full_mm` must be less than `empty_mm`. The feed plan
+  sensor carries them.
+- Engine: `next_shot_size(s, p)`, the size of a zone's next routine shot as `decide()` would size
+  it now (P0/P1 the next ramp shot, or P2's once the ramp is done; P2 maintenance; P3 rescue-sized).
+  The vendored copy follows.
+- Controller: `level_pct` from the distance sensor and the plan's distances. `_plan_next_round`
+  (end of each pass: every zone's `next_shot_size` in litres of its substrate) and `_refill_due`
+  (the level less that round, or what waits, in % once `litres_per_pct` is known; the level alone
+  before) start an automatic refill after `BATCH_LOW_PASSES`. `_reservoir_block` holds a shot that
+  would take the reservoir under `min_pct` (with this pass's `_drawn_l`): it waits for a refill, or,
+  with none coming, raises CS-704. The fill runs in two steps, `filling` and `filling_mixing` (the
+  line, then the pump, at half-way once the level rose `FILL_RISE_PCT`, else CS-702), then doses
+  with no settle; `settling` is still known in a saved record. `_learn_litres` averages each full
+  refill's `batch_l` over its rise (at least `LEARN_RISE_PCT`) into `litres_per_pct`, saved with
+  the batch record (`restore_batch` tolerates its absence). `_fill_overflow` refuses a fill that
+  would not fit (`UNLEARNED_FILL_FROM_PCT` before one is learned). CS-705 after
+  `LEVEL_MISSING_PASSES` without a reading. `batch_status` adds `level_pct`, `full_mm`, `min_pct`,
+  `litres_per_pct`, `due` and `next_round_l`. Hold text: "refilling its reservoir (…)" and
+  "waiting for <room>'s reservoir refill (…)".
+- Error codes: CS-701 to CS-703 reworded, CS-704 (watering held, reservoir too low) and CS-705
+  (reservoir level not reading) added; `docs/error-codes.json`, `docs/ERROR_CODES.md`, Help.
+- Dashboard: the Reservoir page shows the level, the minimum and what 1% holds, the steps Fill,
+  Fill and mix, each dose, Recirculate, and checks a refill asked for by hand as the controller
+  does (`fillRefusal`); the settings take both distances (each with "Use the reading now") and the
+  minimum. The tank card shows the reservoir's own level once its distances are set.
+- Docs: `docs/USER_GUIDE.md`, `docs/ENTITIES.md`, `docs/SYSTEM_OVERVIEW.md`, `README.md`,
+  `CLAUDE.md`, the Reservoir screenshot.
+- Tests: the add-on's batch suite rewritten for the new sequence, the level, learning, the
+  overflow guard, planning ahead (mid-P1, the P1 to P2 handover, P2, P3, no probe), the shot
+  backstop and both notices, with a whole-pass test; `next_shot_size` against `decide()`; the feed
+  settings; in a real Home Assistant, the settings reaching the real controller as a level, and a
+  feed document stored by 2.30.1 loading in place; dashboard tests and browser checks.
+
 ## [2.30.1] - 2026-10-01
 
 Integration and controller **2.30.1**.

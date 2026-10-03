@@ -30,6 +30,7 @@ import {
   draftOf,
   duration,
   flowOf,
+  levelPct,
   mappedNumbers,
   moveTo,
   newRecipe,
@@ -47,7 +48,7 @@ import {
   type FeedSettings,
 } from "@/lib/feed";
 import {
-  almostEmpty,
+  fillRefusal,
   levelMm,
   readBatchStatus,
   STEP_LABELS,
@@ -72,11 +73,16 @@ const mm = (value: number | null) => (value === null ? "No reading" : `${number(
 const nutrientName = (recipe: FeedRecipe | undefined, doser: number) =>
   recipe?.doses[String(doser)]?.label || `Doser ${doser}`;
 const HINTS: Record<keyof FeedSettings, string> = {
-  fill_s: "How long the fresh-water solenoid runs to refill an almost empty reservoir.",
-  batch_l: "The litres the doses are worked out for: what the fill leaves in the reservoir.",
+  fill_s:
+    "How long the fresh-water solenoid runs for a refill. Half-way through, the pump and recirculation start.",
+  batch_l:
+    "The litres that fill adds. The doses are worked out for these: what is left in the reservoir is already mixed.",
+  full_mm:
+    "The level sensor's distance to the water when the reservoir is full. With the distance when empty, it makes the level a percentage.",
   empty_mm:
-    "The level sensor's distance to the water when the reservoir is almost empty. 0 means no automatic batches.",
-  settle_s: "The pump and recirculation run this long before the first doser starts.",
+    "The level sensor's distance to the water when the reservoir is empty. 0 means no level: no automatic refills, no minimum.",
+  min_pct:
+    "A refill comes before any shot would take the reservoir under this; without automatic refills, watering waits here. 0 turns it off.",
   pause_s: "A gap between one doser and the next, so each mixes in before the next goes in.",
   mix_s: "The pump and recirculation keep running this long after the last dose.",
 };
@@ -92,23 +98,21 @@ function useNow(active: boolean) {
   return now;
 }
 
-/** The reservoir drawn as a vessel below its level sensor: the water surface at the distance the
- * sensor reads, the almost-empty mark dashed across. Its depth is a little past the mark. */
-function Vessel({ level, mark }: { level: number | null; mark: number | null }) {
+/** The reservoir drawn as a vessel: the water as full as it reads, its minimum dashed across. */
+function Vessel({ pct, min }: { pct: number | null; min: number | null }) {
   const clip = useId();
-  const markSet = mark !== null && mark > 0;
-  const depth = Math.max(markSet ? mark * 1.2 : 0, level !== null ? level * 1.15 : 0, 1);
-  const y = (distance: number) => 1 + (98 * Math.min(distance, depth)) / depth;
-  const low = almostEmpty(level, mark);
+  const markSet = min !== null && min > 0;
+  const y = (level: number) => 99 - (98 * Math.min(Math.max(level, 0), 100)) / 100;
+  const low = pct !== null && markSet && pct < min;
   return (
     <svg
       className="res-vessel"
       viewBox="0 0 60 100"
       role="img"
       aria-label={
-        level === null
+        pct === null
           ? "No level reading"
-          : `The water is ${number(level, 0)} mm below the sensor${markSet ? `; almost empty at ${number(mark, 0)} mm` : ""}`
+          : `The reservoir is ${number(pct, 0)}% full${markSet ? `; it keeps at least ${number(min, 0)}%` : ""}`
       }
       data-low={low ? "" : undefined}
     >
@@ -118,12 +122,12 @@ function Vessel({ level, mark }: { level: number | null; mark: number | null }) 
         </clipPath>
       </defs>
       <rect x="1" y="1" width="58" height="98" rx="8" className="res-shell" />
-      {level !== null && (
+      {pct !== null && (
         <g clipPath={`url(#${clip})`}>
-          <rect x="1" y={y(level)} width="58" height={99 - y(level)} className="res-water" />
+          <rect x="1" y={y(pct)} width="58" height={99 - y(pct)} className="res-water" />
         </g>
       )}
-      {markSet && <path d={`M1 ${y(mark)} H59`} className="res-mark" />}
+      {markSet && <path d={`M1 ${y(min)} H59`} className="res-mark" />}
     </svg>
   );
 }
@@ -135,19 +139,31 @@ interface Stage {
   detail: string;
   state: StepState;
 }
-/** A batch's steps in order: fill, mix, each dose, mix. Running, each is done, now or next. */
+/** A refill's steps in order: fill, fill and mix, each dose, mix. Running, each is done, now or
+ * next. An older controller's "settling" reads as the fill's mixing half. */
 function stepsOf(plan: FeedPlan, status: BatchStatus | null): Stage[] {
   const running = status?.step && status.step !== "idle" ? status : null;
   const doses = running?.doses.length
     ? running.doses
     : plan.doses.map((d) => ({ ...d, dosed: null }));
-  const order = ["filling", "settling", "dosing", "mixing"];
-  const at = running ? order.indexOf(running.step === "pausing" ? "dosing" : running.step!) : -1;
+  const order = ["filling", "filling_mixing", "dosing", "mixing"];
+  const step =
+    running?.step === "pausing"
+      ? "dosing"
+      : running?.step === "settling"
+        ? "filling_mixing"
+        : running?.step;
+  const at = running ? order.indexOf(step!) : -1;
   const phase = (index: number): StepState =>
     at < 0 ? "next" : index < at ? "done" : index === at ? "now" : "next";
   return [
-    { key: "fill", label: "Fill", detail: duration(plan.fill_s), state: phase(0) },
-    { key: "settle", label: "Circulate", detail: duration(plan.settle_s), state: phase(1) },
+    { key: "fill", label: "Fill", detail: duration(plan.fill_s / 2), state: phase(0) },
+    {
+      key: "fill-mix",
+      label: "Fill and mix",
+      detail: duration(plan.fill_s / 2),
+      state: phase(1),
+    },
     ...doses.map((dose) => ({
       key: `dose-${dose.doser}`,
       label: dose.label,
@@ -162,7 +178,7 @@ function stepsOf(plan: FeedPlan, status: BatchStatus | null): Stage[] {
               ? "done"
               : "next") as StepState,
     })),
-    { key: "mix", label: "Mix", detail: duration(plan.mix_s), state: phase(3) },
+    { key: "mix", label: "Recirculate", detail: duration(plan.mix_s), state: phase(3) },
   ];
 }
 
@@ -171,6 +187,7 @@ function BatchPanel({
   doc,
   status,
   level,
+  pct,
   mapped,
   dirty,
   onMix,
@@ -180,6 +197,8 @@ function BatchPanel({
   status: BatchStatus | null;
   /** The level sensor's reading in mm: the controller's, or the sensor's own before it reports. */
   level: number | null;
+  /** How full the reservoir reads, %: the controller's, or worked out the same way before it reports. */
+  pct: number | null;
   mapped: boolean;
   dirty: boolean;
   onMix: () => void;
@@ -190,7 +209,9 @@ function BatchPanel({
   const left = running ? timeLeft(status!.until, now) : null;
   const plan = doc.plan;
   const { entityId: autoId, enabled: auto } = controller.room.autoBatches;
-  const low = almostEmpty(level, status?.emptyMm ?? plan.empty_mm);
+  const minimum = plan.min_pct ?? 0;
+  const levelSet = (plan.full_mm ?? 0) > 0 && plan.full_mm < plan.empty_mm;
+  const due = status?.due ?? (pct === null || minimum <= 0 ? null : pct < minimum);
   const steps = stepsOf(plan, status);
   const why = !mapped
     ? "Map the reservoir in Settings → Rooms & hardware first."
@@ -219,9 +240,9 @@ function BatchPanel({
           </div>
           <p className="muted small">
             {running
-              ? `${status!.stage ?? "No stage"} batch. Watering in this room waits until it finishes.`
+              ? `${status!.stage ?? "No stage"} refill. Watering in this room waits until it finishes.`
               : plan.stage
-                ? `Next batch: ${plan.stage}, ${number(plan.batch_l, 1)} L.`
+                ? `Next refill: ${plan.stage}, ${number(plan.batch_l, 1)} L.`
                 : "No feed stage is chosen."}
           </p>
         </div>
@@ -249,31 +270,39 @@ function BatchPanel({
       </ol>
       <div className="res-batch-body">
         <div className="res-level">
-          <Vessel level={level} mark={status?.emptyMm ?? plan.empty_mm} />
+          <Vessel pct={pct} min={minimum} />
           <dl className="res-facts">
             <div>
-              <dt>Level sensor</dt>
+              <dt>Level</dt>
               <dd>
-                {mm(level)}
-                <span className="unit"> to the water</span>
+                {pct === null ? (levelSet ? "No reading" : "Not set up") : `${number(pct, 0)}%`}
+                <span className="unit"> · {mm(level)} to the water</span>
               </dd>
             </div>
             <div>
-              <dt>Almost empty at</dt>
-              <dd>{plan.empty_mm > 0 ? `${number(plan.empty_mm, 0)} mm` : "Not set"}</dd>
+              <dt>Minimum</dt>
+              <dd>{minimum > 0 ? `${number(minimum, 0)}%` : "Off"}</dd>
+            </div>
+            <div>
+              <dt>1% holds</dt>
+              <dd>
+                {status?.litresPerPct
+                  ? `about ${number(status.litresPerPct, 2)} L`
+                  : "Not known yet: the first refill shows it"}
+              </dd>
             </div>
             <div>
               <dt>Now</dt>
               <dd>
-                {low === null ? (
+                {due === null ? (
                   <Pill tone="unknown">Unknown</Pill>
-                ) : low ? (
+                ) : due ? (
                   <Pill tone="warn" dot>
-                    Almost empty
+                    Refill due
                   </Pill>
                 ) : (
                   <Pill tone="on" dot>
-                    Has water
+                    Enough water
                   </Pill>
                 )}
               </dd>
@@ -281,14 +310,18 @@ function BatchPanel({
           </dl>
         </div>
         <div className="res-auto">
-          <span className="eyebrow">Automatic batches</span>
+          <span className="eyebrow">Automatic refills</span>
           <p>
             {auto === true
-              ? plan.empty_mm > 0
-                ? `On: a batch starts by itself once the reservoir reads almost empty for three passes in a row.${status && !status.armed ? " Waiting for the reservoir to read fuller after the last one." : ""}`
-                : "On, but no almost-empty mark is set, so none starts by itself."
+              ? !levelSet
+                ? "On, but the reservoir's level is not set up (its distances when full and when empty), so none starts by itself."
+                : minimum <= 0
+                  ? "On, but its minimum is 0%, so none starts by itself."
+                  : `On: a refill starts by itself when the room's next shots would take the reservoir under its ${number(minimum, 0)}% minimum, three passes in a row.${status && !status.armed ? " Waiting for the reservoir to read enough after the last one." : ""}`
               : auto === false
-                ? "Off: batches start only when you ask for one."
+                ? minimum > 0 && levelSet
+                  ? `Off: refills start only when you ask for one, and watering waits whenever a shot would take the reservoir under its ${number(minimum, 0)}% minimum.`
+                  : "Off: refills start only when you ask for one."
                 : "Unavailable: update the Crop Steering integration."}
           </p>
           {autoId && (
@@ -339,19 +372,19 @@ function BatchPanel({
           open={review}
           onOpenChange={setReview}
           controller={controller}
-          title={auto ? "Turn automatic batches off?" : "Turn automatic batches on?"}
+          title={auto ? "Turn automatic refills off?" : "Turn automatic refills on?"}
           items={[
             {
               change: { entityId: autoId, value: !auto },
-              label: `${controller.room.room.name} automatic batches`,
+              label: `${controller.room.room.name} automatic refills`,
               before: auto ? "On" : "Off",
               after: auto ? "Off" : "On",
             },
           ]}
           note={
             auto
-              ? "Batches then start only when you ask for one."
-              : "The controller app then fills, mixes and doses a batch by itself whenever the reservoir reads almost empty. Check the fill time and the almost-empty mark first."
+              ? "Refills then start only when you ask for one, and watering waits whenever a shot would take the reservoir under its minimum."
+              : "The controller app then refills, mixes and doses the reservoir by itself whenever the room's next shots would take it under its minimum. Check the fill time, the fill litres and both distances first."
           }
         />
       )}
@@ -750,12 +783,12 @@ export function Reservoir({
           {unit === "s" && Number.isFinite(value) && value >= 60 ? `${duration(value)}. ` : ""}
           {HINTS[key]}
         </small>
-        {key === "empty_mm" && level !== null && (
+        {(key === "empty_mm" || key === "full_mm") && level !== null && (
           <Button
             type="button"
             variant="link"
             className="inline-link"
-            onClick={() => setDraft({ ...draft!, empty_mm: Math.round(level) })}
+            onClick={() => setDraft({ ...draft!, [key]: Math.round(level) })}
           >
             Use the reading now ({number(level, 0)} mm)
           </Button>
@@ -769,10 +802,23 @@ export function Reservoir({
       .map(([n]) => Number(n));
     return [...roomOrder(draft!.order, mapped), ...used.sort((a, b) => a - b)];
   };
-  const low = almostEmpty(level, status?.emptyMm ?? doc?.plan.empty_mm ?? null);
-  // What the controller checks before a batch asked for by hand: an almost empty reservoir, when it
-  // has a level sensor and a mark; without either nothing is checked.
-  const checked = !!attributes.reservoir_distance_sensor && !!doc && doc.plan.empty_mm > 0;
+  const levelSetUp =
+    !!attributes.reservoir_distance_sensor &&
+    !!doc &&
+    (doc.plan.full_mm ?? 0) > 0 &&
+    doc.plan.full_mm < doc.plan.empty_mm;
+  const pct =
+    status?.levelPct ?? (doc ? levelPct(level, doc.plan.full_mm ?? 0, doc.plan.empty_mm) : null);
+  // What the controller checks before a refill asked for by hand (controller.py _fill_overflow).
+  const refusal = doc
+    ? fillRefusal(
+        pct,
+        levelSetUp,
+        doc.plan.batch_l,
+        doc.plan.min_pct ?? 0,
+        status?.litresPerPct ?? null,
+      )
+    : null;
 
   return (
     <>
@@ -807,6 +853,7 @@ export function Reservoir({
             doc={doc}
             status={status}
             level={level}
+            pct={pct}
             mapped={reservoir}
             dirty={dirty}
             onMix={() => setConfirm(true)}
@@ -992,12 +1039,12 @@ export function Reservoir({
         <Dialog open onOpenChange={(open) => !open && !busy && setConfirm(false)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Mix a {doc.plan.stage} batch now?</DialogTitle>
+              <DialogTitle>Refill and mix a {doc.plan.stage} batch now?</DialogTitle>
               <DialogDescription>
-                The fresh water runs for {duration(doc.plan.fill_s)}, then the pump and
-                recirculation start; after {duration(doc.plan.settle_s)} the dosers run one after
-                another, then it mixes for {duration(doc.plan.mix_s)}. Watering in this room waits
-                until it finishes.
+                The fresh water runs for {duration(doc.plan.fill_s)}, with the pump and
+                recirculation from half-way; then the dosers run one after another, and it
+                recirculates for {duration(doc.plan.mix_s)}. Watering in this room waits until it
+                finishes.
               </DialogDescription>
             </DialogHeader>
             <table className="data-table res-plan" aria-label="This batch's doses">
@@ -1016,33 +1063,26 @@ export function Reservoir({
                 ))}
               </tbody>
             </table>
-            {checked && low === false && (
+            {refusal && (
               <p className="workspace-message error" role="alert">
-                The reservoir reads {mm(level)} from the top, short of its almost-empty mark (
-                {number(doc.plan.empty_mm, 0)} mm). The controller app mixes a batch only in an
-                almost empty reservoir, so the fill cannot overflow it.
+                {refusal} The controller app will not start it.
               </p>
             )}
-            {checked && low === null && (
-              <p className="workspace-message error" role="alert">
-                The level sensor has no reading, so the controller app will not start a batch.
-              </p>
-            )}
-            {!checked && (
+            {!levelSetUp && (
               <p className="workspace-message">
                 {attributes.reservoir_distance_sensor
-                  ? "No almost-empty mark is set"
+                  ? "The reservoir's distances when full and when empty are not set"
                   : "No level sensor is mapped"}
-                , so nothing checks the level first: make sure the reservoir is almost empty, or the
-                fill may overflow it.
+                , so nothing checks the level first: make sure the fill fits, or it may overflow the
+                reservoir.
               </p>
             )}
             <DialogFooter>
               <Button variant="ghost" disabled={busy} onClick={() => setConfirm(false)}>
                 Cancel
               </Button>
-              <Button disabled={busy || (checked && low !== true)} onClick={mix}>
-                {busy && <LoaderCircle className="spin" size={16} />} Mix a batch
+              <Button disabled={busy || !!refusal} onClick={mix}>
+                {busy && <LoaderCircle className="spin" size={16} />} Refill and mix
               </Button>
             </DialogFooter>
           </DialogContent>

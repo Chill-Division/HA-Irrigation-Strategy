@@ -410,21 +410,26 @@ try {
     await expectVisible(page.locator("[data-stock-dosers]"));
     await noOverflow();
   });
-  await check("reservoir: a batch waits for an almost empty reservoir, then mixes in the room's order", async () => {
+  await check("reservoir: a refill waits until its fill fits, then mixes in the room's order", async () => {
     await go("reservoir");
     const batch = page.locator("[data-batch-status]");
     await expectVisible(batch);
     assert.equal(await batch.getAttribute("data-batch-status"), "idle");
-    // Fill, circulate, one chip per dose in the room's order, mix.
+    // Fill, fill and mix (the pump from half-way), one chip per dose in the room's order, recirculate.
     const steps = () => batch.locator(".res-step-label").allInnerTexts();
-    assert.deepEqual(await steps(), ["Fill", "Circulate", "Core", "Bloom", "Balance", "Cleanse", "Mix"]);
+    const fill = ["Fill", "Fill and mix"];
+    assert.deepEqual(await steps(), [...fill, "Core", "Bloom", "Balance", "Cleanse", "Recirculate"]);
+    // The level is the distance between the distances when full and empty: 640 mm of 125-850 is 29%.
+    await expectVisible(
+      batch.getByRole("img", { name: "The reservoir is 29% full; it keeps at least 5%" }),
+    );
     await page.screenshot({ path: img("reservoir.png") });
 
-    // The demo reservoir reads 640 mm, short of its 800 mm mark: asking for a batch says why not.
+    // At 29%, with 1% holding 2.07 L, a 150 L fill (about 72%) could overflow it: asking says why not.
     await page.getByRole("button", { name: "Mix a batch now" }).click();
     let dialog = page.getByRole("dialog");
-    await expectVisible(dialog.getByText(/short of its almost-empty mark \(800 mm\)/));
-    const confirm = dialog.getByRole("button", { name: "Mix a batch", exact: true });
+    await expectVisible(dialog.getByText(/reads 29%, and its 150 L fill adds about 72%, so it could overflow/));
+    const confirm = dialog.getByRole("button", { name: "Refill and mix", exact: true });
     assert.equal(await confirm.isDisabled(), true);
     await axe("reservoir mix refused");
     await dialog.getByRole("button", { name: "Cancel" }).click();
@@ -433,7 +438,7 @@ try {
     // Drag Core's doser below Balance's by its handle, as with a finger or a mouse.
     const rows = page.locator(".res-doser");
     const names = () => rows.locator(".res-doser-name strong").allInnerTexts();
-    await rows.nth(1).scrollIntoViewIfNeeded(); // the mouse only reaches what is on screen
+    await rows.nth(2).scrollIntoViewIfNeeded(); // the mouse only reaches what is on screen: the drop row too
     const from = await rows.nth(0).locator(".res-grip").boundingBox();
     const target = await rows.nth(2).boundingBox();
     await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
@@ -452,8 +457,8 @@ try {
     await expectVisible(vege);
     assert.equal(await vege.getByLabel("Doser 1 nutrient").inputValue(), "Core");
     await vege.getByLabel("Doser 1 parts").fill("4");
-    // Almost empty at 600 mm: the 640 mm reading is past it now.
-    await page.getByLabel("Almost empty at (mm)").fill("600");
+    // A 100 L fill adds about 48%: from 29% it fits now.
+    await page.getByLabel("Fill litres (L)").fill("100");
     const bar = page.getByRole("region", { name: "Unsaved changes" });
     await expectVisible(bar);
     await axe("reservoir with unsaved changes");
@@ -462,11 +467,11 @@ try {
     assert.equal(await bar.count(), 0);
     const stages = await page.getByLabel("Stage in use").locator("option").allInnerTexts();
     assert.deepEqual(stages, ["None: no batches", "Flower", "Vege"]);
-    assert.deepEqual(await steps(), ["Fill", "Circulate", "Cleanse", "Bloom", "Balance", "Core", "Mix"]);
+    assert.deepEqual(await steps(), [...fill, "Cleanse", "Bloom", "Balance", "Core", "Recirculate"]);
 
     await page.getByRole("button", { name: "Mix a batch now" }).click();
     dialog = page.getByRole("dialog");
-    await dialog.getByRole("button", { name: "Mix a batch", exact: true }).click();
+    await dialog.getByRole("button", { name: "Refill and mix", exact: true }).click();
     await expectVisible(page.getByText(/Batch asked for at .*within a minute/));
     assert.equal(await batch.getAttribute("data-batch-status"), "filling");
     await expectVisible(batch.getByText(/s left$/));

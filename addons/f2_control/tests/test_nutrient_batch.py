@@ -1,13 +1,18 @@
-"""A room's nutrient batch, run by the controller: the reservoir refilled for its fill time, the pump
-and the recirculation line started, each doser run in the room's order for its planned seconds, the
-mix kept going, and everything switched off in the right order. It starts when "Mix a Batch Now" is
-pressed, or by itself when the reservoir has read almost empty for a few passes; it refuses to start,
-and stops part-way, with a reason, whenever that is not safe."""
+"""A room's reservoir refill, run by the controller: the fresh water for its fill time, the pump and the
+recirculation line joining it half-way once the level shows it is filling, each doser run in the
+room's order for its planned seconds a pause apart as soon as the fresh water stops, a short
+recirculation after the last, and everything switched off in the right order. It starts when "Mix a
+Batch Now" is pressed, or by itself when the room's next round of shots would take the reservoir under
+its minimum; it refuses to start, and stops part-way, with a reason, whenever that is not safe.
+
+The level is a distance sensor above the water: 125 mm when full and 850 mm when empty here, as on the
+owner's GR1 reservoir (the ESPHome template it replaces worked the same percentage out)."""
 from datetime import datetime, timedelta, timezone
 
 import pytest
 
 import controller
+from crop_steering_engine import ZoneParams, ZoneSnapshot
 from test_controller import _build, _desc
 
 KILL = "input_boolean.kill"
@@ -19,20 +24,27 @@ PLAN = "sensor.crop_steering_feed_plan"
 BUTTON = "button.crop_steering_mix_batch"
 AUTO = "switch.crop_steering_auto_batches"
 STATUS = "sensor.crop_steering_batch_status"
+FULL_MM, EMPTY_MM = 125.0, 850.0
 FLOWER = {
     "stage": "Flower",
     "problem": None,
     "fill_s": 60,
     "batch_l": 145.0,
-    "empty_mm": 800.0,
-    "settle_s": 20,
+    "full_mm": FULL_MM,
+    "empty_mm": EMPTY_MM,
+    "min_pct": 5.0,
     "pause_s": 10,
-    "mix_s": 120,
+    "mix_s": 10,
     "doses": [
         {"doser": 2, "label": "Bloom", "ml": 100.0, "seconds": 10.0},
         {"doser": 1, "label": "Cleanse", "ml": 50.0, "seconds": 5.0},
     ],
 }
+
+
+def mm(pct):
+    """The distance the sensor reads with the reservoir `pct` full."""
+    return f"{FULL_MM + (100.0 - pct) / 100.0 * (EMPTY_MM - FULL_MM):.1f}"
 
 
 class _Clock(datetime):
@@ -57,7 +69,7 @@ def clock(monkeypatch):
     monkeypatch.setattr(controller.time, "sleep", sleep)
 
 
-def _room(plan=FLOWER, level="820", auto="off", pressed="unknown", **extra):
+def _room(plan=FLOWER, pct=4.0, level=None, auto="off", pressed="unknown", **extra):
     descriptor = _desc(
         enable_flag=KILL,
         pump=PUMP,
@@ -73,10 +85,13 @@ def _room(plan=FLOWER, level="820", auto="off", pressed="unknown", **extra):
     states = {
         "sensor.crop_steering_engine_config": ("ok", descriptor),
         KILL: ("on", {}),
-        DISTANCE: (level, {"unit_of_measurement": "mm"}),
+        DISTANCE: (mm(pct) if level is None else level, {"unit_of_measurement": "mm"}),
         PLAN: ((plan or {}).get("stage") or "none", dict(plan or {})),
         AUTO: (auto, {}),
         BUTTON: (pressed, {}),
+        # zone 1's substrate: 40 plants of 3.2 L, so a 1% shot takes 1.28 L from the reservoir
+        "number.crop_steering_zone_1_substrate_volume": ("3.2", {}),
+        "number.crop_steering_zone_1_plant_count": ("40", {}),
         **{entity: ("off", {}) for entity in (FRESH, RECIRC, PUMP, MAIN, VALVE, *DOSER.values())},
     }
     c, fake = _build({"num_zones": 1, "enable_flag": KILL}, states=states)
@@ -85,6 +100,10 @@ def _room(plan=FLOWER, level="820", auto="off", pressed="unknown", **extra):
 
 def _tick(c, room):
     c._batch_tick(room, _Clock.now())
+
+
+def _level(fake, pct):
+    fake.set_state(DISTANCE, mm(pct), {"unit_of_measurement": "mm"})
 
 
 def _press(c, fake, room, ago=0):
@@ -108,18 +127,28 @@ def _alerts(fake, code):
             if (dom, svc) == ("persistent_notification", "create") and f"({code})" in d.get("title", "")]
 
 
-def _to_end(c, fake, room, level="210"):
-    """Run a started batch through every step (the level read after the fill is `level` mm)."""
-    fake.set_state(DISTANCE, level, {"unit_of_measurement": "mm"})
+def _dismissed(fake, key):
+    return [d for dom, svc, d in fake.calls
+            if (dom, svc) == ("persistent_notification", "dismiss") and d.get("notification_id") == f"f2_{key}"]
+
+
+def _step_on(c, room):
+    """Move the clock to the end of the step in progress and tick."""
+    _Clock.current = max(_Clock.current, datetime.fromisoformat(room.batch["until"]))
+    _tick(c, room)
+
+
+def _to_end(c, fake, room, pct=88.0):
+    """Run a started batch through every step; the level reads `pct` from the half-way check on."""
+    _level(fake, pct)
     for _ in range(12):
         if room.batch["step"] == "idle":
             return
-        until = datetime.fromisoformat(room.batch["until"])
-        _Clock.current = max(_Clock.current, until)
-        _tick(c, room)
+        _step_on(c, room)
 
 
-def test_a_pressed_button_fills_mixes_doses_in_order_and_switches_off_in_order():
+# ---------------------------------------------------------------- the sequence
+def test_a_pressed_button_fills_starts_the_pump_half_way_doses_in_order_and_switches_off_in_order():
     c, fake, room = _room()
     _tick(c, room)  # the button as first seen: never pressed
     assert room.batch["step"] == "idle"
@@ -128,14 +157,14 @@ def test_a_pressed_button_fills_mixes_doses_in_order_and_switches_off_in_order()
     fake.calls.clear()
     _to_end(c, fake, room)
     assert _switched(fake) == [
-        (FRESH, "turn_off"),  # the fill ends
-        (RECIRC, "turn_on"),  # the line opens before the pump starts
+        (RECIRC, "turn_on"),  # half-way, with the fresh water still running: the line before the pump
         (PUMP, "turn_on"),
+        (FRESH, "turn_off"),  # the fill ends, and dosing starts at once
         (DOSER[2], "turn_on"),  # the room's order: Bloom first
         (DOSER[2], "turn_off"),
         (DOSER[1], "turn_on"),
         (DOSER[1], "turn_off"),
-        (PUMP, "turn_off"),  # the pump stops before its line closes
+        (PUMP, "turn_off"),  # after the last recirculation the pump stops before its line closes
         (RECIRC, "turn_off"),
     ]
     last = room.batch["last"]
@@ -150,18 +179,121 @@ def test_each_step_lasts_what_the_plan_says():
     _press(c, fake, room)
     start = _Clock.now()
     seen = []
-    fake.set_state(DISTANCE, "210", {"unit_of_measurement": "mm"})
+    _level(fake, 88.0)
     while room.batch["step"] != "idle":
         until = datetime.fromisoformat(room.batch["until"])
         seen.append((room.batch["step"], round((until - start).total_seconds())))
-        _Clock.current = max(_Clock.current, until)
-        _tick(c, room)
+        _step_on(c, room)
         start = _Clock.now()
-    # fill 60 s, settle 20 s, Bloom 10 s, pause 10 s, Cleanse 5 s, mix 120 s; each measured from when
-    # its step began (the switch read-backs take a second or so each)
-    steps = [(step, seconds) for step, seconds in seen]
-    assert [step for step, _ in steps] == ["filling", "settling", "dosing", "pausing", "dosing", "mixing"]
-    assert [seconds for _, seconds in steps] == pytest.approx([60, 20, 10, 10, 5, 120], abs=3)
+    # the 60 s fill in two halves, Bloom 10 s, a 10 s pause, Cleanse 5 s, then 10 s of recirculation;
+    # each measured from when its step began (the switch read-backs take a second or so each)
+    assert [step for step, _ in seen] == ["filling", "filling_mixing", "dosing", "pausing", "dosing", "mixing"]
+    assert [seconds for _, seconds in seen] == pytest.approx([30, 30, 10, 10, 5, 10], abs=3)
+
+
+def test_half_way_a_reservoir_that_is_not_filling_stops_before_the_pump_runs_from_it():
+    c, fake, room = _room(pct=4.0)
+    _tick(c, room)
+    _press(c, fake, room)
+    _level(fake, 7.0)  # 3 points in half the fill time: not filling (a dry supply, a stuck solenoid)
+    _step_on(c, room)
+    assert room.batch["step"] == "idle" and room.batch["last"]["result"] == "stopped: the reservoir did not fill"
+    assert (PUMP, "turn_on") not in _switched(fake) and fake.states[FRESH][0] == "off"
+    assert not any(entity in DOSER.values() for entity, _ in _switched(fake))
+    (note,) = _alerts(fake, "CS-702")
+    assert "reads 7% (it started at 4%): it is not filling" in note["message"]
+    assert "the pump never started" in note["message"]
+
+
+def test_half_way_a_level_that_reads_nothing_stops_it_too():
+    c, fake, room = _room(pct=4.0)
+    _tick(c, room)
+    _press(c, fake, room)
+    fake.set_state(DISTANCE, "unavailable")
+    _step_on(c, room)
+    assert room.batch["last"]["result"] == "stopped: the reservoir did not fill"
+    assert "reservoir reads nothing" in _alerts(fake, "CS-702")[0]["message"]
+
+
+def test_without_a_level_set_up_the_fill_goes_by_time_alone():
+    plan = {**FLOWER, "full_mm": 0.0, "empty_mm": 0.0}
+    c, fake, room = _room(plan=plan, level="500")
+    _tick(c, room)
+    _press(c, fake, room)  # nothing to check it against: it goes ahead, as it always has
+    _step_on(c, room)
+    assert room.batch["step"] == "filling_mixing" and fake.states[PUMP][0] == "on"
+
+
+# ---------------------------------------------------------------- the level
+def test_the_level_is_the_percentage_between_the_full_and_empty_distances():
+    assert controller.level_pct(125.0, 125.0, 850.0) == 100.0
+    assert controller.level_pct(850.0, 125.0, 850.0) == 0.0
+    assert controller.level_pct(487.5, 125.0, 850.0) == pytest.approx(50.0)
+    assert controller.level_pct(90.0, 125.0, 850.0) == 100.0  # clamped, as the ESPHome template did
+    assert controller.level_pct(900.0, 125.0, 850.0) == 0.0
+    assert controller.level_pct(None, 125.0, 850.0) is None
+    assert controller.level_pct(500.0, 0.0, 850.0) is None  # both distances, or no level
+    assert controller.level_pct(500.0, 850.0, 125.0) is None
+
+
+def test_a_refill_that_went_all_the_way_teaches_what_one_percent_holds():
+    c, fake, room = _room(pct=4.0)
+    _tick(c, room)
+    _press(c, fake, room)
+    _to_end(c, fake, room, pct=74.0)  # 145 L raised it 70 points
+    assert room.batch["litres_per_pct"] == pytest.approx(145 / 70, abs=0.001)
+    assert any("about 2.07 L per 1%" in line for line in c._activity)
+    _level(fake, 4.0)
+    _tick(c, room)
+    _press(c, fake, room)
+    _to_end(c, fake, room, pct=84.0)  # the next one says 80 points: averaged with what was known
+    assert room.batch["litres_per_pct"] == pytest.approx(0.7 * 145 / 70 + 0.3 * 145 / 80, abs=0.001)
+
+
+def test_a_refill_that_stopped_or_barely_rose_teaches_nothing():
+    c, fake, room = _room(pct=4.0)
+    _tick(c, room)
+    _press(c, fake, room)
+    _level(fake, 12.0)  # rose 8 points: enough to carry on, too little to go by
+    _to_end(c, fake, room, pct=12.0)
+    assert room.batch["last"]["result"] == "done" and room.batch["litres_per_pct"] is None
+
+
+# ---------------------------------------------------------------- asked for by hand
+def test_before_a_refill_has_shown_what_one_percent_holds_one_asked_for_by_hand_starts_only_from_low():
+    c, fake, room = _room(pct=25.0)
+    _tick(c, room)
+    _press(c, fake, room)
+    assert room.batch["step"] == "idle" and _switched(fake) == []
+    (note,) = _alerts(fake, "CS-703")
+    assert "reads 25%: until a refill has shown how far its 145 L fill raises it" in note["message"]
+    assert "only from 10% or less" in note["message"]
+    _level(fake, 9.0)
+    _later(30)
+    _press(c, fake, room)
+    assert room.batch["step"] == "filling"
+
+
+def test_once_it_knows_what_one_percent_holds_the_fill_must_fit():
+    c, fake, room = _room(pct=25.0)
+    room.batch["litres_per_pct"] = 145 / 70  # a 145 L fill adds 70 points
+    _tick(c, room)
+    _press(c, fake, room)  # 25 + 70: fits
+    assert room.batch["step"] == "filling"
+    c2, fake2, room2 = _room(pct=40.0)
+    room2.batch["litres_per_pct"] = 145 / 70
+    _tick(c2, room2)
+    _press(c2, fake2, room2)  # 40 + 70 = 110: it would overflow
+    assert room2.batch["step"] == "idle"
+    assert "reads 40%, and its 145 L fill adds about 70%, so it could overflow" in _alerts(fake2, "CS-703")[0]["message"]
+
+
+def test_a_level_set_up_that_reads_nothing_refuses_a_batch_asked_for_by_hand():
+    c, fake, room = _room(level="unavailable")
+    _tick(c, room)
+    _press(c, fake, room)
+    assert room.batch["step"] == "idle"
+    assert f"the reservoir level ({DISTANCE}) reads nothing" in _alerts(fake, "CS-703")[0]["message"]
 
 
 def test_the_first_press_seen_is_a_starting_point_but_a_first_press_ever_counts():
@@ -184,65 +316,189 @@ def test_a_press_that_waited_while_the_controller_was_stopped_is_not_acted_on():
     assert room.batch["step"] == "filling"
 
 
-@pytest.mark.parametrize(
-    "level, reason",
-    [
-        ("450", "reads 450 mm from the top, short of its almost-empty mark (800 mm)"),
-        ("unavailable", f"the reservoir level ({DISTANCE}) reads nothing"),
-    ],
-)
-def test_asked_for_by_hand_it_waits_for_the_reservoir_to_read_almost_empty(level, reason):
-    c, fake, room = _room(level=level)
-    _tick(c, room)
-    _press(c, fake, room)
-    assert room.batch["step"] == "idle" and _switched(fake) == []
-    (note,) = _alerts(fake, "CS-703")
-    assert reason in note["message"]
-
-
-def test_without_an_almost_empty_mark_a_batch_asked_for_by_hand_goes_ahead():
-    c, fake, room = _room(plan={**FLOWER, "empty_mm": 0.0}, level="450")
-    _tick(c, room)
-    _press(c, fake, room)
-    assert room.batch["step"] == "filling"
-
-
-def test_automatic_batches_start_after_three_low_readings_and_wait_for_the_tank_to_read_fuller():
-    c, fake, room = _room(level="850", auto="on")
+# ---------------------------------------------------------------- automatic refills
+def test_an_automatic_refill_starts_after_three_passes_due_and_waits_until_one_is_not_due_again():
+    c, fake, room = _room(pct=4.0, auto="on")  # under the 5% minimum
     for _ in range(2):
         _tick(c, room)
     assert room.batch["step"] == "idle" and room.batch["low_seen"] == 2
     _tick(c, room)
     assert room.batch["step"] == "filling"
-    _to_end(c, fake, room, level="850")  # the level never rose: it stops, and does not start again
+    _to_end(c, fake, room, pct=4.0)  # it never rose: stopped half-way, and does not start again
     assert room.batch["last"]["result"] == "stopped: the reservoir did not fill"
     for _ in range(5):
         _tick(c, room)
     assert room.batch["step"] == "idle" and not room.batch["armed"]
-    fake.set_state(DISTANCE, "300", {"unit_of_measurement": "mm"})  # refilled by hand: re-armed
+    _level(fake, 75.0)  # refilled by hand: re-armed
     _tick(c, room)
     assert room.batch["armed"]
 
 
-def test_with_automatic_batches_off_a_low_reservoir_starts_nothing():
-    c, fake, room = _room(level="900", auto="off")
+def test_one_low_reading_starts_nothing():
+    c, fake, room = _room(pct=60.0, auto="on")
+    _tick(c, room)
+    _level(fake, 2.0)  # one bad echo
+    _tick(c, room)
+    _level(fake, 60.0)
+    _tick(c, room)
+    _level(fake, 2.0)
+    _tick(c, room)
+    assert room.batch["step"] == "idle" and room.batch["low_seen"] == 1
+
+
+def test_with_automatic_refills_off_a_low_reservoir_starts_nothing():
+    c, fake, room = _room(pct=2.0, auto="off")
     for _ in range(5):
         _tick(c, room)
     assert room.batch["step"] == "idle" and _switched(fake) == []
 
 
-def test_a_tank_that_did_not_fill_gets_no_nutrients():
+def test_with_no_minimum_nothing_is_due():
+    c, fake, room = _room(plan={**FLOWER, "min_pct": 0.0}, pct=1.0, auto="on")
+    for _ in range(4):
+        _tick(c, room)
+    assert room.batch["step"] == "idle" and c._refill_due(room) is None
+
+
+# ---------------------------------------------------------------- planning ahead
+def P(**kw):
+    d = dict(p1_target=60, p2_threshold=45, p2_shot_size=5, p1_initial=2, p1_incr=0.5, p1_max_shots=6,
+             p1_time_between_min=15, dryback_target=20, p0_max_wait_min=45, ec_target_p0=4, ec_target_p1=6,
+             ec_target_p2=6, p3_emergency_floor=40, p3_emergency_shot=2, max_daily_volume=300,
+             field_capacity=70, max_ec=9, stacking_on=False)
+    d.update(kw)
+    return ZoneParams(**d)
+
+
+def S(**kw):
+    d = dict(vwc=50, ec=6, phase="P1", peak_vwc=60, dryback_pct=0, dryback_rate=2, shot_count=0,
+             phase_minutes=5, minutes_since_shot=99, daily_vol=0, ec_smooth=6, lights_on=True,
+             lights_just_on=False, hours_to_lights_on=8, hours_to_lights_off=8, uptime_min=60)
+    d.update(kw)
+    return ZoneSnapshot(**d)
+
+
+def _round(c, room, phase, shots, snap=True):
+    room.state[1].update(phase=phase, shots=shots)
+    snaps = {1: S(phase=phase, shot_count=shots)} if snap else {}
+    return c._plan_next_round(room, snaps, {1: P()})
+
+
+def test_the_next_round_is_each_zones_next_shot_as_the_engine_would_size_it():
     c, fake, room = _room()
+    one_pct = c._shot_litres(room, 1, 1.0)
+    assert one_pct == pytest.approx(1.28)
+    assert _round(c, room, "P1", 3) == pytest.approx(3.5 * one_pct)  # the 4th ramp shot: 2 + 3 x 0.5
+    assert _round(c, room, "P1", 6) == pytest.approx(5 * one_pct)  # every ramp shot in: P2's next
+    assert _round(c, room, "P2", 0) == pytest.approx(5 * one_pct)
+    assert _round(c, room, "P3", 0) == pytest.approx(2 * one_pct)  # a hold or rescue shot overnight
+    assert _round(c, room, "P0", 0) == pytest.approx(2 * one_pct)  # the morning's first ramp shot
+    assert _round(c, room, "P2", 0, snap=False) == pytest.approx(5 * one_pct)  # no probe: a maintenance shot
+
+
+def test_mid_ramp_a_refill_starts_when_the_next_ramp_shot_would_not_fit():
+    """After its 3rd P1 shot a zone's 4th (3.5% of 128 L, 4.48 L) would take the reservoir from 7% to
+    under its 5%: the refill starts between the two shots, three passes on, instead of when the 4th
+    is due. With 2.07 L per 1% the 4th takes 2.2 points."""
+    c, fake, room = _room(pct=7.0, auto="on")
+    room.batch["litres_per_pct"] = 145 / 70
+    room._next_round_l = _round(c, room, "P1", 3)
+    for _ in range(3):
+        _tick(c, room)
+    assert room.batch["step"] == "filling"
+    assert c._refill_why(room) == (
+        "the reservoir reads 7%, and the next round of shots (4.5 L) would take it under its 5% minimum")
+
+
+def test_a_round_that_fits_starts_nothing():
+    c, fake, room = _room(pct=9.0, auto="on")
+    room.batch["litres_per_pct"] = 145 / 70
+    room._next_round_l = _round(c, room, "P0", 0)  # 2.56 L: 1.2 points, 9 -> 7.8
+    for _ in range(4):
+        _tick(c, room)
+    assert room.batch["step"] == "idle"
+
+
+# ---------------------------------------------------------------- before each shot
+def test_a_shot_that_would_take_the_reservoir_under_its_minimum_waits_for_the_refill():
+    c, fake, room = _room(pct=7.0, auto="on")
+    room.batch["litres_per_pct"] = 145 / 70
     _tick(c, room)
-    _press(c, fake, room)
-    _to_end(c, fake, room, level="810")
-    switched = _switched(fake)
-    assert not any(entity in DOSER.values() for entity, _ in switched)
-    assert fake.states[PUMP][0] == "off" and fake.states[RECIRC][0] == "off"
-    (note,) = _alerts(fake, "CS-702")
-    assert "810 mm" in note["message"] and "no nutrient was dosed" in note["message"]
+    room._drawn_l = room._waiting_l = 0.0
+    assert c._reservoir_block(room, 1, 1.0) is None  # 1.28 L: 0.6 points
+    hold = c._reservoir_block(room, 1, 3.5)  # 4.48 L: 2.2 points, under 5%
+    assert hold == "waiting for a reservoir refill: the reservoir reads 7%, and this shot would take it under its 5% minimum"
+    assert room._waiting_l == pytest.approx(4.48) and c._refill_due(room) is True
+    assert not _alerts(fake, "CS-704")  # a refill is coming: nothing to raise
 
 
+def test_the_shots_this_pass_has_already_taken_count():
+    c, fake, room = _room(pct=8.0, auto="on")
+    room.batch["litres_per_pct"] = 145 / 70
+    _tick(c, room)
+    room._waiting_l = 0.0
+    assert c._reservoir_block(room, 1, 1.0) is None  # 8 - 1.28 / 2.07 = 7.4
+    room._drawn_l = 6.0  # an earlier zone's shot this pass, not yet on the level sensor
+    assert c._reservoir_block(room, 1, 1.0) is not None  # 8 - (6 + 1.28) / 2.07 = 4.5
+
+
+def test_without_automatic_refills_watering_is_held_and_said_so_until_it_reads_enough():
+    c, fake, room = _room(pct=4.0, auto="off")
+    _tick(c, room)
+    room._drawn_l = room._waiting_l = 0.0
+    hold = c._reservoir_block(room, 1, 1.0)
+    assert hold == ("reservoir too low: the reservoir reads 4%, under its 5% minimum "
+                    "(automatic refills are off)")
+    (note,) = _alerts(fake, "CS-704")
+    assert "no zone is watered from it: a pump that runs it dry loses its prime" in note["message"]
+    _level(fake, 70.0)  # refilled by hand
+    _tick(c, room)
+    assert _dismissed(fake, f"res_low_{room.slug}")
+    assert c._reservoir_block(room, 1, 1.0) is None
+
+
+def test_a_refill_that_did_not_raise_it_holds_watering_rather_than_trying_again():
+    c, fake, room = _room(pct=4.0, auto="on")
+    room.batch["armed"] = False  # the last refill stopped: the reservoir did not fill
+    _tick(c, room)
+    room._drawn_l = room._waiting_l = 0.0
+    assert c._reservoir_block(room, 1, 1.0).endswith("(the last refill did not raise it)")
+    assert _alerts(fake, "CS-704")
+
+
+def test_with_no_level_or_no_minimum_a_shot_never_waits_for_the_reservoir():
+    for plan, level in (({**FLOWER, "min_pct": 0.0}, mm(1.0)), (FLOWER, "unavailable"),
+                        ({**FLOWER, "full_mm": 0.0}, mm(1.0))):
+        c, fake, room = _room(plan=plan, level=level, auto="on")
+        _tick(c, room)
+        room._drawn_l = room._waiting_l = 0.0
+        assert c._reservoir_block(room, 1, 5.0) is None
+
+
+# ---------------------------------------------------------------- the level sensor
+def test_a_level_that_reads_nothing_for_five_minutes_is_said_once_and_watering_carries_on():
+    c, fake, room = _room(level="unavailable", auto="on")
+    for _ in range(4):
+        _tick(c, room)
+    assert not _alerts(fake, "CS-705")
+    _tick(c, room)
+    (note,) = _alerts(fake, "CS-705")
+    assert f"level sensor ({DISTANCE}) has read nothing for 5 minutes. Watering carries on" in note["message"]
+    _tick(c, room)
+    assert len(_alerts(fake, "CS-705")) == 1
+    _level(fake, 60.0)
+    _tick(c, room)
+    assert _dismissed(fake, f"res_level_{room.slug}")
+
+
+def test_a_level_that_is_not_set_up_is_never_reported():
+    c, fake, room = _room(plan={**FLOWER, "full_mm": 0.0}, level="unavailable")
+    for _ in range(8):
+        _tick(c, room)
+    assert not _alerts(fake, "CS-705")
+
+
+# ---------------------------------------------------------------- refusing and stopping
 @pytest.mark.parametrize(
     "change, reason",
     [
@@ -278,10 +534,9 @@ def test_switching_watering_off_mid_dose_stops_it_and_counts_what_went_in():
     c, fake, room = _room()
     _tick(c, room)
     _press(c, fake, room)
-    fake.set_state(DISTANCE, "210", {"unit_of_measurement": "mm"})
+    _level(fake, 88.0)
     while room.batch["step"] != "dosing":
-        _Clock.current = max(_Clock.current, datetime.fromisoformat(room.batch["until"]))
-        _tick(c, room)
+        _step_on(c, room)
     _later(4)  # Bloom has run about 4 of its 10 s
     fake.set_state(KILL, "off")
     _tick(c, room)
@@ -292,14 +547,26 @@ def test_switching_watering_off_mid_dose_stops_it_and_counts_what_went_in():
     assert "while dosing" in note["message"] and "was switched off" in note["message"]
 
 
+def test_switching_watering_off_in_the_second_half_of_the_fill_stops_the_water_and_the_pump():
+    c, fake, room = _room()
+    _tick(c, room)
+    _press(c, fake, room)
+    _level(fake, 50.0)
+    _step_on(c, room)
+    assert room.batch["step"] == "filling_mixing"
+    fake.set_state(KILL, "off")
+    _tick(c, room)
+    assert all(fake.states[e][0] == "off" for e in (FRESH, PUMP, RECIRC))
+    assert "while filling" in _alerts(fake, "CS-701")[0]["message"]
+
+
 def test_a_doser_that_will_not_switch_off_latches_the_hardware_hold():
     c, fake, room = _room()
     _tick(c, room)
     _press(c, fake, room)
-    fake.set_state(DISTANCE, "210", {"unit_of_measurement": "mm"})
+    _level(fake, 88.0)
     while room.batch["step"] != "dosing":
-        _Clock.current = max(_Clock.current, datetime.fromisoformat(room.batch["until"]))
-        _tick(c, room)
+        _step_on(c, room)
     plain = controller.ha_call
 
     def stuck(domain, service, **data):  # the doser's relay reports on whatever it is told
@@ -319,19 +586,23 @@ def test_a_doser_that_will_not_switch_off_latches_the_hardware_hold():
     assert _alerts(fake, "CS-301") and _alerts(fake, "CS-701")
 
 
-def test_while_it_runs_the_rooms_shots_wait_and_other_rooms_only_during_a_fill_or_a_dose():
+def test_while_it_refills_the_rooms_shots_wait_and_other_rooms_while_it_fills_or_doses():
     c, fake, room = _room()
     other = controller.Room("veg", "veg_", {1: {}}, {"pump": None, "mainline": None, "valves": {1: "switch.veg_v1"}},
                             "input_boolean.veg", 10, 22)
     c.rooms.append(other)
+    room.room_name = "GR1"
     _tick(c, room)
     _press(c, fake, room)
-    assert c._batch_hold(room) == "mixing a nutrient batch (filling)"
-    assert c._batch_hold(other).startswith("waiting for ") and "(filling)" in c._batch_hold(other)
-    fake.set_state(DISTANCE, "210", {"unit_of_measurement": "mm"})
-    _Clock.current = datetime.fromisoformat(room.batch["until"])
-    _tick(c, room)  # settling: the fill is over, nothing timed runs
-    assert c._batch_hold(room) == "mixing a nutrient batch (settling)"
+    assert c._batch_hold(room) == "refilling its reservoir (filling)"
+    assert c._batch_hold(other) == "waiting for GR1's reservoir refill (filling)"
+    _level(fake, 88.0)
+    _step_on(c, room)
+    assert c._batch_hold(other) == "waiting for GR1's reservoir refill (filling and mixing)"
+    _step_on(c, room)
+    assert c._batch_hold(other) == "waiting for GR1's reservoir refill (dosing)"
+    _step_on(c, room)  # between dosers: nothing timed runs
+    assert c._batch_hold(room) == "refilling its reservoir (between dosers)"
     assert c._batch_hold(other) is None
 
 
@@ -341,7 +612,7 @@ def test_between_passes_switching_watering_off_stops_the_fill_within_seconds():
     _press(c, fake, room)
     start = _Clock.now()
     fake.set_state(KILL, "off")
-    c._wait_for_next_pass()  # the pass would come after the whole 60 s fill
+    c._wait_for_next_pass()  # the pass would come after the fill's first half
     assert room.batch["step"] == "idle" and fake.states[FRESH][0] == "off"
     stopped = datetime.fromisoformat(room.batch["last"]["at"])
     assert (stopped - start).total_seconds() <= controller.BATCH_WATCH_S + 1
@@ -350,7 +621,7 @@ def test_between_passes_switching_watering_off_stops_the_fill_within_seconds():
 
 
 def test_with_no_batch_filling_or_dosing_the_loop_sleeps_its_whole_interval():
-    c, fake, room = _room()
+    c, fake, room = _room(pct=60.0)
     _tick(c, room)
     start = _Clock.now()
     c._wait_for_next_pass()
@@ -363,7 +634,7 @@ def test_the_loop_wakes_when_a_step_is_due():
     assert c._sleep_for(_Clock.now()) == c.loop_seconds
     _tick(c, room)
     _press(c, fake, room)
-    assert c._sleep_for(_Clock.now()) == pytest.approx(60, abs=2)  # the fill's end
+    assert c._sleep_for(_Clock.now()) == pytest.approx(30, abs=2)  # half-way through the fill
 
 
 def test_a_batch_saved_in_progress_is_switched_off_at_the_next_start(tmp_path):
@@ -395,17 +666,23 @@ def test_stopping_the_app_mid_batch_switches_it_off_and_says_so_once_at_the_next
     assert len(_alerts(fake, "CS-701")) == 1 and room.batch["interrupted"] is None
 
 
-def test_the_status_sensor_says_what_runs_and_what_went_in():
-    c, fake, room = _room()
+# ---------------------------------------------------------------- what it publishes and keeps
+def test_the_status_sensor_says_how_full_it_is_what_runs_and_what_went_in():
+    c, fake, room = _room(pct=40.0)
+    room.batch["litres_per_pct"] = 2.07
     _tick(c, room)
     state, attrs = fake.sets[STATUS]
-    assert state == "idle" and attrs["stage"] == "Flower" and attrs["level_mm"] == 820.0
+    assert state == "idle" and attrs["stage"] == "Flower" and attrs["level_mm"] == pytest.approx(560.0)
+    assert (attrs["level_pct"], attrs["full_mm"], attrs["empty_mm"], attrs["min_pct"]) == (40.0, 125.0, 850.0, 5.0)
+    assert attrs["litres_per_pct"] == 2.07 and attrs["due"] is False
     assert attrs["blocked"] is None and attrs["auto"] is False
+    _level(fake, 9.0)
+    _tick(c, room)
     _press(c, fake, room)
     state, attrs = fake.sets[STATUS]
     # the times carry their UTC offset, so a browser in another time zone reads the same moment
     until = datetime.fromisoformat(attrs["until"])
-    assert state == "filling" and until.utcoffset() is not None
+    assert state == "filling" and until.utcoffset() is not None and attrs["due"] is None
     assert abs((until - datetime.fromisoformat(room.batch["until"]).astimezone()).total_seconds()) < 1
     _to_end(c, fake, room)
     last = fake.sets[STATUS][1]["last"]
@@ -415,9 +692,16 @@ def test_the_status_sensor_says_what_runs_and_what_went_in():
 
 def test_an_old_state_file_or_a_damaged_batch_record_loads_as_no_batch():
     assert controller.restore_batch(None) == controller.fresh_batch()
-    damaged = controller.restore_batch({"step": "flooding", "index": "two", "armed": "yes", "plan": 5})
+    damaged = controller.restore_batch({"step": "flooding", "index": "two", "armed": "yes", "plan": 5,
+                                        "litres_per_pct": -2, "start_pct": "low", "fill_end": 7})
     assert damaged["step"] == "idle" and damaged["index"] == 0 and damaged["armed"] is True
-    assert damaged["plan"] is None
+    assert damaged["plan"] is None and damaged["litres_per_pct"] is None
+    assert damaged["start_pct"] is None and damaged["fill_end"] is None
+    # A record from before the level: no litres per 1% yet. One an older controller saved settling
+    # is kept, so the next start switches that batch off.
+    old = controller.restore_batch({"step": "settling", "armed": False, "low_seen": 1})
+    assert (old["step"], old["armed"], old["litres_per_pct"]) == ("settling", False, None)
+    assert controller.restore_batch({"litres_per_pct": 2.07})["litres_per_pct"] == 2.07
 
 
 def test_a_plan_with_a_dose_it_cannot_read_is_not_run():
@@ -425,6 +709,12 @@ def test_a_plan_with_a_dose_it_cannot_read_is_not_run():
     assert controller.feed_plan({**FLOWER, "doses": [{"doser": 1, "ml": 1, "seconds": 99999}]}) is None
     assert controller.feed_plan({**FLOWER, "fill_s": "soon"}) is None
     assert controller.feed_plan(FLOWER)["doses"][0]["label"] == "Bloom"
+
+
+def test_a_plan_from_an_integration_before_the_level_reads_as_no_level_and_no_minimum():
+    old = {key: value for key, value in FLOWER.items() if key not in ("full_mm", "min_pct")}
+    plan = controller.feed_plan({**old, "settle_s": 20, "empty_mm": 800})
+    assert (plan["full_mm"], plan["empty_mm"], plan["min_pct"]) == (0.0, 800.0, 0.0)
 
 
 def test_a_distance_in_cm_or_m_reads_in_mm():
@@ -440,3 +730,20 @@ def test_a_room_without_a_reservoir_keeps_its_fingerprint_and_one_with_it_names_
     assert "reservoir" not in controller.Controller._setup_fingerprint(plain, room)
     mapped = controller.Controller._setup_fingerprint({**plain, "fresh_water_switch": FRESH}, room)
     assert FRESH in mapped
+
+
+def test_in_a_pass_a_shot_due_waits_for_the_reservoir_and_the_next_round_is_planned(monkeypatch):
+    """The whole pass, with nothing else in the way: zone 1 in P2 reads under its trigger and would
+    top up, but the reservoir reads under its minimum with automatic refills off. The shot is held
+    and said so, nothing opens, and the pass plans the next round from where the zone is."""
+    c, fake, room = _room(pct=4.0, auto="off")
+    fake.set_state("sensor.crop_steering_vwc_zone_1", "40", {"unit_of_measurement": "%"},
+                   last_updated=_Clock.now(timezone.utc).isoformat())
+    room.state[1].update(phase="P2", last_daily_reset=_Clock.now().date())
+    monkeypatch.setattr(c, "_blocked", lambda room, zone, reason=None: None)
+    c.loop_once(_Clock.now())
+    assert not [call for call in _switched(fake) if call[1] == "turn_on"]
+    label, attrs = fake.sets["sensor.crop_steering_zone_1_status_app"]
+    assert label.startswith("Blocked: reservoir too low: the reservoir reads 4%, under its 5% minimum")
+    assert _alerts(fake, "CS-704")
+    assert room._next_round_l == pytest.approx(5 * 1.28)  # a P2 maintenance shot of 128 L of substrate

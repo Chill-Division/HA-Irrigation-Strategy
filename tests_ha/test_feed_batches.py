@@ -4,11 +4,14 @@ the feed plan sensor and the feed stage select follow them; the room's Automatic
 and Mix a Batch Now button exist, off and never pressed; and the dashboard's Mix a batch now presses
 that button once the plan can run."""
 
+from datetime import datetime
+
 import pytest
 from homeassistant.core import Context
 from homeassistant.exceptions import HomeAssistantError
 from test_setup_save_plumbing import _payload, _room, _service
 from test_setup_entry import _install
+from test_upgrade_in_place import _upgrade
 
 DESCRIPTOR = "sensor.crop_steering_engine_config"
 PLAN = "sensor.crop_steering_feed_plan"
@@ -175,3 +178,115 @@ async def test_a_recipe_saved_before_the_dosers_are_mapped_runs_once_they_are(
         4,
     ]  # no order: by number
     assert plan.attributes["revision"] == 1  # the saved settings survived the reload
+
+
+async def test_the_reservoirs_distances_and_minimum_reach_the_real_controller_as_a_level(
+    hass, hass_admin_user, controller_for
+):
+    """Saved through the real feed_save, the distances when full and when empty and the minimum are on
+    the feed plan sensor; the real controller reads the level sensor through them as a percentage,
+    sees a refill due, and publishes the level for the dashboard."""
+    hass.states.async_set(
+        "sensor.res_distance", "846.41", {"unit_of_measurement": "mm"}
+    )
+    for entity in list(RESERVOIR.values())[1:]:
+        hass.states.async_set(entity, "off")
+    await _install(hass)
+    room = await _room(hass, hass_admin_user)
+    await _service(
+        hass, hass_admin_user, "setup_save", _payload(room, hardware=RESERVOIR)
+    )
+    await hass.async_block_till_done()
+    doc = await _service(hass, hass_admin_user, "feed_get", {"room_id": "room:"})
+    settings = {"batch_l": 145, "fill_s": 690, "full_mm": 125, "empty_mm": 850}
+    with pytest.raises(HomeAssistantError, match="distance when full must be less"):
+        await _service(
+            hass,
+            hass_admin_user,
+            "feed_save",
+            {
+                "room_id": "room:",
+                "expected_revision": doc["revision"],
+                "document": {**settings, "full_mm": 850, "empty_mm": 125},
+            },
+        )
+    doc = await _service(
+        hass,
+        hass_admin_user,
+        "feed_save",
+        {
+            "room_id": "room:",
+            "expected_revision": doc["revision"],
+            "document": {
+                **settings,
+                "order": [4, 3, 2, 1],
+                "recipes": [FLOWER],
+                "stage": "flower",
+            },
+        },
+    )
+    plan = hass.states.get(PLAN).attributes
+    assert (plan["full_mm"], plan["empty_mm"], plan["min_pct"], plan["mix_s"]) == (
+        125.0,
+        850.0,
+        5.0,
+        10,
+    )
+    assert "settle_s" not in plan
+
+    c, fake, _clock = controller_for({})
+    controller_room = c.rooms[0]
+    c._batch_tick(controller_room, datetime.now())
+    assert controller_room._res["pct"] == pytest.approx(
+        (850 - 846.41) / 725 * 100
+    )
+    assert c._refill_due(controller_room) is True  # under 5%: a refill is due
+    status = fake.sets["sensor.crop_steering_batch_status"][1]
+    assert (status["level_pct"], status["min_pct"], status["due"]) == (0.5, 5.0, True)
+
+
+async def test_a_feed_document_stored_by_2_30_loads_with_its_mark_as_the_empty_distance(
+    hass, hass_storage
+):
+    """In place: a room's feed settings as 2.30.1 stored them (made by its own feed.clean), with an
+    "almost empty at" mark of 800 mm and a 20 s settle. They load: the mark is the distance when
+    empty, the settle is gone, and the distance when full and the minimum start at their defaults;
+    nothing else changes, its recipe and revision included."""
+    stored = {
+        "revision": 5,
+        "fill_s": 690,
+        "batch_l": 145.0,
+        "empty_mm": 800.0,
+        "settle_s": 20,
+        "pause_s": 10,
+        "mix_s": 600,
+        "dosers": {"1": {"flow_ml_min": 600.0}},
+        "order": [2, 1],
+        "recipes": [
+            {
+                "id": "flower",
+                "name": "Flower",
+                "strength": 1.667,
+                "doses": {
+                    "2": {"label": "Bloom", "parts": 5.0},
+                    "1": {"label": "Core", "parts": 3.0},
+                },
+            }
+        ],
+        "stage": "flower",
+    }
+    key = "crop_steering.feed.seeded2x17wizard0000000000000001"
+    hass_storage[key] = {"version": 1, "minor_version": 1, "key": key, "data": stored}
+    await _upgrade(hass, "entry_2_17_wizard.json")
+    plan = hass.states.get(PLAN)
+    assert plan.state == "Flower"
+    assert (
+        plan.attributes["empty_mm"],
+        plan.attributes["full_mm"],
+        plan.attributes["min_pct"],
+        plan.attributes["mix_s"],
+        plan.attributes["fill_s"],
+        plan.attributes["batch_l"],
+    ) == (800.0, 0.0, 5.0, 600, 690, 145.0)
+    assert "settle_s" not in plan.attributes and plan.attributes["revision"] == 5
+

@@ -120,7 +120,12 @@ def test_a_recipe_that_doses_nothing_says_so():
     [
         ({"batch_l": 0}, "batch l must be a number from 1 to 5000"),
         ({"fill_s": 12.5}, "fill s must be a number from 10 to 7200"),
-        ({"settle_s": True}, "settle s must be a number"),
+        ({"mix_s": True}, "mix s must be a number"),
+        ({"min_pct": 60}, "min pct must be a number from 0 to 50"),
+        (
+            {"full_mm": 850, "empty_mm": 125},
+            "The distance when full must be less than the distance when empty",
+        ),
         ({"order": [1, 1]}, "A doser appears twice in the dosing order"),
         ({"order": [7]}, "A doser is numbered 1 to 6"),
         ({"dosers": {"2": {"flow_ml_min": 0}}}, "Doser 2's flow must be a number"),
@@ -160,12 +165,16 @@ def test_a_stage_whose_recipe_is_gone_is_no_stage():
 
 def test_a_fresh_room_has_the_defaults_and_nothing_to_run():
     doc = feed.empty()
-    assert (doc["fill_s"], doc["settle_s"], doc["pause_s"], doc["mix_s"]) == (
+    assert (doc["fill_s"], doc["pause_s"], doc["mix_s"], doc["min_pct"]) == (
         600,
-        20,
         10,
-        600,
+        10,
+        5.0,
     )
+    assert (doc["full_mm"], doc["empty_mm"]) == (
+        0.0,
+        0.0,
+    )  # no level until both are set
     assert feed.plan(doc, MAPPED)["problem"] == "No feed stage is chosen."
     assert feed.flow(doc, 1) == 600.0
 
@@ -242,6 +251,51 @@ def test_a_stored_document_that_cannot_be_read_is_kept_and_named():
     with pytest.raises(ValueError, match="have not been overwritten"):
         save(store, batch_l=100)
     assert store._store.value == {"revision": "one"}
+
+
+def test_the_reservoirs_distances_and_minimum_reach_the_controllers_plan():
+    plan = feed.plan(
+        settings(full_mm=125, empty_mm=850, min_pct=5, batch_l=145), MAPPED
+    )
+    assert (plan["full_mm"], plan["empty_mm"], plan["min_pct"], plan["batch_l"]) == (
+        125,
+        850,
+        5,
+        145,
+    )
+    assert "settle_s" not in plan  # the pump starts half-way through the fill instead
+    assert (
+        feed.plan(settings(empty_mm=850), MAPPED)["full_mm"] == 0.0
+    )  # one alone: no level yet
+
+
+def test_a_document_saved_before_the_reservoirs_level_loads_with_its_mark_as_the_empty_distance():
+    """Until 2.30 a room had an "almost empty at" distance and a settle before the first dose; its
+    stored document still loads: the mark is the distance when empty, the settle is gone, and the
+    minimum and the distance when full start at their defaults."""
+    old = {
+        "revision": 3,
+        "fill_s": 690,
+        "batch_l": 145,
+        "empty_mm": 800,
+        "settle_s": 20,
+        "pause_s": 10,
+        "mix_s": 600,
+        "dosers": {},
+        "order": [],
+        "recipes": [],
+        "stage": None,
+    }
+    store = rig(old)
+    assert store.error is None
+    data = store.data
+    assert (data["empty_mm"], data["full_mm"], data["min_pct"], data["mix_s"]) == (
+        800,
+        0.0,
+        5.0,
+        600,
+    )
+    assert "settle_s" not in data and data["revision"] == 3
 
 
 def test_a_stored_document_loads_as_it_was_saved():

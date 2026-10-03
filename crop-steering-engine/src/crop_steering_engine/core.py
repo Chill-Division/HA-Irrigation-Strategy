@@ -321,6 +321,26 @@ def decide(s: ZoneSnapshot, p: ZoneParams):
     return phase, round(p2_thr, 1), fire, round(size, 1), Reason(reason, kind, fire and CAP_EXEMPT.get(kind, False))
 
 
+def next_shot_size(s: ZoneSnapshot, p: ZoneParams) -> float:
+    """PURE. The size of this zone's next routine shot, % of substrate, as decide() would size it now:
+    in P0 the ramp's first shot; in P1 its next ramp shot, or a maintenance shot once the ramp is done
+    (at its ceiling, or every ramp shot in); in P2 a maintenance shot; in P3 a rescue-sized one. For
+    planning water (a reservoir refilled before it runs short), not a forecast of when it fires; EC
+    corrections and flushes are left out."""
+    settled = s.ec_settled is not None and math.isfinite(s.ec_settled)
+    ec = s.ec_settled if settled else s.ec
+    if s.phase in ("P0", "P1"):
+        count = s.shot_count if s.phase == "P1" else 0
+        ceiling = min(p.p1_target, p.field_capacity)
+        if count < p.p1_max_shots and (s.phase == "P0" or s.vwc < ceiling):
+            raw = min(p.p1_initial + p.p1_incr * count, p.p1_initial + p.p1_incr * p.p1_max_shots)
+            return ec_adjust(raw, ec, p.ec_target_p1)
+        return ec_adjust(p.p2_shot_size, ec, p.ec_target_p2)
+    if s.phase == "P2":
+        return ec_adjust(p.p2_shot_size, ec, p.ec_target_p2)
+    return p.p3_emergency_shot
+
+
 def waiting_for(s: ZoneSnapshot, p: ZoneParams) -> list:
     """PURE. What would move this zone next, by the rules decide() applies, and what they compare.
 
