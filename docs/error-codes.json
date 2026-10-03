@@ -711,16 +711,17 @@
       "title": "Reservoir level not reading",
       "source": "notification",
       "severity": "warning",
-      "meaning": "The reservoir's level sensor has had no usable reading for 5 minutes, with the room's distances when full and when empty set: it reads nothing, or it has not reported for over 10 minutes, so the value it last showed can't be trusted.",
+      "meaning": "The reservoir's level sensor has read nothing for 5 minutes (unavailable, unknown or not a number), with the room's distances when full and when empty set.",
       "watering": "Carries on, but the controller can't tell how much is left: no refill starts by itself, and nothing keeps the reservoir above its minimum.",
       "causes": [
         "The sensor's device is offline, or reports unknown or unavailable.",
-        "The sensor stopped reporting: an ultrasonic that filters out its failed echoes keeps showing its last value.",
+        "The sensor's readings failed, and its timeout filter (ESPHome) reports unknown.",
         "The sensor mapped in Settings → Rooms & hardware was renamed or removed."
       ],
       "fixes": [
         "Check the level sensor and its device in Home Assistant.",
-        "Check the reservoir by eye until it reads again."
+        "Check the reservoir by eye until it reads again.",
+        "An ESPHome ultrasonic whose echoes fail keeps showing its last good value unless a timeout filter reports unknown: add one (the user guide's Reservoir section) so a failed sensor is noticed."
       ]
     }
   ]
