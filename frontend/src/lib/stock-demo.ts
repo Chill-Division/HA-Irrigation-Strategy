@@ -13,44 +13,46 @@ import type { States } from "./types";
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
 
-/** Sample stock for a demo room: one tank getting low, so the colours have something to show. */
-function sample(roomId: string, fillEntity: string | null): StockDocument {
+/** Sample stock for a demo room: Athena's bottles on its four dosers, as the demo's Flower uses them,
+ * one getting low, so the colours have something to show. */
+function sample(roomId: string): StockDocument {
   const tank = (
     id: string,
     name: string,
+    doser: number,
     capacity: number,
     level: number,
-    dose: number,
     low: number,
   ): StockTank => ({
     id,
     name,
     capacity_l: capacity,
     level_l: level,
-    dose_ml: dose,
-    dose_entity: null,
-    doser: null,
+    doser,
     low_l: low,
     refilled_at: hoursAgo(24 * 9),
     updated_at: hoursAgo(20),
   });
   const tanks = [
-    tank("part_a", "Part A", 20, 13.6, 400, 4),
-    tank("part_b", "Part B", 20, 12.9, 400, 4),
-    tank("cal_mag", "Cal-Mag", 10, 3.2, 250, 2.5),
-    tank("ph_down", "pH down", 5, 3.9, 60, 1),
+    tank("core", "Core", 1, 20, 13.6, 4),
+    tank("bloom", "Bloom", 2, 20, 12.9, 4),
+    tank("balance", "Balance", 3, 10, 3.2, 2.5),
+    tank("cleanse", "Cleanse", 4, 5, 3.9, 1),
   ];
-  const draw = Object.fromEntries(tanks.map((t) => [t.id, t.dose_ml]));
+  // What the demo's Flower doses from each, in each of the last three refills.
+  const draw = { core: 450, bloom: 750, balance: 150, cleanse: 75 };
   return {
     schema_version: 1,
     room_id: roomId,
     revision: 1,
     tanks,
-    last_batch: hoursAgo(20),
-    history: [20, 44, 68].map((hours) => ({ at: hoursAgo(hours), source: "fill", draw_ml: draw })),
-    fill_entity: fillEntity,
+    history: [20, 44, 68].map((hours) => ({
+      at: hoursAgo(hours),
+      source: "reservoir",
+      draw_ml: draw,
+    })),
     dosers: {},
-    reservoir_batch: null,
+    reservoir_batch: hoursAgo(20),
     doses: draw,
     low: [],
     max_tanks: 12,
@@ -66,10 +68,7 @@ export class StockDemo {
   private doc(roomId: string) {
     const prefix = roomId.startsWith("room:") ? roomId.slice(5) : "";
     const descriptor = this.getStates()[`sensor.crop_steering_${prefix}engine_config`];
-    if (!this.docs.has(roomId)) {
-      const fill = descriptor?.attributes.tank_last_fill_sensor;
-      this.docs.set(roomId, sample(roomId, typeof fill === "string" && fill ? fill : null));
-    }
+    if (!this.docs.has(roomId)) this.docs.set(roomId, sample(roomId));
     const doc = this.docs.get(roomId)!;
     // The room's Reservoir dosers, with what the demo's feed stage puts on each (stock_api dosers).
     const mapped: Record<string, string> = {};
@@ -92,10 +91,10 @@ export class StockDemo {
 
   private plan: { doser: number; label: string; ml: number }[] = [];
 
-  /** stock_api doses: a tank on a doser takes what the stage in use gives from it; any other its
-   * fixed dose. */
+  /** stock_api doses: what the stage in use gives from each tank's doser; nothing from a tank on
+   * none. */
   private doses(doc: StockDocument) {
-    const doses = Object.fromEntries(doc.tanks.map((t) => [t.id, t.doser ? 0 : t.dose_ml]));
+    const doses: Record<string, number> = Object.fromEntries(doc.tanks.map((t) => [t.id, 0]));
     for (const dose of this.plan) {
       const owner = onDoser(doc.tanks, dose.doser, dose.label);
       if (owner) doses[owner.id] = dose.ml;
@@ -129,7 +128,11 @@ export class StockDemo {
         const old = draft.id ? known.get(draft.id) : undefined;
         let id = old?.id;
         if (!id) {
-          const base = draft.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "stock";
+          const base =
+            draft.name
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "_")
+              .replace(/^_|_$/g, "") || "stock";
           id = base;
           for (let n = 2; taken.has(id); n++) id = `${base}_${n}`;
           taken.add(id);
@@ -139,8 +142,6 @@ export class StockDemo {
           name: draft.name.trim(),
           capacity_l: draft.capacity_l,
           level_l: Math.min(draft.level_l, draft.capacity_l),
-          dose_ml: draft.dose_ml,
-          dose_entity: draft.doser ? null : draft.dose_entity || null,
           doser: draft.doser ?? null,
           low_l: Math.min(draft.low_l, draft.capacity_l),
           refilled_at: old?.refilled_at ?? null,
@@ -158,15 +159,6 @@ export class StockDemo {
         tank.level_l = level;
       } else throw new Error("The level must be between 0 L and the tank's capacity.");
       tank.updated_at = now;
-    } else if (action === "stock_record_batch") {
-      const draw: Record<string, number> = {};
-      // A batch made by hand leaves the tanks on dosers alone: they lose what their doser gives.
-      for (const tank of doc.tanks.filter((t) => !t.doser)) {
-        const before = tank.level_l;
-        tank.level_l = Math.round(Math.max(0, before - tank.dose_ml / 1000) * 1e4) / 1e4;
-        draw[tank.id] = Math.round((before - tank.level_l) * 1e4) / 10;
-      }
-      doc.history = [{ at: now, source: "manual" as const, draw_ml: draw }, ...doc.history].slice(0, 30);
     } else throw new Error("Unsupported demo action.");
     return this.finish(doc);
   }

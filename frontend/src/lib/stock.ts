@@ -6,11 +6,9 @@ export interface StockTank {
   name: string;
   capacity_l: number;
   level_l: number;
-  /** The fixed dose per batch; a dose entity's reading takes over while it reads a number. */
-  dose_ml: number;
-  dose_entity: string | null;
-  /** The Reservoir doser the tank is on (1 to 6): it then loses what that doser gives in each
-   * batch the controller mixes, and neither its fixed dose nor a dose entity applies. */
+  /** The Reservoir doser its bottle feeds (1 to 6): each batch the controller mixes takes what that
+   * doser gave, as the feed recipe in use says. null: on none, so only a refill or a level set by
+   * hand changes it. */
   doser: number | null;
   low_l: number;
   refilled_at: string | null;
@@ -18,6 +16,7 @@ export interface StockTank {
 }
 export interface StockBatch {
   at: string;
+  /** "reservoir"; a batch counted before 2.32 may also be "fill" or "manual". */
   source: "fill" | "manual" | "reservoir";
   draw_ml: Record<string, number>;
 }
@@ -26,15 +25,13 @@ export interface StockDocument {
   room_id: string;
   revision: number;
   tanks: StockTank[];
-  last_batch: string | null;
   history: StockBatch[];
-  /** The tank last-fill entity batches are counted from; null means batches are recorded by hand. */
-  fill_entity: string | null;
   /** The room's Reservoir dosers, each with the nutrient the feed stage in use puts on it. */
   dosers?: Record<string, { switch: string; nutrient: string | null }>;
   /** When the last Reservoir batch counted ended. */
   reservoir_batch?: string | null;
-  /** What one batch takes from each tank right now, in mL. */
+  /** What one batch takes from each tank right now, in mL: what the feed recipe in use gives from its
+   * doser. */
   doses: Record<string, number>;
   low: string[];
   max_tanks: number;
@@ -72,20 +69,14 @@ export function draftErrors(drafts: StockTankDraft[], max = 12): string[] {
       errors.push(`${label}: capacity must be between 0.1 and 10000 L.`);
     if (!(tank.level_l >= 0 && tank.level_l <= tank.capacity_l))
       errors.push(`${label}: the level must be between 0 L and its capacity.`);
-    if (!(tank.dose_ml >= 0 && tank.dose_ml <= 100000))
-      errors.push(`${label}: the dose per batch must be between 0 and 100000 mL.`);
     if (!(tank.low_l >= 0 && tank.low_l <= tank.capacity_l))
       errors.push(`${label}: the low mark must be between 0 L and its capacity.`);
-    if (tank.dose_entity && !/^(number|input_number|sensor)\.[a-z0-9_]+$/.test(tank.dose_entity))
-      errors.push(`${label}: the dose entity must be a number, input_number or sensor.`);
-    if (tank.doser !== null && tank.doser !== undefined) {
-      if (!(Number.isInteger(tank.doser) && tank.doser >= 1 && tank.doser <= 6))
-        errors.push(`${label}: a doser is numbered 1 to 6.`);
-      else if (tank.dose_entity)
-        errors.push(
-          `${label} is on doser ${tank.doser}, so it loses what that doser gives: clear its dose entity.`,
-        );
-    }
+    if (
+      tank.doser !== null &&
+      tank.doser !== undefined &&
+      !(Number.isInteger(tank.doser) && tank.doser >= 1 && tank.doser <= 6)
+    )
+      errors.push(`${label}: a doser is numbered 1 to 6.`);
   }
   return errors;
 }

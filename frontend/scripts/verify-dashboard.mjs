@@ -362,45 +362,48 @@ try {
     assert.equal(await page.locator(".wd-daily").count(), 0, "no water table on the Overview");
     assert.equal(await page.getByText("Controller scheduling", { exact: true }).count(), 0);
   });
-  await check("stock tanks: refill, set a level, record a batch and add a tank", async () => {
+  await check("stock tanks: refill, set a level and add a tank; a batch is the recipe's", async () => {
     await go("stock");
     const card = (id) => page.locator(`[data-stock-tank="${id}"]`);
-    await expectVisible(card("cal_mag"));
+    await expectVisible(card("balance"));
     assert.equal(await page.locator("[data-stock-tank]").count(), 4);
     await page.screenshot({ path: img("stock-tanks.png") });
-    // Cal-Mag starts within half again of its low mark: amber, "Getting low".
-    assert.equal(await card("cal_mag").locator(".pill").textContent(), "Getting low");
-    await card("cal_mag").getByRole("button", { name: "Refilled" }).click();
-    await expectVisible(card("cal_mag").getByText("OK", { exact: true }));
-    assert.match(await card("cal_mag").locator("dd").first().textContent(), /^10 of 10 L$/);
+    // Balance starts within half again of its low mark: amber, "Getting low".
+    assert.equal(await card("balance").locator(".pill").textContent(), "Getting low");
+    // What a batch takes is the feed recipe's: Flower gives 150 mL of Balance from doser 3.
+    assert.match(await card("balance").innerText(), /150\s*mL\s*from doser 3/);
+    await card("balance").getByRole("button", { name: "Refilled" }).click();
+    await expectVisible(card("balance").getByText("OK", { exact: true }));
+    assert.match(await card("balance").locator("dd").first().textContent(), /^10 of 10 L$/);
 
-    await card("ph_down").getByRole("button", { name: "Set level" }).click();
-    await card("ph_down").getByLabel("Level read off the tank (L)").fill("0.8");
-    await card("ph_down").getByRole("button", { name: "Save level" }).click();
-    await expectVisible(card("ph_down").getByText("Low", { exact: true }));
-
-    await page.getByRole("button", { name: "Record a batch" }).click();
-    const confirm = page.getByRole("dialog");
-    if (await confirm.count()) await confirm.getByRole("button", { name: "Record the batch" }).click();
+    await card("cleanse").getByRole("button", { name: "Set level" }).click();
+    await card("cleanse").getByLabel("Level read off the tank (L)").fill("0.8");
+    await card("cleanse").getByRole("button", { name: "Save level" }).click();
+    await expectVisible(card("cleanse").getByText("Low", { exact: true }));
+    // Every batch comes from the Reservoir: none is recorded by hand.
+    assert.equal(await page.getByRole("button", { name: "Record a batch" }).count(), 0);
     await expectVisible(page.getByRole("heading", { name: "Recent batches" }));
-    assert.match(await card("cal_mag").locator("dd").first().textContent(), /^9\.75 of 10 L$/);
 
     await page.getByRole("button", { name: "Edit stock tanks" }).click();
     const editor = page.getByRole("dialog");
+    // A tank is its name, capacity, level, low mark and doser: no dose per batch, no dose entity.
+    assert.equal(await editor.getByLabel(/Per batch/).count(), 0);
+    assert.equal(await editor.getByLabel(/Dose entity/).count(), 0);
     await editor.getByRole("button", { name: "Add a stock tank" }).click();
-    const names = editor.getByLabel("Name");
-    await names.last().fill("Silica");
+    await editor.getByLabel("Name").last().fill("Silica");
     await editor.getByRole("button", { name: "Save stock tanks" }).click();
     await expectVisible(card("silica"));
+    assert.match(await card("silica").innerText(), /On no doser/);
     await axe("stock tanks after edits");
     await noOverflow();
   });
   await check("stock tanks: a tank on a Reservoir doser takes what the stage in use gives from it", async () => {
     await go("stock");
+    await page.reload({ waitUntil: "networkidle" }); // the same address: a fresh demo
     await page.getByRole("button", { name: "Edit stock tanks" }).click();
     const editor = page.getByRole("dialog");
     await editor.getByRole("button", { name: "Add a stock tank" }).click();
-    await editor.getByLabel("Name").last().fill("Bloom");
+    await editor.getByLabel("Name").last().fill("Fade");
     const doser = editor.getByLabel("Doser", { exact: true }).last();
     assert.deepEqual(await doser.locator("option").allInnerTexts(), [
       "Not on a doser",
@@ -409,15 +412,17 @@ try {
       "Doser 3 · Balance",
       "Doser 4 · Cleanse",
     ]);
+    // The Fade bottle shares doser 2 with Bloom (bottles swapped between stages).
     await doser.selectOption("2");
-    assert.equal(await editor.getByLabel("Per batch (mL)").last().isDisabled(), true);
     await axe("stock tank editor with dosers");
     await editor.getByRole("button", { name: "Save stock tanks" }).click();
-    const card = page.locator('[data-stock-tank="bloom"]');
-    await expectVisible(card);
-    const text = await card.innerText();
+    const bloom = page.locator('[data-stock-tank="bloom"]');
+    await expectVisible(bloom);
+    const text = await bloom.innerText();
     assert.match(text, /750\s*mL/, "Flower gives 750 mL from doser 2");
     assert.match(text, /from doser 2/);
+    // Flower puts Bloom on doser 2, so the Fade bottle beside it takes nothing this week.
+    assert.match(await page.locator('[data-stock-tank="fade"]').innerText(), /Per batch\s*—/);
     await expectVisible(page.locator("[data-stock-dosers]"));
     await noOverflow();
   });

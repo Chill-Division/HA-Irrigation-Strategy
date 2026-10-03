@@ -38,8 +38,6 @@ const blank = (): StockTankDraft => ({
   name: "",
   capacity_l: 20,
   level_l: 20,
-  dose_ml: 0,
-  dose_entity: null,
   doser: null,
   low_l: 4,
 });
@@ -122,16 +120,16 @@ function TankCard({
           <div>
             <dt>Per batch</dt>
             <dd>
-              {number(dose ?? tank.dose_ml, 0)}
-              <span className="unit"> mL</span>
+              {dose ? number(dose, 0) : "—"}
+              {!!dose && <span className="unit"> mL</span>}
+              {tank.doser ? (
+                <small title="What the feed recipe in use gives from this doser in each Reservoir batch">
+                  from doser {tank.doser}
+                </small>
+              ) : (
+                <small>On no doser</small>
+              )}
             </dd>
-            {tank.doser ? (
-              <small title="What this doser gives in each Reservoir batch">
-                from doser {tank.doser}
-              </small>
-            ) : (
-              tank.dose_entity && <small title="Read at each batch">from {tank.dose_entity}</small>
-            )}
           </div>
           <div>
             <dt>Batches left</dt>
@@ -199,7 +197,6 @@ function TankCard({
 }
 
 function Editor({
-  controller,
   initial,
   busy,
   max,
@@ -207,7 +204,6 @@ function Editor({
   onSave,
   onClose,
 }: {
-  controller: Controller;
   initial: StockTankDraft[];
   busy: boolean;
   max: number;
@@ -219,44 +215,28 @@ function Editor({
   const [drafts, setDrafts] = useState(initial);
   const errors = draftErrors(drafts, max);
   const listId = useId();
-  // A doser's dose-volume number is the usual source: offer the mL numbers Home Assistant has.
-  const doseEntities = Object.values(controller.states)
-    .filter(
-      (e) =>
-        /^(number|input_number|sensor)\./.test(e.entity_id) &&
-        /^ml$/i.test(String(e.attributes.unit_of_measurement ?? "")),
-    )
-    .map((e) => e.entity_id)
-    .sort();
   const update = (index: number, change: Partial<StockTankDraft>) =>
     setDrafts(drafts.map((draft, i) => (i === index ? { ...draft, ...change } : draft)));
   const doserNumbers = Object.keys(dosers)
     .map(Number)
     .sort((a, b) => a - b);
-  const numeric = (index: number, key: keyof StockTankDraft, label: string, unit: string) => {
-    // A tank on a doser loses what that doser gives: its fixed dose does not apply.
-    const fromDoser = key === "dose_ml" && !!drafts[index].doser;
-    return (
-      <div>
-        <Label htmlFor={`${listId}-${index}-${key}`}>
-          {label} ({unit})
-        </Label>
-        <Input
-          id={`${listId}-${index}-${key}`}
-          type="number"
-          min={0}
-          step={unit === "mL" ? 1 : 0.1}
-          disabled={fromDoser}
-          placeholder={fromDoser ? `Doser ${drafts[index].doser}` : undefined}
-          title={fromDoser ? "What its doser gives in each Reservoir batch" : undefined}
-          value={fromDoser ? "" : String(drafts[index][key] ?? "")}
-          onChange={(event) =>
-            update(index, { [key]: event.target.value === "" ? NaN : Number(event.target.value) })
-          }
-        />
-      </div>
-    );
-  };
+  const numeric = (index: number, key: keyof StockTankDraft, label: string, unit: string) => (
+    <div>
+      <Label htmlFor={`${listId}-${index}-${key}`}>
+        {label} ({unit})
+      </Label>
+      <Input
+        id={`${listId}-${index}-${key}`}
+        type="number"
+        min={0}
+        step={0.1}
+        value={String(drafts[index][key] ?? "")}
+        onChange={(event) =>
+          update(index, { [key]: event.target.value === "" ? NaN : Number(event.target.value) })
+        }
+      />
+    </div>
+  );
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="stock-editor">
@@ -264,15 +244,10 @@ function Editor({
           <DialogTitle>Stock tanks</DialogTitle>
           <DialogDescription>
             {doserNumbers.length
-              ? "Put each tank on the doser its bottle feeds: every batch the Reservoir mixes takes what that doser gave. A tank on no doser loses its fixed dose at each batch recorded by hand or counted from the tank's fill entity."
-              : "Each batch tank takes its dose from every stock tank. A dose entity, such as a doser's dose-volume number, is read at each batch; the fixed dose stands in when it reads nothing."}
+              ? "Put each tank on the doser its bottle feeds: every batch the Reservoir mixes takes what that doser gave, which the feed recipes say, week by week."
+              : "Map the room's dosers in Settings → Rooms & hardware, then put each tank on the doser its bottle feeds: every batch the Reservoir mixes takes what that doser gave."}
           </DialogDescription>
         </DialogHeader>
-        <datalist id={`${listId}-entities`}>
-          {doseEntities.map((id) => (
-            <option key={id} value={id} />
-          ))}
-        </datalist>
         <div className="stock-editor-rows">
           {drafts.map((draft, index) => (
             <fieldset key={draft.id ?? `new-${index}`} className="stock-editor-row">
@@ -288,7 +263,6 @@ function Editor({
               </div>
               {numeric(index, "capacity_l", "Capacity", "L")}
               {numeric(index, "level_l", "Level now", "L")}
-              {numeric(index, "dose_ml", "Per batch", "mL")}
               {numeric(index, "low_l", "Low mark", "L")}
               <div className="stock-editor-entity">
                 {!!doserNumbers.length && (
@@ -301,8 +275,6 @@ function Editor({
                       onChange={(event) =>
                         update(index, {
                           doser: event.target.value ? Number(event.target.value) : null,
-                          // What a doser gives is the record: a dose entity no longer applies.
-                          ...(event.target.value ? { dose_entity: null } : {}),
                         })
                       }
                     >
@@ -314,18 +286,6 @@ function Editor({
                         </option>
                       ))}
                     </select>
-                  </>
-                )}
-                {(!doserNumbers.length || (!draft.doser && !!draft.dose_entity)) && (
-                  <>
-                    <Label htmlFor={`${listId}-${index}-entity`}>Dose entity (optional)</Label>
-                    <Input
-                      id={`${listId}-${index}-entity`}
-                      list={`${listId}-entities`}
-                      placeholder="None"
-                      value={draft.dose_entity ?? ""}
-                      onChange={(event) => update(index, { dose_entity: event.target.value || null })}
-                    />
                   </>
                 )}
               </div>
@@ -380,7 +340,6 @@ export function StockTanks({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<StockTankDraft[] | null>(null);
-  const [confirmBatch, setConfirmBatch] = useState(false);
   useEffect(() => {
     let current = true;
     setDoc(null);
@@ -393,7 +352,7 @@ export function StockTanks({
       current = false;
     };
   }, [controller.roomId, controller.connection]);
-  const act = async (action: "stock_save" | "stock_refill" | "stock_record_batch", data = {}) => {
+  const act = async (action: "stock_save" | "stock_refill", data = {}) => {
     if (!doc) return false;
     setBusy(true);
     setError("");
@@ -418,7 +377,6 @@ export function StockTanks({
         ? doc.tanks.map(({ refilled_at: _r, updated_at: _u, ...tank }) => tank)
         : [blank()],
     );
-  const recordBatch = () => (doc?.fill_entity ? setConfirmBatch(true) : act("stock_record_batch"));
   return (
     <>
       <Heading
@@ -426,9 +384,6 @@ export function StockTanks({
         action={
           doc && (
             <div className="heading-actions">
-              <Button variant="outline" disabled={busy || !doc.tanks.length} onClick={recordBatch}>
-                Record a batch
-              </Button>
               <Button onClick={edit} disabled={busy || !!doc.error}>
                 <Pencil size={16} /> Edit stock tanks
               </Button>
@@ -446,40 +401,28 @@ export function StockTanks({
           {doc.error}
         </p>
       )}
-      {doc && !!Object.keys(doc.dosers ?? {}).length && (
-        <p className="stock-source" data-stock-dosers>
-          A tank on a doser loses what that doser gives in each batch the Reservoir mixes. Last
-          Reservoir batch counted:{" "}
-          {when(doc.history.find((batch) => batch.source === "reservoir")?.at ?? null)}.
-        </p>
-      )}
-      {doc && (
-        <p className="stock-source" data-stock-source>
-          {doc.fill_entity ? (
-            <>
-              Batches are counted from <code>{doc.fill_entity}</code>: each newer fill time takes
-              one batch's dose from every tank
-              {Object.keys(doc.dosers ?? {}).length ? " on no doser" : ""}. Last batch{" "}
-              {when(doc.last_batch)}.
-            </>
-          ) : (
-            <>
-              No tank last-fill entity is mapped, so record each batch
-              {Object.keys(doc.dosers ?? {}).length ? " the Reservoir did not mix" : ""} by hand,
-              or{" "}
-              <Button variant="link" className="inline-link" onClick={() => navigate("setup")}>
-                map one in Settings → Rooms & hardware
-              </Button>
-              .
-            </>
-          )}
-        </p>
-      )}
+      {doc &&
+        (Object.keys(doc.dosers ?? {}).length ? (
+          <p className="stock-source" data-stock-dosers>
+            A tank on a doser loses what that doser gives in each batch the Reservoir mixes: what
+            the feed recipe in use says, week by week. Last Reservoir batch counted:{" "}
+            {when(doc.history.find((batch) => batch.source === "reservoir")?.at ?? null)}.
+          </p>
+        ) : (
+          <p className="stock-source" data-stock-source>
+            No dosers are mapped, so no batch takes from these tanks: set each tank&apos;s level by
+            hand, or{" "}
+            <Button variant="link" className="inline-link" onClick={() => navigate("setup")}>
+              map the dosers in Settings → Rooms & hardware
+            </Button>{" "}
+            and put each tank on its doser.
+          </p>
+        ))}
       {!doc && !error && <p className="muted">Loading stock tanks…</p>}
       {doc && !doc.tanks.length && !doc.error && (
         <Empty
           title="No stock tanks yet"
-          detail="Add each concentrate you dose into the batch tank: its capacity, how much one batch takes, and when to warn you."
+          detail="Add each concentrate's bottle: its capacity, the level it is at, when to warn you, and the doser it feeds. How much a batch takes is the feed recipe's."
           action={
             <Button onClick={edit}>
               <FlaskConical size={16} /> Add stock tanks
@@ -545,7 +488,6 @@ export function StockTanks({
       )}
       {editing && doc && (
         <Editor
-          controller={controller}
           initial={editing}
           busy={busy}
           max={doc.max_tanks}
@@ -555,32 +497,6 @@ export function StockTanks({
             if (await act("stock_save", { tanks: drafts })) setEditing(null);
           }}
         />
-      )}
-      {confirmBatch && doc && (
-        <Dialog open onOpenChange={(open) => !open && setConfirmBatch(false)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Record a batch by hand?</DialogTitle>
-              <DialogDescription>
-                Batches are already counted from {doc.fill_entity}. Record one here only for a
-                batch that entity missed, or it is counted twice.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="ghost" onClick={() => setConfirmBatch(false)}>
-                Cancel
-              </Button>
-              <Button
-                disabled={busy}
-                onClick={async () => {
-                  if (await act("stock_record_batch")) setConfirmBatch(false);
-                }}
-              >
-                Record the batch
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       )}
     </>
   );

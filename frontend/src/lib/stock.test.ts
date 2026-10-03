@@ -9,13 +9,12 @@ import {
 } from "./stock";
 import { StockDemo } from "./stock-demo";
 import { createDemo } from "./demo";
+import type { OperatorAction } from "./operator-types";
 
 const draft = (change: Partial<StockTankDraft> = {}): StockTankDraft => ({
   name: "Bloom",
   capacity_l: 50,
   level_l: 50,
-  dose_ml: 1800,
-  dose_entity: null,
   doser: null,
   low_l: 10,
   ...change,
@@ -44,7 +43,6 @@ describe("stock helpers", () => {
     );
     expect(draftErrors([draft(), draft({ name: "bloom" })])).toContain("Two tanks are called bloom.");
     expect(draftErrors([draft({ level_l: 60 })]).join()).toMatch(/level must be between/);
-    expect(draftErrors([draft({ dose_entity: "switch.pump" })]).join()).toMatch(/dose entity/);
     expect(draftErrors([draft({ capacity_l: Number.NaN })]).join()).toMatch(/capacity/);
   });
 });
@@ -62,13 +60,13 @@ describe("demo stock services", () => {
     ).toThrow(/changed elsewhere/);
   });
 
-  it("saves, refills, sets a level and records a batch like the integration", () => {
+  it("saves, refills and sets a level like the integration, and records no batch by hand", () => {
     const stock = demo();
     let doc = stock.call("stock_get", { room_id: room });
     doc = stock.call("stock_save", {
       room_id: room,
       expected_revision: doc.revision,
-      tanks: [draft({ level_l: 8 }), draft({ name: "Part A!", dose_ml: 400 })],
+      tanks: [draft({ level_l: 8 }), draft({ name: "Part A!" })],
     });
     expect(doc.tanks.map((t) => t.id)).toEqual(["bloom", "part_a"]);
     expect(doc.low).toEqual(["bloom"]);
@@ -82,19 +80,19 @@ describe("demo stock services", () => {
       level_l: 21.5,
     });
     expect(doc.tanks[0].level_l).toBe(21.5);
-    doc = stock.call("stock_record_batch", { room_id: room, expected_revision: doc.revision });
-    expect(doc.tanks.map((t) => t.level_l)).toEqual([19.7, 49.6]);
-    expect(doc.history[0]).toMatchObject({ source: "manual", draw_ml: { bloom: 1800, part_a: 400 } });
+    expect(() =>
+      stock.call("stock_record_batch" as OperatorAction, {
+        room_id: room,
+        expected_revision: doc.revision,
+      }),
+    ).toThrow(/Unsupported/);
   });
 });
 
 describe("stock tanks on the Reservoir's dosers", () => {
-  it("checks the doser and refuses a dose entity beside one", () => {
+  it("checks the doser", () => {
     expect(draftErrors([draft({ doser: 3 })])).toEqual([]);
     expect(draftErrors([draft({ doser: 7 })]).join()).toMatch(/numbered 1 to 6/);
-    expect(
-      draftErrors([draft({ doser: 3, dose_entity: "sensor.gr1_abd_motor_3_dosed_amount" })]).join(),
-    ).toMatch(/clear its dose entity/);
   });
 
   it("draws from the one tank on a doser, or the one named like its nutrient", () => {
@@ -106,17 +104,15 @@ describe("stock tanks on the Reservoir's dosers", () => {
     expect(onDoser([grow, bloom], 2, null)).toBeUndefined();
   });
 
-  it("in the demo, a tank on a doser takes what Flower gives from it and no batch by hand", () => {
+  it("in the demo, a tank on a doser takes what Flower gives from it, one on none nothing", () => {
     const stock = new StockDemo(() => createDemo());
     let doc = stock.call("stock_get", { room_id: "room:" });
     expect(doc.dosers?.["2"]).toEqual({ switch: "switch.demo_doser_2", nutrient: "Bloom" });
     doc = stock.call("stock_save", {
       room_id: "room:",
       expected_revision: doc.revision,
-      tanks: [draft({ name: "Bloom", doser: 2 }), draft({ name: "pH down", dose_ml: 60 })],
+      tanks: [draft({ name: "Bloom", doser: 2 }), draft({ name: "pH down" })],
     });
-    expect(doc.doses).toEqual({ bloom: 750, ph_down: 60 });
-    doc = stock.call("stock_record_batch", { room_id: "room:", expected_revision: doc.revision });
-    expect(doc.tanks.map((t) => t.level_l)).toEqual([50, 49.94]);
+    expect(doc.doses).toEqual({ bloom: 750, ph_down: 0 });
   });
 });
