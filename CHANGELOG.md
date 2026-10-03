@@ -9,6 +9,34 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **The tank card charts the reservoir's level.** Beside the tank, the Tank & pump card shows how
+  full it has been over the last 24 hours, or 12: a refill as a jump, each round of shots as a step
+  down, and the reservoir's minimum as a dashed line. The tank's temperature, where a sensor is
+  mapped for it, moves into the tank as a small line under how full it is, and is left out where
+  none is, instead of reading "Not mapped".
+
+### 🔧 Technical notes
+
+- Dashboard: `TankLevelChart` (`tank-level-chart.tsx`) reads `controller.history` for the level
+  sensor the card reads (`reservoir_distance_sensor`, worked out with the feed plan's full and empty
+  distances as `level_pct` is, or `water_level_sensor` in %), 12 or 24 hours, and again every 10
+  minutes while the page is visible. `levelSeries` draws it in 144 steps, each the middle reading
+  recorded in it or the level held (Home Assistant records changes), ending on the card's level now.
+  `controller.history` also allows the room's own mapped level sensors (its descriptor's
+  `reservoir_distance_sensor` and `water_level_sensor`), not another room's. The temperature is a
+  line in the tank drawing, whose words have a halo so the waterline passes behind them. The demo
+  records a reservoir level with a refill and rounds of shots. No change to the integration or the
+  controller.
+- Docs: the user guide's tank section; the screenshot.
+- Tests: `levelSeries` (distance and % sensors, a step's middle reading, the level held through
+  steps with no reading, the level now at the end), the card's level source, and history limited to
+  the room's own level sensors; the tank browser check covers the chart, its 12 h and 24 h buttons,
+  Flower 1's % sensor, and the Overview staying within two screens at 1440×800.
+
 ## [2.33.0] - 2026-10-03
 
 Integration and controller **2.33.0**.
