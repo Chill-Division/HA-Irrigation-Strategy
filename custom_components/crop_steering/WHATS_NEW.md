@@ -27,6 +27,7 @@ version being released.
 - A reservoir level sensor that stops reporting for 10 minutes counts as not reading, so no refill starts on an old reading.
 - Each feed recipe sets the order its dosers run in, doses are whole millilitres, and 1 part can be set in mL.
 - A feed schedule gives each week of the grow its own recipe, from the day Week 1 starts, and changes the stage by itself.
+- Stock tanks need only a name, size, level, low mark and doser: each week's recipe says what a refill takes.
 
 ## 2.31.0 - 2026-10-03
 

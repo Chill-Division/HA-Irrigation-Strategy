@@ -35,6 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   starts, and the next refill doses that week's recipe; after the last week, its recipe carries on. A
   stage picked by hand while it runs holds only until the next week starts, and the page says so;
   removing the schedule keeps the stage in use as it was.
+- **Stock tanks are just the bottles.** A stock tank is its name, capacity, level, low mark and the
+  doser it feeds: how much a refill takes from it is the recipe's, week by week, so it is no longer
+  set on the tank. Each refill the Reservoir mixes takes what that doser gave; the card shows what
+  this week's recipe takes and about how many refills are left. "Record a batch", the dose per batch,
+  the dose entity and counting batches from the tank's fill time are gone: every batch is the
+  Reservoir's.
 
 ### 🔧 Technical notes
 
@@ -76,6 +82,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   old document with none; in a real Home Assistant, the plan sensor and the select moving on at the
   midnight that starts a week, a pick in the select holding until then, and a document stored before
   the schedule loading with none; the dashboard's helpers and a browser check.
+- Integration (`stock.py`, `stock_api.py`): a tank is `name`, `capacity_l`, `level_l`, `doser` and
+  `low_l` (with its id and times); `dose_ml` and `dose_entity` are gone, and a tank stored with them
+  loads with the rest. `doses()` is what the feed plan in use gives from each tank's doser (0 on
+  none). The store counts only the Reservoir's batches (`batch_status`'s `last`): `_fill`,
+  `new_batch`, `dose_ml()`, `last_batch` and the `stock_record_batch` service are removed. The
+  stock sensor's `last_batch` is the newest batch in the history.
+- Dashboard: the stock tank editor has no dose per batch or dose entity, and the page no "Record a
+  batch"; a card says "On no doser" when it is on none. The demo's tanks are Athena's on its four
+  dosers.
+- Tests: the model and the store without the per-batch amount (an old tank loading with the rest,
+  the batches left from the recipe, no batch by hand); in a real Home Assistant, the low card and a
+  refill, the service gone, the Reservoir's draws with the sensor's dose and batches left, and stock
+  tanks stored by 2.31 loading in place.
 
 ## [2.31.0] - 2026-10-03
 
