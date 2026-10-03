@@ -21,7 +21,7 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
-## Unreleased
+## 2.34.0 - 2026-10-04
 
 - The nutrients go in while the reservoir fills, so a refill is done when its fill time ends.
 
