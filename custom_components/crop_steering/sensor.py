@@ -348,7 +348,8 @@ class CropSteeringStockSensor(SensorEntity):
                 }
                 for tank in manager.data["tanks"]
             ],
-            "last_batch": manager.data["last_batch"],
+            # the newest batch counted
+            "last_batch": (manager.data["history"] or [{}])[0].get("at"),
             "error": manager.error,
         }
 

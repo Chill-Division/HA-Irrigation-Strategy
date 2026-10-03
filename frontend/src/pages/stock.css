@@ -86,6 +86,7 @@
 .stock-facts small {
   display: block;
   font-size: var(--text-xs);
+  font-weight: 400;
   color: var(--muted-foreground);
   overflow-wrap: anywhere;
 }
