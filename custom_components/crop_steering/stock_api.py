@@ -142,9 +142,9 @@ class StockStore:
             return {}
         recipes = manager.data.get("recipes", [])
         if stage is None:
-            recipe = next(
-                (r for r in recipes if r["id"] == manager.data.get("stage")), None
-            )
+            # the feed schedule's this week, or one picked by hand
+            in_use = manager.in_use()
+            recipe = next((r for r in recipes if r["id"] == in_use), None)
         else:
             recipe = next((r for r in recipes if r["name"] == stage), None)
         return {
