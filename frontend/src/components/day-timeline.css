@@ -59,20 +59,13 @@
 .day-timeline .timeline-zone {
   margin-top: 10px;
 }
+/* It wraps, on a laptop too: everything it says can be read without pointing at it (it is the
+   row's tooltip as well). */
 .day-timeline .timeline-zone-line {
   font-size: 13px;
   line-height: 1.45;
   margin-bottom: 4px;
   color: var(--muted-foreground);
-}
-/* One row per zone on a laptop or wider, whatever the time of day adds (overnight, a hold): the
-   Overview must stay within two screens. The whole line is the row's tooltip; a phone wraps. */
-@media (min-width: 1024px) {
-  .day-timeline .timeline-zone-line {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 }
 .day-timeline .timeline-zone-line strong {
   color: var(--foreground);
