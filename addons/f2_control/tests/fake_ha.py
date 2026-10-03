@@ -12,11 +12,9 @@ _CURRENT_TIMESTAMP = object()
 
 
 class _Read(tuple):
-    """(state, attributes, last_updated), plus `last_changed` and `last_reported` as Home Assistant
-    reports them."""
+    """(state, attributes, last_updated), plus `last_changed` as Home Assistant reports it."""
 
     last_changed = None
-    last_reported = None
 
 
 class FakeHA:
@@ -41,14 +39,7 @@ class FakeHA:
     def ha_get(self, entity, timeout=8):
         read = _Read(self.states.get(entity, (None, {}, None)))
         read.last_changed = self.changed.get(entity) if entity in self.states else None
-        read.last_reported = read[2]  # each set_state is a report, the same value or not
         return read
-
-    def ha_reported(self, entity, timeout=8):
-        """When `entity` last reported: each set_state is a report, the same value or not."""
-        if entity not in self.states or not self.states[entity][2]:
-            return None
-        return datetime.fromisoformat(str(self.states[entity][2]).replace("Z", "+00:00"))
 
     def ha_call(self, domain, service, **data):
         self.calls.append((domain, service, data))
@@ -89,7 +80,6 @@ def install(controller, fake: FakeHA, options: dict):
         controller.ha_get_all,
         controller.ha_set,
         controller.ha_history,
-        controller.ha_reported,
     )
     controller.load_options = lambda: dict(options)
     controller.ha_get = fake.ha_get
@@ -97,5 +87,4 @@ def install(controller, fake: FakeHA, options: dict):
     controller.ha_get_all = fake.ha_get_all
     controller.ha_set = fake.ha_set
     controller.ha_history = fake.ha_history
-    controller.ha_reported = fake.ha_reported
     return orig
