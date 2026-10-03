@@ -916,13 +916,14 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 *Warning · Notification*
 
-**What it means.** The reservoir's level sensor has read nothing for 5 minutes, with the room's distances when full and when empty set.
+**What it means.** The reservoir's level sensor has had no usable reading for 5 minutes, with the room's distances when full and when empty set: it reads nothing, or it has not reported for over 10 minutes, so the value it last showed can't be trusted.
 
 **Watering meanwhile.** Carries on, but the controller can't tell how much is left: no refill starts by itself, and nothing keeps the reservoir above its minimum.
 
 **Likely causes**
 
 - The sensor's device is offline, or reports unknown or unavailable.
+- The sensor stopped reporting: an ultrasonic that filters out its failed echoes keeps showing its last value.
 - The sensor mapped in Settings → Rooms & hardware was renamed or removed.
 
 **Suggested fixes**

@@ -65,11 +65,13 @@ def log(*a):
 
 class HAState(tuple):
     """What ha_get returns: (state, attributes, last_updated), unpacked exactly as it always was, plus
-    `last_changed`: when the state VALUE last changed, as Home Assistant reports it (None if unknown)."""
+    `last_changed`: when the state VALUE last changed, as Home Assistant reports it (None if unknown),
+    and `last_reported`: when its source last reported it, the same value or not (None if unknown)."""
 
-    def __new__(cls, state=None, attributes=None, last_updated=None, last_changed=None):
+    def __new__(cls, state=None, attributes=None, last_updated=None, last_changed=None, last_reported=None):
         obj = super().__new__(cls, (state, {} if attributes is None else attributes, last_updated))
         obj.last_changed = last_changed
+        obj.last_reported = last_reported
         return obj
 
 
@@ -80,7 +82,8 @@ def ha_get(entity, timeout=8):
         if r.status_code != 200:
             return HAState()
         d = r.json()
-        return HAState(d.get("state"), d.get("attributes", {}), d.get("last_updated"), d.get("last_changed"))
+        return HAState(d.get("state"), d.get("attributes", {}), d.get("last_updated"), d.get("last_changed"),
+                       d.get("last_reported"))
     except Exception:
         return HAState()
 
@@ -458,6 +461,9 @@ LEARN_RISE_PCT = 10.0  # a refill that raised it less than this does not teach i
 # this low, or the room's minimum if higher: a timed fill into a fuller reservoir could overflow it.
 UNLEARNED_FILL_FROM_PCT = 10.0
 LEVEL_MISSING_PASSES = 5  # passes the level sensor may read nothing before it is reported (CS-705)
+# A level sensor that has not reported for this long reads as nothing: it has gone, and the value Home
+# Assistant still shows (an ultrasonic that filters out its failed echoes keeps its last one) is stale.
+LEVEL_STALE_S = 600.0
 # Between passes, while a batch fills or doses, how often it is checked for a reason to stop (the
 # room's watering switched off, a switch gone off): the fresh water stops within seconds, not a pass.
 BATCH_WATCH_S = 5.0
@@ -2143,7 +2149,7 @@ class Controller:
         """The room's reservoir this pass: its feed plan, the level sensor's distance (mm) and how full
         that is (%), and its minimum. Says once (CS-705) when a level that is set up reads nothing."""
         plan = feed_plan(ha_get(f"sensor.crop_steering_{room.prefix}feed_plan")[1])
-        mm = level_mm(ha_get(res["distance"])) if res.get("distance") else None
+        mm = self._level_now(res["distance"]) if res.get("distance") else None
         full, empty = (plan["full_mm"], plan["empty_mm"]) if plan else (0.0, 0.0)
         pct = level_pct(mm, full, empty)
         if res.get("distance") and 0 < full < empty:
@@ -2154,15 +2160,26 @@ class Controller:
                     f"res_level_{room.slug}",
                     "CS-705",
                     "reservoir level not reading",
-                    f"The reservoir's level sensor ({res['distance']}) has read nothing for "
-                    f"{missing} minutes. Watering carries on, but the controller can't tell how much is "
-                    "left: no refill starts by itself, and nothing keeps the reservoir above its "
-                    "minimum. Check the sensor.",
+                    f"The reservoir's level sensor ({res['distance']}) has had no usable reading for "
+                    f"{missing} minutes: it reads nothing, or has not reported for over "
+                    f"{LEVEL_STALE_S / 60:.0f} minutes, so what it last showed can't be trusted. Watering "
+                    "carries on, but the controller can't tell how much is left: no refill starts, "
+                    "and nothing keeps the reservoir above its minimum. Check the sensor.",
                     room=room,
                 )
             elif not missing:
                 self._resolve_alert(f"res_level_{room.slug}")
         return {"plan": plan, "mm": mm, "pct": pct, "min": (plan or {}).get("min_pct", 0.0) or 0.0}
+
+    def _level_now(self, entity):
+        """The level sensor's distance now, in mm (level_mm), or None: it reads nothing, or it has not
+        reported for LEVEL_STALE_S. Home Assistant moves last_reported at every report, the same value
+        or not; last_updated stands in where it is not given."""
+        read = ha_get(entity)
+        reported = _aware(getattr(read, "last_reported", None) or read[2])
+        if reported is not None and (datetime.now(timezone.utc) - reported).total_seconds() > LEVEL_STALE_S:
+            return None
+        return level_mm(read)
 
     def _refill_due(self, room):
         """Would the room's next round of shots take its reservoir under its minimum: True or False,
@@ -2402,7 +2419,7 @@ class Controller:
         if step == "filling":
             # Half-way: the level must show it is filling before the pump runs from it.
             start = batch.get("start_pct")
-            level = (level_pct(level_mm(ha_get(res["distance"])), plan.get("full_mm", 0.0), plan.get("empty_mm", 0.0))
+            level = (level_pct(self._level_now(res["distance"]), plan.get("full_mm", 0.0), plan.get("empty_mm", 0.0))
                      if res.get("distance") and start is not None else None)
             if start is not None and (level is None or level < start + FILL_RISE_PCT):
                 return self._batch_stop(room, now, (start, level), did_not_fill=True)
@@ -2549,7 +2566,7 @@ class Controller:
         in words, or None (no level, or too small a rise to go by)."""
         batch, res = room.batch, room.hw.get("reservoir") or {}
         start = batch.get("start_pct")
-        end = (level_pct(level_mm(ha_get(res["distance"])), plan.get("full_mm", 0.0), plan.get("empty_mm", 0.0))
+        end = (level_pct(self._level_now(res["distance"]), plan.get("full_mm", 0.0), plan.get("empty_mm", 0.0))
                if res.get("distance") else None)
         if start is None or end is None or end - start < LEARN_RISE_PCT or not plan.get("batch_l"):
             return None

@@ -215,6 +215,40 @@ def test_half_way_a_level_that_reads_nothing_stops_it_too():
     assert "reservoir reads nothing" in _alerts(fake, "CS-702")[0]["message"]
 
 
+def _reported(fake, pct, minutes_ago):
+    """The level sensor reads `pct`, last reported `minutes_ago` by the controller's clock."""
+    at = (_Clock.current - timedelta(minutes=minutes_ago)).astimezone(timezone.utc).isoformat()
+    fake.set_state(DISTANCE, mm(pct), {"unit_of_measurement": "mm"}, last_updated=at)
+
+
+def test_a_level_sensor_that_has_not_reported_for_ten_minutes_reads_as_nothing():
+    """An ultrasonic that filters out its failed echoes keeps showing its last good value in Home
+    Assistant: 4%, but from 11 minutes ago. Nothing goes by it: no refill starts on it, by itself or
+    asked for, before anything is switched on."""
+    c, fake, room = _room(pct=4.0, auto="on")
+    _reported(fake, 4.0, minutes_ago=11)
+    for _ in range(3):
+        _tick(c, room)
+    assert room._res["pct"] is None and c._refill_due(room) is None
+    _press(c, fake, room)
+    assert room.batch["step"] == "idle" and _switched(fake) == []
+    assert f"the reservoir level ({DISTANCE}) reads nothing" in _alerts(fake, "CS-703")[0]["message"]
+    _reported(fake, 4.0, minutes_ago=9)  # reported within ten minutes: it counts
+    _tick(c, room)
+    assert room._res["pct"] == pytest.approx(4.0)
+
+
+def test_half_way_a_level_sensor_that_stopped_reporting_stops_the_fill():
+    c, fake, room = _room(plan={**FLOWER, "fill_s": 1500}, pct=4.0)  # half-way is 12.5 minutes in
+    _reported(fake, 4.0, minutes_ago=0)
+    _tick(c, room)
+    _press(c, fake, room)
+    assert room.batch["step"] == "filling"
+    _step_on(c, room)  # nothing reported since the fill began
+    assert room.batch["last"]["result"] == "stopped: the reservoir did not fill"
+    assert PUMP not in [entity for entity, service in _switched(fake) if service == "turn_on"]
+
+
 def test_without_a_level_set_up_the_fill_goes_by_time_alone():
     plan = {**FLOWER, "full_mm": 0.0, "empty_mm": 0.0}
     c, fake, room = _room(plan=plan, level="500")
@@ -532,7 +566,9 @@ def test_a_level_that_reads_nothing_for_five_minutes_is_said_once_and_watering_c
     assert not _alerts(fake, "CS-705")
     _tick(c, room)
     (note,) = _alerts(fake, "CS-705")
-    assert f"level sensor ({DISTANCE}) has read nothing for 5 minutes. Watering carries on" in note["message"]
+    assert f"level sensor ({DISTANCE}) has had no usable reading for 5 minutes: it reads nothing, or has not "\
+        "reported for over 10 minutes" in note["message"]
+    assert "Watering carries on" in note["message"]
     _tick(c, room)
     assert len(_alerts(fake, "CS-705")) == 1
     _level(fake, 60.0)

@@ -12,9 +12,11 @@ _CURRENT_TIMESTAMP = object()
 
 
 class _Read(tuple):
-    """(state, attributes, last_updated), plus `last_changed` as Home Assistant reports it."""
+    """(state, attributes, last_updated), plus `last_changed` and `last_reported` as Home Assistant
+    reports them."""
 
     last_changed = None
+    last_reported = None
 
 
 class FakeHA:
@@ -39,6 +41,7 @@ class FakeHA:
     def ha_get(self, entity, timeout=8):
         read = _Read(self.states.get(entity, (None, {}, None)))
         read.last_changed = self.changed.get(entity) if entity in self.states else None
+        read.last_reported = read[2]  # each set_state is a report, the same value or not
         return read
 
     def ha_call(self, domain, service, **data):

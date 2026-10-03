@@ -24,6 +24,7 @@ version being released.
 ## Unreleased
 
 - On a laptop, each zone's line on Today's grow day now wraps, so you can read all of it without pointing at it.
+- A reservoir level sensor that stops reporting for 10 minutes counts as not reading, so no refill starts on an old reading.
 
 ## 2.31.0 - 2026-10-03
 
