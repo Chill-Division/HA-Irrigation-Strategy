@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Heading, Empty } from "@/components/dashboard";
 import { WateringPower } from "@/components/room-controls";
+import { RoomTests } from "@/components/room-tests";
 import { Pill } from "@/components/mini-visuals";
 import {
   CatchTestCalculator,
@@ -860,6 +861,30 @@ export function Setup({
                     ))}
                   </ul>
                 </div>
+              )}
+              {!isNew && draft.active && original && (
+                <RoomTests
+                  key={draft.entry_id}
+                  controller={controller}
+                  zones={original.zones
+                    .filter((z) => z.active)
+                    .map((z) => ({
+                      id: z.id,
+                      name: z.name,
+                      plants: z.plant_count,
+                      drippers: z.drippers_per_plant ?? NaN,
+                      flowLph: z.dripper_flow_rate ?? NaN,
+                    }))}
+                  why={
+                    !connected
+                      ? "Connect to Home Assistant to run a test."
+                      : draft.prefix !== controller.room.room.prefix
+                        ? `A test runs in the room chosen under Room in the menu: choose ${draft.room_name} there to test it.`
+                        : dirty
+                          ? "Save or discard your changes first: a test runs on the saved configuration."
+                          : null
+                  }
+                />
               )}
               {!isNew && draft.active && (
                 <section className="panel workspace-card workspace-section-heading">

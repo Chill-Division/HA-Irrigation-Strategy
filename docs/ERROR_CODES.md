@@ -839,7 +839,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 **Suggested fixes**
 
 - Check the reservoir: how full it is, and which nutrients went in (Feed → Reservoir shows the last batch).
-- Dose what is missing by hand, or empty and refill the reservoir and press Mix a Batch Now.
+- Dose what is missing by hand, or empty the reservoir and run a test refill (Settings → Rooms & hardware → Tests).
 - If a switch failed, check that device before the next batch.
 
 <a id="cs-702"></a>
@@ -862,7 +862,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 - Check the water supply and the fresh-water solenoid.
 - Check that the level sensor's reading moves when the water level does.
-- Then press Mix a Batch Now, or refill it by hand.
+- Then run a test refill (Settings → Rooms & hardware → Tests), or refill it by hand.
 
 <a id="cs-703"></a>
 
@@ -870,7 +870,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 *Warning · Notification*
 
-**What it means.** A refill was asked for (Mix a Batch Now), or was due because the room's next shots would take the reservoir under its minimum with automatic refills on, but could not start. The notification names why. Nothing was switched on.
+**What it means.** A refill was asked for (a test refill, or the room's Mix a Batch Now button in Home Assistant), or was due because the room's next shots would take the reservoir under its minimum with automatic refills on, but could not start. The notification names why. Nothing was switched on.
 
 **Watering meanwhile.** Unchanged, until the reservoir reaches its minimum (CS-704).
 
@@ -884,8 +884,9 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **Suggested fixes**
 
-- Deal with the reason the notification names, then press Mix a Batch Now.
+- Deal with the reason the notification names, then run the test refill again (Settings → Rooms & hardware → Tests).
 - For a reservoir that is too full for a fill, wait for it to run down, or drain it first.
+- If you have checked that the reservoir has room for the fill, tick Run anyway in the test refill.
 
 <a id="cs-704"></a>
 
@@ -905,7 +906,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **Suggested fixes**
 
-- Refill it: press Mix a Batch Now, or fill it by hand.
+- Refill it: run a test refill (Settings → Rooms & hardware → Tests), or fill it by hand.
 - To refill by itself next time, turn on automatic refills on the Feed → Reservoir page.
 - A pump that primes itself can go lower: set the reservoir's minimum to 0% to turn this off.
 

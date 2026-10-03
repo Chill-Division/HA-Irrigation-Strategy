@@ -1,0 +1,62 @@
+/* Settings → Rooms & hardware → Tests. Colours come from the theme tokens in styles.css. */
+.room-tests {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 18px;
+}
+.room-test {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.room-test h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+.room-test p {
+  margin: 0;
+}
+.room-test-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+}
+.room-test-controls label {
+  display: block;
+  margin-bottom: 8px;
+}
+.room-test-controls select {
+  min-width: 160px;
+  min-height: 40px;
+  background: var(--input-background, var(--card));
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.room-test-refusal {
+  display: grid;
+  gap: 10px;
+}
+.room-test-refusal p {
+  margin: 0;
+}
+.room-test-refusal label {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-weight: 500;
+}
+.room-test-refusal input {
+  margin-top: 3px;
+}
+@media (max-width: 720px) {
+  .room-tests {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

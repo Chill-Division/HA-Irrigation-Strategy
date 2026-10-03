@@ -283,6 +283,25 @@ export class OperatorDemo {
       this.feedDemo ||= new FeedDemo(this.getStates, this.updateStates);
       return this.feedDemo.call(action, data) as T;
     }
+    if (action === "test_shot") {
+      // As Home Assistant does: the press is the button's state, which the controller app reads.
+      const prefix = String(data.room_id).replace(/^room:/, "");
+      const button = `button.crop_steering_${prefix}zone_${Number(data.zone)}_test_shot`;
+      const now = new Date().toISOString();
+      const states = this.getStates();
+      this.updateStates({
+        ...states,
+        [button]: {
+          ...states[button],
+          entity_id: button,
+          state: now,
+          attributes: states[button]?.attributes ?? {},
+          last_changed: now,
+          last_updated: now,
+        },
+      });
+      return { requested: now } as T;
+    }
     let result: unknown;
     if (action.startsWith("strategy_")) {
       const doc = this.plan(String(data.room_id));

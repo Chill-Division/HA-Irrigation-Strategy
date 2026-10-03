@@ -296,6 +296,55 @@ def test_a_level_set_up_that_reads_nothing_refuses_a_batch_asked_for_by_hand():
     assert f"the reservoir level ({DISTANCE}) reads nothing" in _alerts(fake, "CS-703")[0]["message"]
 
 
+def _anyway(fake, after_s=119.0, at=None):
+    """The test refill's "Run anyway": the feed plan sensor says so until 120 s after the moment just
+    before the press, as the integration's feed_mix(force=True) does."""
+    at = at or _Clock.current.astimezone(timezone.utc)
+    fake.set_state(PLAN, "Flower", {**FLOWER, "mix_force_until": (at + timedelta(seconds=after_s)).isoformat()})
+
+
+def test_a_test_refill_run_anyway_starts_where_one_asked_for_by_hand_is_refused():
+    c, fake, room = _room(pct=25.0)  # before a refill has shown what 1% holds, 25% is too full
+    _tick(c, room)
+    _anyway(fake)
+    _press(c, fake, room)
+    assert room.batch["step"] == "filling" and _alerts(fake, "CS-703") == []
+    assert any("(asked for, run anyway): fresh water for 60 s" in line for line in c._activity)
+
+
+def test_run_anyway_does_not_start_a_refill_whose_level_reads_nothing():
+    """Half-way through its fill a refill checks that the reservoir is filling; one whose level reads
+    nothing would stop there, the pump never started, with half its fresh water in."""
+    c, fake, room = _room(level="unavailable")
+    _tick(c, room)
+    _anyway(fake)
+    _press(c, fake, room)
+    assert room.batch["step"] == "idle" and _switched(fake) == []
+    assert f"the reservoir level ({DISTANCE}) reads nothing" in _alerts(fake, "CS-703")[0]["message"]
+
+
+def test_run_anyway_holds_only_for_the_press_it_came_with():
+    c, fake, room = _room(pct=25.0)
+    _tick(c, room)
+    _anyway(fake, at=(_Clock.current - timedelta(minutes=10)).astimezone(timezone.utc))  # an old one
+    _press(c, fake, room)
+    assert room.batch["step"] == "idle" and _alerts(fake, "CS-703")
+    _later(30)
+    _anyway(fake, after_s=600)  # not the word feed_mix gives
+    _press(c, fake, room)
+    assert room.batch["step"] == "idle"
+
+
+def test_run_anyway_does_not_start_a_refill_that_cannot_run():
+    c, fake, room = _room(pct=25.0, auto="off")
+    fake.set_state(KILL, "off")
+    _tick(c, room)
+    _anyway(fake)
+    _press(c, fake, room)
+    assert room.batch["step"] == "idle" and _switched(fake) == []
+    assert f"the room's watering switch ({KILL}) is off" in _alerts(fake, "CS-703")[0]["message"]
+
+
 def test_the_first_press_seen_is_a_starting_point_but_a_first_press_ever_counts():
     c, fake, room = _room(pressed="2026-09-20T09:00:00+00:00")  # pressed before this controller knew
     _tick(c, room)

@@ -5,7 +5,9 @@ open to any signed-in user; changing the settings or a feed recipe, or asking fo
 administrator. What the controller app runs is published as sensor.crop_steering_<prefix>feed_plan,
 rewritten whenever the settings change; the feed stage in use is also a select, so it can be changed
 from Home Assistant. A batch is asked for by pressing the room's Mix a Batch Now button (button.py),
-which the controller reads; feed_mix presses it for the dashboard.
+which the controller reads; feed_mix presses it for the dashboard. With `force`, the dashboard's test
+refill says the person checked that the fill fits: for FORCE_S the plan sensor carries
+`mix_force_until`, and the controller does not refuse that press for a fill that might not fit.
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 
 SERVICES = ("feed_get", "feed_save", "feed_mix")
 SIGNAL = f"{DOMAIN}_feed_changed"
+FORCE_S = 120  # how long a forced refill's word stands: the controller sees its press well within
 
 
 def mapped_dosers(hardware: dict) -> dict[int, str]:
@@ -43,6 +46,7 @@ class FeedStore:
         self._lock = asyncio.Lock()
         self.data = feed.empty()
         self.error = None
+        self.force_until = None  # until when (UTC) a forced refill's word stands
 
     @property
     def mapped(self) -> dict[int, str]:
@@ -98,9 +102,19 @@ class FeedStore:
             await self._commit(feed.clean(data.get("document"), self.data))
             return self.response()
 
-    async def mix(self, context=None):
+    def forced(self):
+        """While a forced refill's word stands, until when (ISO, UTC); else None."""
+        from homeassistant.util import dt as dt_util
+
+        if self.force_until is None or self.force_until <= dt_util.utcnow():
+            return None
+        return self.force_until.isoformat()
+
+    async def mix(self, context=None, force=False):
         """Ask the controller app for a batch now: press the room's Mix a Batch Now button, which it
-        reads by entity id. Refused, with the reason, while the plan could not run."""
+        reads by entity id. Refused, with the reason, while the plan could not run. With `force` the
+        person checked that the fill fits: the plan sensor says so before the button is pressed, so
+        the controller never sees the press without it."""
         entity_id = f"button.{DOMAIN}_{self.prefix}mix_batch"
         state = self.hass.states.get(entity_id)
         if state is None or state.state == "unavailable":
@@ -110,6 +124,14 @@ class FeedStore:
         problem = self.plan()["problem"]
         if problem:
             raise ValueError(problem)
+        if force:
+            from datetime import timedelta
+
+            from homeassistant.helpers.dispatcher import async_dispatcher_send
+            from homeassistant.util import dt as dt_util
+
+            self.force_until = dt_util.utcnow() + timedelta(seconds=FORCE_S)
+            async_dispatcher_send(self.hass, f"{SIGNAL}_{self.entry.entry_id}")
         await self.hass.services.async_call(
             "button", "press", {"entity_id": entity_id}, blocking=True, context=context
         )
@@ -175,7 +197,7 @@ async def async_setup_feed(hass, entry):
             if call.service == "feed_get":
                 return target.response()
             if call.service == "feed_mix":
-                return await target.mix(call.context)
+                return await target.mix(call.context, call.data.get("force", False))
             return await target.save(call.data)
         except (ValueError, KeyError, OSError) as error:
             raise HomeAssistantError(str(error)) from error
@@ -185,6 +207,8 @@ async def async_setup_feed(hass, entry):
         if service == "feed_save":
             schema[vol.Required("expected_revision")] = vol.All(int, vol.Range(min=0))
             schema[vol.Required("document")] = dict
+        if service == "feed_mix":
+            schema[vol.Optional("force", default=False)] = bool
         hass.services.async_register(
             DOMAIN,
             service,

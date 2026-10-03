@@ -169,6 +169,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except Exception as err:  # pragma: no cover - never block setup on the feed store
         _LOGGER.warning("Feed settings unavailable: %s", err)
 
+    # Tests from the dashboard: a zone's test shot (the test refill is feed_mix).
+    from .selftest import async_setup_selftest
+
+    await async_setup_selftest(hass)
+
     _remove_retired_entities(hass, entry)
     _hide_retired_switches(hass, entry)
 
@@ -314,6 +319,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from .feed_api import async_unload_feed
 
     await async_unload_feed(hass, entry)
+    from .selftest import async_unload_selftest
+
+    await async_unload_selftest(hass)
     from .whats_new import async_unload_whats_new
 
     await async_unload_whats_new(hass, entry)

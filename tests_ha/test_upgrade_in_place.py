@@ -242,6 +242,23 @@ async def test_an_old_room_gains_nutrient_batches_switched_off_with_nothing_to_r
     assert not [key for key in descriptor if key.startswith("doser_") or "reservoir" in key]
 
 
+async def test_an_old_room_gains_a_test_shot_button_on_each_zones_device_never_pressed(hass):
+    """Each of the 2.17 room's two zones gets its Test Shot, unpressed, on the zone's own device; the
+    zone trigger button retired before it stays gone."""
+    entry, _seed = await _upgrade(
+        hass,
+        "entry_2_17_wizard.json",
+        registry_ids={"button.crop_steering_zone_1_trigger_shot": "zone_1_trigger_shot"},
+    )
+    registry = er.async_get(hass)
+    for zone in (1, 2):
+        button = f"button.crop_steering_zone_{zone}_test_shot"
+        assert hass.states.get(button).state == "unknown"
+        number = registry.async_get(f"number.crop_steering_zone_{zone}_plant_count")
+        assert registry.async_get(button).device_id == number.device_id
+    assert registry.async_get("button.crop_steering_zone_1_trigger_shot") is None
+
+
 # ------------------------------------------------------------------ an env-file era install
 async def test_an_env_era_install_with_only_front_and_back_probes_still_loads_and_fuses(
     hass,

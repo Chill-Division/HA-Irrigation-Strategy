@@ -206,6 +206,11 @@ _SHOTS = {
         r"FALLBACK schedule \(no live probe\)",
         lambda m: "no probe reads, so it is watered on a timer",
     ),
+    "test_shot": (
+        "test shot",
+        r"TEST shot (\d+) s \(asked for\)",
+        lambda m: f"{m[1]} s asked for, to test the watering",
+    ),
 }
 _EC_UNKNOWN = "EC unknown: base VWC watering; salt protection unverified"
 

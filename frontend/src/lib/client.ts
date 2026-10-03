@@ -189,6 +189,7 @@ export class HaClient {
       "feed_get",
       "feed_save",
       "feed_mix",
+      "test_shot",
       "whats_new_get",
       "whats_new_seen",
     ];

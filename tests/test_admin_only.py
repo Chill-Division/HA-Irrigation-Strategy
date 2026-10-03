@@ -23,6 +23,7 @@ ha_stubs.install()
 from custom_components.crop_steering import (  # noqa: E402
     run_api,
     feed_api,
+    selftest,
     services,
     setup_api,
     stock_api,
@@ -67,6 +68,7 @@ CHANGES = {
     "stock_record_batch": {"room_id": ROOM, "expected_revision": 0},
     "feed_save": {"room_id": ROOM, "expected_revision": 0, "document": {}},
     "feed_mix": {"room_id": ROOM},
+    "test_shot": {"room_id": ROOM, "zone": 1},
 }
 
 
@@ -148,13 +150,15 @@ def rig(monkeypatch):
         monkeypatch.setattr(setup_api, name, fake)
 
     hass = ha_stubs.FakeHass(
+        # the zone's Test Shot button, which test_shot presses
+        states={f"button.{DOMAIN}_zone_1_test_shot": "unknown"},
         data={
             DOMAIN: {
                 "_recipe": {"entry": recipe},
                 "_manual_overrides": {"zone_1_manual_override": override},
                 "_strategy": {"entry": strategy},
             }
-        }
+        },
     )
     hass.services = Services()
     users = {
@@ -167,6 +171,7 @@ def rig(monkeypatch):
     asyncio.run(run_api.async_setup_runs(hass, ha_stubs.FakeEntry()))
     asyncio.run(stock_api.async_setup_stock(hass, ha_stubs.FakeEntry()))
     asyncio.run(feed_api.async_setup_feed(hass, ha_stubs.FakeEntry()))
+    asyncio.run(selftest.async_setup_selftest(hass))
     asyncio.run(setup_api.async_setup_setup_services(hass))
     asyncio.run(whats_new.async_setup_whats_new(hass, ha_stubs.FakeEntry(), False))
 

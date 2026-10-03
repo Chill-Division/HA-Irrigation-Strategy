@@ -35,6 +35,7 @@ CHANGES = {
     "stock_record_batch": {"room_id": ROOM, "expected_revision": 0},
     "feed_save": {"room_id": ROOM, "expected_revision": 0, "document": {}},
     "feed_mix": {"room_id": ROOM},
+    "test_shot": {"room_id": ROOM, "zone": 1},
     "save_recipe": {"recipe": {}},
     "apply_recipe": {},
     "set_manual_override": {"zone": 1},

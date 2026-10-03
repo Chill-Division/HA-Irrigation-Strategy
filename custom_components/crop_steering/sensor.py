@@ -962,7 +962,12 @@ class CropSteeringFeedPlanSensor(SensorEntity):
             return {}
         if manager.error:
             return {"error": manager.error}
-        return {**manager.plan(), "revision": manager.data["revision"]}
+        return {
+            **manager.plan(),
+            "revision": manager.data["revision"],
+            # a test refill whose fill the person checked fits: the controller does not refuse it
+            "mix_force_until": manager.forced(),
+        }
 
     async def async_added_to_hass(self) -> None:
         from homeassistant.helpers.dispatcher import async_dispatcher_connect

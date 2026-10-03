@@ -32,6 +32,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Safer by hand.** A refill asked for by hand runs only when its fill fits under 100%, and the
   controller app's log says which room's refill other rooms are waiting for. If the level sensor
   reads nothing for 5 minutes, watering carries on and a notice says so.
+- **Tests.** At the bottom of Settings → Rooms & hardware, **Tests** checks a room's hardware: a
+  **test shot** waters one zone for 10 seconds, and a **test refill** refills and mixes the
+  reservoir. Each goes through the controller app's usual checks, and its log says how it went. A
+  test shot's water counts toward the zone's day, but it is not one of the day's shots, so a ramp
+  does not move on for it. A refill the controller would refuse as one that could overflow can be
+  **run anyway** by someone who has checked that it fits. The Reservoir page's "Mix a batch now"
+  moved there: **Refill by hand…** opens it.
 
 ### 🔧 Technical notes
 
@@ -69,6 +76,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   backstop and both notices, with a whole-pass test; `next_shot_size` against `decide()`; the feed
   settings; in a real Home Assistant, the settings reaching the real controller as a level, and a
   feed document stored by 2.30.1 loading in place; dashboard tests and browser checks.
+- Integration (tests): a Test Shot button per zone, on the zone's device,
+  `button.crop_steering_<prefix>zone_N_test_shot`; `crop_steering.test_shot` (`room_id`, `zone`;
+  administrator, response-only, `selftest.py`) presses it. `feed_mix` takes `force`: for `FORCE_S`
+  (120 s) the feed plan sensor carries `mix_force_until`, written before the press. An upgraded room
+  gains the buttons, unpressed.
+- Controller: `_test_shot` turns a new press into this pass's decision for the zone, a `TEST_SHOT_S`
+  (10 s) shot of kind `test_shot` (in `PLAN_HOLD_EXEMPT`), through `_blocked`, `_reservoir_block`
+  and the daily limit; the first state seen is a starting point (kept in memory, not in the state
+  file), and a press older than `TEST_REQUEST_S` is not run. `_advance_shot_counters(steering=False)`
+  counts its water (`daily_vol`, `last_shot`) but not `shots`, and skips `auto_setpoints.shot`. Its
+  status label is `Test shot`; `log_words` names it. `_mix_forced`: a Mix a Batch Now press up to
+  `MIX_FORCE_S` before the plan's `mix_force_until` skips `_fill_overflow`'s fit checks ("asked for,
+  run anyway"), not its refusal of a level that reads nothing, which the half-way check would stop. CS-702, CS-703 and CS-704 point to the test refill.
+- Dashboard: the Tests section (`room-tests.tsx`) on Rooms & hardware, for the room in use and a
+  saved configuration; the Reservoir page's "Refill by hand…" opens it (`#/setup?tests`). `test_shot`
+  is a room-scoped action, in the demo too, and a fired test shot is labelled "Test shot".
+- Docs: `docs/USER_GUIDE.md` (Tests), `docs/ENTITIES.md`, `docs/ERROR_CODES.md`, `CLAUDE.md`.
+- Tests: the add-on's test shot (sized, counted, held, stale, plan-held) and run anyway (its window,
+  its refusals); the force window and the admin matrices in the lean suite; in a real Home
+  Assistant, the buttons' ids and devices (a named room too), a test shot and a refill run anyway
+  through the real controller, and the buttons on an upgraded 2.17 room; browser checks.
 
 ## [2.30.1] - 2026-10-01
 

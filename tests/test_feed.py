@@ -3,6 +3,7 @@ runs from them (custom_components/crop_steering/feed.py, feed_api.py)."""
 
 import asyncio
 import copy
+from datetime import timedelta
 import sys
 import types
 
@@ -328,3 +329,29 @@ def test_mixing_a_batch_presses_the_rooms_button_once_the_plan_can_run():
     response = asyncio.run(store.mix())
     assert store.hass.services.calls == [("button", "press", {"entity_id": button})]
     assert response["plan"]["stage"] == "Flower" and "requested" in response
+
+
+def test_a_test_refill_run_anyway_says_so_on_the_plan_before_its_press(dispatcher):
+    """feed_mix with force: for the next FORCE_S the plan sensor carries mix_force_until (the entity
+    rewritten through the dispatcher), then the button is pressed. Without force, nothing changes.
+    """
+    store = rig()
+    store.hass.states.set("button.crop_steering_mix_batch", "unknown")
+    save(store, recipes=[FLOWER], stage="flower", order=[4, 3, 2, 1])
+    dispatcher.sent.clear()
+    asyncio.run(store.mix())
+    assert store.forced() is None and dispatcher.sent == []
+    order = []
+    dispatcher.async_dispatcher_send = lambda hass, signal, *a: order.append("plan")
+    calls = store.hass.services.calls
+    store.hass.services.async_call = lambda *a, **k: _press(order, calls, a)
+    asyncio.run(store.mix(force=True))
+    assert order == ["plan", "press"]  # the word is on the plan before the press
+    assert store.forced() == "2026-01-01T12:02:00+00:00"  # the stub's now, plus FORCE_S
+    store.force_until -= timedelta(seconds=feed_api.FORCE_S + 1)
+    assert store.forced() is None  # gone once its time is up
+
+
+async def _press(order, calls, args):
+    order.append("press")
+    calls.append(args[:3])

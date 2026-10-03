@@ -15,6 +15,7 @@ import {
   type FeedDraft,
 } from "./feed";
 import { FeedDemo, sampleFeed } from "./feed-demo";
+import { OperatorDemo } from "./operator-demo";
 import { fillRefusal, levelMm, readBatchStatus, timeLeft } from "./feed-status";
 import type { States } from "./types";
 
@@ -316,6 +317,22 @@ describe("demo feed services", () => {
     expect(states()["select.crop_steering_feed_stage"].attributes.options).toEqual(["Flower"]);
   });
 
+  it("presses a zone's Test Shot button, as Home Assistant would", async () => {
+    const { states } = rig();
+    let current = states();
+    const demo = new OperatorDemo(
+      () => current,
+      (next) => {
+        current = next;
+      },
+    );
+    const pressed = await demo.call<{ requested: string }>("test_shot", {
+      room_id: "room:",
+      zone: 2,
+    });
+    expect(current["button.crop_steering_zone_2_test_shot"].state).toBe(pressed.requested);
+  });
+
   it("starts a batch asked for as the controller would, filling first", () => {
     const { demo, states } = rig();
     const doc = demo.call("feed_mix", { room_id: room });
@@ -351,11 +368,13 @@ describe("feed actions in the dashboard", () => {
     await store.operator("feed_get");
     expect(refresh).not.toHaveBeenCalled();
     await store.operator("feed_mix", { room_id: "room:" });
+    await store.operator("test_shot", { room_id: "room:", zone: 2 });
     expect(operator.mock.calls).toEqual([
       ["feed_get", { room_id: "room:f1_" }],
       ["feed_mix", { room_id: "room:f1_" }],
+      ["test_shot", { room_id: "room:f1_", zone: 2 }],
     ]);
-    expect(refresh).toHaveBeenCalledTimes(1); // a batch asked for: the new button state
+    expect(refresh).toHaveBeenCalledTimes(2); // each asked for: the new button state
     store.disconnect();
   });
 });
