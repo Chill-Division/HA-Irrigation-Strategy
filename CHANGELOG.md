@@ -9,6 +9,27 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **A tidier Overview.** On Today's grow day, each zone's chart has just its phase and moisture now
+  above it; how it is tracking against yesterday, its targets, the water so far and what comes next
+  are behind **Predictions**, and the chart's key is behind the **?**, both at the right of Today's
+  events. A zone's last irrigation reads on one line: how long ago, and the time.
+
+### 🔧 Technical notes
+
+- Dashboard: `tracking` returns the zone line's phase and VWC now (shown above its chart, with the
+  whole line as its tooltip) and the rest, which a Predictions popover lists a paragraph per zone.
+  The key (`TimelineKey`, with its layer switches) and the "how to read this chart" note move from
+  under the chart and beside the title into a popover behind a **?**; both popovers carry the
+  `day-timeline` class so the key keeps its colours outside the panel. `LastIrrigation` shows the
+  relative time and the time (or day and time) on one line, the full timestamp as its tooltip.
+- Docs: the user guide's Overview; the Overview screenshot.
+- Tests: the grow-day browser checks read the zone lines and the key through their popovers, and
+  check the key's popover on a dark theme.
+
 ## [2.34.0] - 2026-10-04
 
 Integration and controller **2.34.0**.
