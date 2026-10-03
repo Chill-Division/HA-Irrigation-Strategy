@@ -25,10 +25,13 @@ export interface PlannedDose {
 }
 export interface FeedSettings {
   fill_s: number;
+  /** The litres the fill adds: what the doses are worked out for. */
   batch_l: number;
-  /** The distance from the sensor to the water that means almost empty; 0 = not set. */
+  /** The level sensor's distance to the water when full, and when empty; 0 = not set. */
+  full_mm: number;
   empty_mm: number;
-  settle_s: number;
+  /** The least the reservoir keeps, %: a refill comes before a shot that would take it lower. */
+  min_pct: number;
   pause_s: number;
   mix_s: number;
 }
@@ -72,12 +75,24 @@ export const NAME_LEN = 40;
 /** field -> [label, unit, lowest, highest, whole number], as feed.py SETTINGS checks them. */
 export const SETTINGS: Record<keyof FeedSettings, [string, string, number, number, boolean]> = {
   fill_s: ["Fresh-water fill", "s", 10, 7200, true],
-  batch_l: ["Batch size", "L", 1, 5000, false],
-  empty_mm: ["Almost empty at", "mm", 0, 10000, false],
-  settle_s: ["Circulate before dosing", "s", 0, 600, true],
+  batch_l: ["Fill litres", "L", 1, 5000, false],
+  full_mm: ["Distance when full", "mm", 0, 10000, false],
+  empty_mm: ["Distance when empty", "mm", 0, 10000, false],
+  min_pct: ["Minimum level", "%", 0, 50, false],
   pause_s: ["Pause between dosers", "s", 0, 600, true],
-  mix_s: ["Mix after the last dose", "s", 0, 7200, true],
+  mix_s: ["Recirculate after the last dose", "s", 0, 7200, true],
 };
+/** An integration older than the reservoir's level sends none of these: they start as feed.py's. */
+const SETTING_DEFAULTS: Partial<FeedSettings> = { full_mm: 0, empty_mm: 0, min_pct: 5, mix_s: 10 };
+
+/** How full the reservoir is, %, as the controller works it out (controller.py level_pct): 100 at
+ * the distance when full, 0 at the distance when empty, clamped between. null without a reading or
+ * without both distances in the right order. */
+export function levelPct(mm: number | null, fullMm: number, emptyMm: number): number | null {
+  if (mm === null || !Number.isFinite(mm) || !(fullMm > 0 && fullMm < emptyMm)) return null;
+  const clamped = Math.min(Math.max(mm, fullMm), emptyMm);
+  return 100 - ((clamped - fullMm) / (emptyMm - fullMm)) * 100;
+}
 /** The nutrient names the recipe editor offers; anything else can be typed. */
 export const NUTRIENT_LINES: Record<string, string[]> = {
   Athena: ["Core", "Grow", "Bloom", "Fade", "Balance", "Cleanse"],
@@ -89,10 +104,11 @@ export const draftOf = (doc: FeedDocument): FeedDraft =>
   structuredClone({
     fill_s: doc.fill_s,
     batch_l: doc.batch_l,
-    empty_mm: doc.empty_mm,
-    settle_s: doc.settle_s,
+    full_mm: doc.full_mm ?? SETTING_DEFAULTS.full_mm!,
+    empty_mm: doc.empty_mm ?? SETTING_DEFAULTS.empty_mm!,
+    min_pct: doc.min_pct ?? SETTING_DEFAULTS.min_pct!,
     pause_s: doc.pause_s,
-    mix_s: doc.mix_s,
+    mix_s: doc.mix_s ?? SETTING_DEFAULTS.mix_s!,
     dosers: doc.dosers,
     order: doc.order,
     recipes: doc.recipes,
@@ -179,6 +195,10 @@ export function draftErrors(draft: FeedDraft, maxRecipes = 12): string[] {
       errors.push(
         `${label} must be ${whole ? "a whole number" : "a number"} from ${low} to ${high} ${unit}.`,
       );
+  if (draft.empty_mm > 0 && draft.full_mm >= draft.empty_mm)
+    errors.push(
+      "The distance when full must be less than the distance when empty: the level sensor is above the water, so it reads further as the reservoir empties.",
+    );
   for (const [n, doser] of Object.entries(draft.dosers))
     if (!inRange(doser.flow_ml_min, 1, 10000))
       errors.push(`Doser ${n}'s flow must be from 1 to 10000 mL/min.`);

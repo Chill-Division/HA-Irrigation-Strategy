@@ -5,7 +5,9 @@ import { ControllerStore } from "./use-controller";
 import {
   documentOf,
   draftErrors,
+  draftOf,
   duration,
+  levelPct,
   moveTo,
   newRecipe,
   planOf,
@@ -13,7 +15,7 @@ import {
   type FeedDraft,
 } from "./feed";
 import { FeedDemo, sampleFeed } from "./feed-demo";
-import { almostEmpty, levelMm, readBatchStatus, timeLeft } from "./feed-status";
+import { fillRefusal, levelMm, readBatchStatus, timeLeft } from "./feed-status";
 import type { States } from "./types";
 
 // Athena Flower as the owner runs it: 3 Core : 5 Bloom : 1 Balance : 0.5 Cleanse, 1.667 mL per litre
@@ -22,10 +24,11 @@ import type { States } from "./types";
 const flower = (change: Partial<FeedDraft> = {}): FeedDraft => ({
   fill_s: 621,
   batch_l: 145,
-  empty_mm: 800,
-  settle_s: 20,
+  full_mm: 125,
+  empty_mm: 850,
+  min_pct: 5,
   pause_s: 10,
-  mix_s: 600,
+  mix_s: 10,
   dosers: {},
   order: [4, 3, 2, 1],
   recipes: [
@@ -92,7 +95,7 @@ describe("feed checks", () => {
     expect(draftErrors(flower({ fill_s: 12.5 })).join()).toMatch(
       /Fresh-water fill must be a whole/,
     );
-    expect(draftErrors(flower({ batch_l: Number.NaN })).join()).toMatch(/Batch size/);
+    expect(draftErrors(flower({ batch_l: Number.NaN })).join()).toMatch(/Fill litres/);
     expect(draftErrors(flower({ dosers: { "2": { flow_ml_min: 0 } } })).join()).toMatch(
       /Doser 2's flow/,
     );
@@ -150,7 +153,13 @@ describe("batch status", () => {
         nutrient: "Bloom",
         doses: [{ doser: 3, label: "Bloom", ml: 750, seconds: 75, dosed: null }, { bad: 1 }],
         level_mm: 210.4,
-        empty_mm: 800,
+        level_pct: 88.2,
+        full_mm: 125,
+        empty_mm: 850,
+        min_pct: 5,
+        litres_per_pct: 2.07,
+        due: false,
+        next_round_l: 7.68,
         auto: true,
         armed: false,
         last: {
@@ -168,7 +177,21 @@ describe("batch status", () => {
     expect(status.doses).toEqual([{ doser: 3, label: "Bloom", ml: 750, seconds: 75, dosed: null }]);
     expect(status.last).toMatchObject({ result: "done", dosed: { "3": 750 } });
     expect([status.auto, status.armed, status.blocked]).toEqual([true, false, null]);
+    expect([status.levelPct, status.minPct, status.litresPerPct, status.due]).toEqual([
+      88.2,
+      5,
+      2.07,
+      false,
+    ]);
     expect(readBatchStatus(states("unavailable", {}), "")!.step).toBeNull();
+    // A controller from before the level reports none of it.
+    const old = readBatchStatus(states("settling", { level_mm: 640, empty_mm: 800 }), "")!;
+    expect([old.step, old.levelPct, old.due, old.litresPerPct]).toEqual([
+      "settling",
+      null,
+      null,
+      null,
+    ]);
   });
 
   it("reads the level sensor in mm as the controller does, before the controller reports", () => {
@@ -185,11 +208,45 @@ describe("batch status", () => {
     expect(levelMm(undefined)).toBeNull();
   });
 
-  it("is almost empty at or past the mark, and unknown without a reading or a mark", () => {
-    expect(almostEmpty(800, 800)).toBe(true);
-    expect(almostEmpty(640, 800)).toBe(false);
-    expect(almostEmpty(null, 800)).toBeNull();
-    expect(almostEmpty(900, 0)).toBeNull();
+  it("works the level out between the distances when full and empty, as the controller does", () => {
+    expect(levelPct(125, 125, 850)).toBe(100);
+    expect(levelPct(850, 125, 850)).toBe(0);
+    expect(levelPct(487.5, 125, 850)).toBeCloseTo(50);
+    expect(levelPct(90, 125, 850)).toBe(100); // clamped, as the ESPHome template did
+    expect(levelPct(900, 125, 850)).toBe(0);
+    expect(levelPct(null, 125, 850)).toBeNull();
+    expect(levelPct(500, 0, 850)).toBeNull(); // both distances, or no level
+    expect(levelPct(500, 850, 125)).toBeNull();
+  });
+
+  it("refuses a refill asked for by hand that could overflow, as the controller would", () => {
+    // Once a refill has shown what 1% holds, the fill must fit.
+    expect(fillRefusal(25, true, 145, 5, 145 / 70)).toBeNull();
+    expect(fillRefusal(40, true, 145, 5, 145 / 70)).toBe(
+      "The reservoir reads 40%, and its 145 L fill adds about 70%, so it could overflow.",
+    );
+    // Before that, only from 10% (or the minimum, if higher).
+    expect(fillRefusal(9, true, 145, 5, null)).toBeNull();
+    expect(fillRefusal(25, true, 145, 5, null)).toContain("starts only from 10% or less");
+    expect(fillRefusal(12, true, 145, 15, null)).toBeNull();
+    // A level set up that reads nothing could be anything; without one there is nothing to check.
+    expect(fillRefusal(null, true, 145, 5, null)).toBe(
+      "The level sensor has no reading, so a fill could overflow it.",
+    );
+    expect(fillRefusal(null, false, 145, 5, null)).toBeNull();
+  });
+
+  it("starts an older integration's settings at feed.py's defaults", () => {
+    const old = { ...documentOf(flower()), full_mm: undefined, min_pct: undefined } as never;
+    const draft = draftOf(old);
+    expect([draft.full_mm, draft.min_pct, draft.empty_mm]).toEqual([0, 5, 850]);
+  });
+
+  it("says when the distance when full is not the smaller one", () => {
+    expect(draftErrors(flower({ full_mm: 850, empty_mm: 125 }))).toContain(
+      "The distance when full must be less than the distance when empty: the level sensor is above the water, so it reads further as the reservoir empties.",
+    );
+    expect(draftErrors(flower({ full_mm: 0, empty_mm: 0 }))).toEqual([]);
   });
 
   it("counts down to the end of the step", () => {
@@ -243,7 +300,7 @@ describe("demo feed services", () => {
         expected_revision: doc.revision,
         document: { ...sampleFeed(), batch_l: 0 },
       }),
-    ).toThrow(/Batch size/);
+    ).toThrow(/Fill litres/);
     doc = demo.call("feed_save", {
       room_id: room,
       expected_revision: doc.revision,

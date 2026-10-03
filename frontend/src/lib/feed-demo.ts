@@ -1,6 +1,7 @@
 import type { OperatorAction } from "./operator-types";
 import {
   draftErrors,
+  levelPct,
   mappedNumbers,
   planOf,
   type FeedDocument,
@@ -14,15 +15,17 @@ const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 const DOSERS = [1, 2, 3, 4, 5, 6];
 
 /** A demo room's feed: Flower at 3 Core : 5 Bloom : 1 Balance : 0.5 Cleanse, 1 mL per litre per
- * part, in 150 L batches, so Bloom is 750 mL: 75 s at 600 mL/min. */
+ * part, in 150 L refills (11 min 30 s of fresh water), so Bloom is 750 mL: 75 s at 600 mL/min.
+ * The reservoir's level sensor reads 125 mm to the water full and 850 mm empty. */
 export function sampleFeed(): FeedDraft {
   return {
-    fill_s: 600,
+    fill_s: 690,
     batch_l: 150,
-    empty_mm: 800,
-    settle_s: 20,
+    full_mm: 125,
+    empty_mm: 850,
+    min_pct: 5,
     pause_s: 10,
-    mix_s: 600,
+    mix_s: 10,
     dosers: {},
     order: [1, 2, 3, 4],
     recipes: [
@@ -44,10 +47,11 @@ export function sampleFeed(): FeedDraft {
 const EMPTY: FeedDraft = {
   fill_s: 600,
   batch_l: 100,
+  full_mm: 0,
   empty_mm: 0,
-  settle_s: 20,
+  min_pct: 5,
   pause_s: 10,
-  mix_s: 600,
+  mix_s: 10,
   dosers: {},
   order: [],
   recipes: [],
@@ -136,7 +140,14 @@ export class FeedDemo {
         attributes: {
           ...status.attributes,
           stage: doc.plan.stage,
+          full_mm: doc.plan.full_mm,
           empty_mm: doc.plan.empty_mm,
+          min_pct: doc.plan.min_pct,
+          level_pct: levelPct(
+            typeof status.attributes.level_mm === "number" ? status.attributes.level_mm : null,
+            doc.plan.full_mm,
+            doc.plan.empty_mm,
+          ),
           doses: doc.plan.doses.map((d) => ({ ...d, dosed: null })),
           blocked: doc.plan.problem?.replace(/\.$/, "") ?? null,
           updated: stamp,

@@ -33,8 +33,8 @@
     },
     {
       "prefix": "CS-7",
-      "name": "Nutrient batches",
-      "detail": "The room's reservoir refilled, mixed and dosed by the controller."
+      "name": "Reservoir and nutrient batches",
+      "detail": "The room's reservoir: its level, and the refills the controller fills, mixes and doses."
     }
   ],
   "codes": [
@@ -636,8 +636,8 @@
       "title": "Nutrient batch stopped part-way",
       "source": "notification",
       "severity": "warning",
-      "meaning": "The room's nutrient batch stopped before it finished. The notification says where it was (filling, starting to mix, dosing or mixing), why it stopped, and what each doser had given so far.",
-      "watering": "The room's watering carries on as usual from the reservoir, which holds whatever the batch had reached.",
+      "meaning": "The room's reservoir refill stopped before it finished. The notification says where it was (filling, dosing or mixing), why it stopped, and what each doser had given so far.",
+      "watering": "The room's watering carries on from the reservoir, which holds whatever the refill had reached, as long as that is above its minimum.",
       "causes": [
         "The room's watering switch, or the room, was switched off.",
         "A switch the batch keeps on (the fresh water, the pump, the recirculation solenoid or a doser) was switched off or went offline.",
@@ -655,8 +655,8 @@
       "title": "The reservoir did not fill",
       "source": "notification",
       "severity": "warning",
-      "meaning": "The fresh water ran for its fill time, but the reservoir's level sensor still read at or past its almost-empty mark, so no nutrient was dosed.",
-      "watering": "The room's watering carries on from whatever is in the reservoir. No automatic batch starts again until the level reads fuller.",
+      "meaning": "Half-way through its fill time the reservoir's level had not risen (or read nothing), so the fresh water was switched off before the pump started, and nothing was mixed or dosed.",
+      "watering": "Held while the reservoir is under its minimum (CS-704). No automatic refill starts again until the reservoir reads enough.",
       "causes": [
         "The water supply is off, or its pressure is too low for the fill time.",
         "The fresh-water solenoid, or its switch, did not open.",
@@ -665,7 +665,7 @@
       "fixes": [
         "Check the water supply and the fresh-water solenoid.",
         "Check that the level sensor's reading moves when the water level does.",
-        "Then press Mix a Batch Now."
+        "Then press Mix a Batch Now, or refill it by hand."
       ]
     },
     {
@@ -673,18 +673,52 @@
       "title": "A nutrient batch could not start",
       "source": "notification",
       "severity": "warning",
-      "meaning": "A nutrient batch was asked for (Mix a Batch Now), or was due because the reservoir read almost empty with automatic batches on, but could not start. The notification names why. Nothing was switched on.",
-      "watering": "Unchanged.",
+      "meaning": "A refill was asked for (Mix a Batch Now), or was due because the room's next shots would take the reservoir under its minimum with automatic refills on, but could not start. The notification names why. Nothing was switched on.",
+      "watering": "Unchanged, until the reservoir reaches its minimum (CS-704).",
       "causes": [
         "No feed stage is chosen, the stage's recipe doses nothing, or it uses a doser with no switch mapped.",
         "The room's watering switch is off, the room is switched off, a hardware hold is latched or a setup change is waiting.",
         "The pump, the main line, a zone valve, the fresh-water or recirculation solenoid or a doser reads on or offline: something else is using it.",
         "The reservoir, its pump or its recirculation solenoid is not mapped in Settings → Rooms & hardware.",
-        "Asked for by hand while the reservoir's level sensor read short of its almost-empty mark, or read nothing: its fill time could overflow it."
+        "The fill could overflow the reservoir: it reads too full for the litres the fill adds, its level reads nothing, or, before a refill has shown how far the fill raises it, one asked for by hand reads above 10% (or its minimum)."
       ],
       "fixes": [
         "Deal with the reason the notification names, then press Mix a Batch Now.",
-        "For a reservoir that is not yet almost empty, wait for it to run down, or drain it first."
+        "For a reservoir that is too full for a fill, wait for it to run down, or drain it first."
+      ]
+    },
+    {
+      "code": "CS-704",
+      "title": "Watering held, reservoir too low",
+      "source": "notification",
+      "severity": "critical",
+      "meaning": "A shot would take the room's reservoir under its minimum (or, before a refill has shown how much 1% holds, it already reads under it), and no refill can start by itself: automatic refills are off, the last one did not raise it, or something stops one. A pump that runs the reservoir dry loses its prime.",
+      "watering": "No zone in the room is watered from the reservoir until it reads enough again; then watering goes on by itself.",
+      "causes": [
+        "The reservoir ran down with automatic refills switched off.",
+        "The last refill did not raise the level (CS-702).",
+        "A refill could not start (the notification says why)."
+      ],
+      "fixes": [
+        "Refill it: press Mix a Batch Now, or fill it by hand.",
+        "To refill by itself next time, turn on automatic refills on the Feed → Reservoir page.",
+        "A pump that primes itself can go lower: set the reservoir's minimum to 0% to turn this off."
+      ]
+    },
+    {
+      "code": "CS-705",
+      "title": "Reservoir level not reading",
+      "source": "notification",
+      "severity": "warning",
+      "meaning": "The reservoir's level sensor has read nothing for 5 minutes, with the room's distances when full and when empty set.",
+      "watering": "Carries on, but the controller can't tell how much is left: no refill starts by itself, and nothing keeps the reservoir above its minimum.",
+      "causes": [
+        "The sensor's device is offline, or reports unknown or unavailable.",
+        "The sensor mapped in Settings → Rooms & hardware was renamed or removed."
+      ],
+      "fixes": [
+        "Check the level sensor and its device in Home Assistant.",
+        "Check the reservoir by eye until it reads again."
       ]
     }
   ]
