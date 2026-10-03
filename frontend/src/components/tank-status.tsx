@@ -117,10 +117,6 @@ export function TankStatus({
             </>
           )}
         </dl>
-        <p className="tank-note">
-          Pump is the switch’s report, not measured flow.
-          {refill && " Refills are the controller’s own record."}
-        </p>
       </div>
     </section>
   );
