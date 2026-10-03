@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- The reservoir level reads while the reservoir holds still, however long.
+
 ## 2.32.1 - 2026-10-03
 
 - The reservoir level reads again when it holds steady for a while.
