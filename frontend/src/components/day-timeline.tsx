@@ -1,5 +1,12 @@
-import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
-import { CircleHelp, LoaderCircle } from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
+import { CircleHelp, LoaderCircle, TrendingUp } from "lucide-react";
 import { Popover } from "radix-ui";
 import { Button } from "@/components/ui/button";
 import { Empty, number, time as clock } from "@/components/dashboard";
@@ -391,31 +398,6 @@ export function DayTimeline({ controller }: { controller: Controller }) {
       <div className="panel-heading">
         <div className="timeline-title">
           <h2 id="day-timeline-title">Today’s grow day</h2>
-          <Popover.Root>
-            <Popover.Trigger asChild>
-              <button
-                type="button"
-                className="setting-help-trigger"
-                aria-label="How to read this chart"
-              >
-                <CircleHelp size={15} aria-hidden="true" />
-              </button>
-            </Popover.Trigger>
-            <Popover.Portal>
-              <Popover.Content
-                className="setting-help"
-                side="bottom"
-                align="start"
-                sideOffset={6}
-                collisionPadding={12}
-              >
-                <p>
-                  Point at or tap the chart for details. A projection is an estimate: the controller
-                  waters by the probe.
-                </p>
-              </Popover.Content>
-            </Popover.Portal>
-          </Popover.Root>
         </div>
         {rows && (
           <div className="timeline-heading-side">
@@ -765,17 +747,24 @@ function Timeline({
       </button>
     </li>
   );
+  const lines = lanes.map((lane) => ({
+    lane,
+    ...tracking(lane, day, now, layers.compare, earlier),
+  }));
   return (
     <div className="timeline-body" ref={box}>
       {width > 0 && (
         <>
           <Axis day={day} now={now} plot={plot} x={x} changes={roomChanges} strip={strip} />
-          {lanes.map((lane) => {
-            const line = tracking(lane, day, now, layers.compare, earlier);
+          {lines.map(({ lane, now: state, rest }) => {
             return (
               <div className="timeline-zone" key={lane.zone.id} data-zone={lane.zone.id}>
-                <p className="timeline-zone-line" title={`${lane.zone.name} ${line}`}>
-                  <strong>{lane.zone.name}</strong> <span>{line}</span>
+                {/* Its phase and VWC now; how it tracks and what comes next are in Predictions. */}
+                <p
+                  className="timeline-zone-line"
+                  title={`${lane.zone.name} ${[state, rest].filter(Boolean).join(" · ")}`}
+                >
+                  <strong>{lane.zone.name}</strong> <span>{state}</span>
                 </p>
                 <LaneChart
                   lane={lane}
@@ -795,46 +784,113 @@ function Timeline({
       <p className={`timeline-detail${(hover ?? picked) ? "" : " empty"}`} aria-live="polite">
         {hover ?? picked ?? ""}
       </p>
-      <ul className="timeline-legend" aria-label="Timeline key">
-        {Object.entries(PHASES).map(([phase, name]) => (
-          <li key={phase}>
-            <i className={`key-phase phase-${phase}`} aria-hidden="true" />
-            {name}
-          </li>
-        ))}
-        <li>
-          <i className="key-today" aria-hidden="true" />
-          Today
-        </li>
-        {toggle("projected", "key-projected", "Projected (estimate)")}
-        {layers.compare === "yesterday" && toggle("compared", "key-yesterday", "Yesterday")}
-        {layers.compare === "typical" &&
-          toggle(
-            "compared",
-            "key-typical",
-            typicalDays >= 3 ? `Typical (${typicalDays} days)` : "Typical (too few days)",
+      <div className="timeline-foot">
+        <details className="timeline-events">
+          <summary>Today’s events ({events.length})</summary>
+          {events.length ? (
+            <ol>
+              {events.map((event, index) => (
+                <li key={index}>{event.text}</li>
+              ))}
+            </ol>
+          ) : (
+            <p>Nothing recorded yet today.</p>
           )}
-        {toggle("targets", "key-target", "Target for the phase")}
-        {MARKS.map(([key, name]) => (
-          <li key={key}>
-            <i className={key} aria-hidden="true" />
-            {name}
-          </li>
-        ))}
-      </ul>
-      <details className="timeline-events">
-        <summary>Today’s events ({events.length})</summary>
-        {events.length ? (
-          <ol>
-            {events.map((event, index) => (
-              <li key={index}>{event.text}</li>
-            ))}
-          </ol>
-        ) : (
-          <p>Nothing recorded yet today.</p>
-        )}
-      </details>
+        </details>
+        <div className="timeline-foot-actions">
+          <Popover.Root>
+            <Popover.Trigger asChild>
+              <button type="button" className="timeline-predictions-trigger">
+                <TrendingUp size={14} aria-hidden="true" />
+                Predictions
+              </button>
+            </Popover.Trigger>
+            <Popover.Portal>
+              {/* day-timeline: the grow day's own colours and key reach the popover too. */}
+              <Popover.Content
+                className="setting-help day-timeline timeline-popover"
+                side="top"
+                align="end"
+                sideOffset={6}
+                collisionPadding={12}
+                aria-label="Each zone today, and what comes next"
+                data-predictions
+              >
+                {lines.map(({ lane, now: state, rest }) => (
+                  <p key={lane.zone.id} data-zone={lane.zone.id}>
+                    <strong>{lane.zone.name}</strong> {[state, rest].filter(Boolean).join(" · ")}
+                  </p>
+                ))}
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
+          <Popover.Root>
+            <Popover.Trigger asChild>
+              <button type="button" className="setting-help-trigger" aria-label="Chart key">
+                <CircleHelp size={15} aria-hidden="true" />
+              </button>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                className="setting-help day-timeline timeline-popover"
+                side="top"
+                align="end"
+                sideOffset={6}
+                collisionPadding={12}
+                aria-label="Chart key"
+              >
+                <p>
+                  Point at or tap the chart for details. A projection is an estimate: the controller
+                  waters by the probe.
+                </p>
+                <TimelineKey toggle={toggle} compare={layers.compare} typicalDays={typicalDays} />
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
+        </div>
+      </div>
     </div>
+  );
+}
+
+/** The grow day's key: what each colour and mark is, the layers it can hide among them. */
+function TimelineKey({
+  toggle,
+  compare,
+  typicalDays,
+}: {
+  toggle: (key: "projected" | "compared" | "targets", icon: string, name: string) => ReactNode;
+  compare: Compare;
+  typicalDays: number;
+}) {
+  return (
+    <ul className="timeline-legend" aria-label="Timeline key">
+      {Object.entries(PHASES).map(([phase, name]) => (
+        <li key={phase}>
+          <i className={`key-phase phase-${phase}`} aria-hidden="true" />
+          {name}
+        </li>
+      ))}
+      <li>
+        <i className="key-today" aria-hidden="true" />
+        Today
+      </li>
+      {toggle("projected", "key-projected", "Projected (estimate)")}
+      {compare === "yesterday" && toggle("compared", "key-yesterday", "Yesterday")}
+      {compare === "typical" &&
+        toggle(
+          "compared",
+          "key-typical",
+          typicalDays >= 3 ? `Typical (${typicalDays} days)` : "Typical (too few days)",
+        )}
+      {toggle("targets", "key-target", "Target for the phase")}
+      {MARKS.map(([key, name]) => (
+        <li key={key}>
+          <i className={key} aria-hidden="true" />
+          {name}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -1540,7 +1596,7 @@ function tracking(
   now: number,
   compare: Compare,
   earlier: Earlier | null,
-): string {
+): { now: string; rest: string } {
   const who = compare === "typical" ? "typical" : "yesterday";
   const at = (hour: number) => clock(day.start + hour * 3_600_000);
   const vwc = lane.zone.vwc.value;
@@ -1602,7 +1658,8 @@ function tracking(
     );
   else if (lane.dryback !== null && lane.p0Target !== null)
     parts.push(`P0 dryback ${number(lane.dryback)}% of ${number(lane.p0Target)}%`);
-  return [...parts, lane.setupNote, lane.status].filter(Boolean).join(" · ");
+  const [phase, vwcNow, ...more] = [...parts, lane.setupNote, lane.status].filter(Boolean);
+  return { now: `${phase} · ${vwcNow}`, rest: more.join(" · ") };
 }
 function changeText(change: Change): string {
   return `${clock(change.time)} · ${change.place} · ${changeSentence(change.name, change.unit, change.from, change.to, change.by)}`;

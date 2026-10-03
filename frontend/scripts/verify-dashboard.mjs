@@ -646,13 +646,30 @@ try {
       await expectVisible(layer("yesterday"));
       for (const name of ["targets", "projected", "expected", "yesterday-shots"])
         assert.equal(await layer(name).count(), 1, `the ${name} layer is drawn`);
+      // Above each zone's chart, its phase and VWC now; how it tracks against yesterday and what
+      // comes next are in Predictions, one paragraph a zone.
       const line = lane.locator(".timeline-zone-line");
-      assert.match(
-        await line.textContent(),
-        /% now · [+−±][\d.]+ pts vs yesterday at .+ · Peak target [\d.]+% /,
-      );
-      assert.match(await line.textContent(), /L so far \([+−±][\d.]+ L\)/);
-      const key = timeline.getByRole("list", { name: "Timeline key" });
+      assert.match(await line.textContent(), /^Zone 1 P\d · [\d.]+% now$/);
+      const predictions = async () => {
+        await timeline.getByRole("button", { name: "Predictions" }).click();
+        const box = page.locator("[data-predictions]");
+        await expectVisible(box);
+        const text = await box.locator("p[data-zone]").first().textContent();
+        await page.keyboard.press("Escape");
+        await box.waitFor({ state: "detached" });
+        return text;
+      };
+      const tracked = await predictions();
+      assert.match(tracked, /% now · [+−±][\d.]+ pts vs yesterday at .+ · Peak target [\d.]+% /);
+      assert.match(tracked, /L so far \([+−±][\d.]+ L\)/);
+      // The key is behind the "?" at the right of Today's events, its layers' switches with it.
+      const openKey = async () => {
+        await timeline.getByRole("button", { name: "Chart key" }).click();
+        const key = page.getByRole("list", { name: "Timeline key" });
+        await expectVisible(key);
+        return key;
+      };
+      let key = await openKey();
       for (const [name, layers] of [
         ["Yesterday", ["yesterday", "yesterday-shots"]],
         ["Projected (estimate)", ["projected", "expected"]],
@@ -664,9 +681,11 @@ try {
         assert.equal(await toggle.getAttribute("aria-pressed"), "false");
         for (const hidden of layers) assert.equal(await layer(hidden).count(), 0, `${name} hides`);
       }
+      await page.keyboard.press("Escape");
       // The choices are remembered in the browser.
       await page.reload({ waitUntil: "networkidle" });
       await expectVisible(lane);
+      key = await openKey();
       assert.equal(
         await key
           .getByRole("button", { name: "Target for the phase" })
@@ -675,6 +694,7 @@ try {
       );
       for (const name of ["Yesterday", "Projected (estimate)", "Target for the phase"])
         await key.getByRole("button", { name, exact: true }).click();
+      await page.keyboard.press("Escape");
       await expectVisible(layer("yesterday"));
       assert.equal(await layer("targets").count(), 1);
       const compare = timeline.getByLabel("Compare with");
@@ -685,12 +705,14 @@ try {
         "the typical day is a p25-p75 band",
       );
       assert.equal(await layer("yesterday").count(), 0);
+      key = await openKey();
       await expectVisible(key.getByRole("button", { name: "Typical (7 days)", exact: true }));
-      assert.match(await line.textContent(), /pts vs typical at /);
+      await page.keyboard.press("Escape");
+      assert.match(await predictions(), /pts vs typical at /);
       await axe("overview grow day, typical");
       await compare.selectOption("none");
       assert.equal(await layer("typical").count(), 0);
-      assert.doesNotMatch(await line.textContent(), / vs (yesterday|typical)/);
+      assert.doesNotMatch(await predictions(), / vs (yesterday|typical)/);
       await compare.selectOption("yesterday");
       await expectVisible(layer("yesterday"));
       // Dark: the timeline's own layers and controls, as the error codes are checked below.
@@ -702,6 +724,14 @@ try {
         .include("[data-day-timeline]")
         .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
         .analyze();
+      // The key's popover, its switches on the popover's own background.
+      await openKey();
+      const darkKey = await new AxeBuilder({ page })
+        .include(".timeline-popover")
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+        .analyze();
+      await page.keyboard.press("Escape");
+      dark.violations.push(...darkKey.violations);
       await page.evaluate(() => document.documentElement.classList.remove("dark"));
       assert.deepEqual(
         dark.violations.map((v) => v.id),
@@ -852,7 +882,8 @@ try {
     });
     const lanes = pinned.locator(".timeline-zone-line");
     await lanes.first().waitFor();
-    const [zone1, zone2] = await lanes.allInnerTexts();
+    await pinned.getByRole("button", { name: "Predictions" }).click();
+    const [zone1, zone2] = await pinned.locator("[data-predictions] p[data-zone]").allInnerTexts();
     assert.match(
       zone2,
       / · next: shot when VWC < [\d.]+% \(now [\d.]+%[^)]*\) · dilution if pwEC > /,
@@ -869,7 +900,9 @@ try {
     });
     const nightLanes = night.locator(".timeline-zone-line");
     await nightLanes.first().waitFor();
-    const lines = await nightLanes.allInnerTexts();
+    assert.ok((await nightLanes.allInnerTexts()).every((line) => line.includes(" P3 · ")));
+    await night.getByRole("button", { name: "Predictions" }).click();
+    const lines = await night.locator("[data-predictions] p[data-zone]").allInnerTexts();
     assert.ok(lines.length && lines.every((line) => line.includes(" P3 · ")), lines.join("\n"));
     for (const line of lines) {
       assert.match(line, / · P3 dryback [\d.]+% of [\d.]+% from today's [\d.]+% peak/);

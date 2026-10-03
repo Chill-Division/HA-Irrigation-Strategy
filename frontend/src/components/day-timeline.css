@@ -59,8 +59,7 @@
 .day-timeline .timeline-zone {
   margin-top: 10px;
 }
-/* It wraps, on a laptop too: everything it says can be read without pointing at it (it is the
-   row's tooltip as well). */
+/* The zone, its phase and VWC now: the rest is in Predictions (and the row's tooltip). */
 .day-timeline .timeline-zone-line {
   font-size: 13px;
   line-height: 1.45;
@@ -353,8 +352,46 @@
   background: var(--tl-night);
   border: 1px solid var(--border);
 }
-.day-timeline .timeline-events {
+/* Today's events, with Predictions and the chart's key at the right of their line. */
+.day-timeline .timeline-foot {
+  position: relative;
   margin-top: 12px;
+}
+.day-timeline .timeline-foot-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.day-timeline .timeline-predictions-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  cursor: pointer;
+}
+.day-timeline .timeline-predictions-trigger:hover,
+.day-timeline .timeline-predictions-trigger:focus-visible,
+.day-timeline .timeline-predictions-trigger[data-state="open"] {
+  background: var(--muted);
+  color: var(--foreground);
+}
+.timeline-popover p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.timeline-popover p + p {
+  margin-top: 8px;
+}
+.day-timeline .timeline-events {
   font-size: 13px;
 }
 .day-timeline .timeline-events summary {

@@ -25,12 +25,13 @@
   color: var(--foreground);
 }
 .zone-last-irrigation {
-  display: grid;
-  gap: 3px;
+  display: block;
   min-width: 140px;
-  max-width: 220px;
   line-height: 1.45;
   white-space: normal;
+}
+.zone-last-irrigation-at {
+  color: var(--muted-foreground);
 }
 .zone-irrigation-summary {
   display: grid;
