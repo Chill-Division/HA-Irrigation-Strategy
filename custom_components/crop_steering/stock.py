@@ -1,18 +1,14 @@
-"""Stock tanks: the room's nutrient concentrates, drawn down by every batch tank it makes. Pure (no
-Home Assistant import), so it is tested directly; stock_api.py stores it and counts the batches.
+"""Stock tanks: the room's nutrient concentrates, each on the Reservoir doser its bottle feeds. Pure
+(no Home Assistant import), so it is tested directly; stock_api.py stores it and counts the batches.
 
-A stock tank on one of the room's dosers (Reservoir) is drawn by the batches the controller mixes:
-each loses what its doser gave in that batch, as the controller recorded it. When bottles are
-swapped between stages, several tanks can be on one doser; a batch then draws from the one named
-like the nutrient its recipe puts on that doser.
+A tank needs only its name, capacity, level, low mark and doser: how much a batch takes from it is the
+feed recipe's, week by week, not the tank's. Each batch the controller mixes takes from a tank on a
+doser what that doser gave in it, as the controller recorded it. When bottles are swapped between
+stages, several tanks can be on one doser; a batch then draws from the one named like the nutrient its
+recipe puts on that doser. A tank on no doser changes only when its level is set or it is refilled.
 
-Any other tank is drawn by every other batch: a newer timestamp on the tank last-fill entity mapped
-in Rooms & hardware (`tank_last_fill_sensor`), or the operator recording one by hand. It loses its dose
-per batch: a fixed amount, or what a dose entity reads at that moment (a dose-volume number of a
-doser this system does not run), so the draw follows that doser's own setting.
-
-The first fill time the integration ever sees is only a starting point: counting it would draw the
-stock down for a batch made before the tanks were set up. The same goes for the Reservoir's batches.
+The Reservoir's last batch the first time the store runs is only a starting point: counting it would
+draw the stock down for a batch made before the tanks were set up.
 """
 
 from __future__ import annotations
@@ -25,7 +21,6 @@ from .room import MAX_DOSERS
 
 MAX_TANKS = 12
 HISTORY = 30
-_ENTITY = re.compile(r"^(number|input_number|sensor)\.[a-z0-9_]+$")
 _DEAD = ("unknown", "unavailable", "none", "")
 
 
@@ -37,7 +32,6 @@ def empty() -> dict:
     return {
         "revision": 0,
         "tanks": [],
-        "last_batch": None,
         # When the last Reservoir batch counted ended; None until the store first runs.
         "reservoir_batch": None,
         "history": [],
@@ -96,22 +90,7 @@ def clean_tanks(raw: list, current: list[dict], now: str) -> list[dict]:
             item, "capacity_l", 0.1, 10000, old["capacity_l"] if old else None
         )
         level = _number(item, "level_l", 0, 10000, old["level_l"] if old else capacity)
-        entity = (
-            item["dose_entity"]
-            if "dose_entity" in item
-            else (old or {}).get("dose_entity")
-        )
-        dose_entity = str(entity or "").strip()
-        if dose_entity and not _ENTITY.match(dose_entity):
-            raise StockError(
-                f"{dose_entity} is not a number, input_number or sensor entity"
-            )
         doser = _doser(item["doser"] if "doser" in item else (old or {}).get("doser"))
-        if doser is not None and dose_entity:
-            raise StockError(
-                f"{name} is on doser {doser}, so it loses what that doser gives: clear its dose "
-                "entity"
-            )
         tank_id = old["id"] if old else _slug(name, kept | {t["id"] for t in out})
         out.append(
             {
@@ -119,10 +98,6 @@ def clean_tanks(raw: list, current: list[dict], now: str) -> list[dict]:
                 "name": name,
                 "capacity_l": capacity,
                 "level_l": min(level, capacity),
-                "dose_ml": _number(
-                    item, "dose_ml", 0, 100000, old["dose_ml"] if old else 0
-                ),
-                "dose_entity": dose_entity or None,
                 "doser": doser,
                 "low_l": min(
                     _number(
@@ -156,15 +131,7 @@ def _doser(value) -> int | None:
 def _changed(old: dict, item: dict) -> bool:
     return any(
         item.get(key) is not None and item.get(key) != old.get(key)
-        for key in (
-            "name",
-            "capacity_l",
-            "level_l",
-            "dose_ml",
-            "dose_entity",
-            "doser",
-            "low_l",
-        )
+        for key in ("name", "capacity_l", "level_l", "doser", "low_l")
     )
 
 
@@ -197,23 +164,6 @@ def reservoir_draws(
         if tank is not None:
             draws[tank["id"]] = draws.get(tank["id"], 0.0) + ml
     return draws
-
-
-def dose_ml(tank: dict, reading: str | None) -> float:
-    """What one batch takes from this tank, in mL: the dose entity's reading when it has a usable
-    one, otherwise the fixed amount."""
-    if (
-        tank.get("dose_entity")
-        and reading is not None
-        and str(reading).strip().lower() not in _DEAD
-    ):
-        try:
-            value = float(reading)
-        except (TypeError, ValueError):
-            value = -1
-        if 0 <= value <= 100000:
-            return value
-    return float(tank.get("dose_ml") or 0)
 
 
 def draw(data: dict, doses: dict[str, float], at: str, source: str) -> dict:
@@ -257,8 +207,8 @@ def low_tanks(data: dict) -> list[dict]:
 
 
 def parse_fill(state: str | None, zone: tzinfo) -> datetime | None:
-    """A last-fill entity's state as an aware time: a timestamp sensor's ISO string, or a date-and-
-    time helper's local "YYYY-MM-DD HH:MM:SS" read in the Home Assistant time zone."""
+    """A time as an aware datetime: an ISO string with its offset, or one without read in `zone` (the
+    Reservoir's batch status gives the time its batch ended with its UTC offset)."""
     if state is None or str(state).strip().lower() in _DEAD:
         return None
     try:
@@ -266,15 +216,3 @@ def parse_fill(state: str | None, zone: tzinfo) -> datetime | None:
     except ValueError:
         return None
     return when if when.tzinfo else when.replace(tzinfo=zone)
-
-
-def new_batch(data: dict, fill: datetime | None) -> bool:
-    """Whether `fill` is a batch not yet counted. The first fill time ever seen, and one no newer
-    than the last counted, only move the starting point (see the module note)."""
-    if fill is None:
-        return False
-    last = data.get("last_batch")
-    counted = last is not None and fill > datetime.fromisoformat(last)
-    if last is None or fill > datetime.fromisoformat(last):
-        data["last_batch"] = fill.isoformat()
-    return counted

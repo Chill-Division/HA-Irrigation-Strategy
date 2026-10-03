@@ -1,11 +1,11 @@
 """Stock tanks per room, stored and served; see stock.py for the rules.
 
 Response-only services addressed by canonical room id, like the run and strategy services. Reading
-is open to any signed-in user; changing a tank, recording a refill or a batch needs an
-administrator. A tank on one of the room's dosers is drawn when the controller reports a batch it
-mixed ended (sensor.crop_steering_<prefix>batch_status, its `last`): by what that doser gave. Any
-other tank is drawn when the room's mapped tank last-fill entity moves to a newer time, or when the
-operator records a batch. A room whose tanks run low gets a Repairs card.
+is open to any signed-in user; changing a tank or recording a refill needs an administrator. A tank on
+one of the room's dosers is drawn when the controller reports a batch it mixed ended
+(sensor.crop_steering_<prefix>batch_status, its `last`): by what that doser gave. What one batch takes
+from a tank is what the feed recipe in use gives from its doser. A room whose tanks run low gets a
+Repairs card.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from .room import room_prefix
 
 _LOGGER = logging.getLogger(__name__)
 
-SERVICES = ("stock_get", "stock_save", "stock_refill", "stock_record_batch")
+SERVICES = ("stock_get", "stock_save", "stock_refill")
 SIGNAL = f"{DOMAIN}_stock_changed"
 ISSUE = "stock_low"
 
@@ -37,13 +37,13 @@ def _valid(value) -> dict:
         raise ValueError("Invalid stored revision")
     data = stock.empty()
     data["revision"] = value["revision"]
+    # A tank stored with a fixed dose per batch or a dose entity (before 2.32) keeps the rest: the
+    # feed recipe in use says what a batch takes from it now.
     data["tanks"] = stock.clean_tanks(value.get("tanks", []), [], _now())
     # clean_tanks gives new ids and times; the stored ones are the truth.
     for tank, raw in zip(data["tanks"], value.get("tanks", [])):
         for key in ("id", "refilled_at", "updated_at"):
             tank[key] = raw.get(key, tank[key])
-    last = value.get("last_batch")
-    data["last_batch"] = datetime.fromisoformat(last).isoformat() if last else None
     mixed = value.get("reservoir_batch")
     data["reservoir_batch"] = (
         datetime.fromisoformat(mixed).isoformat() if mixed else None
@@ -66,13 +66,6 @@ class StockStore:
         self._lock = asyncio.Lock()
         self.data = stock.empty()
         self.error = None
-
-    @property
-    def fill_entity(self) -> str | None:
-        """The room's tank last-fill entity from Rooms & hardware; None when unmapped."""
-        config = self.hass.data.get(DOMAIN, {}).get(self.entry.entry_id, {})
-        hardware = config.get("hardware", {}) if isinstance(config, dict) else {}
-        return hardware.get("tank_last_fill_sensor") or None
 
     async def async_init(self):
         try:
@@ -97,36 +90,24 @@ class StockStore:
         return f"sensor.{DOMAIN}_{self.prefix}batch_status"
 
     def start(self):
-        """Count batches from the Reservoir and the fill entity, and raise the low-stock card.
-        Returns the unsubscribe for the listeners, or None when there is nothing to listen to.
-        """
+        """Count the batches the Reservoir mixes, and raise the low-stock card. Returns the
+        unsubscribe for the listener, or None when there is nothing to listen to."""
         self._alert()
         if self.error:
             return None
         from homeassistant.core import callback
         from homeassistant.helpers.event import async_track_state_change_event
 
-        entity = self.fill_entity
-        # The fill time at start-up is a starting point, not a batch (stock.new_batch); so is the
-        # Reservoir's last batch the first time this runs (_reservoir).
-        if entity:
-            current = self.hass.states.get(entity)
-            self.hass.async_create_task(self._fill(current.state if current else None))
+        # The Reservoir's last batch the first time this runs is a starting point (_reservoir).
         self.hass.async_create_task(
             self._reservoir(self.hass.states.get(self.batch_entity))
         )
 
         @callback
         def changed(event):
-            state = event.data.get("new_state")
-            if event.data.get("entity_id") == self.batch_entity:
-                self.hass.async_create_task(self._reservoir(state))
-            else:
-                self.hass.async_create_task(self._fill(state.state if state else None))
+            self.hass.async_create_task(self._reservoir(event.data.get("new_state")))
 
-        return async_track_state_change_event(
-            self.hass, [e for e in (entity, self.batch_entity) if e], changed
-        )
+        return async_track_state_change_event(self.hass, [self.batch_entity], changed)
 
     def _feed(self):
         """The room's feed settings (feed_api.py), or None when they cannot be read."""
@@ -169,35 +150,16 @@ class StockStore:
         }
 
     def doses(self) -> dict[str, float]:
-        """What one batch takes from each tank right now, in mL. A tank on a doser: what the stage
-        in use doses from it (0 when that stage does not use it). Any other: its dose entity's
-        reading, or its fixed dose."""
-        doses = {}
-        for tank in self.data["tanks"]:
-            if tank.get("doser"):
-                doses[tank["id"]] = 0.0
-                continue
-            state = (
-                self.hass.states.get(tank["dose_entity"])
-                if tank["dose_entity"]
-                else None
-            )
-            doses[tank["id"]] = stock.dose_ml(tank, state.state if state else None)
+        """What one batch takes from each tank right now, in mL: what the feed recipe in use (the
+        schedule's this week) doses from its doser; 0 when it uses none, or there is none.
+        """
+        doses = {tank["id"]: 0.0 for tank in self.data["tanks"]}
         manager = self._feed()
         for dose in manager.plan()["doses"] if manager is not None else []:
             owner = stock.on_doser(self.data["tanks"], dose["doser"], dose["label"])
             if owner is not None:
                 doses[owner["id"]] = float(dose["ml"])
         return doses
-
-    def _hand_doses(self) -> dict[str, float]:
-        """A batch the Reservoir did not mix (a fill, or one recorded by hand) draws only from the
-        tanks on no doser: the others lose what their dosers give, in the Reservoir's batches.
-        """
-        on = {tank["id"] for tank in self.data["tanks"] if tank.get("doser")}
-        return {
-            tank_id: ml for tank_id, ml in self.doses().items() if tank_id not in on
-        }
 
     async def _reservoir(self, state):
         """A batch the Reservoir mixed ended (the batch status's `last`): each tank on a doser
@@ -235,31 +197,12 @@ class StockStore:
                 )
             await self._commit(draft)
 
-    async def _fill(self, state):
-        from homeassistant.util import dt as dt_util
-
-        zone = dt_util.get_default_time_zone()
-        async with self._lock:
-            if self.error:
-                return
-            fill = stock.parse_fill(state, zone)
-            draft = deepcopy(self.data)
-            counted = stock.new_batch(draft, fill)
-            if counted and draft["tanks"]:
-                stock.draw(draft, self._hand_doses(), fill.isoformat(), "fill")
-                _LOGGER.info(
-                    "Stock tanks for %s: batch at %s counted", self.room_id, fill
-                )
-            if counted or draft["last_batch"] != self.data["last_batch"]:
-                await self._commit(draft)
-
     def response(self):
         doses = self.doses()
         return {
             "schema_version": 1,
             "room_id": self.room_id,
             **deepcopy(self.data),
-            "fill_entity": self.fill_entity,
             "dosers": self.dosers(),
             "doses": doses,
             "low": [tank["id"] for tank in stock.low_tanks(self.data)],
@@ -281,8 +224,6 @@ class StockStore:
                 )
             elif action == "stock_refill":
                 stock.refill(draft, data.get("id"), data.get("level_l"), now)
-            elif action == "stock_record_batch":
-                stock.draw(draft, self._hand_doses(), now, "manual")
             else:
                 raise ValueError("Unsupported stock operation")
             await self._commit(draft)
