@@ -133,6 +133,27 @@ def ha_history(entity, since, timeout=12):
         return None
 
 
+_ENTITY_ID = re.compile(r"^[a-z_]+\.[a-z0-9_]+$")
+
+
+def ha_reported(entity, timeout=8):
+    """When `entity` last reported a value, the same one or not: Home Assistant's last_reported, read
+    live through its template API, as an aware datetime; None when it can't be told (not an entity id,
+    no such entity, or the template API refused). The REST state's own last_reported cannot be used:
+    Home Assistant caches a state's JSON and, when a sensor reports the same value again, moves
+    last_reported on the state without renewing that copy, so a steady sensor looks silent there."""
+    if not isinstance(entity, str) or not _ENTITY_ID.match(entity):
+        return None
+    template = "{{ states.%s.last_reported.isoformat() if states.%s else '' }}" % (entity, entity)
+    try:
+        r = _S.post(f"{BASE}/template", headers=HDR, json={"template": template}, timeout=timeout)
+        if r.status_code != 200:
+            return None
+        return _aware(r.text.strip())
+    except Exception:
+        return None
+
+
 def ha_call(domain, service, **data):
     try:
         r = _S.post(
@@ -2173,13 +2194,16 @@ class Controller:
 
     def _level_now(self, entity):
         """The level sensor's distance now, in mm (level_mm), or None: it reads nothing, or it has not
-        reported for LEVEL_STALE_S. Home Assistant moves last_reported at every report, the same value
-        or not; last_updated stands in where it is not given."""
-        read = ha_get(entity)
-        reported = _aware(getattr(read, "last_reported", None) or read[2])
+        reported for LEVEL_STALE_S (ha_reported: Home Assistant moves last_reported at every report,
+        the same value or not). When its last report can't be told, the reading stands, as it
+        did before this check: a steady level is not mistaken for a sensor that has gone."""
+        mm = level_mm(ha_get(entity))
+        if mm is None:
+            return None
+        reported = ha_reported(entity)
         if reported is not None and (datetime.now(timezone.utc) - reported).total_seconds() > LEVEL_STALE_S:
             return None
-        return level_mm(read)
+        return mm
 
     def _refill_due(self, room):
         """Would the room's next round of shots take its reservoir under its minimum: True or False,

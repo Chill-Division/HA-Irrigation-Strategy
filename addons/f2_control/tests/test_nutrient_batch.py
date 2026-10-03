@@ -8,6 +8,7 @@ its minimum; it refuses to start, and stops part-way, with a reason, whenever th
 The level is a distance sensor above the water: 125 mm when full and 850 mm when empty here, as on the
 owner's GR1 reservoir (the ESPHome template it replaces worked the same percentage out)."""
 from datetime import datetime, timedelta, timezone
+import types
 
 import pytest
 
@@ -234,6 +235,44 @@ def test_a_level_sensor_that_has_not_reported_for_ten_minutes_reads_as_nothing()
     assert room.batch["step"] == "idle" and _switched(fake) == []
     assert f"the reservoir level ({DISTANCE}) reads nothing" in _alerts(fake, "CS-703")[0]["message"]
     _reported(fake, 4.0, minutes_ago=9)  # reported within ten minutes: it counts
+    _tick(c, room)
+    assert room._res["pct"] == pytest.approx(4.0)
+
+
+REAL_HA_REPORTED = controller.ha_reported  # as imported: each rig puts the fake's in its place
+
+
+class _Response:
+    def __init__(self, status, text=""):
+        self.status_code, self.text = status, text
+
+
+def test_its_last_report_is_read_live_through_the_template_api(monkeypatch):
+    """Home Assistant's REST state keeps the last_reported it was first served with while a sensor
+    reports the same value again (2.32.0 read a steady level as gone); a template reads it live."""
+    asked = []
+
+    def post(url, headers=None, json=None, timeout=None):
+        asked.append((url, json["template"]))
+        return _Response(200, "2026-10-03T05:00:00.250000+00:00\n")
+
+    monkeypatch.setattr(controller, "_S", types.SimpleNamespace(post=post))
+    assert REAL_HA_REPORTED(DISTANCE) == datetime(2026, 10, 3, 5, 0, 0, 250000, tzinfo=timezone.utc)
+    url, template = asked[0]
+    assert url.endswith("/template") and f"states.{DISTANCE}.last_reported" in template
+    # Refused, no such entity, or not an entity id: it can't be told.
+    monkeypatch.setattr(controller, "_S", types.SimpleNamespace(post=lambda *a, **k: _Response(401)))
+    assert REAL_HA_REPORTED(DISTANCE) is None
+    monkeypatch.setattr(controller, "_S", types.SimpleNamespace(post=lambda *a, **k: _Response(200, "")))
+    assert REAL_HA_REPORTED("sensor.gone") is None
+    assert REAL_HA_REPORTED("sensor.x }}{{ 1") is None and len(asked) == 1
+
+
+def test_when_its_last_report_cannot_be_told_the_reading_stands(monkeypatch):
+    """A steady level is never mistaken for a sensor that has gone."""
+    c, fake, room = _room(pct=4.0)
+    _reported(fake, 4.0, minutes_ago=30)
+    monkeypatch.setattr(controller, "ha_reported", lambda entity, timeout=8: None)
     _tick(c, room)
     assert room._res["pct"] == pytest.approx(4.0)
 
