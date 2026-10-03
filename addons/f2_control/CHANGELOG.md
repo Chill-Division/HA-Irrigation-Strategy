@@ -1,4 +1,6 @@
-# Unreleased
+# 2.33.1
+
+Pair with integration 2.33.1.
 
 - **The dashboard the app serves:** the tank card charts the reservoir's level over the last 12 or 24 hours, from Home Assistant's recorded history of its level sensor. No change to the controller.
 - **The dashboard the app serves:** the tank card's footnote is gone. No change to the controller.
