@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The nutrients go in while the reservoir fills.** One pause after the pump and recirculation start half-way through the fill, the doses go in while the fresh water still runs; the fresh water stops at the fill's end whatever the step, and recirculation runs to the fill's end and at least `mix_s` after the last dose. A refill stopped mid-dose stops the fresh water too. `batch_status` gains `fill_until`. **The dashboard the app serves** shows the doses inside Fill and mix. No new options; no change to the state file.
+
 # 2.33.1
 
 Pair with integration 2.33.1.

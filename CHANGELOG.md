@@ -9,6 +9,38 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **The nutrients go in while the reservoir fills.** A refill used to run its fresh water for the
+  whole fill time and only then dose each nutrient, so it took the fill time and the doses on top.
+  Now, half-way through the fill, once the pump and recirculation are running, the doses go in one
+  after another while the fresh water still runs, and the tank keeps circulating until the fill ends:
+  a refill is done when its fill time is (11 min 30 s for a 690 s fill). If a recipe's doses take
+  longer than the fill's second half, the rest go in after the fresh water stops, and the Reservoir
+  page says so. On the Reservoir page the doses now sit inside Fill and mix.
+
+### 🔧 Technical notes
+
+- Controller: `_batch_step` switches the fresh water off at the fill's end (`fill_end`, cleared once
+  it reads off) whatever the step. At half-way, `filling_mixing` lasts one `pause_s` before the first
+  dose, and after the last dose `mixing` runs until the fill's end and at least `mix_s`.
+  `batch_timed` (a timed step, or any step while the fresh water runs) decides what holds other
+  rooms' shots and what the between-pass watch checks, and `_sleep_for` also wakes at the fill's end.
+  `_batch_interrupted` and `_batch_stop` keep and switch off the fresh water while it runs, so a
+  refill stopped mid-dose stops it too. `batch_status` gains `fill_until`. No new options; no change
+  to the state file (a refill saved in progress is switched off at the next start, as before).
+- Integration: `feed.py`'s description of a refill.
+- Dashboard: the Reservoir page shows the doses inside Fill and mix, and Recirculate only when the
+  doses outlast the fill, with a line saying so; the settings' help says when the doses go in. The
+  demo's refill starts with the fill's first half.
+- Docs: the user guide's refill; `batch_status` in the entities; the Reservoir screenshot.
+- Tests: the doses go in while the fresh water runs and the refill ends with the fill; doses that
+  outlast the fill go on after the fresh water stops on time, and the loop wakes for it; a refill
+  stopped mid-dose stops the fresh water too; other rooms wait while the fresh water runs, not once
+  the fill has ended; `fill_until` on the status sensor.
+
 ## [2.33.1] - 2026-10-04
 
 Integration and controller **2.33.1**.
