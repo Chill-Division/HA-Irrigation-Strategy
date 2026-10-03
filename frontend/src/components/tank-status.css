@@ -64,46 +64,82 @@
     sans-serif;
   fill: var(--muted-foreground);
 }
-.tank-quality,
+.tank-temperature {
+  font:
+    600 13px Roboto,
+    sans-serif;
+  fill: var(--foreground);
+}
+/* A halo in the tank's own colour: the waterline passes behind the words at any level. */
+.tank-percent,
+.tank-caption,
+.tank-temperature {
+  paint-order: stroke;
+  stroke: var(--muted);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+/* The level over the last 12 or 24 hours, beside the tank and as tall as it. */
+.tank-history {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.tank-history-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.tank-range {
+  display: flex;
+  gap: 4px;
+}
+.tank-range button {
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--foreground);
+  font-size: 12px;
+  cursor: pointer;
+}
+.tank-range button[aria-pressed="true"] {
+  background: var(--secondary);
+  color: var(--primary-strong);
+  border-color: var(--primary);
+}
+.tank-range button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.tank-history-chart {
+  height: 92px;
+  min-width: 0;
+}
+.tank-history-note {
+  display: grid;
+  align-items: center;
+  min-height: 92px;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
 .tank-equipment {
   display: grid;
   gap: 12px;
   margin: 0;
 }
-.tank-quality {
-  container-type: inline-size;
-}
-.tank-quality > div {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  min-width: 0;
-}
-.tank-quality dt,
 .tank-equipment dt {
   color: var(--muted-foreground);
   font-size: 12px;
 }
-.tank-quality dd,
 .tank-equipment dd {
   margin: 0;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-}
-.tank-quality dd {
-  font-size: 16px;
-  display: flex;
-  flex: 1;
-  justify-content: flex-end;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-  white-space: nowrap;
-}
-.tank-value {
-  min-width: 6em;
-  text-align: right;
 }
 .tank-equipment {
   grid-column: 1 / -1;

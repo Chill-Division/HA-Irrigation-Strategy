@@ -198,6 +198,19 @@ describe("controller lifecycle", () => {
     const [f1] = await store.history(["sensor.crop_steering_f1_vwc_zone_1"], 24);
     expect(f1.points.length).toBeGreaterThan(0);
   });
+  it("reads the level sensor the room's tank card charts, and no other room's", async () => {
+    browser();
+    const store = new ControllerStore(true);
+    const [distance] = await store.history(["sensor.demo_reservoir_distance"], 24);
+    expect(distance.points.length).toBeGreaterThan(200);
+    await expect(store.history(["sensor.demo_f1_tank_level"], 24)).rejects.toThrow(/selected room/);
+    store.changeRoom("room:f1_");
+    const [level] = await store.history(["sensor.demo_f1_tank_level"], 12);
+    expect(level.points.at(-1)?.value).toBe(72);
+    await expect(store.history(["sensor.demo_reservoir_distance"], 24)).rejects.toThrow(
+      /selected room/,
+    );
+  });
   it("reads a long history one day per request and joins the days in order", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(Date.parse("2026-09-24T12:00:00Z"));

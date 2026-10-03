@@ -12,7 +12,7 @@ import { addDays, daysBetween } from "./comparison";
 import { dateForDay, localDate } from "./grow-plan";
 import { numeric } from "./model";
 import { feedEntities, sampleFeed } from "./feed-demo";
-import { mappedNumbers, planOf } from "./feed";
+import { levelPct, mappedNumbers, planOf } from "./feed";
 
 /** The demo workspace, which the browser checks and the screenshots use: opened with `?demo`. */
 export function isDemoLocation(location: Pick<Location, "search">): boolean {
@@ -779,6 +779,57 @@ export function demoWaterRecord(
   }
   return samples;
 }
+/** A demo tank's recorded level: a step down at each round of shots while the lights are on, none
+ * overnight, and for Flower 2 the refill its controller last ran (filling from 8% for 12 minutes, then
+ * mixing). The reservoir's distance sensor records mm; Flower 1's level sensor records %. */
+function demoTankHistory(states: States, entityId: string, hours: number, now: number) {
+  const tankLevel = /^sensor\.demo_(f1_)?tank_level$/.exec(entityId);
+  const distance = entityId === DEMO_RESERVOIR.reservoir_distance_sensor;
+  if (!tankLevel && !distance) return null;
+  const prefix = tankLevel?.[1] ?? "";
+  const plan = states[`sensor.crop_steering_${prefix}feed_plan`]?.attributes ?? {};
+  const full = Number(plan.full_mm),
+    empty = Number(plan.empty_mm);
+  const pctNow = distance
+    ? levelPct(numeric(states[entityId]), full, empty)
+    : numeric(states[entityId]);
+  if (pctNow === null) return [];
+  const last = states[`sensor.crop_steering_${prefix}batch_status`]?.attributes.last as
+    { at?: string } | undefined;
+  const ended = distance && last?.at ? Date.parse(last.at) : NaN;
+  const refill = Number.isFinite(ended)
+    ? { start: ended - 24 * 60_000, filled: ended - 12 * 60_000, end: ended }
+    : null;
+  const start = now - hours * 3_600_000;
+  // Rounds of shots every 45 minutes, from an hour after lights-on until lights-off.
+  const on = numeric(states[`number.crop_steering_${prefix}lights_on_hour`]) ?? 10;
+  const off = numeric(states[`number.crop_steering_${prefix}lights_off_hour`]) ?? 22;
+  const rounds: number[] = [];
+  const from = Math.min(start, refill?.start ?? start) - 86_400_000;
+  for (let day = new Date(from); day.getTime() < now; day.setDate(day.getDate() + 1)) {
+    const first = new Date(day).setHours(on + 1, 0, 0, 0);
+    const end = new Date(day).setHours(off > on ? off : off + 24, 0, 0, 0);
+    for (let at = first; at < end; at += 45 * 60_000) if (at > from && at <= now) rounds.push(at);
+  }
+  const between = (a: number, b: number) => rounds.filter((at) => at > a && at <= b).length;
+  const top = refill ? Math.max(78, pctNow) : pctNow;
+  const after = refill ? between(refill.end, now) : 0;
+  const drop = refill ? (after ? (top - pctNow) / after : 0) : 1.2;
+  const pctAt = (at: number) => {
+    if (!refill || at >= refill.end) return pctNow + drop * between(at, now);
+    if (at >= refill.filled) return top;
+    if (at >= refill.start)
+      return 8 + ((top - 8) * (at - refill.start)) / (refill.filled - refill.start);
+    return Math.min(100, 8 + (drop || 3) * between(at, refill.start));
+  };
+  const points: { time: string; value: number }[] = [];
+  for (let at = start; at <= now; at += 5 * 60_000) {
+    const pct = pctAt(at);
+    const value = distance ? empty - (pct / 100) * (empty - full) : pct;
+    points.push({ time: new Date(at).toISOString(), value: Math.round(value * 10) / 10 });
+  }
+  return points;
+}
 export function demoHistory(
   states: States,
   entityIds: string[],
@@ -789,6 +840,13 @@ export function demoHistory(
     .filter((id) => states[id])
     .map((entityId) => {
       const state: EntityState = states[entityId];
+      const tank = demoTankHistory(states, entityId, hours, now);
+      if (tank)
+        return {
+          entityId,
+          label: String(state.attributes.friendly_name || entityId),
+          points: tank,
+        };
       const base = numeric(state);
       const isEC = /(?:_ec_|_ec$)/.test(entityId);
       const amplitude = isEC ? 0.3 : 3;

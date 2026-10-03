@@ -144,11 +144,16 @@ export function readBatchStatus(states: States, prefix: string): BatchStatus | n
  * report mm, cm or m; no unit is mm. null when it reads no number or another unit. */
 export function levelMm(entity: EntityState | undefined): number | null {
   if (!entity || !entity.state.trim()) return null;
-  const value = Number(entity.state);
-  const unit = String(entity.attributes.unit_of_measurement ?? "")
-    .trim()
-    .toLowerCase();
-  const factor = ({ mm: 1, cm: 10, m: 1000, "": 1 } as Record<string, number>)[unit];
+  return distanceMm(Number(entity.state), entity.attributes.unit_of_measurement);
+}
+
+/** A distance in mm from a reading in mm, cm or m (no unit is mm); null for another unit. */
+export function distanceMm(value: number, unit: unknown): number | null {
+  const factor = ({ mm: 1, cm: 10, m: 1000, "": 1 } as Record<string, number>)[
+    String(unit ?? "")
+      .trim()
+      .toLowerCase()
+  ];
   return Number.isFinite(value) && factor !== undefined ? value * factor : null;
 }
 
