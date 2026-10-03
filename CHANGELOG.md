@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   down, and the reservoir's minimum as a dashed line. The tank's temperature, where a sensor is
   mapped for it, moves into the tank as a small line under how full it is, and is left out where
   none is, instead of reading "Not mapped".
+- **Less text on the tank card.** Its footnote ("Pump is the switch's report, not measured flow…")
+  is gone.
 
 ### 🔧 Technical notes
 
@@ -31,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   line in the tank drawing, whose words have a halo so the waterline passes behind them. The demo
   records a reservoir level with a refill and rounds of shots. No change to the integration or the
   controller.
+- Dashboard: the tank card's footnote (`.tank-note`) is removed.
 - Docs: the user guide's tank section; the screenshot.
 - Tests: `levelSeries` (distance and % sensors, a step's middle reading, the level held through
   steps with no reading, the level now at the end), the card's level source, and history limited to
