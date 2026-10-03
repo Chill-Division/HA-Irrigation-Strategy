@@ -284,7 +284,7 @@ export function RoomTests({
                             {dose.label} <span className="muted small">doser {dose.doser}</span>
                           </td>
                           <td className="numeric">
-                            {number(dose.ml, 1)}
+                            {number(dose.ml, 0)}
                             <span className="unit"> mL</span>
                           </td>
                           <td className="numeric">{duration(dose.seconds)}</td>

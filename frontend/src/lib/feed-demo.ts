@@ -39,6 +39,7 @@ export function sampleFeed(): FeedDraft {
           "3": { label: "Balance", parts: 1 },
           "4": { label: "Cleanse", parts: 0.5 },
         },
+        order: [1, 2, 3, 4],
       },
     ],
     stage: "flower",
@@ -168,6 +169,8 @@ export class FeedDemo {
       if (errors.length) throw new Error(errors.join(" "));
       Object.assign(doc, draft, {
         stage: draft.recipes.some((r) => r.id === draft.stage) ? draft.stage : null,
+        // As feed.py keeps it: a recipe saved without an order takes the room's.
+        recipes: draft.recipes.map((r) => ({ ...r, order: r.order ?? draft.order ?? [] })),
       });
       doc.revision++;
       doc.plan = planOf(doc, mappedNumbers(doc.mapped));

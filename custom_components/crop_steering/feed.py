@@ -3,9 +3,9 @@
 Pure, no Home Assistant, so the rules are testable on their own (feed_api.py stores and serves them).
 
 A batch refills the room's reservoir with fresh water for a set time, and half-way through starts the
-pump through the recirculation line. Once the fresh water stops it doses each doser in the room's
-order, one after the other a pause apart, then recirculates a little longer. The controller app runs
-it; this module says what it runs.
+pump through the recirculation line. Once the fresh water stops it doses each doser the stage's recipe
+uses, in that recipe's order, one after the other a pause apart, then recirculates a little longer.
+The controller app runs it; this module says what it runs.
 
 The reservoir's level: a distance sensor above the water reads further as it empties. Its distances
 when full and when empty make that a percentage, as the controller works it out, and the reservoir
@@ -13,8 +13,12 @@ keeps at least the minimum: a refill comes before a shot that would take it lowe
 
 The amounts: a feed recipe gives each nutrient a number of parts, and the stage a strength in mL per
 litre per part. The fill's litres scale them (what is left in the reservoir is already mixed): a doser
-gives parts x strength x fill litres, and runs for that at its flow (600 mL/min unless calibrated otherwise). Athena Flower at 3 : 5 : 1 : 0.5 and
-1.667 mL/L per part in 145 L is 725 mL Core, 1208 mL Bloom, 242 mL Balance and 121 mL Cleanse.
+gives parts x strength x fill litres, to the whole mL (a doser gives no finer), and runs for that at
+its flow (600 mL/min unless calibrated otherwise). Athena Flower at 3 : 5 : 1 : 0.5 and 1.667 mL/L per
+part in 145 L is 725 mL Core, 1208 mL Bloom, 242 mL Balance and 121 mL Cleanse.
+
+Each recipe has its own dosing order: a stage can use a doser the others leave out (Fade in place of
+Core). A recipe saved before it had one takes the room's order, which this module kept until then.
 """
 
 from __future__ import annotations
@@ -76,6 +80,7 @@ def empty() -> dict:
         "revision": 0,
         **DEFAULTS,
         "dosers": {},
+        # The room's dosing order, from before each recipe had its own: a recipe without one takes it.
         "order": [],
         "recipes": [],
         "stage": None,
@@ -141,13 +146,9 @@ def clean(payload, old: dict | None = None) -> dict:
         doc["dosers"][str(number)] = {
             "flow_ml_min": _number(flow, *FLOW, False, f"Doser {number}'s flow")
         }
-    order = payload.get("order", old.get("order", []))
-    if not isinstance(order, list):
-        raise ValueError("The dosing order must be a list of dosers")
-    numbers = [_doser(value) for value in order]
-    if len(set(numbers)) != len(numbers):
-        raise ValueError("A doser appears twice in the dosing order")
-    doc["order"] = numbers
+    doc["order"] = _order(
+        payload.get("order", old.get("order", [])), "the dosing order"
+    )
     recipes = payload.get("recipes", old.get("recipes", []))
     if not isinstance(recipes, list) or len(recipes) > MAX_RECIPES:
         raise ValueError(f"Up to {MAX_RECIPES} feed recipes")
@@ -200,19 +201,46 @@ def clean(payload, old: dict | None = None) -> dict:
                 f"{name} comes to {per_litre:.1f} mL per litre; more than {MAX_ML_PER_L:g} "
                 "is refused as a likely typo in its strength or parts"
             )
+        order = raw.get("order")
         doc["recipes"].append(
-            {"id": recipe_id, "name": name, "strength": strength, "doses": clean_doses}
+            {
+                "id": recipe_id,
+                "name": name,
+                "strength": strength,
+                "doses": clean_doses,
+                # One saved before recipes had their own order takes the room's.
+                "order": (
+                    list(doc["order"])
+                    if order is None
+                    else _order(order, f"{name}'s dosing order")
+                ),
+            }
         )
     stage = payload.get("stage", old.get("stage"))
     doc["stage"] = stage if stage in ids else None
     return doc
 
 
-def room_order(doc: dict, mapped: dict[int, str]) -> list[int]:
-    """The dosers the room has, in its order: those in the saved order first, then any other
-    mapped doser by number."""
-    order = [number for number in doc.get("order", []) if number in mapped]
+def _order(value, what) -> list[int]:
+    """A dosing order, `what` as a sentence names it ("the dosing order", "Fade's dosing order")."""
+    if not isinstance(value, list):
+        raise ValueError(f"{what[:1].upper()}{what[1:]} must be a list of dosers")
+    numbers = [_doser(item) for item in value]
+    if len(set(numbers)) != len(numbers):
+        raise ValueError(f"A doser appears twice in {what}")
+    return numbers
+
+
+def recipe_order(stage: dict, mapped: dict[int, str]) -> list[int]:
+    """The dosers the room has, in the order this recipe doses them: those in its order first, then
+    any other mapped doser by number."""
+    order = [number for number in stage.get("order", []) if number in mapped]
     return order + sorted(number for number in mapped if number not in order)
+
+
+def whole_ml(value: float) -> int:
+    """A dose to the whole mL, halves up: 719.925 mL is 720."""
+    return int(math.floor(value + 0.5))
 
 
 def flow(doc: dict, number: int) -> float:
@@ -227,8 +255,8 @@ def recipe(doc: dict, recipe_id=None) -> dict | None:
 
 
 def plan(doc: dict, mapped: dict[int, str]) -> dict:
-    """What the controller runs for this room's next batch: the batch settings and, in the room's
-    order, each doser's nutrient, mL and seconds for the stage in use. `problem` says why no batch
+    """What the controller runs for this room's next batch: the batch settings and, in the order of
+    the stage in use, each doser's nutrient, mL (whole) and seconds for that stage. `problem` says why no batch
     can run, or is None. `mapped` is the room's doser switches by number (Rooms & hardware).
     """
     stage = recipe(doc)
@@ -246,10 +274,10 @@ def plan(doc: dict, mapped: dict[int, str]) -> dict:
             problem = f"{stage['name']} uses doser {missing[0]}, which has no switch in Settings → Rooms & hardware."
         elif not wanted:
             problem = f"{stage['name']} doses nothing: give its nutrients some parts."
-        for number in room_order(doc, mapped):
+        for number in recipe_order(stage, mapped):
             if number not in wanted:
                 continue
-            ml = round(wanted[number]["parts"] * stage["strength"] * doc["batch_l"], 1)
+            ml = whole_ml(wanted[number]["parts"] * stage["strength"] * doc["batch_l"])
             doses.append(
                 {
                     "doser": number,

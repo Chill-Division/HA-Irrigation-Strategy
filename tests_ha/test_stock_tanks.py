@@ -165,7 +165,7 @@ async def test_tanks_on_dosers_lose_what_each_doser_gave_in_the_reservoirs_batch
         ],
     )
     assert doc["dosers"]["4"] == {"switch": "switch.doser_4_power", "nutrient": "Core"}
-    assert doc["doses"] == {"core": 725.0, "balance": 241.7, "ph_down": 60.0}
+    assert doc["doses"] == {"core": 725, "balance": 242, "ph_down": 60.0}  # whole mL
 
     # The controller reports the batch that just ended, as it does every pass.
     ended = (dt_util.utcnow() + timedelta(minutes=1)).isoformat(timespec="seconds")

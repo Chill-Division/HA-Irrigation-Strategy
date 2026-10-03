@@ -96,10 +96,10 @@ async def test_a_mapped_reservoir_and_a_saved_recipe_become_the_controllers_plan
     plan = hass.states.get(PLAN)
     assert plan.state == "Flower"
     assert [(d["doser"], d["ml"]) for d in plan.attributes["doses"]] == [
-        (4, 725.0),
-        (3, 1208.3),
-        (2, 241.7),
-        (1, 120.8),
+        (4, 725),  # to the whole mL, in the room's order the recipe was saved with
+        (3, 1208),
+        (2, 242),
+        (1, 121),
     ]
     assert (plan.attributes["fill_s"], plan.attributes["empty_mm"]) == (621, 800.0)
 
@@ -290,3 +290,67 @@ async def test_a_feed_document_stored_by_2_30_loads_with_its_mark_as_the_empty_d
     ) == (800.0, 0.0, 5.0, 600, 690, 145.0)
     assert "settle_s" not in plan.attributes and plan.attributes["revision"] == 5
 
+
+async def test_a_feed_document_stored_by_2_31_gives_each_recipe_the_rooms_order(
+    hass, hass_storage, hass_admin_user
+):
+    """In place: 2.31 kept one dosing order for the room. Each recipe has its own now, and one stored
+    before that takes the room's, so nothing doses in another order after the update; a recipe saved
+    with its own order doses in it, as the plan sensor the controller reads says. Doses are whole mL.
+    """
+    stored = {
+        "revision": 7,
+        "fill_s": 690,
+        "batch_l": 145.0,
+        "full_mm": 125.0,
+        "empty_mm": 850.0,
+        "min_pct": 5.0,
+        "pause_s": 10,
+        "mix_s": 10,
+        "dosers": {},
+        "order": [4, 3, 2, 1],
+        "recipes": [
+            {
+                "id": "bloom",
+                "name": "Bloom",
+                "strength": 1.655,
+                "doses": {
+                    "4": {"label": "Core", "parts": 3},
+                    "3": {"label": "Bloom", "parts": 5},
+                    "2": {"label": "Balance", "parts": 1},
+                    "1": {"label": "Cleanse", "parts": 0.5},
+                },
+            }
+        ],
+        "stage": "bloom",
+    }
+    key = "crop_steering.feed.seeded2x17wizard0000000000000001"
+    hass_storage[key] = {"version": 1, "minor_version": 1, "key": key, "data": stored}
+    hass.states.async_set("sensor.res_distance", "300", {"unit_of_measurement": "mm"})
+    for entity in list(RESERVOIR.values())[1:]:
+        hass.states.async_set(entity, "off")
+    await _upgrade(hass, "entry_2_17_wizard.json")
+    room = await _room(hass, hass_admin_user)
+    await _service(
+        hass, hass_admin_user, "setup_save", _payload(room, hardware=RESERVOIR)
+    )
+    await hass.async_block_till_done()
+    doses = lambda: [  # noqa: E731
+        (d["doser"], d["ml"]) for d in hass.states.get(PLAN).attributes["doses"]
+    ]
+    assert doses() == [(4, 720), (3, 1200), (2, 240), (1, 120)]
+
+    doc = await _service(hass, hass_admin_user, "feed_get", {"room_id": "room:"})
+    assert doc["recipes"][0]["order"] == [4, 3, 2, 1] and doc["revision"] == 7
+    recipe = {**doc["recipes"][0], "order": [1, 2, 3, 4]}
+    await _service(
+        hass,
+        hass_admin_user,
+        "feed_save",
+        {
+            "room_id": "room:",
+            "expected_revision": doc["revision"],
+            "document": {"recipes": [recipe]},
+        },
+    )
+    assert doses() == [(1, 120), (2, 240), (3, 1200), (4, 720)]
