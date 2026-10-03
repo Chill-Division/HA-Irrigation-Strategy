@@ -16,12 +16,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Each zone's line on Today's grow day wraps on a laptop too.** On a wide screen it stopped at
   the edge with "…", and the rest was only in its tooltip; now all of it shows, as on a phone. A
   room with several zones can make the Overview a little taller.
+- **A level sensor that stops reporting is not trusted.** An ultrasonic that filters out its
+  failed echoes keeps showing its last good value in Home Assistant. Once the reservoir's level
+  sensor has not reported for 10 minutes it counts as reading nothing: no refill starts on that old
+  value, by itself or asked for; a refill already filling stops half-way, before the pump runs; and
+  after 5 more minutes a notice says so. The Overview and the Reservoir page show no reading too.
 
 ### 🔧 Technical notes
 
 - Dashboard: `.timeline-zone-line` is no longer `nowrap` with an ellipsis at 1024 px and wider.
   The Overview's two-screen browser checks (`verify-dashboard.mjs`, `verify-tank-status.mjs`) leave
   what the zone lines add by wrapping out of the height they measure.
+- Controller: `ha_get` keeps Home Assistant's `last_reported` (`HAState.last_reported`).
+  `_level_now` reads the level sensor as nothing once its `last_reported` (else `last_updated`) is
+  older than `LEVEL_STALE_S` (600 s), for the pass's reading (`_reservoir_reading`), the half-way
+  check and learning what 1% holds. CS-705's text says it. `batch_status`'s `level_mm` and
+  `level_pct` are then null.
+- Dashboard: once the controller publishes `batch_status`, the Reservoir page, the Tests dialog and
+  the Overview's tank card take its level (null = no reading) rather than the sensor's own state.
+- Error codes: CS-705's meaning and causes name a sensor that stopped reporting.
 
 ## [2.31.0] - 2026-10-03
 
