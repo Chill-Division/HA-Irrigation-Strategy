@@ -366,3 +366,98 @@
     grid-column: 1 / -1;
   }
 }
+/* The feed schedule: a strip of weeks, each its recipe, coloured by recipe (clear of red, amber and
+   green, which mean state); this week is outlined. */
+.res-schedule {
+  --res-tone-0: #2f6fb5;
+  --res-tone-1: #6450b0;
+  --res-tone-2: #4c5a7a;
+  --res-tone-3: #8a5a9e;
+  --res-tone-4: #3a8ca8;
+  --res-tone-5: #9a6a4a;
+}
+.dark .res-schedule {
+  --res-tone-0: #5b93d6;
+  --res-tone-1: #8c7ad8;
+  --res-tone-2: #7d8bab;
+  --res-tone-3: #b58ac8;
+  --res-tone-4: #5fb2cc;
+  --res-tone-5: #c49274;
+}
+.res-schedule-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px 24px;
+  margin: 12px 0;
+}
+.res-schedule-controls > div {
+  display: grid;
+  gap: 6px;
+}
+.res-week-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.res-week-count input {
+  width: 72px;
+}
+.res-weeks-scroll {
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+.res-weeks {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(124px, 1fr);
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.res-week {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  padding: 10px 10px 0;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--res-week, var(--border));
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.res-week[data-tone="0"] {
+  --res-week: var(--res-tone-0);
+}
+.res-week[data-tone="1"] {
+  --res-week: var(--res-tone-1);
+}
+.res-week[data-tone="2"] {
+  --res-week: var(--res-tone-2);
+}
+.res-week[data-tone="3"] {
+  --res-week: var(--res-tone-3);
+}
+.res-week[data-tone="4"] {
+  --res-week: var(--res-tone-4);
+}
+.res-week[data-tone="5"] {
+  --res-week: var(--res-tone-5);
+}
+.res-week[data-now] {
+  border-color: var(--primary);
+  border-top-color: var(--res-week, var(--primary));
+  box-shadow: 0 0 0 1px var(--primary);
+}
+.res-week label {
+  font-weight: 600;
+}
+.res-week-now {
+  color: var(--primary);
+}
+.res-week .res-select {
+  margin-bottom: 10px;
+}
+.res-schedule-status {
+  margin: 8px 0 0;
+}

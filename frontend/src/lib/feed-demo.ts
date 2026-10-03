@@ -43,6 +43,8 @@ export function sampleFeed(): FeedDraft {
       },
     ],
     stage: "flower",
+    schedule: { start: null, weeks: [] },
+    held_until: null,
   };
 }
 const EMPTY: FeedDraft = {
@@ -57,6 +59,8 @@ const EMPTY: FeedDraft = {
   order: [],
   recipes: [],
   stage: null,
+  schedule: { start: null, weeks: [] },
+  held_until: null,
 };
 
 /** The entities the integration publishes from a room's feed (sensor.py, select.py), as Home

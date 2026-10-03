@@ -10,8 +10,14 @@ import {
   levelPct,
   moveTo,
   newRecipe,
+  addDays,
+  heldUntil,
+  inUse,
   partMl,
+  pickStage,
   planOf,
+  removeSchedule,
+  scheduleWeek,
   doserOrder,
   type FeedDocument,
   type FeedDraft,
@@ -49,6 +55,8 @@ const flower = (change: Partial<FeedDraft> = {}): FeedDraft => ({
     },
   ],
   stage: "flower",
+  schedule: { start: null, weeks: [] },
+  held_until: null,
   ...change,
 });
 
@@ -131,6 +139,61 @@ describe("feed plan", () => {
     expect(moveTo([1, 2, 3, 4], 0, 2)).toEqual([2, 3, 1, 4]);
     expect(moveTo([1, 2, 3, 4], 3, 0)).toEqual([4, 1, 2, 3]);
     expect(moveTo([1, 2, 3, 4], 1, 1)).toEqual([1, 2, 3, 4]);
+  });
+});
+
+describe("feed schedule", () => {
+  // The owner's example: Week 1 Vege, Weeks 2-6 Bloom, Weeks 7-8 Fade, from Monday 5 October.
+  const scheduled = (): FeedDraft => {
+    const draft = flower({ stage: "vege" });
+    draft.recipes.push(
+      { ...draft.recipes[0], id: "vege", name: "Vege" },
+      { ...draft.recipes[0], id: "fade", name: "Fade" },
+    );
+    draft.schedule = {
+      start: "2026-10-05",
+      weeks: ["vege", ...Array(5).fill("flower"), "fade", "fade"],
+    };
+    return draft;
+  };
+
+  it("gives each week its recipe, as feed.py does, and the last carries on", () => {
+    const draft = scheduled();
+    expect(scheduleWeek(draft, "2026-10-04")).toBeNull(); // not begun
+    expect(
+      ["2026-10-05", "2026-10-11", "2026-10-12", "2026-11-15", "2026-11-16", "2026-11-29"].map(
+        (d) => inUse(draft, d),
+      ),
+    ).toEqual(["vege", "vege", "flower", "flower", "fade", "fade"]);
+    expect(scheduleWeek(draft, "2026-12-14")).toEqual({ week: 11, recipe: "fade" });
+    const plan = planOf(draft, [1, 2, 3, 4], "2026-10-14");
+    expect([plan.stage, plan.week, plan.weeks, plan.source]).toEqual(["Flower", 2, 8, "schedule"]);
+  });
+
+  it("holds a stage picked by hand only until the schedule's next week", () => {
+    const draft = pickStage(scheduled(), "fade", "2026-10-14");
+    expect(draft.held_until).toBe("2026-10-19");
+    expect(heldUntil(draft, "2026-10-14")).toBe("2026-10-19");
+    expect(planOf(draft, [1, 2, 3, 4], "2026-10-14").source).toBe("held");
+    expect(inUse(draft, "2026-10-19")).toBe("flower");
+    expect(pickStage(draft, "flower", "2026-10-14").held_until).toBeNull();
+    expect(pickStage(flower(), "flower", "2026-10-14").held_until).toBeNull(); // no schedule
+  });
+
+  it("keeps the stage in use when the schedule is removed", () => {
+    const draft = removeSchedule(scheduled(), "2026-10-14");
+    expect(draft.schedule).toEqual({ start: null, weeks: [] });
+    expect(draft.stage).toBe("flower");
+    expect(planOf(draft, [1, 2, 3, 4], "2026-10-14").source).toBe("hand");
+  });
+
+  it("says a week whose recipe is removed needs another", () => {
+    const draft = scheduled();
+    draft.recipes = draft.recipes.filter((r) => r.id !== "fade");
+    expect(draftErrors(draft)).toContain(
+      "Weeks 7, 8 of the feed schedule use a recipe that is removed: choose another.",
+    );
+    expect(addDays("2026-10-31", 1)).toBe("2026-11-01");
   });
 });
 
