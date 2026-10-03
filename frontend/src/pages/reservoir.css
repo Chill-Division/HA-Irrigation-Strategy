@@ -196,7 +196,7 @@
 }
 .res-doser {
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) 150px auto;
+  grid-template-columns: minmax(0, 1fr) 150px;
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
@@ -204,11 +204,14 @@
   border-radius: var(--radius-lg);
   background: var(--surface);
 }
-.res-doser[data-dragging] {
-  border-color: var(--primary);
-  box-shadow: 0 6px 18px rgb(0 0 0 / 16%);
-  position: relative;
-  z-index: 1;
+/* A recipe's rows are in the order they dose: drag one by its handle, or move it with its arrows. */
+.res-recipe-table tr[data-dragging] td {
+  background: var(--secondary);
+}
+.res-order {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .res-grip {
   display: inline-flex;
@@ -218,7 +221,7 @@
   touch-action: none;
   user-select: none;
 }
-.res-doser[data-dragging] .res-grip {
+.res-recipe-table tr[data-dragging] .res-grip {
   cursor: grabbing;
 }
 .res-doser-position {
@@ -231,6 +234,10 @@
   background: var(--secondary);
   font-size: var(--text-sm);
   font-weight: 600;
+}
+.res-doser-position.res-unused {
+  background: transparent;
+  color: var(--muted-foreground);
 }
 .res-doser-name {
   display: grid;
@@ -273,9 +280,12 @@
 }
 .res-recipe-head {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) auto auto;
   align-items: end;
   gap: 14px;
+}
+.res-part-help {
+  margin: 0;
 }
 .res-recipe-head > div {
   display: grid;
@@ -347,14 +357,10 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .res-doser {
-    grid-template-columns: auto auto minmax(0, 1fr) auto;
-  }
-  .res-flow {
-    grid-column: 3 / -1;
-    grid-row: 2;
+    grid-template-columns: minmax(0, 1fr) 120px;
   }
   .res-recipe-head {
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto;
   }
   .res-recipe-head > div:first-child {
     grid-column: 1 / -1;

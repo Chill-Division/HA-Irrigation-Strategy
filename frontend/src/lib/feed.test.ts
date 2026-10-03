@@ -10,8 +10,10 @@ import {
   levelPct,
   moveTo,
   newRecipe,
+  partMl,
   planOf,
-  roomOrder,
+  doserOrder,
+  type FeedDocument,
   type FeedDraft,
 } from "./feed";
 import { FeedDemo, sampleFeed } from "./feed-demo";
@@ -43,6 +45,7 @@ const flower = (change: Partial<FeedDraft> = {}): FeedDraft => ({
         "2": { label: "Balance", parts: 1 },
         "1": { label: "Cleanse", parts: 0.5 },
       },
+      order: [4, 3, 2, 1],
     },
   ],
   stage: "flower",
@@ -55,10 +58,51 @@ describe("feed plan", () => {
     expect(plan.problem).toBeNull();
     expect(plan.doses.map((d) => [d.doser, d.label, d.ml, d.seconds])).toEqual([
       [4, "Core", 725, 72.5],
-      [3, "Bloom", 1208.3, 120.8],
-      [2, "Balance", 241.7, 24.2],
-      [1, "Cleanse", 120.8, 12.1],
+      [3, "Bloom", 1208, 120.8],
+      [2, "Balance", 242, 24.2],
+      [1, "Cleanse", 121, 12.1],
     ]);
+  });
+
+  it("doses whole mL: 3 and 5 parts of 240 mL are 720 and 1,200, not 719.9 and 1,199.9", () => {
+    // The owner's Bloom: 1.655 mL per litre per part in 145 L is 239.975 mL a part.
+    const draft = flower();
+    draft.recipes[0].strength = 1.655;
+    const ml = Object.fromEntries(planOf(draft, [1, 2, 3, 4]).doses.map((d) => [d.label, d.ml]));
+    expect(ml).toEqual({ Core: 720, Bloom: 1200, Balance: 240, Cleanse: 120 });
+    // Set as 1 part = 240 mL, the strength is exactly what that takes in the fill.
+    draft.recipes[0].strength = 240 / draft.batch_l;
+    expect(partMl(draft, draft.recipes[0])).toBeCloseTo(240, 9);
+  });
+
+  it("doses in the recipe's own order, so a stage can use a doser the others leave out", () => {
+    const draft = flower();
+    draft.recipes.push({
+      id: "fade",
+      name: "Fade",
+      strength: 1.655,
+      doses: {
+        "5": { label: "Fade", parts: 3 },
+        "3": { label: "Bloom", parts: 0 },
+        "2": { label: "Balance", parts: 1 },
+        "1": { label: "Cleanse", parts: 0.5 },
+      },
+      order: [1, 5, 2],
+    });
+    draft.stage = "fade";
+    expect(planOf(draft, [1, 2, 3, 4, 5]).doses.map((d) => d.label)).toEqual([
+      "Cleanse",
+      "Fade",
+      "Balance",
+    ]);
+    draft.stage = "flower"; // Flower's order is its own
+    expect(planOf(draft, [1, 2, 3, 4, 5]).doses.map((d) => d.doser)).toEqual([4, 3, 2, 1]);
+  });
+
+  it("gives a recipe saved before recipes had their own order the room's", () => {
+    const old = { ...flower(), recipes: flower().recipes.map(({ order: _, ...r }) => r) };
+    const draft = draftOf(old as unknown as FeedDocument);
+    expect(draft.recipes[0].order).toEqual([4, 3, 2, 1]);
   });
 
   it("runs 750 mL of Bloom for 75 s at 600 mL/min, and longer on a slower doser", () => {
@@ -81,9 +125,9 @@ describe("feed plan", () => {
     );
   });
 
-  it("keeps the room's order, then any other doser by number, and moves one", () => {
-    expect(roomOrder([2], [1, 2, 3, 4])).toEqual([2, 1, 3, 4]);
-    expect(roomOrder([6, 3], [1, 3])).toEqual([3, 1]);
+  it("keeps a recipe's order, then any other doser by number, and moves one", () => {
+    expect(doserOrder([2], [1, 2, 3, 4])).toEqual([2, 1, 3, 4]);
+    expect(doserOrder([6, 3], [1, 3])).toEqual([3, 1]);
     expect(moveTo([1, 2, 3, 4], 0, 2)).toEqual([2, 3, 1, 4]);
     expect(moveTo([1, 2, 3, 4], 3, 0)).toEqual([4, 1, 2, 3]);
     expect(moveTo([1, 2, 3, 4], 1, 1)).toEqual([1, 2, 3, 4]);
@@ -116,6 +160,7 @@ describe("feed checks", () => {
     expect(recipe.name).toBe("Fade");
     expect(recipe.id).toMatch(/^[a-f0-9]{12}$/);
     expect(recipe.doses["3"]).toEqual({ label: "Bloom", parts: 0 });
+    expect(recipe.order).toEqual([4, 3, 2, 1]); // and the order they dose in
   });
 
   it("sends names and nutrients as the integration keeps them", () => {
@@ -305,7 +350,11 @@ describe("demo feed services", () => {
     doc = demo.call("feed_save", {
       room_id: room,
       expected_revision: doc.revision,
-      document: { ...sampleFeed(), batch_l: 300, order: [2, 1, 3, 4] },
+      document: {
+        ...sampleFeed(),
+        batch_l: 300,
+        recipes: sampleFeed().recipes.map((r) => ({ ...r, order: [2, 1, 3, 4] })),
+      },
     });
     expect(doc.plan.doses.map((d) => [d.doser, d.ml])).toEqual([
       [2, 1500],

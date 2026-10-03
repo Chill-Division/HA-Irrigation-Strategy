@@ -453,9 +453,11 @@ try {
     await dialog.waitFor({ state: "hidden" });
     await openView("Feed", "Reservoir");
 
-    // Drag Core's doser below Balance's by its handle, as with a finger or a mouse.
-    const rows = page.locator(".res-doser");
-    const names = () => rows.locator(".res-doser-name strong").allInnerTexts();
+    // Each recipe doses in its own order: drag Core's row below Balance's by its handle, as with a
+    // finger or a mouse.
+    const flowerCard = page.locator('[data-recipe="Flower"]');
+    const rows = flowerCard.locator("tbody tr");
+    const names = () => rows.evaluateAll((trs) => trs.map((tr) => `Doser ${tr.dataset.dose}`));
     await rows.nth(2).scrollIntoViewIfNeeded(); // the mouse only reaches what is on screen: the drop row too
     const from = await rows.nth(0).locator(".res-grip").boundingBox();
     const target = await rows.nth(2).boundingBox();
@@ -466,8 +468,20 @@ try {
     assert.deepEqual(await names(), ["Doser 2", "Doser 3", "Doser 1", "Doser 4"]);
     // The arrows move one too: Cleanse's doser first.
     for (let i = 0; i < 3; i++)
-      await page.getByRole("button", { name: "Move doser 4 earlier" }).click();
+      await flowerCard.getByRole("button", { name: "Move doser 4 earlier" }).click();
     assert.deepEqual(await names(), ["Doser 4", "Doser 2", "Doser 3", "Doser 1"]);
+    // The Dosers section keeps only what each pumps: no order to set there.
+    assert.equal(await page.locator(".res-doser .res-grip").count(), 0);
+    // 1 part as mL of nutrient in each 150 L fill: 240 mL makes 5 parts of Bloom 1,200 mL, whole.
+    await flowerCard.getByLabel("1 part (mL)").fill("240");
+    await expectVisible(
+      flowerCard.getByText(/1 part is 240 mL of nutrient in each 150 L fill, so a nutrient gets its parts × 240 mL \(Bloom: 5 × 240 = 1,200 mL\)/),
+    );
+    assert.equal(await flowerCard.getByLabel("mL per litre per part").inputValue(), "1.6");
+    assert.match(
+      await flowerCard.locator('tbody tr[data-dose="2"] td').nth(4).innerText(),
+      /^1,200\s*mL$/,
+    );
 
     // A new recipe takes the bottles the last one had, and the next stage name.
     await page.getByRole("button", { name: "Add a feed recipe" }).click();

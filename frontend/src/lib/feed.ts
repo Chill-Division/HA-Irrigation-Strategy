@@ -1,9 +1,10 @@
 import { createUuid } from "./uuid";
 
 /** A room's nutrient batches, as the integration's feed services return them (feed.py, feed_api.py):
- * the reservoir's batch settings, the dosers' order and flow, and a feed recipe for each growth stage.
- * The amounts: a recipe gives each doser's nutrient a number of parts, and a strength in mL per litre
- * per part; the batch size scales them. A doser runs for its mL at its flow (600 mL/min unless set). */
+ * the reservoir's batch settings, the dosers' flow, and a feed recipe for each growth stage, with the
+ * order its dosers dose in. The amounts: a recipe gives each doser's nutrient a number of parts, and a
+ * strength in mL per litre per part; the fill's litres scale them, to the whole mL. A doser runs for
+ * its mL at its flow (600 mL/min unless set). */
 
 export interface FeedDose {
   label: string;
@@ -16,6 +17,8 @@ export interface FeedRecipe {
   strength: number;
   /** By doser number ("1" to "6"). */
   doses: Record<string, FeedDose>;
+  /** The order its dosers dose in; any other doser follows, by number (feed.py recipe_order). */
+  order: number[];
 }
 export interface PlannedDose {
   doser: number;
@@ -45,6 +48,7 @@ export interface FeedPlan extends FeedSettings {
 /** What the editor changes and feed_save takes. */
 export interface FeedDraft extends FeedSettings {
   dosers: Record<string, { flow_ml_min: number }>;
+  /** The room's dosing order from before each recipe had its own: a recipe without one takes it. */
   order: number[];
   recipes: FeedRecipe[];
   /** The id of the recipe in use. */
@@ -111,7 +115,8 @@ export const draftOf = (doc: FeedDocument): FeedDraft =>
     mix_s: doc.mix_s ?? SETTING_DEFAULTS.mix_s!,
     dosers: doc.dosers,
     order: doc.order,
-    recipes: doc.recipes,
+    // An integration from before each recipe had its own order sends the room's.
+    recipes: doc.recipes.map((recipe) => ({ ...recipe, order: recipe.order ?? doc.order ?? [] })),
     stage: doc.stage,
   });
 
@@ -121,8 +126,8 @@ export const mappedNumbers = (mapped: Record<string, string>) =>
     .filter((n) => Number.isInteger(n))
     .sort((a, b) => a - b);
 
-/** The room's dosers in its order: those in the saved order first, then any other by number. */
-export function roomOrder(order: number[], mapped: number[]): number[] {
+/** The room's dosers in a recipe's order: those in `order` first, then any other by number. */
+export function doserOrder(order: number[], mapped: number[]): number[] {
   const first = order.filter((n) => mapped.includes(n));
   return [...first, ...mapped.filter((n) => !first.includes(n)).sort((a, b) => a - b)];
 }
@@ -141,15 +146,20 @@ export const flowOf = (draft: Pick<FeedDraft, "dosers">, doser: number) =>
 
 const round1 = (value: number) => Math.round(value * 10) / 10;
 
-/** One doser's dose in a recipe at this batch size: mL, and seconds at the doser's flow. */
+/** One part of a recipe in this fill, mL: its strength times the fill's litres. */
+export const partMl = (draft: Pick<FeedDraft, "batch_l">, recipe: FeedRecipe) =>
+  recipe.strength * draft.batch_l;
+
+/** One doser's dose in a recipe at this batch size: mL, to the whole mL as feed.py doses it, and
+ * seconds at the doser's flow. */
 export function doseOf(draft: FeedDraft, recipe: FeedRecipe, doser: number) {
   const parts = recipe.doses[String(doser)]?.parts ?? 0;
-  const ml = round1(parts * recipe.strength * draft.batch_l);
+  const ml = Math.round(parts * recipe.strength * draft.batch_l);
   const flow = flowOf(draft, doser);
   return { ml, seconds: flow > 0 ? round1((ml / flow) * 60) : 0 };
 }
 
-/** feed.py plan(): what the next batch would dose, in the room's order, or why none can run. */
+/** feed.py plan(): what the next batch would dose, in its recipe's order, or why none can run. */
 export function planOf(draft: FeedDraft, mapped: number[]): FeedPlan {
   const stage = draft.recipes.find((r) => r.id === draft.stage) ?? null;
   const doses: PlannedDose[] = [];
@@ -165,7 +175,7 @@ export function planOf(draft: FeedDraft, mapped: number[]): FeedPlan {
       problem = `${stage.name} uses doser ${missing[0]}, which has no switch in Settings → Rooms & hardware.`;
     else if (!wanted.length)
       problem = `${stage.name} doses nothing: give its nutrients some parts.`;
-    for (const n of roomOrder(draft.order, mapped))
+    for (const n of doserOrder(stage.order ?? draft.order, mapped))
       if (wanted.includes(n))
         doses.push({ doser: n, label: stage.doses[String(n)].label, ...doseOf(draft, stage, n) });
     if (!problem && !doses.some((d) => d.ml > 0))
@@ -243,6 +253,7 @@ export function newRecipe(draft: FeedDraft, mapped: number[], name = ""): FeedRe
     doses: Object.fromEntries(
       mapped.map((n) => [String(n), { label: last?.doses[String(n)]?.label ?? "", parts: 0 }]),
     ),
+    order: [...(last?.order ?? draft.order)],
   };
 }
 

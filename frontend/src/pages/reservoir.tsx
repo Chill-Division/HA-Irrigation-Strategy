@@ -27,10 +27,11 @@ import {
   moveTo,
   newRecipe,
   NUTRIENT_LINES,
+  partMl,
   perLitre,
   planOf,
   RESERVOIR_KEYS,
-  roomOrder,
+  doserOrder,
   SETTINGS,
   STAGE_NAMES,
   type FeedDocument,
@@ -158,7 +159,7 @@ function stepsOf(plan: FeedPlan, status: BatchStatus | null): Stage[] {
     ...doses.map((dose) => ({
       key: `dose-${dose.doser}`,
       label: dose.label,
-      detail: `${number(dose.ml, 1)} mL · ${duration(dose.seconds)}`,
+      detail: `${number(dose.ml, 0)} mL · ${duration(dose.seconds)}`,
       state: (at > 2
         ? "done"
         : at < 2
@@ -338,7 +339,7 @@ function BatchPanel({
               )}
               <p className="muted small">
                 {Object.entries(status.last.dosed)
-                  .map(([n, ml]) => `doser ${n} ${number(ml, 1)} mL`)
+                  .map(([n, ml]) => `doser ${n} ${number(ml, 0)} mL`)
                   .join(" · ") || "Nothing dosed"}
               </p>
             </>
@@ -378,8 +379,8 @@ function BatchPanel({
   );
 }
 
-/** The room's dosers in their order: drag by the handle (mouse or touch), or move with the arrows. */
-function DoserOrder({
+/** The room's dosers, by number: what each pumps. Each recipe has its own dosing order. */
+function DoserFlows({
   draft,
   mapped,
   entities,
@@ -393,60 +394,11 @@ function DoserOrder({
   onChange: (next: FeedDraft) => void;
 }) {
   const id = useId();
-  const list = useRef<HTMLOListElement>(null);
-  const [dragging, setDragging] = useState<number | null>(null);
-  const [said, setSaid] = useState("");
-  const order = roomOrder(draft.order, mapped);
-  const place = (next: number[], moved: number) => {
-    onChange({ ...draft, order: next });
-    setSaid(`Doser ${moved} moved to position ${next.indexOf(moved) + 1} of ${next.length}.`);
-  };
-  const move = (event: PointerEvent) => {
-    if (dragging === null || !list.current) return;
-    const rows = [...list.current.querySelectorAll<HTMLElement>("[data-doser]")];
-    const to = rows.filter((row) => {
-      if (Number(row.dataset.doser) === dragging) return false;
-      const box = row.getBoundingClientRect();
-      return event.clientY > box.top + box.height / 2;
-    }).length;
-    const next = moveTo(order, order.indexOf(dragging), to);
-    if (next.join() !== order.join()) place(next, dragging);
-  };
-  const drop = () => setDragging(null);
   return (
     <>
-      {/* The list, not the handle, holds the pointer while a doser is dragged: reordering moves the
-          dragged row in the page, which would let go of a pointer its handle held. */}
-      <ol
-        ref={list}
-        className="res-dosers"
-        aria-describedby={`${id}-help`}
-        onPointerMove={move}
-        onPointerUp={drop}
-        onPointerCancel={drop}
-        onLostPointerCapture={drop}
-      >
-        {order.map((doser, index) => (
-          <li
-            key={doser}
-            data-doser={doser}
-            data-dragging={dragging === doser ? "" : undefined}
-            className="res-doser"
-          >
-            <span
-              className="res-grip"
-              aria-hidden="true"
-              title="Drag to reorder"
-              onPointerDown={(event) => {
-                if (event.button !== 0 || !list.current) return;
-                event.preventDefault();
-                list.current.setPointerCapture(event.pointerId);
-                setDragging(doser);
-              }}
-            >
-              <GripVertical size={18} />
-            </span>
-            <span className="res-doser-position">{index + 1}</span>
+      <ul className="res-dosers" aria-describedby={`${id}-help`}>
+        {mapped.map((doser) => (
+          <li key={doser} data-doser={doser} className="res-doser">
             <span className="res-doser-name">
               <strong>Doser {doser}</strong>
               <span className="muted small">
@@ -478,39 +430,43 @@ function DoserOrder({
                 }
               />
             </span>
-            <span className="res-doser-move">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={`Move doser ${doser} earlier`}
-                disabled={index === 0}
-                onClick={() => place(moveTo(order, index, index - 1), doser)}
-              >
-                <ArrowUp size={16} />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={`Move doser ${doser} later`}
-                disabled={index === order.length - 1}
-                onClick={() => place(moveTo(order, index, index + 1), doser)}
-              >
-                <ArrowDown size={16} />
-              </Button>
-            </span>
           </li>
         ))}
-      </ol>
+      </ul>
       <p id={`${id}-help`} className="muted small">
-        Dosers run one after another in this order, whatever the stage. Drag a doser by its handle,
-        or use the arrows. The flow is what the doser pumps, set on the doser itself.
-      </p>
-      <p className="sr-only" aria-live="polite">
-        {said}
+        The flow is what the doser pumps, set on the doser itself: it turns each dose's mL into how
+        long the doser runs. The order the dosers run in is each feed recipe&apos;s own.
       </p>
     </>
+  );
+}
+
+/** A number box that shows `value` rounded to `digits` while it is not being typed in, and what is
+ * typed while it is. */
+function RoundedInput({
+  value,
+  digits,
+  onValue,
+  ...props
+}: Omit<React.ComponentProps<typeof Input>, "value" | "onChange"> & {
+  value: number;
+  digits: number;
+  onValue: (value: number) => void;
+}) {
+  const [text, setText] = useState<string | null>(null);
+  const shown = Number.isFinite(value) ? String(Number(value.toFixed(digits))) : "";
+  return (
+    <Input
+      {...props}
+      type="number"
+      value={text ?? shown}
+      onFocus={() => setText(shown)}
+      onBlur={() => setText(null)}
+      onChange={(event) => {
+        setText(event.target.value);
+        onValue(event.target.value === "" ? NaN : Number(event.target.value));
+      }}
+    />
   );
 }
 
@@ -527,6 +483,7 @@ function RecipeCard({
   draft: FeedDraft;
   recipe: FeedRecipe;
   index: number;
+  /** Its dosers in its order, then any other it names. */
   rows: number[];
   mapped: number[];
   onChange: (recipe: FeedRecipe) => void;
@@ -534,12 +491,39 @@ function RecipeCard({
   listId: string;
 }) {
   const id = useId();
+  const body = useRef<HTMLTableSectionElement>(null);
+  const [dragging, setDragging] = useState<number | null>(null);
+  const [said, setSaid] = useState("");
   const total = perLitre(recipe);
   const batch = rows.reduce((sum, n) => sum + doseOf(draft, recipe, n).ml, 0);
   const inUse = draft.stage === recipe.id;
+  const part = partMl(draft, recipe);
+  const fill = draft.batch_l;
   const dose = (n: number) => recipe.doses[String(n)] ?? { label: "", parts: 0 };
   const setDose = (n: number, change: Partial<{ label: string; parts: number }>) =>
     onChange({ ...recipe, doses: { ...recipe.doses, [String(n)]: { ...dose(n), ...change } } });
+  // The dosers that dose, in the order they do: each row's turn.
+  const turns = rows.filter((n) => dose(n).parts > 0);
+  // The help's example: the biggest dose, as parts × 1 part.
+  const example = turns
+    .filter((n) => dose(n).parts !== 1 && dose(n).label.trim())
+    .sort((a, b) => dose(b).parts - dose(a).parts)[0];
+  const place = (next: number[], moved: number) => {
+    onChange({ ...recipe, order: next });
+    setSaid(`Doser ${moved} moved to position ${next.indexOf(moved) + 1} of ${next.length}.`);
+  };
+  const move = (event: PointerEvent) => {
+    if (dragging === null || !body.current) return;
+    const items = [...body.current.querySelectorAll<HTMLElement>("[data-dose]")];
+    const to = items.filter((row) => {
+      if (Number(row.dataset.dose) === dragging) return false;
+      const box = row.getBoundingClientRect();
+      return event.clientY > box.top + box.height / 2;
+    }).length;
+    const next = moveTo(rows, rows.indexOf(dragging), to);
+    if (next.join() !== rows.join()) place(next, dragging);
+  };
+  const drop = () => setDragging(null);
   return (
     <fieldset className="panel res-recipe" data-recipe={recipe.name || `recipe-${index + 1}`}>
       <legend className="sr-only">{recipe.name || `Feed recipe ${index + 1}`}</legend>
@@ -557,19 +541,27 @@ function RecipeCard({
         </div>
         <div>
           <Label htmlFor={`${id}-strength`}>mL per litre per part</Label>
-          <Input
+          <RoundedInput
             id={`${id}-strength`}
-            type="number"
             min={0}
             max={20}
             step={0.001}
-            value={Number.isFinite(recipe.strength) ? String(recipe.strength) : ""}
-            onChange={(event) =>
-              onChange({
-                ...recipe,
-                strength: event.target.value === "" ? NaN : Number(event.target.value),
-              })
-            }
+            value={recipe.strength}
+            digits={4}
+            onValue={(strength) => onChange({ ...recipe, strength })}
+          />
+        </div>
+        <div>
+          <Label htmlFor={`${id}-part`}>1 part (mL)</Label>
+          <RoundedInput
+            id={`${id}-part`}
+            min={0}
+            step={1}
+            value={part}
+            digits={1}
+            disabled={!(fill > 0)}
+            aria-describedby={`${id}-part-help`}
+            onValue={(ml) => onChange({ ...recipe, strength: ml / fill })}
           />
         </div>
         {inUse && (
@@ -587,22 +579,70 @@ function RecipeCard({
           <Trash2 size={16} />
         </Button>
       </div>
+      <p id={`${id}-part-help`} className="muted small res-part-help">
+        {Number.isFinite(part) && fill > 0
+          ? `1 part is ${number(part, 0)} mL of nutrient in each ${number(fill, 1)} L fill, so a nutrient gets its parts × ${number(part, 0)} mL${
+              example
+                ? ` (${dose(example).label.trim()}: ${number(dose(example).parts, 2)} × ${number(part, 0)} = ${number(doseOf(draft, recipe, example).ml, 0)} mL)`
+                : ""
+            }. Set it here or as mL per litre per part: each sets the other.`
+          : "Set the fill litres to see what 1 part is."}
+      </p>
       <div className="table-scroll" tabIndex={0} aria-label={`${recipe.name || "Recipe"} doses`}>
         <table className="data-table res-recipe-table">
           <thead>
             <tr>
+              <th>Order</th>
               <th>Doser</th>
               <th>Nutrient</th>
               <th>Parts</th>
               <th className="numeric">Per batch</th>
               <th className="numeric">Runs</th>
+              <th>
+                <span className="sr-only">Move</span>
+              </th>
             </tr>
           </thead>
-          <tbody>
-            {rows.map((n) => {
+          {/* The body, not the handle, holds the pointer while a row is dragged: reordering moves the
+              dragged row in the page, which would let go of a pointer its handle held. */}
+          <tbody
+            ref={body}
+            onPointerMove={move}
+            onPointerUp={drop}
+            onPointerCancel={drop}
+            onLostPointerCapture={drop}
+          >
+            {rows.map((n, at) => {
               const amount = doseOf(draft, recipe, n);
+              const turn = turns.indexOf(n);
               return (
-                <tr key={n} data-dose={n}>
+                <tr key={n} data-dose={n} data-dragging={dragging === n ? "" : undefined}>
+                  <td>
+                    <span className="res-order">
+                      <span
+                        className="res-grip"
+                        aria-hidden="true"
+                        title="Drag to reorder"
+                        onPointerDown={(event) => {
+                          if (event.button !== 0 || !body.current) return;
+                          event.preventDefault();
+                          body.current.setPointerCapture(event.pointerId);
+                          setDragging(n);
+                        }}
+                      >
+                        <GripVertical size={18} />
+                      </span>
+                      {turn >= 0 ? (
+                        <span className="res-doser-position" title="Its turn in this recipe">
+                          {turn + 1}
+                        </span>
+                      ) : (
+                        <span className="res-doser-position res-unused" title="Doses nothing">
+                          –
+                        </span>
+                      )}
+                    </span>
+                  </td>
                   <td>
                     {n}
                     {!mapped.includes(n) && (
@@ -637,10 +677,34 @@ function RecipeCard({
                     />
                   </td>
                   <td className="numeric">
-                    {amount.ml > 0 ? number(amount.ml, 1) : "—"}
+                    {amount.ml > 0 ? number(amount.ml, 0) : "—"}
                     {amount.ml > 0 && <span className="unit"> mL</span>}
                   </td>
                   <td className="numeric">{amount.ml > 0 ? duration(amount.seconds) : "—"}</td>
+                  <td>
+                    <span className="res-doser-move">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Move doser ${n} earlier`}
+                        disabled={at === 0}
+                        onClick={() => place(moveTo(rows, at, at - 1), n)}
+                      >
+                        <ArrowUp size={16} />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Move doser ${n} later`}
+                        disabled={at === rows.length - 1}
+                        onClick={() => place(moveTo(rows, at, at + 1), n)}
+                      >
+                        <ArrowDown size={16} />
+                      </Button>
+                    </span>
+                  </td>
                 </tr>
               );
             })}
@@ -648,8 +712,12 @@ function RecipeCard({
         </table>
       </div>
       <p className="muted small res-recipe-total">
-        {Number.isFinite(total) ? number(total, 2) : "—"} mL per litre · {number(batch, 1)} mL in a{" "}
-        {number(draft.batch_l, 1)} L batch
+        {Number.isFinite(total) ? number(total, 2) : "—"} mL per litre · {number(batch, 0)} mL in a{" "}
+        {number(draft.batch_l, 1)} L batch · dosed in the order above: drag a row by its handle, or
+        use its arrows
+      </p>
+      <p className="sr-only" aria-live="polite">
+        {said}
       </p>
     </fieldset>
   );
@@ -771,7 +839,7 @@ export function Reservoir({
     const used = Object.entries(recipe.doses)
       .filter(([n, dose]) => !mapped.includes(Number(n)) && (dose.parts > 0 || dose.label))
       .map(([n]) => Number(n));
-    return [...roomOrder(draft!.order, mapped), ...used.sort((a, b) => a - b)];
+    return [...doserOrder(recipe.order ?? draft!.order, mapped), ...used.sort((a, b) => a - b)];
   };
   const pct = status
     ? status.levelPct
@@ -859,7 +927,7 @@ export function Reservoir({
                             {dose.label} <span className="muted small">doser {dose.doser}</span>
                           </td>
                           <td className="numeric">
-                            {number(dose.ml, 1)}
+                            {number(dose.ml, 0)}
                             <span className="unit"> mL</span>
                           </td>
                           <td className="numeric">{duration(dose.seconds)}</td>
@@ -880,7 +948,7 @@ export function Reservoir({
           <section className="panel workspace-card">
             <h2>Dosers</h2>
             {mapped.length ? (
-              <DoserOrder
+              <DoserFlows
                 draft={draft}
                 mapped={mapped}
                 entities={doc.mapped}
