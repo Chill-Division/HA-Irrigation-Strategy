@@ -59,23 +59,63 @@ def test_a_ratio_and_a_strength_become_each_dosers_ml_and_seconds():
     plan = feed.plan(settings(), MAPPED)
     assert plan["stage"] == "Flower" and plan["problem"] is None
     assert [(d["doser"], d["label"], d["ml"], d["seconds"]) for d in plan["doses"]] == [
-        (4, "Core", 725.0, 72.5),  # 3 x 1.667 mL/L x 145 L, at 600 mL/min
-        (3, "Bloom", 1208.3, 120.8),
-        (2, "Balance", 241.7, 24.2),
-        (1, "Cleanse", 120.8, 12.1),
+        (4, "Core", 725, 72.5),  # 3 x 1.667 mL/L x 145 L, at 600 mL/min
+        (3, "Bloom", 1208, 120.8),  # to the whole mL: a doser gives no finer
+        (2, "Balance", 242, 24.2),
+        (1, "Cleanse", 121, 12.1),
     ]
     assert plan["fill_s"] == 621 and plan["batch_l"] == 145.0
+
+
+def test_doses_are_whole_ml_so_parts_of_one_amount_add_up():
+    """The owner's Bloom: 1.655 mL per litre per part in 145 L is 239.975 mL a part. Each dose to a
+    tenth of a mL read 719.9 and 1,199.9 beside 240 and 120; to the whole mL, halves up, 720 and 1,200.
+    """
+    flower = {**copy.deepcopy(FLOWER), "strength": 1.655}
+    plan = feed.plan(settings(recipes=[flower]), MAPPED)
+    assert {d["label"]: d["ml"] for d in plan["doses"]} == {
+        "Core": 720,
+        "Bloom": 1200,
+        "Balance": 240,
+        "Cleanse": 120,
+    }
+    assert feed.whole_ml(719.5) == 720 and feed.whole_ml(0.4) == 0
 
 
 def test_the_batch_size_scales_every_dose_and_a_calibrated_flow_its_time():
     plan = feed.plan(settings(batch_l=72.5, dosers={"3": {"flow_ml_min": 450}}), MAPPED)
     bloom = next(d for d in plan["doses"] if d["doser"] == 3)
-    assert bloom["ml"] == 604.2 and bloom["seconds"] == pytest.approx(80.6, abs=0.05)
+    assert bloom["ml"] == 604 and bloom["seconds"] == pytest.approx(80.5, abs=0.05)
 
 
-def test_dosers_run_in_the_rooms_order_then_any_other_by_number():
-    plan = feed.plan(settings(order=[2]), MAPPED)
-    assert [d["doser"] for d in plan["doses"]] == [2, 1, 3, 4]
+def test_each_recipe_doses_in_its_own_order_then_any_other_by_number():
+    """Fade weeks use the Fade doser in place of Core's: a stage has its own dosers, in its order."""
+    fade = {
+        "id": "fade",
+        "name": "Fade",
+        "strength": 1.655,
+        "doses": {
+            "5": {"label": "Fade", "parts": 3},
+            "2": {"label": "Balance", "parts": 1},
+            "1": {"label": "Cleanse", "parts": 0.5},
+        },
+        "order": [1, 5],
+    }
+    doc = settings(recipes=[copy.deepcopy(FLOWER), fade], stage="fade")
+    mapped = {**MAPPED, 5: "switch.doser_5"}
+    assert [d["label"] for d in feed.plan(doc, mapped)["doses"]] == [
+        "Cleanse",
+        "Fade",
+        "Balance",
+    ]
+    doc["stage"] = "flower"  # Flower keeps the room's order it was saved with
+    assert [d["doser"] for d in feed.plan(doc, mapped)["doses"]] == [4, 3, 2, 1]
+
+
+def test_a_recipe_saved_before_recipes_had_their_own_order_takes_the_rooms():
+    doc = settings(order=[2])
+    assert doc["recipes"][0]["order"] == [2]
+    assert [d["doser"] for d in feed.plan(doc, MAPPED)["doses"]] == [2, 1, 3, 4]
 
 
 def test_a_doser_without_parts_is_skipped_and_one_without_a_switch_stops_the_batch():
@@ -129,6 +169,14 @@ def test_a_recipe_that_doses_nothing_says_so():
         ),
         ({"order": [1, 1]}, "A doser appears twice in the dosing order"),
         ({"order": [7]}, "A doser is numbered 1 to 6"),
+        (
+            {"recipes": [{**FLOWER, "order": [4, 4]}]},
+            "A doser appears twice in Flower's dosing order",
+        ),
+        (
+            {"recipes": [{**FLOWER, "order": "4321"}]},
+            "Flower's dosing order must be a list",
+        ),
         ({"dosers": {"2": {"flow_ml_min": 0}}}, "Doser 2's flow must be a number"),
         (
             {"recipes": [FLOWER, {**FLOWER, "id": "b"}]},
@@ -224,7 +272,7 @@ def test_saving_takes_the_next_revision_and_tells_the_entities(dispatcher):
     assert response["revision"] == 1 and store._store.saves == 1
     assert response["mapped"] == {"1": "switch.doser_1", "2": "switch.doser_2",
                                   "3": "switch.doser_3", "4": "switch.doser_4"}  # fmt: skip
-    assert response["plan"]["doses"][0]["ml"] == 725.0
+    assert response["plan"]["doses"][0]["ml"] == 725
     assert dispatcher.sent == [f"{feed_api.SIGNAL}_entry"]
 
 
