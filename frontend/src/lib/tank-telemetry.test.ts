@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDemo } from "./demo";
-import { tankTelemetry } from "./tank-telemetry";
+import { LEVEL_STEPS, levelSeries, tankTelemetry } from "./tank-telemetry";
 const room = { id: "room:", name: "Flower 2", prefix: "" };
 const now = Date.parse("2026-09-08T08:00:00Z");
 /** The demo without Flower 2's reservoir distances: its tank card falls back to the level sensor in %. */
@@ -90,6 +90,62 @@ describe("room tank telemetry", () => {
       lastStopped: false,
       issue: "Unavailable",
     });
+  });
+  it("charts the level sensor the card reads, worked out as the controller does", () => {
+    const states = createDemo(now);
+    expect(tankTelemetry(states, room).source).toEqual({
+      entityId: "sensor.demo_reservoir_distance",
+      distance: { unit: "mm", fullMm: 125, emptyMm: 850 },
+      minPct: 5,
+    });
+    // Flower 1's level sensor reads %, and nothing keeps a minimum in its tank.
+    expect(tankTelemetry(states, { ...room, prefix: "f1_" }).source).toEqual({
+      entityId: "sensor.demo_f1_tank_level",
+      distance: null,
+      minPct: null,
+    });
+  });
+  it("draws the recorded level step by step, holding it where nothing was recorded", () => {
+    const at = (minutes: number) => new Date(now - minutes * 60_000).toISOString();
+    const distance = {
+      entityId: "sensor.distance",
+      distance: { unit: "cm", fullMm: 125, emptyMm: 850 },
+      minPct: 5,
+    };
+    const series = levelSeries(
+      [
+        { time: at(25 * 60), value: 78.5 }, // before the window: 785 mm, held from its start
+        { time: at(12 * 60 + 3), value: 12.5 }, // refilled: full
+        { time: at(12 * 60 + 2), value: 99 }, // an echo off the wall reads empty
+        { time: at(12 * 60 + 1), value: 12.5 },
+      ],
+      distance,
+      24,
+      29,
+      now,
+    );
+    expect(series).toHaveLength(LEVEL_STEPS + 1);
+    expect([series[0].pct, series[70].pct]).toEqual([9, 9]);
+    // The step's middle reading: one stray echo does not pull it down.
+    expect(series[71].pct).toBe(100);
+    // Home Assistant records a change, not a level holding still: it holds until the next.
+    expect(series[143].pct).toBe(100);
+    // It ends on the level the card shows now.
+    expect(series[LEVEL_STEPS]).toEqual({ at: now, pct: 29 });
+
+    const percent = { entityId: "sensor.level", distance: null, minPct: null };
+    const levels = levelSeries(
+      [
+        { time: at(30), value: 140 }, // not a %: not drawn
+        { time: at(20), value: 60 },
+      ],
+      percent,
+      12,
+      null,
+      now,
+    );
+    expect(levels[0].pct).toBeNull(); // nothing recorded before it
+    expect([levels[LEVEL_STEPS - 1].pct, levels[LEVEL_STEPS].pct]).toEqual([60, 60]);
   });
   it("does not guess ambient temperature or other-room mappings", () => {
     const states = createDemo(now);

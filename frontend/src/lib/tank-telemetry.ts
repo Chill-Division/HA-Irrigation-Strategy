@@ -1,13 +1,22 @@
 import type { Room, States } from "./types";
 import { descriptor } from "./model";
 import { RESERVOIR_KEYS, levelPct } from "./feed";
-import { STEP_LABELS, levelMm, readBatchStatus } from "./feed-status";
+import { STEP_LABELS, distanceMm, levelMm, readBatchStatus } from "./feed-status";
 
 export interface TankReading {
   entityId: string | null;
   value: number | null;
   unit: string;
   issue: string | null;
+}
+
+/** What the tank card charts: the level sensor it reads, and how a recorded reading becomes % full. */
+export interface LevelSource {
+  entityId: string;
+  /** The reservoir's distance sensor, worked out as the controller does; null for a sensor in %. */
+  distance: { unit: string; fullMm: number; emptyMm: number } | null;
+  /** The least the controller keeps, %; null without one. */
+  minPct: number | null;
 }
 
 /** The refills the controller runs for the room's reservoir, as it records them. */
@@ -87,10 +96,69 @@ export function tankTelemetry(states: States, room: Room) {
           issue: step === null ? "Unavailable" : null,
         }
       : null;
+  const minPct = status?.minPct ?? Number(plan?.min_pct);
+  const source: LevelSource | null = level.entityId
+    ? {
+        entityId: level.entityId,
+        distance: own
+          ? {
+              unit: String(states[level.entityId]?.attributes.unit_of_measurement ?? ""),
+              fullMm: full,
+              emptyMm: empty,
+            }
+          : null,
+        minPct: own && minPct > 0 ? minPct : null,
+      }
+    : null;
   return {
     level,
     temperature: reading("tank_temperature_sensor", ["°c", "°f", "k"]),
     pump: binary("pump"),
     refill,
+    source,
   };
+}
+
+/** How many steps the level chart's window is drawn in: 10 minutes each over 24 hours. */
+export const LEVEL_STEPS = 144;
+
+/** A level sensor's recorded readings as % full over the last `hours`, in LEVEL_STEPS steps: each step
+ * the middle reading recorded in it, or with none the level it held (Home Assistant records a change,
+ * not a level that holds still). It ends on `current`, the level the card shows now. */
+export function levelSeries(
+  points: { time: string; value: number }[],
+  source: LevelSource,
+  hours: number,
+  current: number | null,
+  now = Date.now(),
+): { at: number; pct: number | null }[] {
+  const { distance } = source;
+  const pctOf = (value: number) =>
+    distance
+      ? levelPct(distanceMm(value, distance.unit), distance.fullMm, distance.emptyMm)
+      : value >= 0 && value <= 100
+        ? value
+        : null;
+  const readings = points
+    .map((point) => ({ at: Date.parse(point.time), pct: pctOf(point.value) }))
+    .filter((r): r is { at: number; pct: number } => Number.isFinite(r.at) && r.pct !== null)
+    .sort((a, b) => a.at - b.at);
+  const tenth = (pct: number | null) => (pct === null ? null : Math.round(pct * 10) / 10);
+  const start = now - hours * 3_600_000,
+    step = (now - start) / LEVEL_STEPS;
+  let held: number | null = null,
+    next = 0;
+  for (; next < readings.length && readings[next].at < start; next++) held = readings[next].pct;
+  const series: { at: number; pct: number | null }[] = [];
+  for (let n = 0; n < LEVEL_STEPS; n++) {
+    const from = start + n * step,
+      within: number[] = [];
+    for (; next < readings.length && readings[next].at < from + step; next++)
+      within.push(readings[next].pct);
+    if (within.length) held = within[within.length - 1];
+    const middle = [...within].sort((a, b) => a - b)[Math.floor(within.length / 2)];
+    series.push({ at: from, pct: tenth(within.length ? middle : held) });
+  }
+  series.push({ at: now, pct: tenth(current ?? held) });
+  return series;
 }

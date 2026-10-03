@@ -63,11 +63,13 @@ Choose **Map sensors** on the tank panel, or open **Settings → Rooms & hardwar
 | Tank fill level (%) | `water_level_sensor`      | A percentage sensor, 0-100. A litres value is not a percentage.                       |
 | Tank temperature    | `tank_temperature_sensor` | A tank-water temperature sensor in °C, °F or K; its unit is retained.                 |
 
+Beside the tank, a chart shows how full it has been over the last 24 hours, or the last 12 (the buttons above it). It is Home Assistant's recorded history of the level sensor the tank reads, worked out the same way (for a reservoir with its distances set, as the controller works out its level), and it ends on the level shown now: a refill shows as a jump, each round of shots as a step down, and a dashed line marks the reservoir's minimum. It needs Home Assistant's recorder to keep that sensor's history, which it does by default, and it reloads every 10 minutes. Where a tank temperature sensor is mapped, its reading is the last line in the tank, under how full it is.
+
 **Refill** and **Last refill** are the controller's own record of the refills it runs for the room's reservoir (**Feed → Reservoir**), so there is nothing to map for them: what its refill is doing now (not running, filling, dosing, mixing) and when the last one ended, marked *stopped* if it stopped part-way. A room without a reservoir has neither row; they read **Unavailable** until the controller app has reported for the room.
 
 A percentage source may itself be an estimate; drawing it as a tank does not turn it into a measured level. Tank readings and switch reports do not prove dose completion, water quality suitability or physical delivery.
 
-Unmapped inputs show **Not mapped**; invalid readings show **Unavailable**, **Check units** or **Out of range**. An unknown pump is not shown as off and an unknown tank is not drawn empty. When disconnected, the panel identifies retained readings as last received.
+Unmapped inputs show **Not mapped** (an unmapped tank temperature is left out); invalid readings show **Unavailable**, **Check units** or **Out of range**. An unknown pump is not shown as off and an unknown tank is not drawn empty. When disconnected, the panel identifies retained readings as last received.
 
 ## Irrigation plan → Today
 

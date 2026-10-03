@@ -58,13 +58,26 @@ try {
   assert.equal(await tank.locator("[data-refill-state]").getAttribute("data-refill-state"), "idle");
   assert.match(await tank.innerText(), /Refill\s+Not running/);
   assert.doesNotMatch(await tank.innerText(), /Not mapped/, "nothing on the card asks to be mapped");
+  // Beside the tank, its level over the last 24 hours (the refill, and the shots since), ending on now.
+  const history = tank.locator("[data-tank-history]");
+  await history.locator(".recharts-area-curve").waitFor();
+  assert.match(await history.getAttribute("aria-label"), /last 24 hours: .*29% now.*5% minimum/);
+  await tank.getByRole("button", { name: "12 h" }).click();
+  await page.waitForFunction(() =>
+    /last 12 hours/.test(document.querySelector("[data-tank-history]")?.getAttribute("aria-label")),
+  );
+  assert.equal(await tank.getByRole("button", { name: "12 h" }).getAttribute("aria-pressed"), "true");
+  await tank.getByRole("button", { name: "24 h" }).click();
+  await page.waitForFunction(() =>
+    /last 24 hours/.test(document.querySelector("[data-tank-history]")?.getAttribute("aria-label")),
+  );
   assert.ok(await page.locator('[data-last-irrigation="1"]:visible').getAttribute("datetime"));
   // The tank and its first reading sit as far below the heading as the tank sits from the left.
   const inset = await tank.evaluate((panel) => {
     const box = panel.getBoundingClientRect();
     const heading = panel.querySelector(".panel-heading").getBoundingClientRect();
     const drawing = panel.querySelector(".tank-vessel svg").getBoundingClientRect();
-    const first = panel.querySelector(".tank-quality > div").getBoundingClientRect();
+    const first = panel.querySelector(".tank-history").getBoundingClientRect();
     return {
       left: Math.round(drawing.left - box.left),
       top: Math.round(drawing.top - heading.bottom),
@@ -148,13 +161,18 @@ try {
     () => document.querySelector("[data-tank-level]")?.getAttribute("data-tank-level") === "72",
   );
   assert.equal(await page.locator("[data-pump-state]").getAttribute("data-pump-state"), "off");
-  // Flower 1 has no reservoir: nothing refills it, so the card has no refill rows.
+  // Flower 1 has no reservoir: nothing refills it, so the card has no refill rows. Its level sensor
+  // in % is charted as it reads.
   assert.equal(await page.locator("[data-refill-state]").count(), 0);
+  await page.waitForFunction(() =>
+    /72% now/.test(document.querySelector("[data-tank-history]")?.getAttribute("aria-label")),
+  );
   assert.deepEqual(errors, []);
   assert.deepEqual(forbidden, []);
   const checks = [
     "graphical mapped tank readings, no tank EC or pH",
     "refills from the controller's record, none for a room without a reservoir",
+    "the level over the last 12 or 24 hours beside the tank",
     "zone event timestamps",
     "mobile layout and accessibility, light and dark",
     "Overview two screens at most, zones beside the tank, Map sensors on the heading's line",
