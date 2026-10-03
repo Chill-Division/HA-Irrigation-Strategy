@@ -300,9 +300,9 @@ def _on_since_shot(history, started):
 # whether a starving zone gets water: while the plan is held, stale or missing, routine steering waits
 # (decide() is asked for the rescues alone: ZoneSnapshot.steering_held), but the P3 emergency, the
 # lights-on watchdog and the minimum-daily floor still fire, and so do a blind zone's safety schedule and
-# its copy of a sibling's rescue. Every other gate (kill switch, faults, zone switches, source water, the
-# daily budget) still applies to them.
-PLAN_HOLD_EXEMPT = frozenset({"p3_emergency", "watchdog", "blind_fallback", "blind_copy_rescue"})
+# its copy of a sibling's rescue, and a test shot a person asked for (its zone's Test Shot button). Every
+# other gate (kill switch, faults, zone switches, source water, the daily budget) still applies to them.
+PLAN_HOLD_EXEMPT = frozenset({"p3_emergency", "watchdog", "blind_fallback", "blind_copy_rescue", "test_shot"})
 
 # A room's choice of how Water today reads, select.crop_steering_<prefix>water_today_view. The integration
 # offers ["Zone total", PER_PLANT] (WATER_TODAY_VIEWS in its const.py); the vitals follow it.
@@ -465,6 +465,13 @@ MAX_DOSE_S = 1800.0  # a doser's longest run; a plan asking more is not run
 # A "Mix a Batch Now" press older than this when the controller first sees it is not acted on: it
 # waited while the controller was stopped, and a batch must not start hours after it was asked for.
 BATCH_REQUEST_S = 1800.0
+# A test refill a person ran anyway (Settings → Tests) says so on the feed plan sensor, mix_force_until,
+# set this long after the moment just before its press (the integration's feed_api.FORCE_S).
+MIX_FORCE_S = 120.0
+TEST_SHOT_S = 10  # how long a zone's Test Shot waters it
+# A Test Shot press older than this when the controller sees it is not acted on: the person testing is
+# watching the drippers, and a shot long after they asked for it tests nothing for them.
+TEST_REQUEST_S = 600.0
 
 
 def reservoir_map(descriptor):
@@ -677,6 +684,7 @@ class Room:
         self._vmax = {}  # z -> (vmax, confidence) advisory
         self._blind_zones = set()
         self._blind_since = {}  # z -> when its probe was first seen unreadable in this run of it
+        self._test_seen = {}  # z -> its Test Shot button's state last seen (the time it was last pressed)
         self._was_lights_on = None
         # when this room was seen switched off (see _room_switched_on); durable, None when not known
         self._off_since = None
@@ -2020,6 +2028,28 @@ class Controller:
                 return f"waiting for {name}'s reservoir refill ({words})"
         return None
 
+    def _test_shot(self, room, zone, now):
+        """A new press of the zone's Test Shot button: this pass's decision for the zone, a TEST_SHOT_S
+        shot sized from its flow, or None. It then goes through every gate a shot does but a held plan
+        (PLAN_HOLD_EXEMPT). The first state seen is a starting point, not a press: it may be from
+        before this controller started."""
+        pressed = ha_get(f"button.crop_steering_{room.prefix}zone_{zone}_test_shot")[0]
+        if pressed in (None, "", "unavailable") or pressed == room._test_seen.get(zone):
+            return None
+        first = zone not in room._test_seen
+        room._test_seen[zone] = pressed
+        if first or pressed == "unknown":
+            return None
+        at = _local(pressed)
+        if at is None or abs((now - at).total_seconds()) > TEST_REQUEST_S:
+            self._say(room, zone, f"Test Shot pressed at {pressed[:16]} was not acted on: too long ago")
+            return None
+        flow, substrate = self._zone_flow_lps(room, zone), self._substrate_l(room, zone)
+        sized = math.isfinite(flow) and flow > 0 and math.isfinite(substrate) and substrate > 0
+        # Unsized, _act_zone says why (CS-204) and runs nothing.
+        size = TEST_SHOT_S * flow / substrate * 100.0 if sized else 0.0
+        return True, size, Reason(f"TEST shot {TEST_SHOT_S} s (asked for)", "test_shot")
+
     def _shot_litres(self, room, zone, size):
         """What a shot of `size` % takes from the reservoir: that much of the zone's substrate."""
         substrate = self._substrate_l(room, zone)
@@ -2055,8 +2085,8 @@ class Controller:
             "CS-704",
             "watering held, reservoir too low",
             f"{why[:1].upper()}{why[1:]}, so no zone is watered from it: a pump that runs it dry loses "
-            f"its prime. It can't refill by itself now: {cannot}. Refill it (Mix a Batch Now, or by "
-            "hand); watering goes on by itself once it reads enough.",
+            f"its prime. It can't refill by itself now: {cannot}. Refill it (a test refill, in Settings "
+            "→ Rooms & hardware → Tests, or by hand); watering goes on by itself once it reads enough.",
             room=room,
         )
         return f"reservoir too low: {why} ({cannot})"
@@ -2147,17 +2177,22 @@ class Controller:
         need = litres / per_pct if per_pct else 0.0
         return reading["pct"] - need < reading["min"]
 
-    def _fill_overflow(self, room, plan, requested):
+    def _fill_overflow(self, room, plan, requested, forced=False):
         """Why the fill could overflow the reservoir now, or None. Once a refill has shown what 1%
         holds, the fill must fit under 100%; before that, one asked for by hand starts only from
         UNLEARNED_FILL_FROM_PCT (or the minimum, if higher). A level that is set up and reads nothing
-        could be anything; without a level set up there is nothing to check."""
+        could be anything; without a level set up there is nothing to check. `forced`: a person checked
+        that the fill fits (a test refill run anyway), so it is not refused for that, but a level that
+        reads nothing still is: half-way through the fill it could not show that the reservoir fills,
+        and the refill would stop there, the pump never started, with half its fresh water in."""
         reading = getattr(room, "_res", None) or {}
         pct = reading.get("pct")
         if pct is None:
             distance = (room.hw.get("reservoir") or {}).get("distance")
             if distance and 0 < plan.get("full_mm", 0.0) < plan.get("empty_mm", 0.0):
                 return f"the reservoir level ({distance}) reads nothing, so a fill could overflow it"
+            return None
+        if forced:
             return None
         per_pct = room.batch.get("litres_per_pct")
         if per_pct:
@@ -2185,7 +2220,7 @@ class Controller:
             if not batch["armed"]:
                 batch["armed"] = True  # the next time it runs short may start a batch
                 self._save_state()
-        requested = False
+        requested = forced = False
         pressed = ha_get(f"button.crop_steering_{room.prefix}mix_batch")[0]
         if pressed not in (None, "", "unavailable") and pressed != batch["last_request"]:
             # The button's state is when it was last pressed. The first one this controller sees is a
@@ -2199,6 +2234,7 @@ class Controller:
                 self._batch_note(
                     room, now, f"Mix a Batch Now pressed at {pressed[:16]} was not acted on: too long ago"
                 )
+            forced = requested and self._mix_forced(room, pressed)
         auto = False
         if due and batch["armed"] and self._on(f"switch.crop_steering_{room.prefix}auto_batches", False):
             batch["low_seen"] += 1
@@ -2207,7 +2243,7 @@ class Controller:
             batch["low_seen"] = 0
         if not (requested or auto):
             return
-        why = self._batch_refusal(room, res, plan) or self._fill_overflow(room, plan, requested)
+        why = self._batch_refusal(room, res, plan) or self._fill_overflow(room, plan, requested, forced)
         if why:
             batch["low_seen"] = 0
             self._alert(
@@ -2216,13 +2252,24 @@ class Controller:
                 "a nutrient batch could not start",
                 "A nutrient batch was "
                 + ("asked for" if requested else "due, the reservoir running short,")
-                + f" but could not start: {why}. Nothing was switched on. Once that is sorted, press "
-                "Mix a Batch Now"
+                + f" but could not start: {why}. Nothing was switched on. Once that is sorted, run a test "
+                "refill (Settings → Rooms & hardware → Tests)"
                 + (", or wait for the next automatic one." if not requested else "."),
                 room=room,
             )
             return
-        self._batch_start(room, now, res, plan, "asked for" if requested else self._refill_why(room))
+        self._batch_start(room, now, res, plan, ("asked for, run anyway" if forced else "asked for")
+                          if requested else self._refill_why(room))
+
+    def _mix_forced(self, room, pressed):
+        """Was this Mix a Batch Now press a test refill a person ran anyway: the feed plan sensor says
+        so from just before the press until MIX_FORCE_S after it. Both times are Home Assistant's, and
+        the sensor is read afresh, so a word written just before the press is never missed."""
+        until = _when((ha_get(f"sensor.crop_steering_{room.prefix}feed_plan")[1] or {}).get("mix_force_until"))
+        at = _when(pressed)
+        if until is None or at is None or until.tzinfo is None or at.tzinfo is None:
+            return False
+        return 0 < (until - at).total_seconds() <= MIX_FORCE_S
 
     def _refill_why(self, room):
         """Why an automatic refill starts, in words: the level and what the next round needs."""
@@ -2466,7 +2513,8 @@ class Controller:
                 + f" (it started at {start:.0f}%): it is not filling. The fresh water was switched off "
                 f"and the pump never started, so nothing was mixed or dosed (refill {stage}). Watering "
                 "stays held while the reservoir is under its minimum. Check the water supply, the "
-                "fresh-water solenoid and the level sensor, then press Mix a Batch Now.",
+                "fresh-water solenoid and the level sensor, then run a test refill (Settings → Rooms & "
+                "hardware → Tests).",
                 room=room,
             )
         else:
@@ -3068,7 +3116,9 @@ class Controller:
         }
         return round(sum(item["litres"] for item in history), 2), attrs
 
-    def _advance_shot_counters(self, room, zone, size_pct, *, delivered_l=None):
+    def _advance_shot_counters(self, room, zone, size_pct, *, delivered_l=None, steering=True):
+        """A delivered shot's water, counted. A test shot (steering False) is water like any other, but
+        not one of the day's shots: it is not a ramp shot, and Auto setpoints learns nothing from it."""
         st = room.state[zone]
         now = datetime.now()
         self._water_usage(room, zone, now)
@@ -3081,8 +3131,9 @@ class Controller:
                 break
         if not isinstance(st.get("learn"), dict):
             st["learn"] = auto_setpoints.fresh()
-        auto_setpoints.shot(st["learn"], st.get("phase"), size_pct, st.get("last_vwc"), now.timestamp())
-        st["shots"] += 1
+        if steering:
+            auto_setpoints.shot(st["learn"], st.get("phase"), size_pct, st.get("last_vwc"), now.timestamp())
+            st["shots"] += 1
         st["last_shot"] = now
         st["last_shot_is_anchor"] = False  # water was delivered: this one is an irrigation
         st["daily_vol"] += delivered_l
@@ -3508,7 +3559,7 @@ class Controller:
                 return False
             time.sleep(CONFIRM_POLL_S)
 
-    def _execute_shot(self, room, zone, duration_s, size_pct, *, flow_lps=None, plan_exempt=False):
+    def _execute_shot(self, room, zone, duration_s, size_pct, *, flow_lps=None, plan_exempt=False, steering=True):
         if self._hardware_fault_block(room):
             return
         if getattr(room, "shot_inflight", None):
@@ -3613,7 +3664,8 @@ class Controller:
                 # Counted as a kill-switch abort is: the shot counts, with only the water it delivered.
                 run = elapsed / duration_s if duration_s > 0 else 1.0
                 counted = True
-                self._advance_shot_counters(room, zone, size_pct * run, delivered_l=nominal_l * run)
+                self._advance_shot_counters(room, zone, size_pct * run, delivered_l=nominal_l * run,
+                                            steering=steering)
                 return
             # CLOSE sequence. A failed close (e.g. HA went unreachable mid-shot) leaves the valve
             # OPEN and the SOFTWARE CANNOT fix it — only the hardware fail-safe (NC valve /
@@ -3648,6 +3700,7 @@ class Controller:
             self._advance_shot_counters(
                 room, zone, delivered_pct,
                 delivered_l=nominal_l * (elapsed / duration_s if duration_s > 0 else 1.0),
+                steering=steering,
             )
             if aborted:
                 by = aborted[1]
@@ -3675,7 +3728,8 @@ class Controller:
             if valve_started is not None and not counted:
                 counted = True
                 run = (time.monotonic() - valve_started) / duration_s if duration_s > 0 else 1.0
-                self._advance_shot_counters(room, zone, size_pct * run, delivered_l=nominal_l * run)
+                self._advance_shot_counters(room, zone, size_pct * run, delivered_l=nominal_l * run,
+                                            steering=steering)
             raise
         except Exception as e:
             log("shot error", room.slug, zone, e)
@@ -3906,7 +3960,8 @@ class Controller:
                     zone=zone,
                 )
                 return
-            raw_dur = size / 100.0 * substrate / flow
+            test = getattr(reason, "kind", None) == "test_shot"
+            raw_dur = float(TEST_SHOT_S) if test else size / 100.0 * substrate / flow
             max_dur = self._room_duration_cap(room)
             if max_dur is None:
                 return
@@ -3950,7 +4005,7 @@ class Controller:
             # the minimum duration and partial aborts. Preserve this flow snapshot
             # so later sizing edits cannot change an already delivered volume.
             self._execute_shot(room, zone, dur, size, flow_lps=flow,
-                               plan_exempt=getattr(reason, "kind", None) in PLAN_HOLD_EXEMPT)
+                               plan_exempt=getattr(reason, "kind", None) in PLAN_HOLD_EXEMPT, steering=not test)
         else:
             if "BLOCK" in reason and (
                 getattr(reason, "kind", None) == "block_daily_cap" or "daily-cap" in reason
@@ -4352,6 +4407,10 @@ class Controller:
             room._blind_zones.add(zone)
         room._blind_zones = {z for z in room._blind_zones if z not in snaps}
         room._drawn_l = room._waiting_l = 0.0  # this pass's shots, and any waiting for a refill
+        for zone in room.zones:  # a test shot asked for takes the zone's turn this pass
+            test = self._test_shot(room, zone, now)
+            if test:
+                decisions[zone] = test
         if room._beat is None or not room._beat[1]:
             self._report_before_acting(room, decisions, snaps, now)
         pub = {}
@@ -4464,9 +4523,11 @@ class Controller:
                         "max_ec_limit": p.max_ec,
                     },
                 )
+                tested = d["fire"] and not d["block"] and getattr(d["reason"], "kind", None) == "test_shot"
                 self._publish_zone_status(
                     room, zone,
-                    zone_status_label(d["phase"], d["fire"], d["block"], d["blind"], d["reason"]),
+                    "Test shot" if tested
+                    else zone_status_label(d["phase"], d["fire"], d["block"], d["blind"], d["reason"]),
                     d["reason"],
                 )
                 # Advisory Vmax (detected P1 wet-up ceiling); operator eyeballs it,
