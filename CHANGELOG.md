@@ -9,6 +9,35 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **The tank card's refills come from the controller.** The Overview's Tank & pump card showed
+  "Filling" and "Last fill" only from two Home Assistant sensors you had to map, so most rooms read
+  "Not mapped" there. It now shows the controller's own record of the reservoir refills it runs:
+  **Refill** says what the refill is doing now (not running, filling, dosing, mixing), and **Last
+  refill** when the last one ended, and whether it stopped part-way. A room without a reservoir has
+  neither row. The two mappings are gone from Rooms & hardware and from Configure.
+
+### 🔧 Technical notes
+
+- Integration: `tank_fill_entity` and `tank_last_fill_sensor` are removed from the setup API
+  (`HARDWARE_DOMAINS`, `HARDWARE_WORDS`, the last-fill timestamp check), the wizard and Configure
+  (`_hardware_schema`, `_build_hardware`, strings) and the room descriptor (`build_engine_config`).
+  Setup candidates no longer list `binary_sensor` and `input_datetime` entities, which only those two
+  used. A value an older setup stored stays in its config entry, unread; the controller's setup
+  fingerprint never read either.
+- Dashboard: the tank card's **Refill** and **Last refill** read
+  `sensor.crop_steering_<prefix>batch_status` (its step, and `last.at` and `last.result`), for a
+  room with a reservoir mapped or a batch status reported; "Unavailable" until the controller
+  reports. The demo drops its two fill entities. Two code comments that still described 2.32.0's
+  10-minute level rule are corrected.
+- Docs: the user guide's tank section (and its paragraph on the tank and feed EC/pH mappings that
+  2.26.0 removed), the install guide, and the screenshot.
+- Tests: the lean setup and Configure tests drop the two mappings; the tank telemetry tests and the
+  tank browser check cover the refill rows, and that a room without a reservoir has none.
+
 ## [2.32.2] - 2026-10-03
 
 Integration and controller **2.32.2**.

@@ -8,7 +8,7 @@ Captured in September 2026 from the compiled application with isolated demo data
 
 ## Tank and pump
 
-![Graphical tank level, pump/fill reports and water-quality readings](../img/tank-status.png)
+![Graphical tank level, its temperature, the pump, and the controller's refills](../img/tank-status.png)
 
 ## Insights: water use per zone
 
