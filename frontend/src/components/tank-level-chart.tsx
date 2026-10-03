@@ -119,7 +119,7 @@ export function TankLevelChart({
                       dy={10}
                       textAnchor={at <= start ? "start" : at >= now ? "end" : "middle"}
                       fill="var(--muted-foreground)"
-                      fontSize={11}
+                      fontSize={12}
                     >
                       {clock(at)}
                     </text>
@@ -134,7 +134,7 @@ export function TankLevelChart({
                 tickLine={false}
                 axisLine={false}
                 stroke="var(--muted-foreground)"
-                fontSize={11}
+                fontSize={12}
               />
               {source.minPct !== null && (
                 <ReferenceLine
