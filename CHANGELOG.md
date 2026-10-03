@@ -9,6 +9,32 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **The reservoir's level reads again while it holds steady.** 2.32.0 counted a level sensor that
+  had not reported for 10 minutes as reading nothing, but it judged that from a copy Home Assistant
+  does not renew while a sensor keeps reporting the same value: a level that held steady for 10
+  minutes (no shots drawing on it) read "No reading", a refill asked for by hand was refused, and
+  the next shot was not held at the minimum. The controller now asks Home Assistant when the sensor
+  last reported, so only one that has really stopped counts as reading nothing.
+
+### 🔧 Technical notes
+
+- Controller: `ha_reported(entity)` reads `last_reported` live, rendering
+  `states.<entity>.last_reported` through Home Assistant's template API (`POST /template`), for the
+  level sensor's id only. The REST state's `last_reported` cannot be used: Home Assistant serves a
+  state's cached JSON (`as_dict_json`), and a same-value report moves `last_reported` on the state
+  without renewing it. `_level_now` uses `ha_reported`; when it can't be told (the template API
+  refused, or no such entity), the reading stands, as before 2.32.0. No new options; no change to
+  the state file.
+- Tests: in a real Home Assistant, the controller is served the cached REST JSON and the template
+  rendered by Home Assistant's own engine: after a same-value report the REST copy keeps the old
+  `last_reported` while `ha_reported` gives the new one, and a sensor unchanged for 18 minutes but
+  reported 9 minutes ago still reads. The add-on suite covers the template call, its refusals and
+  the reading standing when the last report can't be told.
+
 ## [2.32.0] - 2026-10-03
 
 Integration and controller **2.32.0**.
