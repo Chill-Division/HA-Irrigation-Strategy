@@ -440,13 +440,16 @@ RESERVOIR_KEYS = (
     "recirc_switch",
     *(f"doser_{number}_switch" for number in range(1, 7)),
 )
-# A batch's steps: filling (the fresh water runs), filling_mixing (its second half, with the pump and
-# the recirculation line running too), dosing (one doser on), pausing (between dosers) and mixing
-# (recirculating after the last dose). settling, an older controller's circulation before the first
-# dose, is still known in a saved record, so a batch a restart interrupted there is switched off.
+# A batch's steps: filling (the fresh water runs), filling_mixing (from half-way, the pump and the
+# recirculation line running too, for one pause before the first dose), dosing (one doser on), pausing
+# (between dosers) and mixing (recirculating after the last dose: until the fill's end, and at least
+# its mix time). The fresh water runs until the fill's end (fill_end) whatever the step, so the doses
+# go in while it fills. settling, an older controller's circulation before the first dose, is still
+# known in a saved record, so a batch a restart interrupted there is switched off.
 BATCH_STEPS = ("filling", "filling_mixing", "dosing", "pausing", "mixing", "settling")
 # Steps that end by switching off something that must not run long: the fresh water, a doser. While
 # one runs in any room, no room starts a shot, which would hold this loop past the moment to stop it.
+# Any other step runs the fresh water too until the fill's end (batch_timed).
 BATCH_TIMED = ("filling", "filling_mixing", "dosing")
 # How each step reads where a shot waits for it, and in the log.
 BATCH_STEP_WORDS = {"filling": "filling", "filling_mixing": "filling and mixing", "dosing": "dosing",
@@ -503,7 +506,7 @@ def fresh_batch():
         "armed": True,  # an automatic batch may start: false after one, until a refill reads not due
         "litres_per_pct": None,  # what 1% of the reservoir holds, learned from refills; None until one
         "start_pct": None,  # the level when the batch running now started, or None
-        "fill_end": None,  # when its fresh water stops
+        "fill_end": None,  # when its fresh water stops; None once it has
         "interrupted": None,  # stopped by the app stopping: said once when it starts again
         "switches": None,  # what this batch drives, taken when it starts (so a restart can stop them)
     }
@@ -534,6 +537,13 @@ def restore_batch(saved):
     if batch["step"] not in ("idle", *BATCH_STEPS):
         batch["step"] = "idle"
     return batch
+
+
+def batch_timed(batch):
+    """Whether a batch runs something that must not run long: a timed step (BATCH_TIMED), or any step
+    while its fresh water still runs, until the fill's end (the doses go in while it fills)."""
+    step = batch.get("step")
+    return step in BATCH_TIMED or (step not in (None, "idle") and batch.get("fill_end") is not None)
 
 
 def feed_plan(attrs):
@@ -2017,12 +2027,12 @@ class Controller:
     # ---------- nutrient batches: the reservoir refilled, mixed and dosed ----------
     def _batch_hold(self, room):
         """Why a shot waits for a nutrient batch, or None. A room's batch holds its every shot (the
-        pump is mixing), and one filling or dosing in any room holds every room's (BATCH_TIMED)."""
+        pump is mixing), and one filling or dosing in any room holds every room's (batch_timed)."""
         step = room.batch["step"]
         if step != "idle":
             return f"refilling its reservoir ({BATCH_STEP_WORDS.get(step, step)})"
         for other in self.rooms:
-            if other is not room and other.batch["step"] in BATCH_TIMED:
+            if other is not room and batch_timed(other.batch):
                 name = getattr(other, "room_name", None) or other.slug
                 words = BATCH_STEP_WORDS.get(other.batch["step"], other.batch["step"])
                 return f"waiting for {name}'s reservoir refill ({words})"
@@ -2352,7 +2362,7 @@ class Controller:
         )
         on_at = datetime.now()
         # The fill runs in two halves: the fresh water alone, then the pump and the recirculation line
-        # with it (_batch_step), once the level shows it is filling.
+        # with it once the level shows it is filling, and the doses go in during that half (_batch_step).
         batch.update(
             start_pct=(getattr(room, "_res", None) or {}).get("pct"),
             fill_end=(on_at + timedelta(seconds=plan["fill_s"])).isoformat(),
@@ -2381,7 +2391,7 @@ class Controller:
         batch = room.batch
         switches = batch.get("switches") or {}
         step = batch["step"]
-        need = [switches.get("fresh")] if step in ("filling", "filling_mixing") else []
+        need = [switches.get("fresh")] if batch.get("fill_end") is not None else []
         if step != "filling":
             need += [switches.get("recirc"), switches.get("pump")]
         if step == "dosing":
@@ -2403,6 +2413,14 @@ class Controller:
         why = self._batch_interrupted(room)
         if why:
             return self._batch_stop(room, now, why)
+        # The fresh water stops at the fill's end, whatever the step: the doses go in while it fills, and
+        # one may be running still.
+        fill_end = _when(batch.get("fill_end"))
+        if fill_end is not None and datetime.now() >= fill_end:
+            if not self._switch_off_confirmed([switches["fresh"]]):
+                return self._batch_stop(room, now, f"the fresh water ({switches['fresh']}) did not switch off")
+            batch["fill_end"] = None
+            self._save_state()
         until = _when(batch["until"])
         if until is not None and datetime.now() < until:
             return
@@ -2417,22 +2435,23 @@ class Controller:
             # the recirculation line first, then the pump: it never runs against a closed line
             if not (self._batch_switch(switches["recirc"], "on") and self._batch_switch(switches["pump"], "on")):
                 return self._batch_stop(room, now, "the pump or the recirculation solenoid did not switch on")
-            batch.update(step="filling_mixing", until=batch.get("fill_end") or datetime.now().isoformat())
+            # The first dose one pause after the pump starts, so the line is running: the doses go in
+            # while the fresh water still runs, and normally all are in before the fill's end.
+            lead = plan.get("pause_s") or 0
+            batch.update(step="filling_mixing", until=(datetime.now() + timedelta(seconds=lead)).isoformat())
             self._batch_note(room, now, "reservoir refill half-way"
                              + (f", filling ({start:.0f}% → {level:.0f}%)" if start is not None else "")
-                             + ": pump and recirculation on")
-        elif step == "filling_mixing":
-            if not self._switch_off_confirmed([switches["fresh"]]):
-                return self._batch_stop(room, now, f"the fresh water ({switches['fresh']}) did not switch off")
-            self._batch_dose(room, now, 0)
-        elif step == "settling":  # an older controller's step, saved part-way: dose as it would have
+                             + ": pump and recirculation on, the doses next while it fills")
+        elif step in ("filling_mixing", "settling"):  # settling: an older controller's step, saved part-way
             self._batch_dose(room, now, 0)
         elif step == "dosing":
             self._batch_dose_done(room, now)
         elif step == "pausing":
             self._batch_dose(room, now, batch["index"])
         elif step == "mixing":
-            if not self._switch_off_confirmed([switches["pump"], switches["recirc"]]):
+            # The fresh water is off by now (above); one whose fill's end could not be read goes too.
+            fresh = [switches["fresh"]] if batch.get("fill_end") is not None else []
+            if not self._switch_off_confirmed([*fresh, switches["pump"], switches["recirc"]]):
                 return self._batch_stop(room, now, "the pump or the recirculation solenoid did not switch off")
             return self._batch_finish(room, now, "done")
         self._save_state()
@@ -2445,8 +2464,12 @@ class Controller:
         while index < len(doses) and doses[index]["seconds"] <= 0:
             index += 1
         if index >= len(doses):
-            mix = batch["plan"]["mix_s"]
-            batch.update(step="mixing", index=index, on_at=None, until=(datetime.now() + timedelta(seconds=mix)).isoformat())
+            # Recirculating until the fill's end, and at least its mix time after the last dose.
+            end = datetime.now() + timedelta(seconds=batch["plan"]["mix_s"])
+            fill_end = _when(batch.get("fill_end"))
+            if fill_end is not None and fill_end > end:
+                end = fill_end
+            batch.update(step="mixing", index=index, on_at=None, until=end.isoformat())
             return
         on_at = datetime.now()
         batch.update(
@@ -2490,16 +2513,16 @@ class Controller:
         fill when it did not fill. A switch that will not read OFF latches the hardware hold."""
         batch = room.batch
         step, switches = batch["step"], batch.get("switches") or {}
+        # The fresh water runs until the fill's end, whatever the step (the doses go in while it fills).
+        fresh = [switches.get("fresh")] if batch.get("fill_end") is not None else []
         if every_switch:
             off = [*(switches.get("dosers") or {}).values(), switches.get("fresh"), switches.get("pump"), switches.get("recirc")]
         elif step == "filling":
             off = [switches.get("fresh")]
-        elif step == "filling_mixing":
-            off = [switches.get("fresh"), switches.get("pump"), switches.get("recirc")]
         elif step == "dosing":
-            off = [self._batch_doser(room), switches.get("pump"), switches.get("recirc")]
+            off = [self._batch_doser(room), *fresh, switches.get("pump"), switches.get("recirc")]
         else:
-            off = [switches.get("pump"), switches.get("recirc")]
+            off = [*fresh, switches.get("pump"), switches.get("recirc")]
         off = [e for e in dict.fromkeys(off) if e]
         off_at = datetime.now()
         confirmed = not off or self._switch_off_confirmed(off)
@@ -2588,6 +2611,8 @@ class Controller:
                 "engine": "crop-steering-controller",
                 "stage": plan.get("stage"),
                 "until": _shown(batch["until"]),
+                # when the fresh water stops (None once it has): the doses go in while it fills
+                "fill_until": _shown(batch.get("fill_end")) if running else None,
                 "doser": dose["doser"] if dose else None,
                 "nutrient": dose["label"] if dose else None,
                 "doses": [{**d, "dosed": batch["dosed"].get(str(d["doser"]))} for d in plan.get("doses") or []],
@@ -2611,7 +2636,7 @@ class Controller:
     def _batch_watch(self, room, now):
         """Between passes, while this room's batch fills or doses: stop it at once when it must stop.
         Its steps still move on in the passes (_sleep_for wakes the loop when one is due)."""
-        if room.batch["step"] not in BATCH_TIMED:
+        if not batch_timed(room.batch):
             return
         why = self._batch_interrupted(room)
         if why:
@@ -2627,7 +2652,7 @@ class Controller:
             left = deadline - time.monotonic()
             if left <= 0:
                 return
-            timed = [room for room in self.rooms if room.batch.get("step") in BATCH_TIMED]
+            timed = [room for room in self.rooms if batch_timed(room.batch)]
             time.sleep(min(left, BATCH_WATCH_S) if timed else left)
             for room in timed:
                 try:
@@ -2636,13 +2661,16 @@ class Controller:
                     self._say(room, None, f"batch error: {e}")
 
     def _sleep_for(self, now):
-        """Until the next pass: the loop's own interval, or sooner when a batch step is due, so the
-        fresh water or a doser is switched off on time."""
+        """Until the next pass: the loop's own interval, or sooner when a batch step is due or its fill
+        ends, so the fresh water or a doser is switched off on time."""
         wait = self.loop_seconds
         for room in self.rooms:
-            until = _when(room.batch.get("until")) if room.batch.get("step") != "idle" else None
-            if until is not None:
-                wait = min(wait, max(0.2, (until - now).total_seconds()))
+            if room.batch.get("step") == "idle":
+                continue
+            for key in ("until", "fill_end"):
+                at = _when(room.batch.get(key))
+                if at is not None:
+                    wait = min(wait, max(0.2, (at - now).total_seconds()))
         return wait
 
     # ---------- room status (On / Off) ----------
