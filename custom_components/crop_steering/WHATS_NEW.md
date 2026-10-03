@@ -26,6 +26,7 @@ version being released.
 - The reservoir never runs dry: a refill starts before the next shots would take it under its minimum, or watering waits there.
 - Set the reservoir sensor's distances when full and empty, and the Reservoir page and the Overview show how full it is.
 - A refill starts the pump half-way through the fresh water, doses as soon as it stops, and recirculates 10 seconds after.
+- New Tests in Rooms & hardware: water one zone for 10 seconds, or run a refill (anyway, once you have checked it fits).
 
 ## 2.30.1 - 2026-10-01
 
