@@ -1,4 +1,6 @@
-# Unreleased
+# 2.32.2
+
+Pair with integration 2.32.2.
 
 - **The reservoir's level reads while it holds still.** The 10-minute rule of 2.32.0 (and 2.32.1's template API read of `last_reported`) is removed: Home Assistant's ESPHome integration drops a reading that repeats the last, so a still reservoir's ultrasonic looked silent for hours. The level reads nothing only when Home Assistant has no reading (unavailable, unknown, not a number); an ESPHome `timeout` filter makes a failed ultrasonic report unknown. No new options; no change to the state file.
 
