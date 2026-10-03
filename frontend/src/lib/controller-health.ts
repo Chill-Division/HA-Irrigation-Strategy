@@ -102,6 +102,7 @@ export function controllerZoneLabel(
   if (reason.includes("BLOCK")) return "Blocked — EC/cap";
   const fired = entry("fired");
   if (fired === null) return RESTING[phase.state];
-  // A shot that holds the overnight dryback at its target is not an emergency.
+  // A shot that holds the overnight dryback at its target is not an emergency, and nor is a test.
+  if (fired.startsWith("TEST shot")) return "Test shot";
   return fired.includes("P3 hold") ? "Holding dryback" : FIRING[phase.state];
 }

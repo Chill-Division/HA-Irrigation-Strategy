@@ -13,14 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Empty, Heading, number, ReviewDialog, type Page } from "@/components/dashboard";
 import { Pill } from "@/components/mini-visuals";
 import {
@@ -48,7 +40,6 @@ import {
   type FeedSettings,
 } from "@/lib/feed";
 import {
-  fillRefusal,
   levelMm,
   readBatchStatus,
   STEP_LABELS,
@@ -189,8 +180,6 @@ function BatchPanel({
   level,
   pct,
   mapped,
-  dirty,
-  onMix,
 }: {
   controller: Controller;
   doc: FeedDocument;
@@ -200,8 +189,6 @@ function BatchPanel({
   /** How full the reservoir reads, %: the controller's, or worked out the same way before it reports. */
   pct: number | null;
   mapped: boolean;
-  dirty: boolean;
-  onMix: () => void;
 }) {
   const [review, setReview] = useState(false);
   const running = !!status?.step && status.step !== "idle";
@@ -213,17 +200,6 @@ function BatchPanel({
   const levelSet = (plan.full_mm ?? 0) > 0 && plan.full_mm < plan.empty_mm;
   const due = status?.due ?? (pct === null || minimum <= 0 ? null : pct < minimum);
   const steps = stepsOf(plan, status);
-  const why = !mapped
-    ? "Map the reservoir in Settings → Rooms & hardware first."
-    : dirty
-      ? "Save or discard your changes first."
-      : running
-        ? "A batch is running."
-        : plan.problem
-          ? plan.problem
-          : status?.blocked
-            ? `A batch cannot start: ${status.blocked}.`
-            : null;
   return (
     <section className="panel res-batch" data-batch-status={status?.step ?? "none"}>
       <div className="res-batch-head">
@@ -247,10 +223,20 @@ function BatchPanel({
           </p>
         </div>
         <div className="res-batch-actions">
-          <Button onClick={onMix} disabled={!!why}>
-            <Beaker size={16} /> Mix a batch now
+          {/* A refill by hand is a test, out of the way: Settings → Rooms & hardware → Tests. */}
+          <Button
+            variant="outline"
+            disabled={!mapped}
+            onClick={() => {
+              window.location.hash = "#/setup?tests";
+            }}
+          >
+            <Beaker size={16} /> Refill by hand…
           </Button>
-          {why && !running && <small className="muted">{why}</small>}
+          <small className="muted">In Settings → Rooms & hardware, under Tests.</small>
+          {!running && status?.blocked && (
+            <small className="muted">A batch cannot start: {status.blocked}.</small>
+          )}
         </div>
       </div>
       <ol className="res-steps" aria-label={running ? "This batch's steps" : "What a batch does"}>
@@ -320,8 +306,8 @@ function BatchPanel({
                   : `On: a refill starts by itself when the room's next shots would take the reservoir under its ${number(minimum, 0)}% minimum, three passes in a row.${status && !status.armed ? " Waiting for the reservoir to read enough after the last one." : ""}`
               : auto === false
                 ? minimum > 0 && levelSet
-                  ? `Off: refills start only when you ask for one, and watering waits whenever a shot would take the reservoir under its ${number(minimum, 0)}% minimum.`
-                  : "Off: refills start only when you ask for one."
+                  ? `Off: refills start only by hand, and watering waits whenever a shot would take the reservoir under its ${number(minimum, 0)}% minimum.`
+                  : "Off: refills start only by hand."
                 : "Unavailable: update the Crop Steering integration."}
           </p>
           {autoId && (
@@ -383,7 +369,7 @@ function BatchPanel({
           ]}
           note={
             auto
-              ? "Refills then start only when you ask for one, and watering waits whenever a shot would take the reservoir under its minimum."
+              ? "Refills then start only by hand, and watering waits whenever a shot would take the reservoir under its minimum."
               : "The controller app then refills, mixes and doses the reservoir by itself whenever the room's next shots would take it under its minimum. Check the fill time, the fill litres and both distances first."
           }
         />
@@ -683,7 +669,6 @@ export function Reservoir({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
-  const [confirm, setConfirm] = useState(false);
   const listId = useId();
   useEffect(() => {
     let current = true;
@@ -739,24 +724,6 @@ export function Reservoir({
       setBusy(false);
     }
   }
-  async function mix() {
-    setBusy(true);
-    setError("");
-    setNotice("");
-    try {
-      const result = await controller.operator<FeedDocument>("feed_mix");
-      setDoc(result);
-      setConfirm(false);
-      const at = result.requested ? Date.parse(result.requested) : NaN;
-      setNotice(
-        `Batch asked for${Number.isFinite(at) ? ` at ${new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}. The controller app starts it at its next pass, within a minute, or says why it cannot.`,
-      );
-    } catch (err) {
-      setError(errorText(err));
-    } finally {
-      setBusy(false);
-    }
-  }
   const setting = (key: keyof FeedSettings) => {
     const [label, unit, low, high, whole] = SETTINGS[key];
     const value = draft![key];
@@ -802,23 +769,8 @@ export function Reservoir({
       .map(([n]) => Number(n));
     return [...roomOrder(draft!.order, mapped), ...used.sort((a, b) => a - b)];
   };
-  const levelSetUp =
-    !!attributes.reservoir_distance_sensor &&
-    !!doc &&
-    (doc.plan.full_mm ?? 0) > 0 &&
-    doc.plan.full_mm < doc.plan.empty_mm;
   const pct =
     status?.levelPct ?? (doc ? levelPct(level, doc.plan.full_mm ?? 0, doc.plan.empty_mm) : null);
-  // What the controller checks before a refill asked for by hand (controller.py _fill_overflow).
-  const refusal = doc
-    ? fillRefusal(
-        pct,
-        levelSetUp,
-        doc.plan.batch_l,
-        doc.plan.min_pct ?? 0,
-        status?.litresPerPct ?? null,
-      )
-    : null;
 
   return (
     <>
@@ -855,8 +807,6 @@ export function Reservoir({
             level={level}
             pct={pct}
             mapped={reservoir}
-            dirty={dirty}
-            onMix={() => setConfirm(true)}
           />
           <div className="res-columns">
             <section className="panel workspace-card res-stage">
@@ -1034,59 +984,6 @@ export function Reservoir({
             </div>
           )}
         </>
-      )}
-      {confirm && doc && (
-        <Dialog open onOpenChange={(open) => !open && !busy && setConfirm(false)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Refill and mix a {doc.plan.stage} batch now?</DialogTitle>
-              <DialogDescription>
-                The fresh water runs for {duration(doc.plan.fill_s)}, with the pump and
-                recirculation from half-way; then the dosers run one after another, and it
-                recirculates for {duration(doc.plan.mix_s)}. Watering in this room waits until it
-                finishes.
-              </DialogDescription>
-            </DialogHeader>
-            <table className="data-table res-plan" aria-label="This batch's doses">
-              <tbody>
-                {doc.plan.doses.map((dose) => (
-                  <tr key={dose.doser}>
-                    <td>
-                      {dose.label} <span className="muted small">doser {dose.doser}</span>
-                    </td>
-                    <td className="numeric">
-                      {number(dose.ml, 1)}
-                      <span className="unit"> mL</span>
-                    </td>
-                    <td className="numeric">{duration(dose.seconds)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {refusal && (
-              <p className="workspace-message error" role="alert">
-                {refusal} The controller app will not start it.
-              </p>
-            )}
-            {!levelSetUp && (
-              <p className="workspace-message">
-                {attributes.reservoir_distance_sensor
-                  ? "The reservoir's distances when full and when empty are not set"
-                  : "No level sensor is mapped"}
-                , so nothing checks the level first: make sure the fill fits, or it may overflow the
-                reservoir.
-              </p>
-            )}
-            <DialogFooter>
-              <Button variant="ghost" disabled={busy} onClick={() => setConfirm(false)}>
-                Cancel
-              </Button>
-              <Button disabled={busy || !!refusal} onClick={mix}>
-                {busy && <LoaderCircle className="spin" size={16} />} Refill and mix
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       )}
     </>
   );

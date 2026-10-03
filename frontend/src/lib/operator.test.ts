@@ -91,6 +91,13 @@ describe("workspace response transport", () => {
       "services/crop_steering/feed_mix?return_response",
       { room_id: "room:f1_" },
     );
+    // A zone's test shot, from Settings → Rooms & hardware → Tests.
+    await client.operator("test_shot", { room_id: "room:f1_", zone: 2 });
+    expect(callApi).toHaveBeenLastCalledWith(
+      "POST",
+      "services/crop_steering/test_shot?return_response",
+      { room_id: "room:f1_", zone: 2 },
+    );
   });
   it("rejects ordinary acknowledgements and unrecognized operations", async () => {
     const callApi = vi.fn().mockResolvedValue([]),

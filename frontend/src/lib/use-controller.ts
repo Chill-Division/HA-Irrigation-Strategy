@@ -452,7 +452,7 @@ export class ControllerStore {
   operator = async <T>(action: OperatorAction, data: Record<string, unknown> = {}): Promise<T> => {
     const generation = this.generation;
     const roomId = this.roomId;
-    const scoped = ["strategy_", "runs_", "stock_", "feed_"].some((family) =>
+    const scoped = ["strategy_", "runs_", "stock_", "feed_", "test_"].some((family) =>
       action.startsWith(family),
     );
     const payload = scoped ? { ...data, room_id: roomId } : data;

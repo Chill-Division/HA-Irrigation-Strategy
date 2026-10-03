@@ -76,6 +76,17 @@ async function go(route, room = "room:") {
     waitUntil: "networkidle",
   });
 }
+/** Opens one of a menu section's views in the app, keeping what the demo has done so far. */
+async function openView(section, view) {
+  await page
+    .locator(".desktop-sidebar")
+    .getByRole("button", { name: section, exact: true })
+    .click();
+  await page
+    .getByRole("navigation", { name: `${section} views` })
+    .getByRole("button", { name: view, exact: true })
+    .click();
+}
 /** Opens a zone's details from the Overview's zone table, by its name. */
 async function openZone(name) {
   await page.locator(".zone-table-desktop").getByRole("button", { name, exact: true }).click();
@@ -425,15 +436,22 @@ try {
     );
     await page.screenshot({ path: img("reservoir.png") });
 
-    // At 29%, with 1% holding 2.07 L, a 150 L fill (about 72%) could overflow it: asking says why not.
-    await page.getByRole("button", { name: "Mix a batch now" }).click();
+    // A refill by hand is a test, under Tests in Settings → Rooms & hardware. At 29%, with 1% holding
+    // 2.07 L, a 150 L fill (about 72%) could overflow it: the dialog says why the controller would not
+    // start it, and only someone who has checked that it fits can run it anyway.
+    await batch.getByRole("button", { name: "Refill by hand…" }).click();
+    const tests = page.locator("[data-room-tests]");
+    await expectVisible(tests);
+    await tests.getByRole("button", { name: "Run a test refill" }).click();
     let dialog = page.getByRole("dialog");
     await expectVisible(dialog.getByText(/reads 29%, and its 150 L fill adds about 72%, so it could overflow/));
-    const confirm = dialog.getByRole("button", { name: "Refill and mix", exact: true });
-    assert.equal(await confirm.isDisabled(), true);
-    await axe("reservoir mix refused");
+    assert.equal(await dialog.getByRole("button", { name: "Refill and mix", exact: true }).isDisabled(), true);
+    await dialog.getByLabel(/Run anyway: I have checked that the reservoir has room for 150\sL/).check();
+    assert.equal(await dialog.getByRole("button", { name: "Refill and mix anyway" }).isDisabled(), false);
+    await axe("test refill that could overflow, run anyway");
     await dialog.getByRole("button", { name: "Cancel" }).click();
     await dialog.waitFor({ state: "hidden" });
+    await openView("Feed", "Reservoir");
 
     // Drag Core's doser below Balance's by its handle, as with a finger or a mouse.
     const rows = page.locator(".res-doser");
@@ -469,16 +487,46 @@ try {
     assert.deepEqual(stages, ["None: no batches", "Flower", "Vege"]);
     assert.deepEqual(await steps(), [...fill, "Cleanse", "Bloom", "Balance", "Core", "Recirculate"]);
 
-    await page.getByRole("button", { name: "Mix a batch now" }).click();
+    await batch.getByRole("button", { name: "Refill by hand…" }).click();
+    await tests.getByRole("button", { name: "Run a test refill" }).click();
     dialog = page.getByRole("dialog");
     await dialog.getByRole("button", { name: "Refill and mix", exact: true }).click();
-    await expectVisible(page.getByText(/Batch asked for at .*within a minute/));
+    await expectVisible(tests.getByText(/Test refill asked for at .*within a minute/));
+    // One runs now: no other can be asked for until it is done.
+    assert.equal(await tests.getByRole("button", { name: "Run a test refill" }).isDisabled(), true);
+    await openView("Feed", "Reservoir");
     assert.equal(await batch.getAttribute("data-batch-status"), "filling");
     await expectVisible(batch.getByText(/s left$/));
-    assert.equal(await page.getByRole("button", { name: "Mix a batch now" }).isDisabled(), true);
     await axe("reservoir while a batch fills");
     await noOverflow();
     await page.setViewportSize({ width: 390, height: 844 });
+    await noOverflow();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+  });
+  await check("tests: a zone's test shot says what it gives, and is asked for once confirmed", async () => {
+    await go("setup");
+    const tests = page.locator("[data-room-tests]");
+    await expectVisible(tests);
+    await tests.getByLabel("Zone").selectOption({ label: "Zone 2" });
+    await tests.getByRole("button", { name: "Run a test shot" }).click();
+    const dialog = page.getByRole("dialog", { name: "Water Zone 2 for 10 seconds now?" });
+    // 36 plants with one 4 L/h dripper each: 10 s gives 0.4 L.
+    await expectVisible(dialog.getByText(/About 0\.4 L across 36 plants, 11 mL each/));
+    await axe("test shot dialog");
+    await dialog.getByRole("button", { name: "Run the test shot" }).click();
+    await expectVisible(tests.getByText(/Test shot for Zone 2 asked for at .*within a minute/));
+    // A change not saved yet: a test runs on the saved configuration, so none runs until it is.
+    await page.getByLabel("Room name").fill("Renamed");
+    await expectVisible(tests.getByText("Save or discard your changes first"));
+    assert.equal(await tests.getByRole("button", { name: "Run a test shot" }).isDisabled(), true);
+    await inBothThemes("rooms & hardware tests", async () => {
+      await go("setup");
+      await page.locator("[data-room-tests]").scrollIntoViewIfNeeded();
+      await expectVisible(page.locator("[data-room-tests]"));
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await go("setup");
+    await page.locator("[data-room-tests]").scrollIntoViewIfNeeded();
     await noOverflow();
     await page.setViewportSize({ width: 1440, height: 1000 });
   });

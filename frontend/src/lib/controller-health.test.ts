@@ -318,6 +318,9 @@ describe("zone status text", () => {
     expect(view(states).zones[0].status).toBe("Holding dryback");
     states[DECISION].attributes.fired = ["Z1 P3 P3 emergency VWC 49<50"];
     expect(view(states).zones[0].status).toBe("Emergency");
+    // A test shot asked for from Settings → Rooms & hardware → Tests, in any phase.
+    states[DECISION].attributes.fired = ["Z1 P3 TEST shot 10 s (asked for)"];
+    expect(view(states).zones[0].status).toBe("Test shot");
   });
   it("never shows the fixed-threshold 'Dry - Needs Water' during P3, live or not", () => {
     const states = fixture([integration(1, "Dry - Needs Water")]);
