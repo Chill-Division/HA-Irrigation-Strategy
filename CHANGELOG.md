@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   between releases (a fresh install, a Rebuild) builds what is merged on `main` then, under the last
   released number, so merges are made close to releasing. An assistant merges a pull request or
   runs the release command only when the owner asks, each time.
+- CI: the pull request template says a pull request goes into `main`, and the comment on
+  Validate's `main` trigger no longer mentions `testing`.
 
 ## [2.35.2] - 2026-10-04
 
