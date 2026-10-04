@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Compact dosers.** On the Reservoir page each doser is a small card, like the schedule's weeks:
   what it pumps in the stage in use and its flow, side by side instead of a row each across the
   page, with what they mean behind a **?**.
+- **Light by default.** The dashboard opens light, whatever the device is set to. **Settings →
+  Appearance** can still follow Home Assistant's theme (or the device's, outside Home Assistant) or
+  stay dark: each browser keeps its own choice, and one already made is kept.
 
 ### 🔧 Technical notes
 
@@ -32,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard: the Reservoir page's dosers are small cards in a wrapping grid (each its number, what it
   pumps in the stage in use, and its flow in mL/min, with its switch's entity id as its tooltip); the
   note under them is a **?** popover beside the heading, reworded. Popovers space their paragraphs.
+- Dashboard: with no appearance saved in the browser (`irrigation-theme`), the dashboard is light
+  (`themePreference` defaults to `light`, not `auto`); Appearance's options are Home Assistant, Light
+  and Dark, in one row on a laptop. The browser checks that emulate a dark device save `auto` first
+  where nothing is saved, so they still check the dark theme and the README's dark screenshots stay.
 - Docs: the user guide's Overview; the Overview screenshot.
 - Tests: the grow-day browser checks read the zone lines and the key through their popovers, and
   check the key's popover on a dark theme.

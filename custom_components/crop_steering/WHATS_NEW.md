@@ -24,6 +24,7 @@ version being released.
 ## Unreleased
 
 - A tidier Overview: each zone's predictions and the chart's key are a tap away, under the grow day.
+- The dashboard opens in light mode; Settings → Appearance can still follow Home Assistant or go dark.
 
 ## 2.34.0 - 2026-10-04
 
