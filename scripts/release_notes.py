@@ -3,8 +3,8 @@
 
     python scripts/release_notes.py 2.25.0
 
-scripts/release.py publishes every release with these notes: the entry's opening paragraph and
-its "🌱 In plain English" section, with a link to the technical notes at that tag. HACS shows a
+scripts/release.py publishes every release with these notes: the entry up to its technical notes
+(its opening paragraph and what changed, for anyone), with a link to the technical notes at that tag. HACS shows a
 release's notes in its update dialog, so this is what the people updating read. Links in the
 changelog are relative to the repository; on a release page they would break, so they are
 rewritten to point at the files at that tag.
@@ -18,7 +18,6 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PLAIN = "### 🌱 In plain English"
 
 
 def entry(changelog: str, version: str) -> str:
@@ -59,14 +58,13 @@ def unwrap(text: str) -> str:
 
 
 def notes(changelog: str, version: str, repository: str) -> str:
-    body = entry(changelog, version)
-    if PLAIN not in body:
-        raise SystemExit(f"the {version} entry has no '{PLAIN}' section")
-    opening, _, after = body.partition(PLAIN)
-    plain = re.split(r"^### ", after, maxsplit=1, flags=re.M)[0]
+    # What changed, for anyone: everything before the entry's first ### heading, its technical notes.
+    summary = re.split(r"^### ", entry(changelog, version), maxsplit=1, flags=re.M)[0].strip()
+    if not re.search(r"^- ", summary, re.M):
+        raise SystemExit(f"the {version} entry says nothing before its technical notes")
     at_tag = f"{repository}/blob/v{version}"
     text = (
-        f"{unwrap(opening.strip())}\n\n{PLAIN}\n\n{unwrap(plain.strip())}\n\n"
+        f"{unwrap(summary)}\n\n"
         f"Technical notes: [CHANGELOG.md at v{version}]({at_tag}/CHANGELOG.md)\n"
     )
     # [text](docs/INSTALL.md) -> [text](<repository>/blob/v<version>/docs/INSTALL.md)
@@ -83,7 +81,7 @@ def main(argv: list[str]) -> None:
         )
     )
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-    # The notes carry "🌱", which a Windows console or pipe (cp1252) cannot encode.
+    # The notes may carry emoji, which a Windows console or pipe (cp1252) cannot encode.
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stdout.write(notes(changelog, version, manifest["documentation"].rstrip("/")))
 

@@ -1,7 +1,7 @@
 """A release's GitHub notes come from its changelog entry (scripts/release_notes.py).
 
 HACS shows a release's notes in its update dialog. They were one line ("Candidate. Pair:
-controller 0.16.5 ..."); the plain-English section written for exactly those readers stayed in
+controller 0.16.5 ..."); what each entry says first, for exactly those readers, stayed in
 CHANGELOG.md.
 """
 
@@ -25,16 +25,12 @@ CHANGELOG = """# Changelog
 
 ## [Unreleased]
 
-### 🌱 In plain English
-
 - Not released yet.
 
 ## [2.21.0] - 2026-10-01
 
 Pair: one number. Not run on
 hardware.
-
-### 🌱 In plain English
 
 - **Error codes.** See [Error codes](docs/ERROR_CODES.md) and [HACS](https://hacs.xyz),
   wrapped onto a second line.
@@ -50,10 +46,10 @@ No plain section here.
 """
 
 
-def test_the_notes_are_the_opening_and_the_plain_english_section():
+def test_the_notes_are_the_entry_up_to_its_technical_notes():
     text = release_notes.notes(CHANGELOG, "2.21.0", REPO)
     assert text.startswith("Pair: one number. Not run on hardware.")
-    assert "### 🌱 In plain English" in text and "**Error codes.**" in text
+    assert "**Error codes.**" in text and "In plain English" not in text
     assert "Technical notes" in text and "controller.py internals" not in text
     assert "Not released yet" not in text
     assert text.rstrip().endswith(f"({REPO}/blob/v2.21.0/CHANGELOG.md)")
@@ -68,7 +64,7 @@ def test_relative_links_point_at_the_files_at_that_tag():
 def test_a_missing_entry_or_section_is_refused():
     with pytest.raises(SystemExit, match="no entry for 9.9.9"):
         release_notes.notes(CHANGELOG, "9.9.9", REPO)
-    with pytest.raises(SystemExit, match="no '### 🌱 In plain English' section"):
+    with pytest.raises(SystemExit, match="says nothing before its technical notes"):
         release_notes.notes(CHANGELOG, "2.20.0", REPO)
 
 
@@ -76,7 +72,7 @@ def test_the_newest_release_in_this_repository_has_notes():
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     newest = re.search(r"^## \[(\d+\.\d+\.\d+)\]", changelog, re.M).group(1)
     text = release_notes.notes(changelog, newest, REPO)
-    assert "### 🌱 In plain English" in text and len(text) > 200
+    assert "\n- " in text and len(text) > 200
 
 
 def test_wrapped_lines_are_joined_into_their_paragraph_or_bullet():
@@ -87,14 +83,25 @@ def test_wrapped_lines_are_joined_into_their_paragraph_or_bullet():
 
 def test_the_script_writes_utf8_where_the_console_cannot():
     """`--notes-file <(python scripts/release_notes.py ...)` on Windows: that pipe is cp1252,
-    which has no 🌱, so the script died before writing a line and the release got empty notes.
+    which had no 🌱 for the heading the notes once carried, so the script died before writing a
+    line and the release got empty notes. An arrow in a release's own words does the same.
     """
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-    newest = re.search(r"^## \[(\d+\.\d+\.\d+)\]", changelog, re.M).group(1)
+
+    def cp1252(text):
+        try:
+            return text.encode("cp1252") is not None
+        except UnicodeEncodeError:
+            return False
+
+    released = re.findall(r"^## \[(\d+\.\d+\.\d+)\]", changelog, re.M)
+    version = next(
+        v for v in released if not cp1252(release_notes.notes(changelog, v, REPO))
+    )
     run = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "release_notes.py"), newest],
+        [sys.executable, str(ROOT / "scripts" / "release_notes.py"), version],
         capture_output=True,
         env={**os.environ, "PYTHONIOENCODING": "cp1252"},
     )
     assert run.returncode == 0, run.stderr.decode(errors="replace")
-    assert "### 🌱 In plain English" in run.stdout.decode("utf-8")
+    assert not cp1252(run.stdout.decode("utf-8"))

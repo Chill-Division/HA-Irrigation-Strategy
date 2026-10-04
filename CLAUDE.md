@@ -155,9 +155,9 @@ the shot. Lives in the f2-control add-on (`addons/f2_control/`).
   `Co-Authored-By: Claude` trailer when written via Claude Code. One long-lived branch, `main`;
   everything else is a short-lived proposal branched from it, deleted once its pull request is
   merged or closed.
-- **Changelog = dual view.** Every release in `CHANGELOG.md` leads with **🌱 In plain English** (anyone
-  can follow it) then **🔧 Technical notes** (entity/code detail). Each pull request adds its lines
-  to both, under `## [Unreleased]`.
+- **Changelog = dual view.** Every release in `CHANGELOG.md` leads with what changed, in words anyone
+  can follow and under no heading of its own, then **🔧 Technical notes** (entity/code detail). Each
+  pull request adds its lines to both, under `## [Unreleased]`.
 - **What's new = for growers.** A change a grower would notice also adds one line under
   `## Unreleased` in `custom_components/crop_steering/WHATS_NEW.md`, which the dashboard shows once
   after an update: plain words (what they can now do or see, not how), with no entity ids, error

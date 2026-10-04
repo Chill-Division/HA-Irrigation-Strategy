@@ -32,8 +32,6 @@ Intro.
 
 Two changes.
 
-### 🌱 In plain English
-
 - **A thing.** It is better.
 
 ### 🔧 Technical notes
@@ -43,8 +41,6 @@ Two changes.
 ## [2.24.0] - 2026-09-26
 
 Pair: **controller 2.24.0**.
-
-### 🌱 In plain English
 
 - Older.
 """
@@ -161,11 +157,17 @@ def test_it_refuses_a_release_nobody_has_written_up():
             "9.9.9",
             DAY,
         )
-    plain = CHANGELOG.replace(
-        "### 🌱 In plain English\n\n- **A thing.** It is better.\n\n", ""
+    # Nothing before the technical notes says what changed, for anyone.
+    unsaid = CHANGELOG.replace("- **A thing.** It is better.\n\n", "")
+    with pytest.raises(release.Refused, match="what this release changes"):
+        release.prepare(_files(**{release.CHANGELOG: unsaid}), "9.9.9", DAY)
+    # Written under the heading the changelog no longer has: the same.
+    headed = CHANGELOG.replace(
+        "- **A thing.** It is better.",
+        "### 🌱 In plain English\n\n- **A thing.** It is better.",
     )
-    with pytest.raises(release.Refused, match="In plain English"):
-        release.prepare(_files(**{release.CHANGELOG: plain}), "9.9.9", DAY)
+    with pytest.raises(release.Refused, match="what this release changes"):
+        release.prepare(_files(**{release.CHANGELOG: headed}), "9.9.9", DAY)
     stray = WHATS_NEW.replace("## Unreleased\n", "## Unreleased\n\nA paragraph.\n")
     with pytest.raises(release.Refused, match="only '- ' lines"):
         release.prepare(_files(**{release.WHATS_NEW: stray}), "9.9.9", DAY)
