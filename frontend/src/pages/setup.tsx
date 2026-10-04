@@ -24,14 +24,9 @@ import { Heading, Empty } from "@/components/dashboard";
 import { WateringPower } from "@/components/room-controls";
 import { RoomTests } from "@/components/room-tests";
 import { Pill } from "@/components/mini-visuals";
-import {
-  SizingField,
-  SizingUnitPickers,
-  SubstratePresetPicker,
-  useSizingUnits,
-} from "@/components/zone-sizing";
+import { SizingField, SubstratePresetPicker } from "@/components/zone-sizing";
 import type { Controller } from "@/lib/types";
-import { SIZING_UNITS, reviewValue, sizingError, stateText } from "@/lib/units";
+import { reviewValue, sizingError, stateText } from "@/lib/units";
 import {
   PLUMBING_HINTS,
   PLUMBING_LABELS,
@@ -221,7 +216,6 @@ export function Setup({
     [notice, setNotice] = useState("");
   const [review, setReview] = useState<"save" | "remove" | null>(null),
     [confirmName, setConfirmName] = useState("");
-  const units = useSizingUnits();
   const dirty = !!draft && (isNew || JSON.stringify(draft) !== JSON.stringify(original));
   const connected = ["live", "demo"].includes(controller.connection);
   useLayoutEffect(() => {
@@ -353,14 +347,10 @@ export function Setup({
         (z) =>
           !Number.isInteger(z.plant_count) ||
           z.plant_count < 1 ||
-          !!sizingError(
-            z.substrate_volume ?? NaN,
-            "substrate_volume",
-            SIZING_UNITS.volume.metric,
-          ) ||
+          !!sizingError(z.substrate_volume ?? NaN, "substrate_volume") ||
           !Number.isFinite(z.drippers_per_plant) ||
           Number(z.drippers_per_plant) < 1 ||
-          !!sizingError(z.dripper_flow_rate ?? NaN, "dripper_flow_rate", SIZING_UNITS.flow.metric),
+          !!sizingError(z.dripper_flow_rate ?? NaN, "dripper_flow_rate"),
       )
     )
       errors.push("Enter valid plant counts, pot volumes and dripper sizing.");
@@ -706,7 +696,6 @@ export function Setup({
                     Add zone
                   </Button>
                 </div>
-                <SizingUnitPickers units={units} disabled={busy} />
                 <div className="setup-zones">
                   {activeZones.map((zone) => (
                     <section className="setup-zone" key={zone.id}>
@@ -768,7 +757,6 @@ export function Setup({
                               key={key}
                               id={"zone-" + zone.id + "-" + key}
                               sizingKey={key}
-                              unit={key === "substrate_volume" ? units.volume : units.flow}
                               value={zone[key] ?? NaN}
                               disabled={busy}
                               onChange={(metric) => editZone(zone.id, { [key]: metric })}
@@ -964,9 +952,9 @@ export function Setup({
                   </p>
                   <p>
                     {z.plant_count} plants ×{" "}
-                    {reviewValue(z.substrate_volume ?? NaN, "substrate_volume", units.volume)} ·{" "}
+                    {reviewValue(z.substrate_volume ?? NaN, "substrate_volume")} ·{" "}
                     {z.drippers_per_plant} drippers per plant ×{" "}
-                    {reviewValue(z.dripper_flow_rate ?? NaN, "dripper_flow_rate", units.flow)}
+                    {reviewValue(z.dripper_flow_rate ?? NaN, "dripper_flow_rate")}
                   </p>
                 </div>
               ))}

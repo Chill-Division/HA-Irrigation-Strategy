@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gone, here and on the release page; the summary and the technical notes are as before.
 - **No catch-test calculator.** Rooms & hardware no longer works out dripper flow from a catch
   test. Pressure-compensating drippers give a fixed flow: type the number on the dripper.
+- **Litres only.** Pot volume is typed in litres and dripper flow in litres per hour; the US gallon
+  and GPH choices are gone. Nothing saved changes: it was always kept in litres.
 
 ### 🔧 Technical notes
 
@@ -35,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard: `CatchTestCalculator` and `frontend/src/lib/catch-test.ts` are removed, with their
   styles, unit tests, browser check and the user guide's paragraph. The substrate-preset browser
   check now runs the accessibility scan of the zone's sizing helpers that the catch-test check ran.
+- Dashboard: the sizing unit pickers, their US gallon and GPH conversions and the per-browser
+  choice are removed (`crop-steering-unit-volume` and `-flow` in local storage are no longer
+  read). `SizingField`, `sizingError` and `reviewValue` take litres and L/h only, with their unit
+  tests and two browser checks trimmed to match.
 
 ## [2.35.2] - 2026-10-04
 

@@ -23,7 +23,7 @@ version being released.
 
 ## Unreleased
 
-- Rooms & hardware is simpler: no catch-test calculator.
+- Rooms & hardware is simpler: litres only, and no catch-test calculator.
 
 ## 2.35.2 - 2026-10-04
 
