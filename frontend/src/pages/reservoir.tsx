@@ -13,12 +13,14 @@ import {
   Beaker,
   Check,
   CircleHelp,
+  Download,
   GripVertical,
   LoaderCircle,
   Minus,
   Plus,
   Sparkles,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { Popover } from "radix-ui";
 import { Button } from "@/components/ui/button";
@@ -66,6 +68,16 @@ import {
   timeLeft,
   type BatchStatus,
 } from "@/lib/feed-status";
+import {
+  TEMPLATES,
+  TEMPLATE_GROUPS,
+  exportName,
+  exportRecipe,
+  importRecipe,
+  placeRecipe,
+  placedNote,
+  type PortableRecipe,
+} from "@/lib/feed-library";
 import { descriptor } from "@/lib/model";
 import type { Controller } from "@/lib/types";
 import { errorText } from "@/lib/utils";
@@ -99,6 +111,16 @@ const HINTS: Record<keyof FeedSettings, string> = {
   mix_s:
     "The least the pump and recirculation run after the last dose. Normally the fill is still going, and they run until it ends.",
 };
+
+/** `text` downloaded as the file `name`. */
+function download(text: string, name: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 /** Seconds that tick while a step counts down. */
 function useNow(active: boolean) {
@@ -559,6 +581,7 @@ function RecipeCard({
 }) {
   const id = useId();
   const body = useRef<HTMLTableSectionElement>(null);
+  const label = recipe.name || `feed recipe ${index + 1}`;
   const [dragging, setDragging] = useState<number | null>(null);
   const [said, setSaid] = useState("");
   const total = perLitre(recipe);
@@ -640,7 +663,17 @@ function RecipeCard({
           type="button"
           variant="ghost"
           size="icon"
-          aria-label={`Remove ${recipe.name || `feed recipe ${index + 1}`}`}
+          aria-label={`Export ${label}`}
+          title="Export to a recipe file"
+          onClick={() => download(exportRecipe(recipe), exportName(recipe))}
+        >
+          <Download size={16} />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={`Remove ${label}`}
           onClick={onRemove}
         >
           <Trash2 size={16} />
@@ -994,6 +1027,11 @@ export function Reservoir({
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const listId = useId();
+  // What a new feed recipe starts from (a template's id, or "" for a blank one), and what the last one
+  // added, or a recipe file that could not be, said.
+  const [template, setTemplate] = useState("");
+  const [added, setAdded] = useState<{ text: string; error: boolean } | null>(null);
+  const file = useRef<HTMLInputElement>(null);
   useEffect(() => {
     let current = true;
     setDoc(null);
@@ -1037,6 +1075,36 @@ export function Reservoir({
   const stage = draft?.recipes.find((r) => r.id === using);
   const week = draft ? scheduleWeek(draft, today) : null;
   const holding = draft ? heldUntil(draft, today) : null;
+  const full = !doc || !draft || draft.recipes.length >= doc.max_recipes;
+
+  /** A new feed recipe: blank (named for the next stage), or a template's or a recipe file's, each
+   * nutrient on the doser that carries it, saying where any went that no recipe here names. */
+  function add(source: PortableRecipe | null) {
+    if (!draft || full) return;
+    if (!source) {
+      const name =
+        STAGE_NAMES.find(
+          (stageName) =>
+            !draft.recipes.some((r) => r.name.trim().toLowerCase() === stageName.toLowerCase()),
+        ) ?? "";
+      setDraft({ ...draft, recipes: [...draft.recipes, newRecipe(draft, mapped, name)] });
+      setAdded(null);
+      return;
+    }
+    const { recipe, placed, unplaced } = placeRecipe(source, draft, mapped);
+    setDraft({ ...draft, recipes: [...draft.recipes, recipe] });
+    setAdded({ text: placedNote(recipe.name, placed, unplaced), error: false });
+  }
+  async function importFile(chosen: File | undefined) {
+    if (!chosen) return;
+    try {
+      add(importRecipe(await chosen.text()));
+    } catch (err) {
+      setAdded({ text: errorText(err), error: true });
+    } finally {
+      if (file.current) file.current.value = "";
+    }
+  }
 
   async function save() {
     if (!doc || !draft) return;
@@ -1283,31 +1351,57 @@ export function Reservoir({
                   litre one part is. Each nutrient is the bottle on that doser in that stage.
                 </p>
               </div>
-              <Button
-                variant="outline"
-                disabled={draft.recipes.length >= doc.max_recipes}
-                onClick={() =>
-                  setDraft({
-                    ...draft,
-                    recipes: [
-                      ...draft.recipes,
-                      newRecipe(
-                        draft,
-                        mapped,
-                        STAGE_NAMES.find(
-                          (name) =>
-                            !draft.recipes.some(
-                              (r) => r.name.trim().toLowerCase() === name.toLowerCase(),
-                            ),
-                        ) ?? "",
-                      ),
-                    ],
-                  })
-                }
-              >
-                <Plus size={16} /> Add a feed recipe
-              </Button>
+              <div className="res-recipes-actions">
+                <Label htmlFor={`${listId}-template`} className="sr-only">
+                  Start from
+                </Label>
+                <select
+                  id={`${listId}-template`}
+                  className="res-select"
+                  value={template}
+                  onChange={(event) => setTemplate(event.target.value)}
+                >
+                  <option value="">Blank recipe</option>
+                  {TEMPLATE_GROUPS.map(({ group, templates }) => (
+                    <optgroup key={group} label={group}>
+                      {templates.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                <Button
+                  variant="outline"
+                  disabled={full}
+                  onClick={() => add(TEMPLATES.find((t) => t.id === template) ?? null)}
+                >
+                  <Plus size={16} /> Add a feed recipe
+                </Button>
+                <Button variant="outline" disabled={full} onClick={() => file.current?.click()}>
+                  <Upload size={16} /> Import recipe file
+                </Button>
+                <input
+                  ref={file}
+                  className="sr-only"
+                  type="file"
+                  accept="application/json,.json"
+                  aria-label="Import a feed recipe file"
+                  tabIndex={-1}
+                  onChange={(event) => void importFile(event.target.files?.[0])}
+                />
+              </div>
             </div>
+            {added && (
+              <p
+                className={`workspace-message${added.error ? " error" : ""}`}
+                role={added.error ? "alert" : "status"}
+                data-recipe-added
+              >
+                {added.text}
+              </p>
+            )}
             <datalist id={`${listId}-stages`}>
               {STAGE_NAMES.map((name) => (
                 <option key={name} value={name} />

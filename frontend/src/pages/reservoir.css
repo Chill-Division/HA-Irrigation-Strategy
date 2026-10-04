@@ -273,6 +273,20 @@
 .res-recipes .workspace-section-heading {
   margin-bottom: 12px;
 }
+/* What a new recipe starts from, adding it, and a recipe file: a line of their own under the
+   heading, wrapping on a phone. */
+.res-recipes-actions {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.res-recipes-actions .res-select {
+  width: auto;
+  max-width: 100%;
+  margin: 0;
+}
 .res-recipes h2 {
   font-size: var(--text-lg);
   font-weight: 600;
