@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Light screenshots.** The README's and the screenshots page's pictures are light, as the
   dashboard now opens, with three from a phone: the Overview, the Reservoir and today's targets.
+- **The Overview's VWC and EC tiles say how they are read.** A room of one zone shows that zone's
+  reading named for its probe choice: a zone reading its lowest probe shows **Lowest VWC**, where
+  it said Average VWC. Several zones show their average, named for the choice they share
+  (**Average lowest VWC**). A zone with one probe has no choice to make, and zones that choose
+  differently show **Average VWC** as before. Moisture and EC each follow their own choice.
 
 ### 🔧 Technical notes
 
@@ -24,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hardware images, and the new `mobile-reservoir.png` and `mobile-plan.png`, come from a light check
   of their own, its Home Assistant dark-palette pages now only in `output/`. The README's images
   load from `ChillingSilence/HA-Irrigation-Strategy` until the public repository exists.
+- Dashboard: `readingTile` (`frontend/src/lib/probes.ts`) names the room's VWC and EC tiles from
+  each zone's `ProbeChoice`. One zone's is `<method> VWC`; several zones' is
+  `Average <method> VWC` when every zone with two or more probe readings uses that method, else
+  `Average VWC`. `buildRoom` builds both tiles with it; their values and Range captions are
+  unchanged. Tests: `probes.test.ts` (the names, and the demo's room with three zones and with
+  one) and `verify-dashboard.mjs` (the tiles once zone 1's moisture reads its lowest probe).
 
 ## [2.35.0] - 2026-10-04
 

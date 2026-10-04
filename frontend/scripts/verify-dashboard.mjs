@@ -857,6 +857,9 @@ try {
     // EC is its own choice, still the average.
     assert.equal(await sheet.getByLabel("EC from 2 probes").inputValue(), "Average");
     await page.keyboard.press("Escape");
+    // The room's tiles say how its zones read their probes: zone 1, the one with two, its lowest.
+    const tiles = await page.locator(".metric-item .eyebrow").allTextContents();
+    assert.deepEqual(tiles.slice(0, 2), ["Average lowest VWC", "Average EC"]);
   });
   await check(
     "zone details: readings as meters, water against its limit, dryback, state pills",
