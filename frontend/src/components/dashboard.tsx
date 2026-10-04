@@ -45,6 +45,7 @@ import { waitingText } from "@/lib/waiting-for";
 import {
   mlPerPlant,
   plantAmount,
+  plantText,
   roomPerPlant,
   useWaterView,
   waterTodayLabel,
@@ -704,15 +705,11 @@ export function DrybackRate({
 }
 
 /** Water for one plant: mL below a litre, litres from one up. */
-const plantText = (ml: number) => {
-  const { value, unit, digits } = plantAmount(ml);
-  return `${number(value, digits)} ${unit}`;
-};
 export function PlantAmount({ ml }: { ml: number }) {
-  const { value, unit, digits } = plantAmount(ml);
+  const { value, unit } = plantAmount(ml);
   return (
     <>
-      {number(value, digits)}
+      {value}
       <span className="unit"> {unit}</span>
     </>
   );

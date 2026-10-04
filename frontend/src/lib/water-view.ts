@@ -65,11 +65,23 @@ export const mlPerPlant = (litres: number | null, plants: number | null) =>
     ? null
     : (litres * 1000) / plants;
 
-/** Water for one plant, in mL below a litre and in litres from one up. */
-export function plantAmount(ml: number): { value: number; unit: "mL" | "L"; digits: number } {
-  return ml < 1000
-    ? { value: ml, unit: "mL", digits: 0 }
-    : { value: ml / 1000, unit: "L", digits: 1 };
+/** Water for one plant as it reads: whole mL below a litre, litres to two places from one up. Which
+ * it is goes by the mL as they would read, so 999.6 mL is 1.00 L, not "1,000 mL". */
+export function plantAmount(ml: number): { value: string; unit: "mL" | "L" } {
+  const litres = Math.round(ml) >= 1000;
+  const digits = litres ? 2 : 0;
+  return {
+    value: (litres ? ml / 1000 : ml).toLocaleString(undefined, {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    }),
+    unit: litres ? "L" : "mL",
+  };
+}
+/** The same in words: "980 mL", "1.26 L". */
+export function plantText(ml: number): string {
+  const { value, unit } = plantAmount(ml);
+  return `${value} ${unit}`;
 }
 
 /** The room's water today per plant: every zone whose water and plant count are known, each
