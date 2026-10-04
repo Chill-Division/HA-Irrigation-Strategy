@@ -17,7 +17,7 @@ import { readWaiting } from "./waiting-for";
 import { DRYBACK_UNIT, PHASE_GROUPS, settingWords } from "./setting-words";
 import { ageText, controllerZoneLabel, readHeartbeat, RESTING } from "./controller-health";
 import { BATCH_SWITCH_KEYS } from "./feed";
-import { readProbes } from "./probes";
+import { readProbes, readingTile } from "./probes";
 
 const ROOT = "crop_steering_";
 export const ZONE_PARAMETERS = new Set([
@@ -645,6 +645,10 @@ export function buildRoom(states: States, room: Room): RoomView {
           : null,
     };
   };
+  const tile = (key: "vwc" | "ec", reading: "VWC" | "EC", unit: string) => {
+    const choices = zones.map((zone) => zone.probes[key]);
+    return aggregate(key, readingTile(reading, choices), unit, true);
+  };
   // Zones with the identical problem share one notice instead of one each.
   const problems = new Map<string, { kind: "sensors" | "status"; detail: string; zones: Zone[] }>();
   for (const zone of zones) {
@@ -778,8 +782,9 @@ export function buildRoom(states: States, room: Room): RoomView {
       enabled: boolean(engineEntity),
     },
     metrics: [
-      aggregate("vwc", "Average VWC", "%", true),
-      aggregate("ec", "Average EC", "mS/cm", true),
+      // Named for how the zones read their probes: one zone's is its own reading ("Lowest VWC").
+      tile("vwc", "VWC", "%"),
+      tile("ec", "EC", "mS/cm"),
       aggregate("water", "Water today", "L"),
       aggregate("shots", "Shots today", ""),
     ],

@@ -69,3 +69,15 @@ export function choiceLabel(
       : undefined;
   return `${option} — ${format(value)}${unit}${probe ? ` (${probe.name})` : ""}`;
 }
+
+/** What the room's tile for a reading from probes is called. One zone's is that zone's reading,
+ * named for its choice ("Lowest VWC"); several zones' is their average, named for the choice they
+ * share ("Average lowest VWC"). Only a zone with two or more probes has a choice to make. */
+export function readingTile(reading: "VWC" | "EC", choices: (ProbeChoice | null)[]): string {
+  const methods = new Set(
+    choices.flatMap((choice) => (choice && choice.readings.length > 1 ? [choice.method] : [])),
+  );
+  const [method = "Average"] = methods.size === 1 ? methods : [];
+  if (choices.length === 1) return `${method} ${reading}`;
+  return method === "Average" ? `Average ${reading}` : `Average ${method.toLowerCase()} ${reading}`;
+}

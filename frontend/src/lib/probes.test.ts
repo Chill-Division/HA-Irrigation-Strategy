@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { choiceLabel, readProbes } from "./probes";
+import { choiceLabel, readProbes, readingTile, type ProbeChoice } from "./probes";
 import { buildRoom, discoverRooms, validateChange } from "./model";
 import { createDemo, demoReact } from "./demo";
 import type { EntityState, States } from "./types";
@@ -51,6 +51,47 @@ describe("how a zone's probes are read", () => {
     expect(readProbes(states, undefined, select)).toBeNull();
     // A select not there yet: the sensor's own word for the choice.
     expect(readProbes(states, sensor(GR2), undefined)?.method).toBe("Lowest");
+  });
+});
+
+describe("the room's tiles for readings from probes", () => {
+  const choice = (method: string, probes = 2) =>
+    ({ method, readings: Array.from({ length: probes }, () => ({})) }) as ProbeChoice;
+  it("name one zone's reading for its choice: Lowest VWC for its lowest probe", () => {
+    expect(readingTile("VWC", [choice("Lowest")])).toBe("Lowest VWC");
+    expect(readingTile("EC", [choice("Average")])).toBe("Average EC");
+    // One probe has no choice to make; an integration from before the choice reads the average.
+    expect(readingTile("VWC", [choice("Lowest", 1)])).toBe("Average VWC");
+    expect(readingTile("VWC", [null])).toBe("Average VWC");
+  });
+  it("name several zones' average for the choice their zones with two or more probes share", () => {
+    expect(readingTile("VWC", [choice("Lowest"), choice("Lowest")])).toBe("Average lowest VWC");
+    // A zone with one probe reads that probe whatever its choice.
+    expect(readingTile("EC", [choice("Median"), choice("Average", 1), null])).toBe(
+      "Average median EC",
+    );
+    // Zones that choose differently: their average, with no one choice to name.
+    expect(readingTile("VWC", [choice("Lowest"), choice("Highest")])).toBe("Average VWC");
+    expect(readingTile("VWC", [choice("Average"), choice("Average")])).toBe("Average VWC");
+  });
+  it("are the Overview's: a room of one zone reading its lowest probe says Lowest VWC", () => {
+    const demo = createDemo();
+    demo["select.crop_steering_zone_1_vwc_method"].state = "Lowest";
+    const room = discoverRooms(demo).find((r) => r.id === "room:")!;
+    // Three zones; zone 1, the one with two probes, reads its lowest for moisture.
+    const labels = () => {
+      const [vwc, ec] = buildRoom(demo, room).metrics;
+      return [vwc.label, ec.label];
+    };
+    expect(labels()).toEqual(["Average lowest VWC", "Average EC"]);
+    // The same room with only its first zone: its tiles are that zone's readings, named for them.
+    const config = demo["sensor.crop_steering_engine_config"];
+    demo[config.entity_id] = {
+      ...config,
+      attributes: { ...config.attributes, num_zones: 1, active_zone_ids: [1] },
+    };
+    expect(buildRoom(demo, room).zones.map((z) => z.id)).toEqual([1]);
+    expect(labels()).toEqual(["Lowest VWC", "Average EC"]);
   });
 });
 
