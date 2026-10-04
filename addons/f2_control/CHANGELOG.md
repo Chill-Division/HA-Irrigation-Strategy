@@ -3,6 +3,7 @@
 - **The dashboard the app serves:** Rooms & hardware no longer has the catch-test calculator. No change to the controller.
 - **The dashboard the app serves:** Rooms & hardware takes pot volume in litres and dripper flow in L/h only. No change to the controller.
 - **The dashboard the app serves:** two Nutrifield sizes in the substrate presets. No change to the controller.
+- **The dashboard the app serves:** the tank card's level comes only from the reservoir's level sensor; the separate tank level sensor in % is no longer a mapping. No change to the controller.
 
 # 2.35.2
 
