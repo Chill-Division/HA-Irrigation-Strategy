@@ -2,19 +2,19 @@
 
 All notable changes to the Advanced Automated Crop Steering System will be documented in this file.
 
-**Two views per release.** Each version leads with **🌱 In plain English** — what changed and why it
-matters, written so anyone can follow it without knowing the internals — followed by **🔧 Technical
-notes**, the entity- and code-level detail for developers and AI agents working on the repo.
+**Two views per release.** Each version leads with what changed and why it matters, written so
+anyone can follow it without knowing the internals, followed by **🔧 Technical notes**, the entity-
+and code-level detail for developers and AI agents working on the repo.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### 🌱 In plain English
-
 - **One branch.** Changes are merged into `main` and released from it; the separate `testing`
   branch is retired. Rooms are still offered an update only at a release.
+- **Release notes start with what changed.** The heading that sat over each release's summary is
+  gone, here and on the release page; the summary and the technical notes are as before.
 
 ### 🔧 Technical notes
 
@@ -26,12 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   runs the release command only when the owner asks, each time.
 - CI: the pull request template says a pull request goes into `main`, and the comment on
   Validate's `main` trigger no longer mentions `testing`.
+- Docs and release tooling: the changelog's summary has no heading of its own, taken out of every
+  entry. `scripts/release.py` refuses an Unreleased section with no `- ` line before
+  `### 🔧 Technical notes`, and `scripts/release_notes.py` publishes an entry up to that heading.
+  `CLAUDE.md` and `docs/RELEASING.md` say so.
 
 ## [2.35.2] - 2026-10-04
 
 Integration and controller **2.35.2**.
-
-### 🌱 In plain English
 
 - **Water per plant in litres to two decimal places.** From a litre up, water per plant reads in
   litres to two places, so 1.04 L reads **1.04 L**, not 1 L; below a litre it stays in whole
@@ -52,8 +54,6 @@ Integration and controller **2.35.2**.
 ## [2.35.1] - 2026-10-04
 
 Integration and controller **2.35.1**.
-
-### 🌱 In plain English
 
 - **Light screenshots.** The README's and the screenshots page's pictures are light, as the
   dashboard now opens, with three from a phone: the Overview, the Reservoir and today's targets.
@@ -81,8 +81,6 @@ Integration and controller **2.35.1**.
 ## [2.35.0] - 2026-10-04
 
 Integration and controller **2.35.0**.
-
-### 🌱 In plain English
 
 - **A tidier Overview.** On Today's grow day, each zone's chart has just its phase and moisture now
   above it; how it is tracking against yesterday, its targets, the water so far and what comes next
@@ -149,8 +147,6 @@ Integration and controller **2.35.0**.
 
 Integration and controller **2.34.0**.
 
-### 🌱 In plain English
-
 - **The nutrients go in while the reservoir fills.** A refill used to run its fresh water for the
   whole fill time and only then dose each nutrient, so it took the fill time and the doses on top.
   Now, half-way through the fill, once the pump and recirculation are running, the doses go in one
@@ -183,8 +179,6 @@ Integration and controller **2.34.0**.
 
 Integration and controller **2.33.1**.
 
-### 🌱 In plain English
-
 - **The tank card charts the reservoir's level.** Beside the tank, the Tank & pump card shows how
   full it has been over the last 24 hours, or 12: a refill as a jump, each round of shots as a step
   down, and the reservoir's minimum as a dashed line. The tank's temperature, where a sensor is
@@ -216,8 +210,6 @@ Integration and controller **2.33.1**.
 
 Integration and controller **2.33.0**.
 
-### 🌱 In plain English
-
 - **The tank card's refills come from the controller.** The Overview's Tank & pump card showed
   "Filling" and "Last fill" only from two Home Assistant sensors you had to map, so most rooms read
   "Not mapped" there. It now shows the controller's own record of the reservoir refills it runs:
@@ -247,8 +239,6 @@ Integration and controller **2.33.0**.
 
 Integration and controller **2.32.2**.
 
-### 🌱 In plain English
-
 - **The reservoir's level reads while it holds still, for real this time.** 2.32.0 counted a level
   sensor that had not reported for 10 minutes as reading nothing, and 2.32.1 only fixed how that
   was read. But Home Assistant's ESPHome integration drops a reading that repeats the last one, so
@@ -276,8 +266,6 @@ Integration and controller **2.32.2**.
 
 Integration and controller **2.32.1**.
 
-### 🌱 In plain English
-
 - **The reservoir's level reads again while it holds steady.** 2.32.0 counted a level sensor that
   had not reported for 10 minutes as reading nothing, but it judged that from a copy Home Assistant
   does not renew while a sensor keeps reporting the same value: a level that held steady for 10
@@ -303,8 +291,6 @@ Integration and controller **2.32.1**.
 ## [2.32.0] - 2026-10-03
 
 Integration and controller **2.32.0**.
-
-### 🌱 In plain English
 
 - **Each zone's line on Today's grow day wraps on a laptop too.** On a wide screen it stopped at
   the edge with "…", and the rest was only in its tooltip; now all of it shows, as on a phone. A
@@ -392,8 +378,6 @@ Integration and controller **2.32.0**.
 ## [2.31.0] - 2026-10-03
 
 Integration and controller **2.31.0**.
-
-### 🌱 In plain English
 
 - **The reservoir never runs dry.** A pump that does not prime itself stops working once its
   reservoir runs dry, so the reservoir now keeps a minimum (5% unless you change it; 0 turns it
@@ -484,8 +468,6 @@ Integration and controller **2.31.0**.
 
 Integration and controller **2.30.1**.
 
-### 🌱 In plain English
-
 - **With Auto setpoints, mornings keep their P0.** When Auto setpoints stops the maintenance shots
   for the dryback, it moves the maintenance trigger under the zone, and it stays there through the
   night and P0. It used to sit 2 points under where its plan expected the night to end. When that
@@ -522,8 +504,6 @@ Integration and controller **2.30.1**.
 ## [2.30.0] - 2026-10-01
 
 Integration and controller **2.30.0**.
-
-### 🌱 In plain English
 
 - **The overnight dryback stops at your dryback target.** Overnight a zone used to be watered only
   below its rescue level, so a night that dried faster than the day went straight past the target:
@@ -576,8 +556,6 @@ Integration and controller **2.30.0**.
 
 Integration and controller **2.29.2**.
 
-### 🌱 In plain English
-
 - **The README says what Crop Steering does and how to install it, and little else.** It is half as
   long, and it says plainly that no AI makes any decision: the controller waters by your setpoints
   and fixed arithmetic, so the same readings and settings, at the same point in the day, give the
@@ -611,8 +589,6 @@ Integration and controller **2.29.2**.
 ## [2.29.1] - 2026-10-01
 
 Integration and controller **2.29.1**.
-
-### 🌱 In plain English
 
 - **Today's events say who changed a setting, and what it was.** A change reads "Sam raised Most
   P1 shots to 10 (was 6)" or "Auto setpoints lowered Maintenance trigger to 63.3% (was 71.3%)",
@@ -661,8 +637,6 @@ Integration and controller **2.29.1**.
 ## [2.29.0] - 2026-09-30
 
 Integration and controller **2.29.0**.
-
-### 🌱 In plain English
 
 - **Home Assistant 2026.5 or newer is required.** It was 2024.10, two years old. On an older Home
   Assistant, HACS and the app store offer no update to Crop Steering or its controller until Home
@@ -829,8 +803,6 @@ Integration and controller **2.29.0**.
 
 Integration and controller **2.28.0**.
 
-### 🌱 In plain English
-
 - **Moisture levels are used as set.** The peak VWC target, maintenance trigger, field capacity
   and rescue level each accepted more than the controller would use: a peak target of 87 was
   reported as outside the engine's range and used as 85. Each now has one range, the same
@@ -904,8 +876,6 @@ Integration and controller **2.28.0**.
 
 Integration and controller **2.27.2**.
 
-### 🌱 In plain English
-
 - **Auto setpoints no longer gives up a day's watering for the overnight dryback.** To reach the P3
   dryback target, Auto setpoints stops maintenance shots early, so the day's drying adds to the
   night's. When a zone's nights dried too slowly for the target, it stopped them as soon as the
@@ -934,8 +904,6 @@ Integration and controller **2.27.2**.
 ## [2.27.1] - 2026-09-28
 
 Integration and controller **2.27.1**.
-
-### 🌱 In plain English
 
 - **Maintenance shots wait for the last one to soak in.** A maintenance (P2) shot fired whenever
   moisture read below its trigger, checked every minute. With the trigger raised above the
@@ -970,8 +938,6 @@ Integration and controller **2.27.1**.
 ## [2.27.0] - 2026-09-28
 
 Integration and controller **2.27.0**.
-
-### 🌱 In plain English
 
 - **A refused change says why.** When Home Assistant would not make a change from the dashboard
   (renaming a room while it was watering, for example), the page said only "Response error: 500"
@@ -1021,8 +987,6 @@ Integration and controller **2.27.0**.
 
 Integration and controller **2.26.3**.
 
-### 🌱 In plain English
-
 - **Choose how a zone's probes are read.** A zone with more than one probe read their average.
   Now each zone has two choices, one for moisture and one for EC: Average, Median, Lowest or
   Highest. Steer on the driest probe for safety while the EC stays an average, for example. In a
@@ -1047,8 +1011,6 @@ Integration and controller **2.26.3**.
 
 Integration and controller **2.26.2**.
 
-### 🌱 In plain English
-
 - **Shorter vitals that say what comes next.** The controller's vitals notification no longer
   starts with a clock (the notification shows when it came) or a "LIVE" line. A room's name heads
   its lines only when there are several rooms, and watering switched off is still said. Under each
@@ -1072,8 +1034,6 @@ Integration and controller **2.26.2**.
 ## [2.26.1] - 2026-09-28
 
 Integration and controller **2.26.1**.
-
-### 🌱 In plain English
 
 - **Each stock tank says which doser it is on.** In Stock tanks, put each bottle's tank on the
   Reservoir doser it feeds (Doser 1 to 6), and every batch the Reservoir mixes takes what that doser
@@ -1108,8 +1068,6 @@ Integration and controller **2.26.1**.
 ## [2.26.0] - 2026-09-27
 
 Integration and controller **2.26.0**.
-
-### 🌱 In plain English
 
 - **The controller waits for its settings before it waters.** While Home Assistant starts, or the
   Crop Steering integration reloads, a room's settings are missing for a moment. The controller used
@@ -1237,8 +1195,6 @@ Eight changes from JakeTheRabbit/HA-Irrigation-Strategy (its pull requests 119 t
 linking to this repository's releases, and Auto Setpoints without the Cloudflare judge. Checked by the lean, controller, engine, real-Home-Assistant (2026.9.3 and
 2024.10.0) and browser suites; not run on hardware before release.
 
-### 🌱 In plain English
-
 - **Each zone says what it is waiting for next**, in the controller's own numbers: for example "shot when
   VWC < 61% (now 58%) · dilution if pwEC > 3.6 (now 3) · P3 by 10:00 PM". It is on the zone cards, in a
   zone's details and at the end of its grow-day line, and only while the controller is watering the zone.
@@ -1316,8 +1272,6 @@ changes (C1). **Owner-approved rehearsal release** (the owner, 26 September 2026
 request to be merged and released together, so this release carries several C2 and C3 changes at once), no
 staging soak; see the release audit. Not run on hardware; the seven pull requests were merged together and
 checked by the lean, controller, engine, real-Home-Assistant (2026.9.3 and 2024.10.0) and browser suites.
-
-### 🌱 In plain English
 
 - **No shot starts while the pump, main line or a zone's valve is offline.** On 25 Sep F2's pump, main line
   and valves dropped out of Home Assistant for 45 minutes. The controller watered into them anyway, could
@@ -1398,8 +1352,6 @@ syntax tree is unchanged). **Owner-approved rehearsal release** (the owner, 25 S
 soak; see the release audit. Not run on hardware; checked by the lean, controller, real-Home-Assistant and
 browser suites.
 
-### 🌱 In plain English
-
 - **The Overview shows how today is tracking.** Each zone's lane on the grow-day chart now draws the
   target each phase is aiming for, yesterday's line and a dashed projection of the rest of the day. One
   line per zone sums it up: moisture now against yesterday at the same time, when the P1 target was
@@ -1445,8 +1397,6 @@ stock tanks add integration entities, services and a Repairs card. Every other c
 **Owner-approved rehearsal release** (the owner, 25 September 2026), no staging soak; see the
 release audit. Not run on hardware; checked by the lean, controller, real-Home-Assistant and
 browser suites.
-
-### 🌱 In plain English
 
 - **Stock tanks.** A new Stock tanks page keeps track of the nutrient concentrates each batch tank
   is dosed from. Give each one its size, how much goes into one batch and a low mark. Every batch
@@ -1530,8 +1480,6 @@ replayed in the controller suite.
 
 The dashboard changes below are class **C1**: dashboard only, nothing the controller or the
 integration reads. Not run on hardware; checked by the browser contract scripts.
-
-### 🌱 In plain English
 
 - **The Overview shows the day, first.** Its moisture and EC chart is replaced by the room's
   grow-day, at the top of the page under today's totals, from lights-on to the next lights-on, one row per zone on one time axis: lights-off shaded, the
@@ -1688,8 +1636,6 @@ release** (the owner, 23 September 2026), no staging soak; see the release audit
 The irrigation changes (engine and controller) are class **C3**; the plan, setup and Repairs changes
 are class **C2**. The zone status change is class **C3** (controller and integration).
 
-### 🌱 In plain English
-
 - **A grow plan never stops a starving zone from being watered.** While a room's grow plan is held
   (in error, out of date, or missing after a restart) the controller held every shot on every zone
   the plan runs, for as long as the hold lasted. Now the overnight emergency shot, the lights-on
@@ -1799,8 +1745,6 @@ Pair: **controller 0.16.4** (no controller code change: it serves the 2.19.4 das
 dashboard only, nothing the controller or the integration reads. **Owner-approved rehearsal release** (the owner,
 23 September 2026), no staging photoperiod; see the release audit.
 
-### 🌱 In plain English
-
 - **The dashboard says when the controller is not running.** After a Home Assistant restart with
   the controller app stopped, its heartbeat simply disappears, and the dashboard looked normal:
   only a heartbeat that was present but old raised a yellow warning. A room that is switched on
@@ -1872,8 +1816,6 @@ The irrigation changes (controller and engine) are class **C3**, from the F2 his
 2026 and the review of it.
 **Not run on hardware.** No add-on option changes. The state file gains three additive keys that the
 previous controller ignores, so it can still read the file after a rollback.
-
-### 🌱 In plain English
 
 - **A room deleted and set up again starts fresh.** Home Assistant keeps the last state of a removed
   entity for seven days, and a re-created room inherited the deleted one's settings, its room on/off
@@ -2062,8 +2004,6 @@ of the person running the only staging room, and a failed soak would have to be 
 them. The defects were seen on real hardware; **the fixes have not run on hardware** before
 release. Update with the engine off, read the controller log, then watch the first shot.
 
-### 🌱 In plain English
-
 - **Set things up in either order.** If the controller app was started before the integration was
   set up (the order the app store invites), a one-zone tent was shown Zones 2 and 3 that do not
   exist, each complaining "no hardware mapped", and a minute after setup Settings > Repairs told you
@@ -2156,8 +2096,6 @@ what changes there is one new attribute on a sensor it already publishes: no cha
 behaviour, options, the state file or any entity id. **Not run on hardware** before release: update
 with the engine off, then check the sidebar reads 2.19.1 and 0.16.1.
 
-### 🌱 In plain English
-
 - **Crop Steering has its icon.** Adding the integration, the integrations page and HACS all showed
   a grey "icon not available" box. The integration now carries its own icon and logo, with
   versions that stay readable on a dark theme. Needs Home Assistant 2026.3 or newer; older
@@ -2194,8 +2132,6 @@ Pair: **controller 0.16.0**. It also carries 2.18.1 / controller 0.15.2, which w
 itself. Class **C3**. Released without a staging soak by decision of the two people who run it; see
 [the record](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy/blob/v2.22.0/docs/audits/2026-09-21-release-2.18.1.md). **Not run on hardware** before release: treat
 the first update of each box as the first run. Engine off, update, check the log, watch the first shot.
-
-### 🌱 In plain English
 
 - **Setup now asks how your room is plumbed, and holds you to the answer.** 2.18.0 worked it out
   from what you left empty: no pump chosen meant "this room has no pump". That is right for a tent
@@ -2245,8 +2181,6 @@ the first update of each box as the first run. Engine off, update, check the log
 
 Pair with controller **0.15.2** (0.15.1 plus a test-only seam; irrigation behaviour is unchanged). Bug fixes only. Nothing an operator has set moves: every fix below was checked against seeded snapshots of older installs. Each was reproduced on 2.18.0 inside a real Home Assistant before it was fixed; the write-up is [docs/audits/2026-09-21-first-run-review.md](docs/audits/2026-09-21-first-run-review.md).
 
-**🌱 In plain English**
-
 - **The integration starts on older Home Assistant.** On anything before Home Assistant 2026.5 the setup wizard finished and the integration then showed "Failed to set up": no entities, no dashboard. It lists 2024.3 as supported, and now it is.
 - **Your lights times are used.** The wizard asks when your lights turn on and off, stored the answer, and then always ran on 12 and 0. The grow-day, the morning dry-back and the overnight phase now follow the hours you typed. If you already set them on a dashboard, those are kept.
 - **"Edit parameters" does something.** Changing a value under Configure said "saved" and quietly put the old value back. It now changes what the controller reads, and the form opens on the current value rather than the one from the day you installed.
@@ -2272,8 +2206,6 @@ Pair with controller **0.15.2** (0.15.1 plus a test-only seam; irrigation behavi
 ## [2.18.0] - 2026-09-21
 
 Pair with controller **0.15.1** (0.15.0 plus one fix: a room switched off stays off while Home Assistant restarts).
-
-**🌱 In plain English**
 
 - **The setup wizard no longer throws your work away.** If something was wrong at the end (a valve that was on, a probe in the wrong unit, a mistyped entity), the wizard closed and every zone, sensor and size you had entered was gone. It now shows the same step again with everything still filled in and says what to fix. Problems are reported on the step where you entered them, not three screens later, and the message says whether the entity is on, unreachable or does not exist instead of always "must read OFF".
 - **A brand-new install is found by the controller.** On a fresh install Home Assistant named most of this integration's entities from their labels (`number.p1_target_vwc`, `sensor.engine_config`) instead of the `crop_steering_` ids the controller and dashboard read, so a new room was never discovered and never watered. New installs and new rooms now register under the documented ids. Existing rooms are untouched: Home Assistant keeps the ids it already holds. If you first installed on 2.17 or earlier and your room was never found, update, then remove the room and add it again.
@@ -2310,8 +2242,6 @@ Pair with controller **0.14.0** (unchanged).
 ## [2.17.0] - 2026-09-20
 
 Pair with controller **0.14.0**.
-
-**🌱 In plain English**
 
 - **Room on/off.** Each room has a Room Active switch. Turn it off when nothing is growing: no irrigation (scheduled, emergency or blind-probe fallback), no alerts, no repair issues, and the room's open notifications are dismissed. Turn it back on and the room starts a clean cycle from the overnight phase; water history is kept.
 - **P1 always runs in full.** The ramp no longer ends on a clock. However late the first shot lands, P1 fires its shots in order until the target is recovered (after at least the new minimum shot count) or the maximum shot count is reached. Only then does P2 start.
@@ -2363,7 +2293,7 @@ Pair with controller **0.14.0**.
 
 ## [2.14.0] - 2026-09-08
 
-**🌱 In plain English.** See the whole day while editing setpoints: the draft VWC/EC curves and P3 emergency floor move immediately beside the saved reference. Compare retained readings over a day, week, month or run-to-date with another run at the same grow age. Water cards distinguish total zone delivery, average per plant and pot capacity, with a local runtime calculator.
+See the whole day while editing setpoints: the draft VWC/EC curves and P3 emergency floor move immediately beside the saved reference. Compare retained readings over a day, week, month or run-to-date with another run at the same grow age. Water cards distinguish total zone delivery, average per plant and pot capacity, with a local runtime calculator.
 
 **🔧 Technical notes — integration 2.14.0, controller 0.13.0.**
 
@@ -2381,13 +2311,13 @@ Pair with controller **0.14.0**.
 
 ## [2.13.1] - 2026-09-08
 
-**🌱 In plain English.** Fix a startup failure when multiple rooms load at once. Every room can now share the native sidebar reliably. Controller 0.12.0 remains the matching version.
+Fix a startup failure when multiple rooms load at once. Every room can now share the native sidebar reliably. Controller 0.12.0 remains the matching version.
 
 **🔧 Technical notes.** Serialize sidebar/static-path registration across concurrent config-entry setup. Live installation exposed the duplicate-panel exception; deterministic concurrent-startup and retry tests cover the correction.
 
 ## [2.13.0] - 2026-09-08
 
-**🌱 In plain English.** One Home Assistant native workspace brings room setup, current readings and whole-grow planning together. The combined VWC/EC planning graph follows each zone's selected day, week and steering profile. Existing installations keep their room identities, setpoints and hydraulic settings.
+One Home Assistant native workspace brings room setup, current readings and whole-grow planning together. The combined VWC/EC planning graph follows each zone's selected day, week and steering profile. Existing installations keep their room identities, setpoints and hydraulic settings.
 
 **🔧 Technical notes — integration 2.13.0, controller 0.12.0.**
 

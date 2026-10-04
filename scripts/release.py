@@ -108,10 +108,14 @@ def _section(text: str, heading: str, level: str) -> tuple[int, int] | None:
 
 def date_changelog(text: str, version: str, day: str) -> str:
     span = _section(text, "## [Unreleased]", "##")
-    if span is None or "### 🌱 In plain English" not in text[span[0] : span[1]]:
+    # What changed, for anyone, comes first, under no heading of its own; the technical notes follow.
+    summary = (
+        re.split(r"^### ", text[span[0] : span[1]], maxsplit=1, flags=re.M)[0] if span else ""
+    )
+    if span is None or not re.search(r"^- ", summary, re.M):
         raise Refused(
-            f"{CHANGELOG} has no '## [Unreleased]' section with '### 🌱 In plain English': "
-            "write what this release changes there first"
+            f"{CHANGELOG} has no '## [Unreleased]' section that says what this release changes "
+            "before its technical notes: write it there first"
         )
     start, end = span
     body = text[start:end].split("\n", 1)[1].lstrip("\n")
@@ -408,7 +412,7 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument("--dry-run", action="store_true", help="change nothing")
     args = parser.parse_args(argv)
-    sys.stdout.reconfigure(encoding="utf-8")  # the notes carry "🌱"
+    sys.stdout.reconfigure(encoding="utf-8")  # the notes may carry emoji
     step = release_public if args.public else release_here
     step(args.version.removeprefix("v"), args.dry_run)
 

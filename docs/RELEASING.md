@@ -44,9 +44,9 @@ What follows from that (checked against the Supervisor source):
 Every pull request writes its own notes, so a release has nothing left to write. Under the
 **Unreleased** heading at the top of each file (add the heading if it is not there):
 
-- `CHANGELOG.md`, `## [Unreleased]`: its lines under **🌱 In plain English** (what changes for the
-  person running a room, and why) and **🔧 Technical notes** (entities, code, upgrade). A short
-  paragraph above them may say what the release was checked by.
+- `CHANGELOG.md`, `## [Unreleased]`: first its lines on what changes for the person running a room,
+  and why, under no heading of their own; then its lines under **🔧 Technical notes** (entities,
+  code, upgrade). A short paragraph above them may say what the release was checked by.
 - `addons/f2_control/CHANGELOG.md`, `# Unreleased`: what changed in the controller or in the
   dashboard it serves. Leave it out when neither did.
 - `custom_components/crop_steering/WHATS_NEW.md`, `## Unreleased`: one line a grower would notice,
@@ -76,8 +76,8 @@ it:
 2. sets `2.26.0` in `manifest.json`, `const.py`, the controller's `config.yaml` and the README badge;
 3. runs the version and notes tests on the result (it needs pytest);
 4. commits `release: 2.26.0`, tags `v2.26.0`, pushes both;
-5. publishes the GitHub release, its notes the changelog's opening and 🌱 section, linking to the
-   technical notes at the tag.
+5. publishes the GitHub release, its notes the changelog entry up to its technical notes, linking to
+   those at the tag.
 
 The rooms that track this repository are then offered the pair: HACS offers the integration and
 Supervisor the controller. Update them, confirm the versions and a current controller heartbeat,
