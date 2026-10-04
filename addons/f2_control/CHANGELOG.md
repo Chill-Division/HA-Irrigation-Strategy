@@ -1,4 +1,6 @@
-# Unreleased
+# 2.35.0
+
+Pair with integration 2.35.0.
 
 - **The dashboard the app serves:** a tidier Overview: each zone's grow-day line is its phase and moisture now, with the rest behind Predictions and the chart's key behind a ?, and a zone's last irrigation on one line. No change to the controller.
 - **The dashboard the app serves:** the Reservoir page's dosers are small cards, with their note behind a ?. No change to the controller.

@@ -21,7 +21,7 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
-## Unreleased
+## 2.35.0 - 2026-10-04
 
 - A tidier Overview: each zone's predictions and the chart's key are a tap away, under the grow day.
 - The dashboard opens in light mode; Settings → Appearance can still follow Home Assistant or go dark.
