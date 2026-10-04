@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   test. Pressure-compensating drippers give a fixed flow: type the number on the dripper.
 - **Litres only.** Pot volume is typed in litres and dripper flow in litres per hour; the US gallon
   and GPH choices are gone. Nothing saved changes: it was always kept in litres.
+- **Two Nutrifield sizes in the substrate presets.** 0.9 gal (15 × 15 × 16 cm, 3.37 L) and 1.5 gal
+  (18 × 18 × 18 cm, 5.8 L), under their own heading.
 
 ### 🔧 Technical notes
 
@@ -41,6 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   choice are removed (`crop-steering-unit-volume` and `-flow` in local storage are no longer
   read). `SizingField`, `sizingError` and `reviewValue` take litres and L/h only, with their unit
   tests and two browser checks trimmed to match.
+- Dashboard: `SUBSTRATE_PRESETS` gains a Nutrifield group, each size at its stated volume (3.37 L
+  and 5.8 L) beside its outer dimensions, which alone would make the smaller one 3.6 L.
 
 ## [2.35.2] - 2026-10-04
 
