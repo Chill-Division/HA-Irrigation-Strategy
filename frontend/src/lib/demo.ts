@@ -78,7 +78,6 @@ export function createDemo(now = Date.now()): States {
         2: `switch.demo_${prefix}valve_2`,
         3: `switch.demo_${prefix}valve_3`,
       },
-      water_level_sensor: `sensor.demo_${prefix}tank_level`,
       tank_temperature_sensor: `sensor.demo_${prefix}tank_temperature`,
       // Flower 2 mixes its own nutrient batches; Flower 1 has no reservoir mapped.
       ...(index ? {} : DEMO_RESERVOIR),
@@ -86,7 +85,6 @@ export function createDemo(now = Date.now()): States {
       setup_revision: 1,
     });
     put(`switch.demo_${prefix}pump`, index ? "off" : "on");
-    put(`sensor.demo_${prefix}tank_level`, index ? 72 : 42, { unit_of_measurement: "%" });
     put(`sensor.demo_${prefix}tank_temperature`, index ? 19.2 : 17.6, {
       unit_of_measurement: "°C",
     });
@@ -779,31 +777,26 @@ export function demoWaterRecord(
   }
   return samples;
 }
-/** A demo tank's recorded level: a step down at each round of shots while the lights are on, none
- * overnight, and for Flower 2 the refill its controller last ran (filling from 8% for 12 minutes, then
- * mixing). The reservoir's distance sensor records mm; Flower 1's level sensor records %. */
+/** Flower 2's recorded reservoir level: a step down at each round of shots while the lights are on,
+ * none overnight, and the refill its controller last ran (filling from 8% for 12 minutes, then
+ * mixing). Its distance sensor records mm. */
 function demoTankHistory(states: States, entityId: string, hours: number, now: number) {
-  const tankLevel = /^sensor\.demo_(f1_)?tank_level$/.exec(entityId);
-  const distance = entityId === DEMO_RESERVOIR.reservoir_distance_sensor;
-  if (!tankLevel && !distance) return null;
-  const prefix = tankLevel?.[1] ?? "";
-  const plan = states[`sensor.crop_steering_${prefix}feed_plan`]?.attributes ?? {};
+  if (entityId !== DEMO_RESERVOIR.reservoir_distance_sensor) return null;
+  const plan = states["sensor.crop_steering_feed_plan"]?.attributes ?? {};
   const full = Number(plan.full_mm),
     empty = Number(plan.empty_mm);
-  const pctNow = distance
-    ? levelPct(numeric(states[entityId]), full, empty)
-    : numeric(states[entityId]);
+  const pctNow = levelPct(numeric(states[entityId]), full, empty);
   if (pctNow === null) return [];
-  const last = states[`sensor.crop_steering_${prefix}batch_status`]?.attributes.last as
+  const last = states["sensor.crop_steering_batch_status"]?.attributes.last as
     { at?: string } | undefined;
-  const ended = distance && last?.at ? Date.parse(last.at) : NaN;
+  const ended = last?.at ? Date.parse(last.at) : NaN;
   const refill = Number.isFinite(ended)
     ? { start: ended - 24 * 60_000, filled: ended - 12 * 60_000, end: ended }
     : null;
   const start = now - hours * 3_600_000;
   // Rounds of shots every 45 minutes, from an hour after lights-on until lights-off.
-  const on = numeric(states[`number.crop_steering_${prefix}lights_on_hour`]) ?? 10;
-  const off = numeric(states[`number.crop_steering_${prefix}lights_off_hour`]) ?? 22;
+  const on = numeric(states["number.crop_steering_lights_on_hour"]) ?? 10;
+  const off = numeric(states["number.crop_steering_lights_off_hour"]) ?? 22;
   const rounds: number[] = [];
   const from = Math.min(start, refill?.start ?? start) - 86_400_000;
   for (let day = new Date(from); day.getTime() < now; day.setDate(day.getDate() + 1)) {
@@ -825,7 +818,7 @@ function demoTankHistory(states: States, entityId: string, hours: number, now: n
   const points: { time: string; value: number }[] = [];
   for (let at = start; at <= now; at += 5 * 60_000) {
     const pct = pctAt(at);
-    const value = distance ? empty - (pct / 100) * (empty - full) : pct;
+    const value = empty - (pct / 100) * (empty - full);
     points.push({ time: new Date(at).toISOString(), value: Math.round(value * 10) / 10 });
   }
   return points;

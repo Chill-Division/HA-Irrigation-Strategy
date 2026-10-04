@@ -189,7 +189,6 @@ const hardwareFields = [
   ["pump_switch", "Room pump", "switch"],
   ["main_line_switch", "Mainline valve", "switch"],
   ["light_entity", "Room lights", "light"],
-  ["water_level_sensor", "Tank fill level (%)", "level"],
   ["tank_temperature_sensor", "Tank temperature", "temperature"],
 ] as const;
 /** The reservoir and dosers a room's nutrient batches use (Feed → Reservoir); the controller app

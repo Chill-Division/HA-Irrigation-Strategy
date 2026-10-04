@@ -346,7 +346,6 @@
           "temperature_sensor": "Room temperature sensor (optional)",
           "humidity_sensor": "Room humidity sensor (optional)",
           "vpd_sensor": "VPD sensor (optional)",
-          "water_level_sensor": "Tank level sensor (optional)",
           "notification_service": "Notification service (optional)",
           "tank_temperature_sensor": "Tank water temperature sensor (optional)"
         },
@@ -366,7 +365,6 @@
           "temperature_sensor": "Room/canopy temperature sensor. Optional, for analytics only.",
           "humidity_sensor": "Recorded for the dashboard. The controller does not use it.",
           "vpd_sensor": "Recorded for the dashboard. The controller does not use it.",
-          "water_level_sensor": "Reservoir/tank level sensor. Optional; triggers low-water alerts.",
           "notification_service": "Recorded only. Alerts are sent by the controller add-on, using its own notify_service option.",
           "tank_temperature_sensor": "Read-only tank-water temperature in °C, °F or K. This is separate from room/canopy temperature."
         }
@@ -517,7 +515,6 @@
           "temperature_sensor": "Room temperature sensor (optional)",
           "humidity_sensor": "Room humidity sensor (optional)",
           "vpd_sensor": "VPD sensor (optional)",
-          "water_level_sensor": "Tank level sensor (optional)",
           "notification_service": "Notification service (optional)",
           "zone_1_name": "Zone 1 label",
           "zone_1_active": "Zone 1 active (off archives this slot)",
@@ -681,7 +678,6 @@
           "temperature_sensor": "Room/canopy temperature sensor. Optional, for analytics only.",
           "humidity_sensor": "Recorded for the dashboard. The controller does not use it.",
           "vpd_sensor": "Recorded for the dashboard. The controller does not use it.",
-          "water_level_sensor": "Reservoir/tank level sensor. Optional; triggers low-water alerts.",
           "notification_service": "Recorded only. Alerts are sent by the controller add-on, using its own notify_service option.",
           "tank_temperature_sensor": "Read-only tank-water temperature in °C, °F or K. This is separate from room/canopy temperature.",
           "zone_1_name": "What you call zone 1, e.g. 'Tent' or 'Bench 2'. Shown on the dashboard. Changing it later never changes an entity id.",

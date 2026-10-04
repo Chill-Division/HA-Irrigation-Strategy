@@ -12,7 +12,6 @@ from .test_setup import payload, rig
 
 
 MAPPINGS = {
-    "water_level_sensor": "sensor.tank_level",
     "tank_temperature_sensor": "sensor.tank_temp",
 }
 
@@ -37,6 +36,8 @@ def test_tank_mappings_roundtrip_without_changing_plumbing_identity_or_setpoints
     # a setup from before 2.26.0: its feed and tank EC/pH probes are dropped on its next save
     entry.data["hardware"]["feed_ec_sensor"] = "sensor.ec"
     entry.data["hardware"]["tank_ph_sensor"] = "sensor.tank_ph"
+    # and its tank level in %, which the reservoir's distance sensor now gives
+    entry.data["hardware"]["water_level_sensor"] = "sensor.tank_level"
     entry.options = {"keep_this_option": 42}
     before = deepcopy(entry.data)
     data = payload()
@@ -46,7 +47,9 @@ def test_tank_mappings_roundtrip_without_changing_plumbing_identity_or_setpoints
         assert result["hardware"][key] == value
         assert entry.data["hardware"][key] == value
     assert entry.data["hardware"]["temperature_sensor"] == "sensor.temp"
-    assert not {"feed_ec_sensor", "tank_ph_sensor"} & set(entry.data["hardware"])
+    assert not {"feed_ec_sensor", "tank_ph_sensor", "water_level_sensor"} & set(
+        entry.data["hardware"]
+    )
     assert entry.data["room_prefix"] == before["room_prefix"]
     assert entry.data["parameters"] == before["parameters"]
     assert entry.data["zones"]["1"]["special"] == 123
@@ -74,11 +77,18 @@ def test_descriptor_exposes_only_explicit_room_tank_mappings():
         "feed_ec_sensor": "sensor.feed_ec",
         "feed_ph_sensor": "sensor.feed_ph",
         "temperature_sensor": "sensor.air",
+        "water_level_sensor": "sensor.tank_level",
     }
     attrs = build_engine_config("veg_", "veg", 1, {}, hardware)
     for key, value in MAPPINGS.items():
         assert attrs[key] == value
-    assert not {"feed_ec_sensor", "feed_ph_sensor", "temperature_sensor"} & set(attrs)
+    retired = {
+        "feed_ec_sensor",
+        "feed_ph_sensor",
+        "temperature_sensor",
+        "water_level_sensor",
+    }
+    assert not retired & set(attrs)
     absent = build_engine_config(
         "", "default", 1, {}, {"temperature_sensor": "sensor.air"}
     )
@@ -124,7 +134,7 @@ def test_optional_telemetry_preserves_omissions_and_allows_explicit_clear():
     "key,value",
     [
         ("tank_temperature_sensor", "sensor.missing"),
-        ("water_level_sensor", "switch.p"),
+        ("tank_temperature_sensor", "switch.p"),
     ],
 )
 def test_tank_mappings_reject_missing_entities_or_wrong_domains(key, value):
@@ -143,5 +153,17 @@ def test_the_tank_and_feed_ec_ph_mappings_are_gone(key):
     hass, entry, _states = tank_rig()
     data = payload()
     data["hardware"][key] = "sensor.tank_ec"
+    with pytest.raises(ValueError, match="Unknown hardware mapping field"):
+        api.prepare_setup(hass, data, entry.data, entry.entry_id)
+
+
+def test_a_tank_level_in_percent_is_no_longer_a_mapping():
+    """The reservoir's distance sensor gives the tank's level (the controller's level_pct): a
+    separate level sensor in % is not offered, and a save that names one is refused."""
+    hass, entry, _states = tank_rig()
+    assert "water_level_sensor" not in api.HARDWARE_DOMAINS
+    assert "water_level_sensor" not in api.read_setup(hass)["rooms"][0]["hardware"]
+    data = payload()
+    data["hardware"]["water_level_sensor"] = "sensor.tank_level"
     with pytest.raises(ValueError, match="Unknown hardware mapping field"):
         api.prepare_setup(hass, data, entry.data, entry.entry_id)

@@ -3,7 +3,7 @@ import { createDemo } from "./demo";
 import { LEVEL_STEPS, levelSeries, tankTelemetry } from "./tank-telemetry";
 const room = { id: "room:", name: "Flower 2", prefix: "" };
 const now = Date.parse("2026-09-08T08:00:00Z");
-/** The demo without Flower 2's reservoir distances: its tank card falls back to the level sensor in %. */
+/** The demo without Flower 2's reservoir distances: its tank card has no level to show. */
 const withoutLevel = (states: ReturnType<typeof createDemo>) => {
   states["sensor.crop_steering_feed_plan"].attributes.full_mm = 0;
   return states;
@@ -22,7 +22,7 @@ describe("room tank telemetry", () => {
     const states = createDemo(now);
     const tank = tankTelemetry(states, room);
     // Flower 2's reservoir has its distances set: 640 mm between 125 (full) and 850 (empty) is 29%,
-    // what the controller acts on, ahead of its mapped level sensor's 42%.
+    // what the controller acts on.
     expect(tank.level).toMatchObject({
       value: 29,
       unit: "%",
@@ -37,9 +37,9 @@ describe("room tank telemetry", () => {
       lastStopped: false,
       issue: null,
     });
-    // Flower 1 has no reservoir level: its mapped level sensor in %. Nothing refills it.
+    // Flower 1 has no reservoir: no level, and nothing refills it.
     const flower1 = tankTelemetry(states, { ...room, prefix: "f1_" });
-    expect(flower1.level.value).toBe(72);
+    expect(flower1.level).toMatchObject({ value: null, issue: "Not mapped", entityId: null });
     expect(flower1.refill).toBeNull();
     // The controller's reading is the one: when it reads no level, the card says so, whatever the
     // sensor shows now.
@@ -98,12 +98,8 @@ describe("room tank telemetry", () => {
       distance: { unit: "mm", fullMm: 125, emptyMm: 850 },
       minPct: 5,
     });
-    // Flower 1's level sensor reads %, and nothing keeps a minimum in its tank.
-    expect(tankTelemetry(states, { ...room, prefix: "f1_" }).source).toEqual({
-      entityId: "sensor.demo_f1_tank_level",
-      distance: null,
-      minPct: null,
-    });
+    // Flower 1 has no reservoir level sensor to chart.
+    expect(tankTelemetry(states, { ...room, prefix: "f1_" }).source).toBeNull();
   });
   it("draws the recorded level step by step, holding it where nothing was recorded", () => {
     const at = (minutes: number) => new Date(now - minutes * 60_000).toISOString();
@@ -132,20 +128,6 @@ describe("room tank telemetry", () => {
     expect(series[143].pct).toBe(100);
     // It ends on the level the card shows now.
     expect(series[LEVEL_STEPS]).toEqual({ at: now, pct: 29 });
-
-    const percent = { entityId: "sensor.level", distance: null, minPct: null };
-    const levels = levelSeries(
-      [
-        { time: at(30), value: 140 }, // not a %: not drawn
-        { time: at(20), value: 60 },
-      ],
-      percent,
-      12,
-      null,
-      now,
-    );
-    expect(levels[0].pct).toBeNull(); // nothing recorded before it
-    expect([levels[LEVEL_STEPS - 1].pct, levels[LEVEL_STEPS].pct]).toEqual([60, 60]);
   });
   it("does not guess ambient temperature or other-room mappings", () => {
     const states = createDemo(now);
@@ -156,19 +138,18 @@ describe("room tank telemetry", () => {
     expect(tank.temperature.value).toBeNull();
     expect(tank.pump.on).toBeNull();
   });
-  it.each(["unknown", "unavailable", "", "NaN", "101", "-1"])(
-    "does not draw an invalid tank percentage: %s",
-    (state) => {
-      const states = withoutLevel(createDemo(now));
-      states["sensor.demo_tank_level"].state = state;
-      expect(tankTelemetry(states, room).level.value).toBeNull();
-    },
-  );
-  it("requires percentage units and keeps temperature source units", () => {
-    const states = withoutLevel(createDemo(now));
-    states["sensor.demo_tank_level"].attributes.unit_of_measurement = "L";
+  it("has no level until the reservoir's distances when full and when empty are set", () => {
+    const tank = tankTelemetry(withoutLevel(createDemo(now)), room);
+    expect(tank.level).toMatchObject({
+      value: null,
+      issue: "Not set up",
+      entityId: "sensor.demo_reservoir_distance",
+    });
+    expect(tank.source).toBeNull();
+  });
+  it("keeps the temperature sensor's own units", () => {
+    const states = createDemo(now);
     states["sensor.demo_tank_temperature"].attributes.unit_of_measurement = "°F";
-    expect(tankTelemetry(states, room).level.issue).toBe("Check units");
     expect(tankTelemetry(states, room).temperature.unit).toBe("°F");
   });
   it("distinguishes unknown from off", () => {

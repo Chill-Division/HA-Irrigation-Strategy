@@ -86,7 +86,7 @@ export function TankLevelChart({
         </div>
       </div>
       {!source ? (
-        <p className="tank-history-note">Map a level sensor to chart it.</p>
+        <p className="tank-history-note">Map the reservoir's level sensor to chart it.</p>
       ) : error && !points ? (
         <p className="tank-history-note">{error}</p>
       ) : !points ? (

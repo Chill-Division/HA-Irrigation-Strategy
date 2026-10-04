@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and GPH choices are gone. Nothing saved changes: it was always kept in litres.
 - **Two Nutrifield sizes in the substrate presets.** 0.9 gal (15 × 15 × 16 cm, 3.37 L) and 1.5 gal
   (18 × 18 × 18 cm, 5.8 L), under their own heading.
+- **No separate tank level sensor.** The tank's level comes from the reservoir's level sensor, as
+  the controller works it out, so the "Tank fill level (%)" mapping is gone. A room that had one
+  mapped drops it the next time its setup is saved. Watering is not affected: the controller never
+  read it.
 
 ### 🔧 Technical notes
 
@@ -45,6 +49,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tests and two browser checks trimmed to match.
 - Dashboard: `SUBSTRATE_PRESETS` gains a Nutrifield group, each size at its stated volume (3.37 L
   and 5.8 L) beside its outer dimensions, which alone would make the smaller one 3.6 L.
+- Integration: `water_level_sensor` leaves `HARDWARE_DOMAINS`, the wizard, Configure and the room
+  descriptor; it joins `RETIRED_HARDWARE`, so a stored value goes on the room's next save, and a save
+  naming it is refused as an unknown field. The controller's setup fingerprint never read it.
+  Dashboard: the tank card's level and chart come only from `reservoir_distance_sensor` with the
+  feed plan's `full_mm` and `empty_mm` (the level reads "Not set up" without them, "Not mapped"
+  without the sensor); history is allowed for that sensor alone, and the demo loses its % sensors.
 
 ## [2.35.2] - 2026-10-04
 
