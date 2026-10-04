@@ -3,7 +3,7 @@ One change per pull request, into `main`. See CONTRIBUTING.md.
 If describing it needs the word "and", it is two pull requests.
 -->
 
-## 🌱 In plain English
+## What
 
 <!-- What changes for the person running a room, and why. No jargon. -->
 
@@ -23,7 +23,7 @@ If describing it needs the word "and", it is two pull requests.
 - [ ] One change. No unrelated fixes, no drive-by reformatting.
 - [ ] Targets `main`.
 - [ ] Does **not** change a version number (only `scripts/release.py` does).
-- [ ] Its notes are under **Unreleased** in `CHANGELOG.md` (🌱 and 🔧), in `addons/f2_control/CHANGELOG.md` if the controller or the dashboard it serves changed, and in `WHATS_NEW.md` if a grower would notice.
+- [ ] Its notes are under **Unreleased** in `CHANGELOG.md` (what changed, then 🔧 Technical notes), in `addons/f2_control/CHANGELOG.md` if the controller or the dashboard it serves changed, and in `WHATS_NEW.md` if a grower would notice.
 - [ ] Generated files (dashboard bundle, vendored engine copy) changed only together with their source.
 - [ ] Nothing under `.github/`, no dependency or Dockerfile change, unless that is the whole pull request.
 - [ ] Config flow, entity ids or what the integration tells the controller: proven in `tests_ha/`, not only against the stubs.
