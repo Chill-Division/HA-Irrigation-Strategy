@@ -124,24 +124,24 @@ the shot. Lives in the f2-control add-on (`addons/f2_control/`).
   (`tests/test_state_migration.py`), and **version consistency** (`tests/test_version_consistency.py`).
   Any change to persisted state, add-on options, or entities needs a test proving an OLD install still loads.
 - **Branches and pull requests:** follow `CONTRIBUTING.md`. **One change, one branch, one pull
-  request, into `testing`**, which holds what is waiting for a release; `main` is what is
-  released, and moves only at a release. Never push to `main`, never merge a pull
-  request, never run the release command unless the owner asks for that release. Those are a
-  person's decisions. Do not bundle unrelated fixes, do not reformat what you did not change, and
+  request, into `main`**, which releases are made from. Merge a pull request, or run the release
+  command, only when the owner asks for that, each time, and never push to `main` yourself. Those
+  are a person's decisions. Do not bundle unrelated fixes, do not reformat what you did not change, and
   never change a version number: only `scripts/release.py` does. Each pull request writes its own
   notes under **Unreleased** in `CHANGELOG.md`, `addons/f2_control/CHANGELOG.md` and `WHATS_NEW.md`.
   A feature that crosses layers is built as one commit per layer. Generated files (the dashboard
   bundle, the vendored engine copy) change only together with their source; CI proves they match.
-- **Releasing:** follow `docs/RELEASING.md`. `main` is fast-forwarded to `testing` and pushed, and
-  `python scripts/release.py X.Y.Z` releases it once Validate has passed on it; `testing` then takes
-  the release commit. The script dates the Unreleased notes, sets the one version number
+- **Releasing:** follow `docs/RELEASING.md`. Once what is to be released is merged into `main`,
+  `python scripts/release.py X.Y.Z` releases it when Validate has passed on it. The script dates the Unreleased notes, sets the one version number
   (`manifest.json`, `const.py`, the app's `config.yaml`, the README badge), commits, tags, pushes
   and publishes the GitHub release on this repository, whose rooms are the test.
   `--public` then fast-forwards `Chill-Division/HA-Irrigation-Strategy`'s `main` to that same
   tagged commit and publishes the release there, for everyone else. `--dry-run` changes nothing.
   The controller is built on each box from the branch it tracks, so **a push that changes
-  `version:` on `main` IS a release** of the part that drives the pump. A version number is never
-  reused for different code; a bad one is never made public, and its fix takes the next number.
+  `version:` on `main` IS a release** of the part that drives the pump, and a controller built
+  between releases (a fresh install, a Rebuild) builds what is merged on `main` then, under the last
+  released number: merge close to releasing. A version number is never reused for a different
+  release; a bad one is never made public, and its fix takes the next number.
 - **Deploying changes:** release both halves together with `scripts/release.py`. The
   controller app is installed only from this repository
   (`addons/f2_control`); the old `JakeTheRabbit/f2-control` mirror is retired and gets
@@ -152,9 +152,8 @@ the shot. Lives in the f2-control add-on (`addons/f2_control/`).
   release (or Rebuild for local source), then verify the running image and modules.
   Restart HA after integration updates; see `docs/INSTALL.md` for the current path.
 - **Commit style:** conventional commits (`feat:`/`fix:`/`docs:`/`chore:`) with a
-  `Co-Authored-By: Claude` trailer when written via Claude Code. Two long-lived branches,
-  `testing` (what is waiting) and `main` (what is released); everything else is a short-lived
-  proposal, branched from `testing`. Short-lived branches are deleted once their pull request is
+  `Co-Authored-By: Claude` trailer when written via Claude Code. One long-lived branch, `main`;
+  everything else is a short-lived proposal branched from it, deleted once its pull request is
   merged or closed.
 - **Changelog = dual view.** Every release in `CHANGELOG.md` leads with **🌱 In plain English** (anyone
   can follow it) then **🔧 Technical notes** (entity/code detail). Each pull request adds its lines
