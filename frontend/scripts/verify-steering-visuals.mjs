@@ -24,6 +24,11 @@ const context = await browser.newContext({
   colorScheme: "dark",
   ...(process.env.VERIFY_TZ ? { timezoneId: process.env.VERIFY_TZ } : {}),
 });
+// Follows the device's colour scheme, as the dashboard did by default before it defaulted to light.
+const followDevice = () => {
+  if (!localStorage.getItem("irrigation-theme")) localStorage.setItem("irrigation-theme", "auto");
+};
+await context.addInitScript(followDevice);
 const forbidden = [],
   errors = [],
   checks = [],
@@ -150,6 +155,7 @@ try {
       viewport: { width: 1600, height: 1100 },
       colorScheme: "dark",
     });
+    await pinned.addInitScript(followDevice);
     await pinned.route("**/*", isolate);
     const shot = await pinned.newPage();
     shot.on("pageerror", (e) => errors.push(e.message));

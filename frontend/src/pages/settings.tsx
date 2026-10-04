@@ -215,13 +215,15 @@ export function Settings({
                 ? "Matching your Home Assistant theme, including live changes."
                 : theme === "auto"
                   ? "Following your device appearance until embedded in Home Assistant."
-                  : "Using your saved appearance override."}
+                  : theme === "light"
+                    ? "Light, the default."
+                    : "Dark."}
             </p>
           </div>
           <div className="appearance-options">
             <div className="theme-options" aria-label="Appearance preference">
               {[
-                { value: "auto", label: "Home Assistant / system", icon: Monitor },
+                { value: "auto", label: "Home Assistant", icon: Monitor },
                 { value: "light", label: "Light", icon: Sun },
                 { value: "dark", label: "Dark", icon: Moon },
               ].map((option) => (

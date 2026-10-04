@@ -26,8 +26,10 @@ const mappings: Record<string, string[]> = {
   "--ha-native-error": ["--error-color"],
 };
 const sourceVariables = [...new Set(Object.values(mappings).flat())];
+/** This browser's saved appearance: Light unless it chose Home Assistant (its theme, or the device's
+ * appearance outside it) or Dark in Settings → Appearance. */
 export function themePreference(value: string | null): ThemePreference {
-  return value === "light" || value === "dark" ? value : "auto";
+  return value === "auto" || value === "dark" ? value : "light";
 }
 function brightness(color: string): number | null {
   let rgb: number[] | undefined;
@@ -104,7 +106,7 @@ export function useHaTheme() {
     try {
       return themePreference(localStorage.getItem("irrigation-theme"));
     } catch {
-      return "auto";
+      return themePreference(null);
     }
   });
   const [resolved, setResolved] = useState<ResolvedTheme>({
