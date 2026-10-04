@@ -162,16 +162,22 @@ try {
   await lightContext.close();
 
   await page.goto(`${origin}/dashboard.html?demo=1&room=room%3Af1_#/overview`);
-  await page.waitForFunction(
-    () => document.querySelector("[data-tank-level]")?.getAttribute("data-tank-level") === "72",
+  // Flower 1 has no reservoir: no level sensor reads it and nothing refills it, so its level is not
+  // mapped, there is nothing to chart and the card has no refill rows.
+  await page.waitForFunction(() =>
+    /Not mapped/.test(document.querySelector("[data-tank-status]")?.textContent ?? ""),
+  );
+  assert.equal(
+    await page.locator("[data-tank-level]").getAttribute("data-tank-level"),
+    "unknown",
   );
   assert.equal(await page.locator("[data-pump-state]").getAttribute("data-pump-state"), "off");
-  // Flower 1 has no reservoir: nothing refills it, so the card has no refill rows. Its level sensor
-  // in % is charted as it reads.
   assert.equal(await page.locator("[data-refill-state]").count(), 0);
-  await page.waitForFunction(() =>
-    /72% now/.test(document.querySelector("[data-tank-history]")?.getAttribute("aria-label")),
+  assert.match(
+    await page.locator("[data-tank-status]").innerText(),
+    /Map the reservoir's level sensor to chart it\./,
   );
+  assert.equal(await page.locator("[data-tank-history]").count(), 0);
   assert.deepEqual(errors, []);
   assert.deepEqual(forbidden, []);
   const checks = [

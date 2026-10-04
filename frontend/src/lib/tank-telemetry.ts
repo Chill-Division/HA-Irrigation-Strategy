@@ -10,11 +10,11 @@ export interface TankReading {
   issue: string | null;
 }
 
-/** What the tank card charts: the level sensor it reads, and how a recorded reading becomes % full. */
+/** What the tank card charts: the reservoir's distance sensor, and its distances when full and when
+ * empty, so a recorded reading becomes % full as the controller works it out. */
 export interface LevelSource {
   entityId: string;
-  /** The reservoir's distance sensor, worked out as the controller does; null for a sensor in %. */
-  distance: { unit: string; fullMm: number; emptyMm: number } | null;
+  distance: { unit: string; fullMm: number; emptyMm: number };
   /** The least the controller keeps, %; null without one. */
   minPct: number | null;
 }
@@ -60,10 +60,10 @@ export function tankTelemetry(states: States, room: Room) {
       issue: !entityId ? "Not mapped" : !["on", "off"].includes(state || "") ? "Unavailable" : null,
     };
   };
-  // The reservoir's own level once its distances when full and when empty are set (Feed →
-  // Reservoir): the controller's, once it reports one, so the card shows what it acts on (none when
-  // the sensor reads nothing to it, whatever that shows now); before that, the distance sensor's
-  // reading worked out the same way. Otherwise a mapped level sensor in %.
+  // The reservoir's level, once its distances when full and when empty are set (Feed → Reservoir):
+  // the controller's, once it reports one, so the card shows what it acts on (none when the sensor
+  // reads nothing to it, whatever that shows now); before that, the distance sensor's reading worked
+  // out the same way.
   const plan = states[`sensor.crop_steering_${room.prefix}feed_plan`]?.attributes;
   const distanceId = mapped("reservoir_distance_sensor");
   const full = Number(plan?.full_mm),
@@ -75,14 +75,12 @@ export function tankTelemetry(states: States, room: Room) {
     : status
       ? status.levelPct
       : levelPct(levelMm(states[distanceId]), full, empty);
-  const level: TankReading = own
-    ? {
-        entityId: distanceId,
-        value: pct === null ? null : Math.round(pct * 10) / 10,
-        unit: "%",
-        issue: pct === null ? "Unavailable" : null,
-      }
-    : reading("water_level_sensor", ["%"], 0, 100);
+  const level: TankReading = {
+    entityId: distanceId,
+    value: pct === null ? null : Math.round(pct * 10) / 10,
+    unit: "%",
+    issue: !distanceId ? "Not mapped" : !own ? "Not set up" : pct === null ? "Unavailable" : null,
+  };
   // A room with a reservoir: the controller's record of the refills it runs (batch_status). None for
   // a room without one, which nothing refills.
   const step = status?.step ?? null;
@@ -97,19 +95,18 @@ export function tankTelemetry(states: States, room: Room) {
         }
       : null;
   const minPct = status?.minPct ?? Number(plan?.min_pct);
-  const source: LevelSource | null = level.entityId
-    ? {
-        entityId: level.entityId,
-        distance: own
-          ? {
-              unit: String(states[level.entityId]?.attributes.unit_of_measurement ?? ""),
-              fullMm: full,
-              emptyMm: empty,
-            }
-          : null,
-        minPct: own && minPct > 0 ? minPct : null,
-      }
-    : null;
+  const source: LevelSource | null =
+    own && distanceId
+      ? {
+          entityId: distanceId,
+          distance: {
+            unit: String(states[distanceId]?.attributes.unit_of_measurement ?? ""),
+            fullMm: full,
+            emptyMm: empty,
+          },
+          minPct: minPct > 0 ? minPct : null,
+        }
+      : null;
   return {
     level,
     temperature: reading("tank_temperature_sensor", ["°c", "°f", "k"]),
@@ -122,7 +119,7 @@ export function tankTelemetry(states: States, room: Room) {
 /** How many steps the level chart's window is drawn in: 10 minutes each over 24 hours. */
 export const LEVEL_STEPS = 144;
 
-/** A level sensor's recorded readings as % full over the last `hours`, in LEVEL_STEPS steps: each step
+/** The reservoir's recorded readings as % full over the last `hours`, in LEVEL_STEPS steps: each step
  * the middle reading recorded in it, or with none the level it held (Home Assistant records a change,
  * not a level that holds still). It ends on `current`, the level the card shows now. */
 export function levelSeries(
@@ -134,11 +131,7 @@ export function levelSeries(
 ): { at: number; pct: number | null }[] {
   const { distance } = source;
   const pctOf = (value: number) =>
-    distance
-      ? levelPct(distanceMm(value, distance.unit), distance.fullMm, distance.emptyMm)
-      : value >= 0 && value <= 100
-        ? value
-        : null;
+    levelPct(distanceMm(value, distance.unit), distance.fullMm, distance.emptyMm);
   const readings = points
     .map((point) => ({ at: Date.parse(point.time), pct: pctOf(point.value) }))
     .filter((r): r is { at: number; pct: number } => Number.isFinite(r.at) && r.pct !== null)

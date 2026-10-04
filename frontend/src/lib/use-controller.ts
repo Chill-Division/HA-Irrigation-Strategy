@@ -543,13 +543,12 @@ export class ControllerStore {
   history = async (entityIds: string[], hours: number, signal?: AbortSignal) => {
     if (!Number.isFinite(hours) || hours <= 0 || hours > 720)
       throw new Error("History range must be between 0 and 720 hours.");
-    // The room's own entities, and the level sensor its tank card charts, as the room maps it.
+    // The room's own entities, and the reservoir level sensor its tank card charts, as mapped.
     const mapped = descriptor(this.states, this.snapshot.room.room)?.attributes ?? {};
+    const level = mapped.reservoir_distance_sensor;
     const allowed = new Set([
       ...this.snapshot.room.entities.map((e) => e.entity_id),
-      ...["reservoir_distance_sensor", "water_level_sensor"].flatMap((key) =>
-        typeof mapped[key] === "string" && mapped[key] ? [String(mapped[key])] : [],
-      ),
+      ...(typeof level === "string" && level ? [level] : []),
     ]);
     if (entityIds.some((id) => !allowed.has(id)))
       throw new Error("History is limited to entities in the selected room.");

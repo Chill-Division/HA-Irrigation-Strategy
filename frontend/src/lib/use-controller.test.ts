@@ -203,10 +203,8 @@ describe("controller lifecycle", () => {
     const store = new ControllerStore(true);
     const [distance] = await store.history(["sensor.demo_reservoir_distance"], 24);
     expect(distance.points.length).toBeGreaterThan(200);
-    await expect(store.history(["sensor.demo_f1_tank_level"], 24)).rejects.toThrow(/selected room/);
+    // Flower 1 has no reservoir: its tank card charts nothing, and not Flower 2's.
     store.changeRoom("room:f1_");
-    const [level] = await store.history(["sensor.demo_f1_tank_level"], 12);
-    expect(level.points.at(-1)?.value).toBe(72);
     await expect(store.history(["sensor.demo_reservoir_distance"], 24)).rejects.toThrow(
       /selected room/,
     );
