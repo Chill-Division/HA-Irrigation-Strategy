@@ -108,7 +108,6 @@ def test_native_hardware_schema_retains_explicit_tank_telemetry(
     flow_module, monkeypatch
 ):
     mappings = {
-        "water_level_sensor": "sensor.tank_level",
         "tank_temperature_sensor": "sensor.tank_temp",
     }
     defaults = {}
@@ -140,8 +139,13 @@ def test_native_hardware_schema_retains_explicit_tank_telemetry(
         "feed_ph_sensor",
     ):
         assert gone not in fields  # removed in 2.26.0
-    # The tank's filling status and last fill are the controller's own record of its refills.
-    assert not {"tank_last_fill_sensor", "tank_fill_entity"} & set(fields)
+    # The tank's filling status and last fill are the controller's own record of its refills, and
+    # its level comes from the reservoir's distance sensor.
+    assert not {
+        "tank_last_fill_sensor",
+        "tank_fill_entity",
+        "water_level_sensor",
+    } & set(fields)
     assert fields["tank_temperature_sensor"][1]["domain"] == "sensor"
     hardware = flow_module._build_hardware(mappings)
     assert all(hardware[key] == value for key, value in mappings.items())

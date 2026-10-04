@@ -30,7 +30,6 @@ HARDWARE_DOMAINS = {
     "temperature_sensor": {"sensor"},
     "humidity_sensor": {"sensor"},
     "vpd_sensor": {"sensor"},
-    "water_level_sensor": {"sensor"},
     "tank_temperature_sensor": {"sensor"},
     # The reservoir and its dosers, for nutrient batches (feed.py): the controller drives these.
     "reservoir_distance_sensor": {"sensor"},
@@ -46,6 +45,8 @@ RETIRED_HARDWARE = (
     "feed_ph_sensor",
     "tank_ec_sensor",
     "tank_ph_sensor",
+    # The tank's level in %: the reservoir's distance sensor gives it (the controller's level_pct).
+    "water_level_sensor",
 )
 SIZING = {
     "plant_count": (1, 1000, True),
@@ -338,7 +339,7 @@ def prepare_setup(hass, payload, old=None, entry_id=None):
             prior[key] = int(value) if integer else float(value)
         zones[str(z)] = prior
     hw = deepcopy(old.get("hardware", {}))
-    # An older setup's feed and tank EC/pH probes (RETIRED_HARDWARE) go on its next save.
+    # An older setup's retired mappings (RETIRED_HARDWARE) go on its next save.
     for key in RETIRED_HARDWARE:
         hw.pop(key, None)
     incoming = payload.get("hardware", {})
@@ -644,7 +645,6 @@ HARDWARE_WORDS = {
     "temperature_sensor": "temperature sensor",
     "humidity_sensor": "humidity sensor",
     "vpd_sensor": "VPD sensor",
-    "water_level_sensor": "tank level sensor",
     "tank_temperature_sensor": "tank temperature sensor",
     "reservoir_distance_sensor": "reservoir level sensor",
     "fresh_water_switch": "fresh-water solenoid",
