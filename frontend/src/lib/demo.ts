@@ -150,6 +150,7 @@ export function createDemo(now = Date.now()): States {
           result: "done",
           stage: plan.stage,
           dosed: Object.fromEntries(plan.doses.map((d) => [String(d.doser), d.ml])),
+          doses: plan.doses.map((d) => ({ doser: d.doser, label: d.label, ml: d.ml, given: d.ml })),
         },
         blocked: null,
         updated: stamp,

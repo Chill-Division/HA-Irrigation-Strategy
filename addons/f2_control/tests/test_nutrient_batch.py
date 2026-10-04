@@ -642,8 +642,38 @@ def test_switching_watering_off_mid_dose_stops_it_and_counts_what_went_in():
     assert room.batch["step"] == "idle"
     assert all(fake.states[e][0] == "off" for e in (DOSER[2], FRESH, PUMP, RECIRC))
     assert 30 <= room.batch["last"]["dosed"]["2"] <= 70  # 100 mL in 10 s, stopped part-way
+    bloom, cleanse = room.batch["last"]["doses"]
+    assert (bloom["label"], cleanse["label"]) == ("Bloom", "Cleanse")
+    assert bloom["given"] == room.batch["last"]["dosed"]["2"] and cleanse["given"] is None
     (note,) = _alerts(fake, "CS-701")
     assert "while dosing" in note["message"] and "was switched off" in note["message"]
+    assert f"Given so far: Bloom {bloom['given']:g} mL." in note["message"]
+
+
+def test_the_last_batch_names_each_nutrient_in_the_order_it_went_in():
+    c, fake, room = _room(plan=ROOMY)
+    _tick(c, room)
+    _press(c, fake, room)
+    _to_end(c, fake, room)
+    assert room.batch["last"]["doses"] == [
+        {"doser": 2, "label": "Bloom", "ml": 100.0, "given": 100.0},
+        {"doser": 1, "label": "Cleanse", "ml": 50.0, "given": 50.0},
+    ]
+
+
+def test_a_dose_that_ran_its_time_gave_the_recipes_amount_however_late_it_was_switched_off():
+    """The controller switches a doser off a little after its time. That is not counted as more: the
+    record read 121 mL where the recipe said 120."""
+    c, fake, room = _room(plan=ROOMY)
+    _tick(c, room)
+    _press(c, fake, room)
+    _level(fake, 88.0)
+    while room.batch["step"] != "dosing":
+        _step_on(c, room)
+    _Clock.current = datetime.fromisoformat(room.batch["until"]) + timedelta(seconds=0.4)
+    _tick(c, room)
+    assert room.batch["step"] != "dosing" or room.batch["index"] == 1
+    assert room.batch["dosed"]["2"] == 100.0
 
 
 def test_switching_watering_off_in_the_second_half_of_the_fill_stops_the_water_and_the_pump():

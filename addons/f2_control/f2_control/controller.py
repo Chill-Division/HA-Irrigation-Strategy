@@ -2484,13 +2484,26 @@ class Controller:
             return self._batch_stop(room, now, f"doser {doses[index]['doser']} ({doser}) did not switch on")
 
     def _batch_given(self, room, off_at):
-        """What the dose in progress gave by `off_at`, in mL: its time on at its planned rate."""
+        """What the dose in progress gave by `off_at`, in mL: the recipe's amount once it has run its
+        planned time (the tenths of a second this controller takes to switch a doser are not counted
+        as more), and its share of it when stopped before then."""
         batch = room.batch
         dose = batch["plan"]["doses"][batch["index"]]
         on_at = _when(batch["on_at"])
         ran = max(0.0, (off_at - on_at).total_seconds()) if on_at else 0.0
-        given = dose["ml"] * min(ran, dose["seconds"] + 5) / dose["seconds"] if dose["seconds"] > 0 else 0.0
+        given = dose["ml"] * min(ran, dose["seconds"]) / dose["seconds"] if dose["seconds"] > 0 else 0.0
         batch["dosed"][str(dose["doser"])] = round(given, 1)
+
+    @staticmethod
+    def _batch_doses(batch):
+        """The batch's doses in the order they go in: each doser, its nutrient, the recipe's mL and
+        what it gave (None before its turn)."""
+        return [
+            {"doser": d["doser"], "label": d.get("label") or "", "ml": d["ml"],
+             "given": batch["dosed"].get(str(d["doser"]))}
+            for d in (batch.get("plan") or {}).get("doses") or []
+            if d.get("seconds", 0) > 0
+        ]
 
     def _batch_dose_done(self, room, now):
         batch = room.batch
@@ -2531,7 +2544,10 @@ class Controller:
         stage = (batch.get("plan") or {}).get("stage") or "no stage"
         where = {"filling": "filling", "filling_mixing": "filling", "settling": "starting to mix",
                  "dosing": "dosing", "pausing": "dosing", "mixing": "mixing"}.get(step, step)
-        given = ", ".join(f"doser {n} {ml:g} mL" for n, ml in batch["dosed"].items()) or "nothing"
+        given = ", ".join(
+            f"{d['label'] or 'doser ' + str(d['doser'])} {d['given']:g} mL"
+            for d in self._batch_doses(batch) if d["given"] is not None
+        ) or "nothing"
         if did_not_fill:
             start, level = why
             self._batch_finish(room, now, "stopped: the reservoir did not fill")
@@ -2568,7 +2584,8 @@ class Controller:
     def _batch_finish(self, room, now, result):
         batch = room.batch
         plan = batch.get("plan") or {}
-        batch["last"] = {"at": now.isoformat(), "result": result, "stage": plan.get("stage"), "dosed": dict(batch["dosed"])}
+        batch["last"] = {"at": now.isoformat(), "result": result, "stage": plan.get("stage"),
+                         "dosed": dict(batch["dosed"]), "doses": self._batch_doses(batch)}
         learned = self._learn_litres(room, plan) if result == "done" else None
         batch.update(step="idle", until=None, on_at=None, index=0, start_pct=None, fill_end=None)
         self._save_state()
@@ -3825,7 +3842,8 @@ class Controller:
             batch["interrupted"] = {"at": now.isoformat(), "step": batch["step"],
                                     "stage": (batch.get("plan") or {}).get("stage")}
             batch["last"] = {"at": now.isoformat(), "result": "stopped: the controller app stopped",
-                             "stage": (batch.get("plan") or {}).get("stage"), "dosed": dict(batch["dosed"])}
+                             "stage": (batch.get("plan") or {}).get("stage"), "dosed": dict(batch["dosed"]),
+                             "doses": self._batch_doses(batch)}
             batch.update(step="idle", until=None, on_at=None, index=0)
         for room in self.rooms:
             rec = getattr(room, "shot_inflight", None)

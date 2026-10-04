@@ -25,6 +25,7 @@ version being released.
 
 - Rooms & hardware is simpler: litres only, no catch-test calculator, and no separate tank level sensor.
 - Two Nutrifield sizes are in the substrate presets.
+- The last batch names each nutrient, in the order it went in, at the recipe's amounts.
 
 ## 2.35.2 - 2026-10-04
 

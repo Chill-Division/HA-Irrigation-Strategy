@@ -24,7 +24,14 @@ import {
 } from "./feed";
 import { FeedDemo, sampleFeed } from "./feed-demo";
 import { OperatorDemo } from "./operator-demo";
-import { fillRefusal, levelMm, readBatchStatus, timeLeft } from "./feed-status";
+import {
+  fillRefusal,
+  lastBatchWords,
+  levelMm,
+  readBatchStatus,
+  timeLeft,
+  type LastBatch,
+} from "./feed-status";
 import type { States } from "./types";
 
 // Athena Flower as the owner runs it: 3 Core : 5 Bloom : 1 Balance : 0.5 Cleanse, 1.667 mL per litre
@@ -284,7 +291,9 @@ describe("batch status", () => {
     expect(status.step).toBe("dosing");
     expect(status.until).toBe(Date.parse("2026-09-27T02:01:10Z"));
     expect(status.doses).toEqual([{ doser: 3, label: "Bloom", ml: 750, seconds: 75, dosed: null }]);
-    expect(status.last).toMatchObject({ result: "done", dosed: { "3": 750 } });
+    // A record from an older controller: its dosers by number, no names or order.
+    expect(status.last).toMatchObject({ result: "done", dosed: { "3": 750 }, doses: null });
+    expect(lastBatchWords(status.last!)).toBe("doser 3 750 mL");
     expect([status.auto, status.armed, status.blocked]).toEqual([true, false, null]);
     expect([status.levelPct, status.minPct, status.litresPerPct, status.due]).toEqual([
       88.2,
@@ -488,5 +497,48 @@ describe("feed actions in the dashboard", () => {
     ]);
     expect(refresh).toHaveBeenCalledTimes(2); // each asked for: the new button state
     store.disconnect();
+  });
+});
+
+describe("the last batch, in words", () => {
+  const last = (doses: LastBatch["doses"], result = "done"): LastBatch => ({
+    at: null,
+    result,
+    stage: "Bloom",
+    dosed: {},
+    doses,
+  });
+  const dose = (doser: number, label: string, ml: number, given: number | null) => ({
+    doser,
+    label,
+    ml,
+    given,
+  });
+  it("names each nutrient, in the order it went in, at the recipe's amount", () => {
+    expect(
+      lastBatchWords(
+        last([
+          dose(3, "Balance", 252, 252),
+          dose(6, "Bloom", 1200, 1200),
+          dose(5, "Core", 720, 720),
+          dose(2, "Cleanse", 120, 120),
+        ]),
+      ),
+    ).toBe("Balance 252 mL · Bloom 1,200 mL · Core 720 mL · Cleanse 120 mL");
+  });
+  it("says what a dose cut short gave, and which never went in", () => {
+    const stopped = last(
+      [
+        dose(3, "Balance", 252, 252),
+        dose(6, "Bloom", 1200, 600),
+        dose(5, "Core", 720, null),
+        dose(2, "", 120, null),
+      ],
+      "stopped: watering was switched off",
+    );
+    expect(lastBatchWords(stopped)).toBe(
+      "Balance 252 mL · Bloom 600 of 1,200 mL · Core and doser 2 not dosed",
+    );
+    expect(lastBatchWords(last([]))).toBe("Nothing dosed");
   });
 });
