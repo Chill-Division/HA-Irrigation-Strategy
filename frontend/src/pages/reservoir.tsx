@@ -12,6 +12,7 @@ import {
   ArrowUp,
   Beaker,
   Check,
+  CircleHelp,
   GripVertical,
   LoaderCircle,
   Minus,
@@ -19,6 +20,7 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
+import { Popover } from "radix-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -445,7 +447,8 @@ function BatchPanel({
   );
 }
 
-/** The room's dosers, by number: what each pumps. Each recipe has its own dosing order. */
+/** The room's dosers, by number, as small cards like the schedule's weeks: what each pumps in the
+ * stage in use, and its flow. Each recipe has its own dosing order. */
 function DoserFlows({
   draft,
   mapped,
@@ -461,23 +464,24 @@ function DoserFlows({
 }) {
   const id = useId();
   return (
-    <>
-      <ul className="res-dosers" aria-describedby={`${id}-help`}>
-        {mapped.map((doser) => (
-          <li key={doser} data-doser={doser} className="res-doser">
-            <span className="res-doser-name">
-              <strong>Doser {doser}</strong>
-              <span className="muted small">
-                {stage?.doses[String(doser)]?.label
-                  ? `${stage.doses[String(doser)].label} in ${stage.name}`
-                  : "Not in the stage in use"}
-              </span>
-              <code className="res-entity">{entities[String(doser)]}</code>
-            </span>
+    <ul className="res-dosers">
+      {mapped.map((doser) => {
+        const label = stage?.doses[String(doser)]?.label;
+        return (
+          <li
+            key={doser}
+            data-doser={doser}
+            className="res-doser"
+            title={`${entities[String(doser)]}${label ? ` · ${label} in ${stage!.name}` : ""}`}
+          >
+            <strong>Doser {doser}</strong>
+            <small className="muted">
+              {label ?? (stage ? `Not in ${stage.name}` : "No stage in use")}
+            </small>
             <span className="res-flow">
-              <Label htmlFor={`${id}-flow-${doser}`}>Flow (mL/min)</Label>
               <Input
                 id={`${id}-flow-${doser}`}
+                aria-label={`Doser ${doser} flow, mL per minute`}
                 type="number"
                 min={1}
                 max={10000}
@@ -495,15 +499,12 @@ function DoserFlows({
                   })
                 }
               />
+              <span className="muted small">mL/min</span>
             </span>
           </li>
-        ))}
-      </ul>
-      <p id={`${id}-help`} className="muted small">
-        The flow is what the doser pumps, set on the doser itself: it turns each dose's mL into how
-        long the doser runs. The order the dosers run in is each feed recipe&apos;s own.
-      </p>
-    </>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -1221,7 +1222,39 @@ export function Reservoir({
             </section>
           </div>
           <section className="panel workspace-card">
-            <h2>Dosers</h2>
+            <div className="res-dosers-head">
+              <h2>Dosers</h2>
+              {!!mapped.length && (
+                <Popover.Root>
+                  <Popover.Trigger asChild>
+                    <button
+                      type="button"
+                      className="setting-help-trigger"
+                      aria-label="About the dosers"
+                    >
+                      <CircleHelp size={15} aria-hidden="true" />
+                    </button>
+                  </Popover.Trigger>
+                  <Popover.Portal>
+                    <Popover.Content
+                      className="setting-help"
+                      side="bottom"
+                      align="start"
+                      sideOffset={6}
+                      collisionPadding={12}
+                    >
+                      <p>Each card shows what its doser pumps in the feed stage in use.</p>
+                      <p>
+                        Flow is how many mL the doser pumps a minute, as calibrated on the doser
+                        itself. The controller uses it to work out how long to run the doser for
+                        each dose.
+                      </p>
+                      <p>The order the dosers run in is set in each feed recipe.</p>
+                    </Popover.Content>
+                  </Popover.Portal>
+                </Popover.Root>
+              )}
+            </div>
             {mapped.length ? (
               <DoserFlows
                 draft={draft}
