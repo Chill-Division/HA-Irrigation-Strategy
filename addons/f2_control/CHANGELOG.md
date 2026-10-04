@@ -1,4 +1,6 @@
-# Unreleased
+# 2.36.0
+
+Pair with integration 2.36.0.
 
 - **The dashboard the app serves:** Rooms & hardware no longer has the catch-test calculator. No change to the controller.
 - **The dashboard the app serves:** Rooms & hardware takes pot volume in litres and dripper flow in L/h only. No change to the controller.

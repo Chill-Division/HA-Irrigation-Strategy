@@ -9,7 +9,9 @@ and code-level detail for developers and AI agents working on the repo.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.36.0] - 2026-10-04
+
+Integration and controller **2.36.0**.
 
 - **One branch.** Changes are merged into `main` and released from it; the separate `testing`
   branch is retired. Rooms are still offered an update only at a release.

@@ -21,7 +21,7 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
-## Unreleased
+## 2.36.0 - 2026-10-04
 
 - Rooms & hardware is simpler: litres only, no catch-test calculator, and no separate tank level sensor.
 - Two Nutrifield sizes are in the substrate presets.
