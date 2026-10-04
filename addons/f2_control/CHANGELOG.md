@@ -5,6 +5,7 @@
 - **The dashboard the app serves:** two Nutrifield sizes in the substrate presets. No change to the controller.
 - **The dashboard the app serves:** the tank card's level comes only from the reservoir's level sensor; the separate tank level sensor in % is no longer a mapping. No change to the controller.
 - **A dose that runs its time gave the recipe's amount.** The time the controller takes to switch a doser no longer counts as more (121 mL for a recipe's 120); a dose stopped sooner still gives its share. The last batch record (`batch_status.last`) gains `doses`, each nutrient in dosing order, and a batch stopped part-way (CS-701) names what it gave by nutrient. **The dashboard the app serves** shows the last batch by nutrient. No new options; an older state file's last batch, without `doses`, still loads.
+- **The dashboard the app serves:** on a computer, the Reservoir page puts the doses beside Fill and mix, at the same height as Fill. No change to the controller.
 
 # 2.35.2
 

@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   numbers, at the amounts the recipe asked for. A dose that runs its time is recorded as exactly
   that amount: the moment the controller takes to switch a doser no longer reads as 1 mL more. A
   batch stopped part-way says what each nutrient gave and which never went in.
+- **Fill and mix on one line on a computer.** On the Reservoir page the doses sit beside "Fill and
+  mix" instead of under it, and "Fill" is as tall as it. A phone keeps them underneath.
 
 ### 🔧 Technical notes
 
@@ -66,6 +68,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `given`, null when not reached, in dosing order) from `_batch_doses`; `dosed` stays for the
   stock tanks. CS-701 names what was given by nutrient. Dashboard: `lastBatchWords` words it, with
   doser numbers for a record from an older controller.
+- Dashboard: above 900 px the Reservoir page's steps (`.res-steps`) keep to one line, stretched to
+  the tallest, and the mixing half (`.res-steps-group`) puts its doses in a third grid column beside
+  its name; only the doses give way, wrapping inside it. At 900 px and under nothing changes.
 
 ## [2.35.2] - 2026-10-04
 
