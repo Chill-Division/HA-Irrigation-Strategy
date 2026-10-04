@@ -45,6 +45,8 @@
   grid-template-columns: auto 1fr;
   column-gap: 8px;
   align-items: center;
+  /* A step drawn taller than its words keeps them together, in its middle. */
+  align-content: center;
   min-width: 0;
   padding: 8px 12px;
   border: 1px solid var(--border);
@@ -355,6 +357,34 @@
 .res-savebar-row span {
   margin-right: auto;
   font-weight: 600;
+}
+@media (min-width: 901px) {
+  /* Room enough for the doses beside the mixing half's name: the steps on one line, each as tall as
+     the tallest, and the doses wrapping inside theirs when the line runs short. */
+  .res-steps {
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+  /* Every step but the mixing half keeps its width; the doses give way, onto a second row. */
+  .res-steps > li:not(.res-steps-group) {
+    flex-shrink: 0;
+  }
+  .res-steps > li.res-steps-group {
+    grid-template-columns: auto max-content minmax(0, 1fr);
+  }
+  .res-steps-group > ol {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    flex-wrap: wrap;
+    margin: 0 0 0 8px;
+  }
+  /* Its name and time meet in the middle, level with the fill's, however tall the doses make it. */
+  .res-steps-group > .res-step-label {
+    align-self: end;
+  }
+  .res-steps-group > .res-step-detail {
+    align-self: start;
+  }
 }
 @media (max-width: 900px) {
   .res-batch-body,
