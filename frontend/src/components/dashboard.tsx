@@ -629,16 +629,23 @@ export function LastIrrigation({ zone, compact = false }: { zone: Zone; compact?
     second: "2-digit",
     timeZoneName: "short",
   });
+  // One line: how long ago, then the time (and the day, when it was not today).
+  const at = date.toLocaleString(
+    undefined,
+    date.toDateString() === new Date().toDateString()
+      ? { hour: "2-digit", minute: "2-digit" }
+      : { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" },
+  );
   return (
     <time
       className="zone-last-irrigation"
       data-last-irrigation={zone.id}
       dateTime={timestamp}
-      title={timestamp}
+      title={full}
       aria-label={`Last irrigation: ${full}. ${relative}.`}
     >
-      <span>{relative}</span>
-      {!compact && <span className="cell-subtext">{full}</span>}
+      {relative}
+      {!compact && <span className="zone-last-irrigation-at"> · {at}</span>}
     </time>
   );
 }
