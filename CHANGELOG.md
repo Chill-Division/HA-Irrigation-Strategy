@@ -9,6 +9,16 @@ and code-level detail for developers and AI agents working on the repo.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- **Pull requests start with what they change.** The pull request template's first section is
+  "What", without the "In plain English" title the changelog dropped in 2.36.0.
+
+### 🔧 Technical notes
+
+- CI: `.github/pull_request_template.md` opens with `## What` and its checklist asks for the
+  changelog's summary, then its technical notes.
+
 ## [2.36.0] - 2026-10-04
 
 Integration and controller **2.36.0**.
