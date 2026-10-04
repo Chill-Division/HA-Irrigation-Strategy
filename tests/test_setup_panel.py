@@ -13,7 +13,9 @@ def test_panel_registration_uses_async_paths_and_never_replaces_existing_panel(
 
     calls = []
     frontend = ModuleType("homeassistant.components.frontend")
-    frontend.async_register_built_in_panel = lambda *a, **k: calls.append(k)
+    frontend.async_register_built_in_panel = lambda *a, **k: calls.append(
+        {"component": a[1], **k}
+    )
     frontend.async_remove_panel = lambda *a: calls.append("removed")
     frontend.async_panel_exists = lambda *a: False
     components = ModuleType("homeassistant.components")
@@ -40,6 +42,14 @@ def test_panel_registration_uses_async_paths_and_never_replaces_existing_panel(
         == f"/crop_steering/dashboard.html?v={SOFTWARE_VERSION}"
     )
     assert calls[0]["frontend_url_path"] == "crop-steering"
+    assert calls[0]["component"] == "custom"
+    # A custom panel, so Home Assistant draws no title bar above it: its element holds the page.
+    assert calls[0]["config"]["_panel_custom"] == {
+        "name": "crop-steering-panel",
+        "module_url": f"/crop_steering/panel.js?v={SOFTWARE_VERSION}",
+        "embed_iframe": False,
+        "trust_external": False,
+    }
     assert paths[0][0] == "/crop_steering"
     assert paths[0][2] is False
     setup_panel.async_unload_panel(hass)
