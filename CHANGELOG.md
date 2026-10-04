@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the controller works it out, so the "Tank fill level (%)" mapping is gone. A room that had one
   mapped drops it the next time its setup is saved. Watering is not affected: the controller never
   read it.
+- **The last batch names each nutrient, in the order it went in.** The Reservoir page reads, for
+  example, "Balance 252 mL · Bloom 1,200 mL · Core 720 mL · Cleanse 120 mL" instead of doser
+  numbers, at the amounts the recipe asked for. A dose that runs its time is recorded as exactly
+  that amount: the moment the controller takes to switch a doser no longer reads as 1 mL more. A
+  batch stopped part-way says what each nutrient gave and which never went in.
 
 ### 🔧 Technical notes
 
@@ -55,6 +60,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Dashboard: the tank card's level and chart come only from `reservoir_distance_sensor` with the
   feed plan's `full_mm` and `empty_mm` (the level reads "Not set up" without them, "Not mapped"
   without the sensor); history is allowed for that sensor alone, and the demo loses its % sensors.
+- Controller: `_batch_given` records a dose that has run its planned time as the recipe's mL; it
+  had counted from just before the doser switched on to when it switched off, up to 5 s over. One
+  stopped sooner gives its share. `batch_status.last` gains `doses` (each `doser`, `label`, `ml`
+  and `given`, null when not reached, in dosing order) from `_batch_doses`; `dosed` stays for the
+  stock tanks. CS-701 names what was given by nutrient. Dashboard: `lastBatchWords` words it, with
+  doser numbers for a record from an older controller.
 
 ## [2.35.2] - 2026-10-04
 
