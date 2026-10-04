@@ -1320,10 +1320,7 @@ try {
           await frame.locator("script[data-font-license=Roboto]").textContent(),
           /SIL OPEN FONT LICENSE/,
         );
-        await mkdir(fileURLToPath(new URL("../../img/", import.meta.url)), { recursive: true });
-        await tp.screenshot({
-          path: fileURLToPath(new URL("../../img/operator-dashboard.png", import.meta.url)),
-        });
+        await tp.screenshot({ path: out + "ha-native-dark-overview.png" });
         await navigateSchedule(frame);
         await visible(frame.locator("#steering-balance"));
         assert.equal(await frame.locator('[data-planning-cadence="p1"]').count(), 1);
@@ -1331,26 +1328,20 @@ try {
           .locator(".workspace-card")
           .filter({ has: frame.locator(".planning-curve") });
         await tp.evaluate(() => (document.querySelector("iframe").style.height = "3000px"));
-        await panel.screenshot({
-          path: fileURLToPath(new URL("../../img/grow-plan.png", import.meta.url)),
-        });
+        await panel.screenshot({ path: out + "ha-native-dark-grow-plan.png" });
         await tp.evaluate(() => (document.querySelector("iframe").style.height = "100vh"));
         await tp.screenshot({ path: out + "workspace-ha-native-dark.png", fullPage: true });
         await navigateSetup(frame);
         await visible(frame.locator("#setup-room"));
         await settle(frame); // the tabs ease between their colours
-        await tp.screenshot({
-          path: fileURLToPath(new URL("../../img/rooms-setup.png", import.meta.url)),
-        });
+        await tp.screenshot({ path: out + "ha-native-dark-rooms-setup.png" });
         await frame
           .locator(".desktop-sidebar")
           .getByRole("button", { name: "Overview", exact: true })
           .click();
         await visible(frame.getByRole("heading", { level: 1, name: / overview$/ }));
         await tp.setViewportSize({ width: 390, height: 844 });
-        await tp.screenshot({
-          path: fileURLToPath(new URL("../../img/mobile-overview.png", import.meta.url)),
-        });
+        await tp.screenshot({ path: out + "ha-native-dark-mobile-overview.png" });
         await tp.setViewportSize({ width: 1440, height: 1000 });
 
         await tp.evaluate(() => {
@@ -1389,6 +1380,68 @@ try {
         );
       } finally {
         await themed.close();
+      }
+    },
+  );
+
+  await check(
+    "README screenshots: the dashboard as it opens, light, on a laptop and on a phone",
+    async () => {
+      const light = await browser.newContext({
+        viewport: { width: 1440, height: 1000 },
+        colorScheme: "light",
+      });
+      await light.route("**/*", (route) => {
+        const u = new URL(route.request().url());
+        if (u.origin !== origin || u.pathname.startsWith("/api/")) {
+          forbidden.push(u.origin + u.pathname);
+          return route.abort();
+        }
+        return route.continue();
+      });
+      const lp = await light.newPage();
+      lp.on("pageerror", (e) => pageErrors.push(e.message));
+      const img = (name) => fileURLToPath(new URL(`../../img/${name}`, import.meta.url));
+      const open = async (route) => {
+        await lp.goto(url + "#/" + route, { waitUntil: "networkidle" });
+        await visible(lp.locator("#main-content"));
+      };
+      try {
+        await mkdir(fileURLToPath(new URL("../../img/", import.meta.url)), { recursive: true });
+        await open("overview");
+        await lp.locator(".timeline-zone").first().waitFor();
+        // Light with nothing saved: the default.
+        assert.equal(
+          await lp.evaluate(() => document.documentElement.classList.contains("dark")),
+          false,
+        );
+        await settle(lp);
+        await lp.screenshot({ path: img("operator-dashboard.png") });
+        await navigateSchedule(lp);
+        await visible(lp.locator("#steering-balance"));
+        await settle(lp);
+        await lp
+          .locator(".workspace-card")
+          .filter({ has: lp.locator(".planning-curve") })
+          .screenshot({ path: img("grow-plan.png") });
+        await navigateSetup(lp);
+        await visible(lp.locator("#setup-room"));
+        await settle(lp);
+        await lp.screenshot({ path: img("rooms-setup.png") });
+        // On a phone: the Overview, the Reservoir and today's plan.
+        await lp.setViewportSize({ width: 390, height: 844 });
+        for (const [route, name, ready] of [
+          ["overview", "mobile-overview.png", ".timeline-zone"],
+          ["reservoir", "mobile-reservoir.png", "[data-batch-status]"],
+          ["strategy", "mobile-plan.png", ".planning-curve"],
+        ]) {
+          await open(route);
+          await lp.locator(ready).first().waitFor();
+          await settle(lp);
+          await lp.screenshot({ path: img(name) });
+        }
+      } finally {
+        await light.close();
       }
     },
   );

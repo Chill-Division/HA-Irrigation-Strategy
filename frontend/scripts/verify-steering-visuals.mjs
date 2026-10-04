@@ -5,6 +5,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
+import { lightShot } from "./light-shot.mjs";
 const out = fileURLToPath(new URL("../../output/playwright/", import.meta.url));
 await mkdir(out, { recursive: true });
 const html = await readFile(new URL("../../addons/f2_control/www/public/dashboard.html", import.meta.url));
@@ -128,7 +129,7 @@ try {
         document.activeElement?.blur();
         window.scrollTo(0, 0);
       });
-      await page.screenshot({
+      await lightShot(page, page, {
         path: fileURLToPath(new URL("../../img/manual-setpoints.png", import.meta.url)),
       });
       await zoneTab(2).click();
@@ -178,7 +179,7 @@ try {
     );
     assert.doesNotMatch(await graph.innerText(), /NaN|undefined/);
     await graph.scrollIntoViewIfNeeded();
-    await graph.screenshot({
+    await lightShot(shot, graph, {
       path: fileURLToPath(new URL("../../img/plan-graph.png", import.meta.url)),
     });
     const history = shot
@@ -187,7 +188,7 @@ try {
       .first();
     await history.locator(".sensor-chart").first().waitFor();
     await history.scrollIntoViewIfNeeded();
-    await history.screenshot({
+    await lightShot(shot, history, {
       path: fileURLToPath(new URL("../../img/sensor-history.png", import.meta.url)),
     });
     await pinned.close();
@@ -204,7 +205,7 @@ try {
     await banner.waitFor();
     assert.match(await banner.innerText(), /no irrigation, no alerts/i);
     await page.evaluate(() => window.scrollTo(0, 0));
-    await page.screenshot({
+    await lightShot(page, page, {
       path: fileURLToPath(new URL("../../img/room-off.png", import.meta.url)),
       clip: { x: 0, y: 0, width: 1600, height: 760 },
     });
@@ -368,7 +369,7 @@ try {
         document.activeElement?.blur();
         window.scrollTo(0, 0);
       });
-      await page.screenshot({
+      await lightShot(page, page, {
         path: fileURLToPath(new URL("../../img/run-comparison.png", import.meta.url)),
         fullPage: true,
       });

@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
+import { lightShot } from "./light-shot.mjs";
 const html = await readFile(new URL("../../addons/f2_control/www/public/dashboard.html", import.meta.url));
 const out = new URL("../../output/playwright/", import.meta.url);
 const file = (name) => new URL(name, out).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -97,7 +98,7 @@ try {
     `first reading inset: top ${inset.readingTop}, left ${inset.left}`,
   );
   await tank.screenshot({ path: file("tank-status.png") });
-  await tank.screenshot({ path: img("tank-status.png") });
+  await lightShot(page, tank, { path: img("tank-status.png") });
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     assert.ok(

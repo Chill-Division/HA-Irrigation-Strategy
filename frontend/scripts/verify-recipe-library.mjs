@@ -5,6 +5,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
+import { lightShot } from "./light-shot.mjs";
 const out = fileURLToPath(new URL("../../output/playwright/", import.meta.url));
 await mkdir(out, { recursive: true });
 const html = await readFile(new URL("../../addons/f2_control/www/public/dashboard.html", import.meta.url));
@@ -136,7 +137,7 @@ try {
         document.activeElement?.blur();
         window.scrollTo(0, 0);
       });
-      await library().screenshot({
+      await lightShot(page, library(), {
         path: fileURLToPath(new URL("../../img/recipe-library.png", import.meta.url)),
       });
     },
