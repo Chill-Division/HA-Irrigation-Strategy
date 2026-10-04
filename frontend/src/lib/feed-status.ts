@@ -17,12 +17,24 @@ export interface BatchDose extends PlannedDose {
   /** mL it gave in the batch running now; null before its turn. */
   dosed: number | null;
 }
+/** A dose of the last batch, as the controller recorded it. */
+export interface LastDose {
+  doser: number;
+  /** Its nutrient; "" when the recipe named none. */
+  label: string;
+  /** What the recipe asked for, mL. */
+  ml: number;
+  /** What it gave, mL; null when the batch stopped before its turn. */
+  given: number | null;
+}
 export interface LastBatch {
   at: number | null;
   /** "done", or "stopped: <why>". */
   result: string;
   stage: string | null;
   dosed: Record<string, number>;
+  /** Each dose in the order it went in; null from an older controller, which kept only `dosed`. */
+  doses: LastDose[] | null;
 }
 export interface BatchStatus {
   entityId: string;
@@ -137,6 +149,19 @@ export function readBatchStatus(states: States, prefix: string): BatchStatus | n
                   ),
                 )
               : {},
+          doses: Array.isArray(last.doses)
+            ? (last.doses as unknown[]).flatMap((item) => {
+                const dose = (item && typeof item === "object" ? item : {}) as Record<
+                  string,
+                  unknown
+                >;
+                const doser = finite(dose.doser),
+                  ml = finite(dose.ml);
+                return doser === null || ml === null
+                  ? []
+                  : [{ doser, label: text(dose.label) ?? "", ml, given: finite(dose.given) }];
+              })
+            : null,
         }
       : null,
     blocked: text(a.blocked),
@@ -195,4 +220,33 @@ export function timeLeft(until: number | null, now = Date.now()): string | null 
   const minutes = Math.floor(seconds / 60),
     rest = seconds % 60;
   return minutes ? `${minutes} min${rest ? ` ${rest} s` : ""} left` : `${rest} s left`;
+}
+
+/** The last batch's doses in words, in the order they went in: "Balance 252 mL · Bloom 600 of
+ * 1,200 mL · Core and Cleanse not dosed". An older controller's record lists its dosers by number. */
+export function lastBatchWords(last: LastBatch): string {
+  const mL = (value: number) => value.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (!last.doses)
+    return (
+      Object.entries(last.dosed)
+        .map(([doser, ml]) => `doser ${doser} ${mL(ml)} mL`)
+        .join(" · ") || "Nothing dosed"
+    );
+  const name = (dose: LastDose) => dose.label || `doser ${dose.doser}`;
+  const list = (items: string[]) =>
+    items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
+  const given = last.doses.flatMap((dose) =>
+    dose.given === null
+      ? []
+      : [
+          Math.round(dose.given) < Math.round(dose.ml)
+            ? `${name(dose)} ${mL(dose.given)} of ${mL(dose.ml)} mL`
+            : `${name(dose)} ${mL(dose.ml)} mL`,
+        ],
+  );
+  const missed = last.doses.filter((dose) => dose.given === null).map(name);
+  return (
+    [...given, ...(missed.length ? [`${list(missed)} not dosed`] : [])].join(" · ") ||
+    "Nothing dosed"
+  );
 }

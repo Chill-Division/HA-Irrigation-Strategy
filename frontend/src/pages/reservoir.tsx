@@ -62,6 +62,7 @@ import {
   type FeedSettings,
 } from "@/lib/feed";
 import {
+  lastBatchWords,
   levelMm,
   readBatchStatus,
   STEP_LABELS,
@@ -427,11 +428,7 @@ function BatchPanel({
               {status.last.result !== "done" && (
                 <p className="muted small">{status.last.result.replace(/^stopped: /, "")}</p>
               )}
-              <p className="muted small">
-                {Object.entries(status.last.dosed)
-                  .map(([n, ml]) => `doser ${n} ${number(ml, 0)} mL`)
-                  .join(" · ") || "Nothing dosed"}
-              </p>
+              <p className="muted small">{lastBatchWords(status.last)}</p>
             </>
           ) : (
             <p className="muted">{status ? "None yet" : "Not reported"}</p>
