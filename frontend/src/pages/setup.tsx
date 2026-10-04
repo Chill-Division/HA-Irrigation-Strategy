@@ -25,7 +25,6 @@ import { WateringPower } from "@/components/room-controls";
 import { RoomTests } from "@/components/room-tests";
 import { Pill } from "@/components/mini-visuals";
 import {
-  CatchTestCalculator,
   SizingField,
   SizingUnitPickers,
   SubstratePresetPicker,
@@ -805,13 +804,6 @@ export function Setup({
                           litres={zone.substrate_volume ?? NaN}
                           disabled={busy}
                           onPick={(litres) => editZone(zone.id, { substrate_volume: litres })}
-                        />
-                        <CatchTestCalculator
-                          id={"zone-" + zone.id + "-catch-test"}
-                          zoneName={zone.name}
-                          flowUnit={units.flow}
-                          disabled={busy}
-                          onUse={(flow) => editZone(zone.id, { dripper_flow_rate: flow })}
                         />
                       </div>
                       {(!zone.vwc_sensors.length || !zone.ec_sensors.length) && (
