@@ -575,14 +575,6 @@
 .sizing-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
-.sizing-units {
-  grid-template-columns: repeat(2, minmax(0, 260px));
-  margin-top: 0;
-}
-.sizing-units > p {
-  grid-column: 1 / -1;
-  margin-top: -10px;
-}
 .sizing-grid p,
 .sizing-helpers p {
   margin-top: 6px;
