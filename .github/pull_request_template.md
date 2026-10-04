@@ -1,5 +1,5 @@
 <!--
-One change per pull request, into `testing`. See CONTRIBUTING.md.
+One change per pull request, into `main`. See CONTRIBUTING.md.
 If describing it needs the word "and", it is two pull requests.
 -->
 
