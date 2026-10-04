@@ -26,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **No Home Assistant title bar above the dashboard.** The dashboard is now a custom panel, so Home
   Assistant no longer draws its black "Crop Steering" bar above it, and the page starts at the top.
   The house button in the dashboard's top bar opens Home Assistant's sidebar, as before.
+- **Feed recipes to start from, and recipe files.** A new feed recipe can start from Athena's Grow,
+  Bloom or Fade as Chill Division runs them (240 mL a part), or from Front Row's 3-2-2 stock
+  concentrate chart at high strength (Veg, Stretch, Stack, Swell, Ripen; plain, + Triologic, or
+  + BioFlo, with Front Row Si as the pH up). Each nutrient goes on the doser your recipes already
+  give it, and a note says where any went that no recipe names. Each recipe can be saved to a file
+  and imported, in this room or another, as strategies can.
 
 ### 🔧 Technical notes
 
@@ -49,9 +55,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`www/panel.js`) holds the dashboard in a frame the size of the panel, less the safe-area padding
   Home Assistant puts around a custom panel, so the dashboard finds Home Assistant through its frame
   as before: its kiosk event and its house button work unchanged.
+- Dashboard: `feed-library.ts` holds the templates (Athena, Chill Division modified: `partMl` 240,
+  the strength worked out from the room's fill litres; Front Row 3-2-2 high strength from its
+  231226 metric V3 chart at 1 mL per litre a part, Triologic 0.26 and BioFlo 8 mL/L variants),
+  `placeRecipe` (each nutrient on the doser the room's recipes most give it, Front Row Si also by
+  Power Si or Si; others on free dosers, an unnamed or Empty one first; none free, left out;
+  `uniqueName` within 40 characters) and the recipe file (`crop-steering-feed-recipe` version 1:
+  name, strength and nutrients by name in dosing order; `importRecipe` checks it as `feed_save`
+  would). The Reservoir page's Feed recipes have a "Start from" list beside Add a feed recipe,
+  Import recipe file, a note on where the nutrients went, and an export button on each recipe. The
+  nutrient suggestions add Front Row Si, Triologic and BioFlo. No change to the integration: a
+  recipe saves as before.
 - Docs: the user guide's Overview; the Overview screenshot.
+- Docs: the user guide's feed recipes, their templates and recipe files.
 - Tests: the grow-day browser checks read the zone lines and the key through their popovers, and
   check the key's popover on a dark theme.
+- Tests: the templates (each saves as `feed_save` takes it; Athena 240 mL a part at any fill),
+  placing a recipe on a room labelled as GR2, unique names, and the recipe file's round trip and
+  refusals; a browser check adds a template, exports it and imports the file.
 
 ## [2.34.0] - 2026-10-04
 
