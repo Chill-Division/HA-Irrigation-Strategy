@@ -25,6 +25,10 @@ const context = await browser.newContext({
   viewport: { width: 1440, height: 1080 },
   colorScheme: "dark",
 });
+// Follows the device's colour scheme, as the dashboard did by default before it defaulted to light.
+await context.addInitScript(() => {
+  if (!localStorage.getItem("irrigation-theme")) localStorage.setItem("irrigation-theme", "auto");
+});
 const errors = [],
   forbidden = [];
 async function open(target) {

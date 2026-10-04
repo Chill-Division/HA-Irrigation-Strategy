@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { resolveTheme, themePreference } from "./ha-theme";
 
 describe("Home Assistant theme resolution", () => {
-  it("defaults to following Home Assistant and retains explicit saved choices", () => {
-    expect(themePreference(null)).toBe("auto");
+  it("defaults to light and retains a saved choice of Home Assistant, light or dark", () => {
+    expect(themePreference(null)).toBe("light");
+    expect(themePreference("auto")).toBe("auto");
     expect(themePreference("dark")).toBe("dark");
     expect(themePreference("light")).toBe("light");
-    expect(themePreference("invalid")).toBe("auto");
+    expect(themePreference("invalid")).toBe("light");
   });
   it("follows the system when no HA palette is available", () => {
     expect(resolveTheme("auto", true, {}).dark).toBe(true);

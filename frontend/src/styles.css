@@ -1850,9 +1850,6 @@ select option:disabled {
 .theme-options button {
   min-width: 100px;
 }
-.theme-options button:first-child {
-  flex-basis: 100%;
-}
 .history-controls {
   display: flex;
   align-items: center;

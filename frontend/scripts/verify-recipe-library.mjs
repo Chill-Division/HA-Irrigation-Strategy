@@ -23,6 +23,10 @@ const context = await browser.newContext({
   acceptDownloads: true,
   colorScheme: "dark",
 });
+// Follows the device's colour scheme, as the dashboard did by default before it defaulted to light.
+await context.addInitScript(() => {
+    if (!localStorage.getItem("irrigation-theme")) localStorage.setItem("irrigation-theme", "auto");
+  });
 // HTTP LAN installations lack randomUUID; keep getRandomValues available.
 await context.addInitScript(() =>
   Object.defineProperty(crypto, "randomUUID", { value: undefined, configurable: true }),

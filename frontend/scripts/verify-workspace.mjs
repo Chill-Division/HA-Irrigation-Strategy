@@ -38,6 +38,10 @@ const context = await browser.newContext({
   viewport: { width: 1440, height: 1000 },
   acceptDownloads: true,
 });
+// Follows the device's colour scheme, as the dashboard did by default before it defaulted to light.
+await context.addInitScript(() => {
+  if (!localStorage.getItem("irrigation-theme")) localStorage.setItem("irrigation-theme", "auto");
+});
 const forbidden = [],
   pageErrors = [],
   checks = [],
@@ -1377,7 +1381,7 @@ try {
           await frame.evaluate(() => document.documentElement.classList.contains("dark")),
           false,
         );
-        await frame.getByRole("button", { name: "Home Assistant / system", exact: true }).click();
+        await frame.getByRole("button", { name: "Home Assistant", exact: true }).click();
         await frame.waitForFunction(
           () =>
             document.documentElement.dataset.themeSource === "home-assistant" &&
