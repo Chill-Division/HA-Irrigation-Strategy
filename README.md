@@ -9,7 +9,7 @@ Crop Steering waters a grow room automatically. Every minute it reads each zone'
 
 **Predictable by design.** No AI makes any decision. Every shot comes from your setpoints and fixed arithmetic, so the same readings and settings, at the same point in the day, always give the same decision, and the dashboard shows the numbers behind each one. Nothing guesses, nothing makes up a reading, and nothing apologises after the fact.
 
-![The Overview: today's grow day for every zone, the zones and the tank](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/operator-dashboard.png)
+![The Overview: today's grow day for every zone, the zones and the tank](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/operator-dashboard.png)
 
 > **Safety first.** This switches real pumps and valves, unattended, on living plants. Set each room up with watering switched off, check every probe and switch it uses, and do a catch test (measure what the drippers actually deliver) before you let it water. It does not replace physical safety devices: use valves that close when power is lost, and a float switch or timer that can stop a pump on its own.
 
@@ -27,11 +27,15 @@ Crop Steering waters a grow room automatically. Every minute it reads each zone'
 - **Set up without YAML.** Map the valves, pumps and probes you already have from the dashboard. Every save is checked before it applies, and the controller confirms it has picked the change up.
 - **A log you can read.** The controller app's log says, every minute and in plain words, what each zone is doing and what it is waiting for.
 
-| Today's targets on the zone's own readings | Nutrient batches | On a phone |
+| Today's targets on the zone's own readings | Nutrient batches | Water use per zone |
 | --- | --- | --- |
-| ![Today's targets on the zone's recorded moisture and EC, with the projected day](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/plan-graph.png) | ![The Reservoir page: a batch's steps, the reservoir level and the feed stage in use](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/reservoir.png) | ![The Overview on a phone](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/mobile-overview.png) |
+| ![Today's targets on the zone's recorded moisture and EC, with the projected day](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/plan-graph.png) | ![The Reservoir page: a batch's steps, the doses going in while it fills, and the reservoir's level](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/reservoir.png) | ![Today, this week, this grow and an estimate for the whole grow, with litres per grow week](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/water-use.png) |
 
-More in the [screenshots](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/SCREENSHOTS.md).
+| On a phone: the Overview | The Reservoir | Today's targets |
+| --- | --- | --- |
+| ![The Overview on a phone](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/mobile-overview.png) | ![The Reservoir on a phone: a batch's steps, the doses inside Fill and mix](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/mobile-reservoir.png) | ![Today's targets on a phone](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/mobile-plan.png) |
+
+More in the [screenshots](https://github.com/ChillingSilence/HA-Irrigation-Strategy/blob/main/docs/SCREENSHOTS.md).
 
 ## What you need
 

@@ -9,6 +9,22 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **Light screenshots.** The README's and the screenshots page's pictures are light, as the
+  dashboard now opens, with three from a phone: the Overview, the Reservoir and today's targets.
+
+### 🔧 Technical notes
+
+- Docs: every README and `docs/SCREENSHOTS.md` image is retaken light. The browser checks that run
+  dark take their README images through `frontend/scripts/light-shot.mjs` (the device made light
+  for the screenshot, then dark again); `verify-workspace.mjs`'s Overview, Schedule and Rooms &
+  hardware images, and the new `mobile-reservoir.png` and `mobile-plan.png`, come from a light check
+  of their own, its Home Assistant dark-palette pages now only in `output/`. The README's images
+  load from `ChillingSilence/HA-Irrigation-Strategy` until the public repository exists.
+
 ## [2.35.0] - 2026-10-04
 
 Integration and controller **2.35.0**.
