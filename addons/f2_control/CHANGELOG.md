@@ -1,4 +1,6 @@
-# Unreleased
+# 2.35.2
+
+Pair with integration 2.35.2.
 
 - **Water per plant in litres to two places.** The vitals notification reads each plant's water in litres to two places from a litre up ("1.26 L/plant day", was "1.3 L/plant day") and in whole mL below it, judged by the mL as shown, so 999.6 mL reads "1.00 L/plant day", not "1000 mL/plant day". **The dashboard the app serves** shows it the same way. No new options; no change to the state file.
 
