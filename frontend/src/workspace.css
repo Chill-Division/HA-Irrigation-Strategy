@@ -592,30 +592,6 @@
   align-items: start;
   margin-top: 0;
 }
-.catch-test summary {
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-}
-.catch-test summary:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-.catch-test .workspace-form-grid {
-  margin: 12px 0 0;
-}
-.catch-test .catch-test-result,
-.catch-test .field-error {
-  margin: 12px 0;
-  font-size: 13px;
-}
-.sizing-action {
-  height: auto;
-  min-height: 36px;
-  max-width: 100%;
-  white-space: normal;
-  text-align: left;
-}
 .archived-zones {
   padding: 16px 0;
 }

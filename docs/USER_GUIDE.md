@@ -131,7 +131,7 @@ Libraries are isolated by site, browser, room and demo/live mode. They are not a
 
 The updated planning curve uses separate axes for VWC (%) and root-zone EC, joining configured references across lights-off and overnight to the next lights-on. VWC joins the daytime reference to the relative dryback endpoint; the P3 emergency floor remains a separate protection reference. Dashed EC interpolates from the last daytime anchor to the next morning anchor. There is no P3 EC setpoint or prediction of the physical EC/salt trajectory. Missing values remain gaps rather than being filled with guessed readings. A graph handle changes configuration in a draft, not physical equipment.
 
-Use **Work out dripper flow from a catch test**, under each zone in **Settings → Rooms & hardware**, to turn a catch test into the flow per dripper. It only does the arithmetic; **Use … as dripper flow** puts the result in the setup draft, which is saved only after its review. Historical estimates are not retroactively corrected when flow settings change. For detailed software semantics, see [Steering and planning](GROW_PLANS.md).
+Historical estimates are not retroactively corrected when flow settings change. For detailed software semantics, see [Steering and planning](GROW_PLANS.md).
 
 ## Compare recorded runs
 

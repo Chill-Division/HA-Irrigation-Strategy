@@ -743,6 +743,7 @@ try {
           )
           .first(),
       );
+      await axe("setup-sizing-helpers");
       await preset.selectOption("rockwool-4in");
       assert.equal(await page.locator("#zone-1-substrate_volume").inputValue(), "0.65");
       assert.equal(await preset.inputValue(), "rockwool-4in", "The preset just picked shows");
@@ -787,66 +788,6 @@ try {
     assert.equal((await reading.innerText()).split("\n")[0], "0.639");
     await page.keyboard.press("Escape");
   });
-  await check(
-    "Catch test works out L/h, rejects nonsense, fills only the dripper-flow draft and actuates nothing",
-    async () => {
-      await fresh("setup");
-      await visible(page.locator("#room-name"));
-      const catchTest = page.locator("#zone-1-catch-test");
-      await catchTest.locator("summary").click();
-      assert.match(await catchTest.innerText(), /never opens a valve or runs a pump/);
-      const use = catchTest.getByRole("button");
-      assert.equal(await use.isDisabled(), true);
-      await catchTest.getByLabel("Run time · seconds").fill("0");
-      await catchTest.getByLabel("Water caught from one dripper · mL").fill("65");
-      assert.equal(
-        await page.locator("#zone-1-catch-test-result").innerText(),
-        "Run time must be more than 0 seconds.",
-      );
-      assert.equal(
-        await catchTest.getByLabel("Run time · seconds").getAttribute("aria-invalid"),
-        "true",
-      );
-      assert.equal(await use.isDisabled(), true);
-      await catchTest.getByLabel("Run time · seconds").fill("1");
-      await catchTest.getByLabel("Water caught from one dripper · mL").fill("5000");
-      assert.match(
-        await page.locator("#zone-1-catch-test-result").innerText(),
-        /^That works out to 18000 L\/h, above the 50 L\/h maximum for a dripper\./,
-      );
-      assert.equal(await use.isDisabled(), true);
-      await catchTest.getByLabel("Run time · seconds").fill("60");
-      await catchTest.getByLabel("Water caught from one dripper · mL").fill("65");
-      assert.equal(
-        await page.locator("#zone-1-catch-test-result").innerText(),
-        "Flow per dripper: 3.9 L/h",
-      );
-      assert.equal(
-        await page.locator("#zone-1-dripper_flow_rate").inputValue(),
-        "4",
-        "Computing a result must not touch the draft",
-      );
-      await axe("setup-sizing-helpers");
-      await page.getByRole("button", { name: "Use 3.9 L/h as Zone 1 dripper flow" }).click();
-      assert.equal(await page.locator("#zone-1-dripper_flow_rate").inputValue(), "3.9");
-      assert.equal(await page.locator("#zone-2-dripper_flow_rate").inputValue(), "4");
-      await liveSetup(async (lp, calls) => {
-        const live = lp.locator("#zone-1-catch-test");
-        await live.locator("summary").click();
-        await live.getByLabel("Run time · seconds").fill("47");
-        await live.getByLabel("Water caught from one dripper · mL").fill("100");
-        await lp.getByRole("button", { name: "Use 7.66 L/h as Zone 1 dripper flow" }).click();
-        assert.equal(
-          calls.some((call) => call.action === "setup_save"),
-          false,
-          "Using the result must not save anything by itself",
-        );
-        await saveSetup(lp);
-        assert.equal(savedZone(calls).dripper_flow_rate, 7.66);
-        assert.equal(savedZone(calls).substrate_volume, 6, "Other sizing is untouched");
-      });
-    },
-  );
   await check(
     "Grow plan and setup are accessible and fit 390px with keyboard reachable mappings",
     async () => {

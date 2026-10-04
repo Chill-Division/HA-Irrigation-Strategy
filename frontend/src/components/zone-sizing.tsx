@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { findSession } from "@/lib/client";
-import { catchTest } from "@/lib/catch-test";
 import {
   SUBSTRATE_PRESETS,
   SUBSTRATE_PRESET_GROUPS,
@@ -121,7 +119,7 @@ export function SizingField({
   const shown = () => displayNumber(fromMetric(value, unit));
   const [entry, setEntry] = useState({ value, unit, text: shown() });
   let text = entry.text;
-  // The draft moved without this field being typed in (preset, catch test, discard, reload),
+  // The draft moved without this field being typed in (preset, discard, reload),
   // or the unit changed: show the draft again instead of the stale keystrokes.
   if (!Object.is(entry.value, value) || entry.unit !== unit) {
     text = shown();
@@ -206,101 +204,5 @@ export function SubstratePresetPicker({
         percentage of this volume, so measure it if unsure.
       </p>
     </div>
-  );
-}
-
-export function CatchTestCalculator({
-  id,
-  zoneName,
-  flowUnit,
-  disabled,
-  onUse,
-}: {
-  id: string;
-  zoneName: string;
-  flowUnit: SizingUnit;
-  disabled: boolean;
-  onUse: (litresPerHour: number) => void;
-}) {
-  const [seconds, setSeconds] = useState(""),
-    [ml, setMl] = useState("");
-  const result = seconds.trim() && ml.trim() ? catchTest(Number(ml), Number(seconds)) : null;
-  const wrong = (field: "seconds" | "ml") =>
-    !!result && result.flow === null && (result.field === field || result.field === "both");
-  return (
-    <details id={id} className="catch-test">
-      <summary>Work out dripper flow from a catch test</summary>
-      <p className="small muted">
-        Run one dripper into a measuring cup, time it, then enter what that one dripper delivered.
-        This calculator only does the arithmetic: it never opens a valve or runs a pump, so start
-        and stop the water yourself.
-      </p>
-      <div className="workspace-form-grid">
-        <div>
-          <Label htmlFor={id + "-seconds"}>Run time · seconds</Label>
-          <Input
-            id={id + "-seconds"}
-            type="number"
-            min="0"
-            step="1"
-            placeholder="e.g. 60"
-            disabled={disabled}
-            value={seconds}
-            aria-invalid={wrong("seconds")}
-            aria-describedby={id + "-result"}
-            onChange={(event) => setSeconds(event.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor={id + "-ml"}>Water caught from one dripper · mL</Label>
-          <Input
-            id={id + "-ml"}
-            type="number"
-            min="0"
-            step="1"
-            placeholder="e.g. 65"
-            disabled={disabled}
-            value={ml}
-            aria-invalid={wrong("ml")}
-            aria-describedby={id + "-result"}
-            onChange={(event) => setMl(event.target.value)}
-          />
-        </div>
-      </div>
-      <p
-        id={id + "-result"}
-        className={result?.error ? "field-error" : "catch-test-result"}
-        role="status"
-      >
-        {!result ? (
-          "Enter both values to see the flow."
-        ) : result.flow === null ? (
-          result.error
-        ) : (
-          <>
-            Flow per dripper: <strong>{result.flow} L/h</strong>
-            {flowUnit.factor !== 1 &&
-              ` (${displayNumber(fromMetric(result.flow, flowUnit))} ${flowUnit.symbol})`}
-          </>
-        )}
-      </p>
-      <Button
-        type="button"
-        variant="outline"
-        className="sizing-action"
-        disabled={disabled || !result || result.flow === null}
-        onClick={() => {
-          if (result && result.flow !== null) onUse(result.flow);
-        }}
-      >
-        {result && result.flow !== null
-          ? `Use ${result.flow} L/h as ${zoneName} dripper flow`
-          : "Use the result as dripper flow"}
-      </Button>
-      <p className="small muted">
-        Using the result fills the dripper flow field in this draft only. Nothing is saved until you
-        review and save the configuration.
-      </p>
-    </details>
   );
 }

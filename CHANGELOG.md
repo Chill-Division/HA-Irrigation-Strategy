@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   branch is retired. Rooms are still offered an update only at a release.
 - **Release notes start with what changed.** The heading that sat over each release's summary is
   gone, here and on the release page; the summary and the technical notes are as before.
+- **No catch-test calculator.** Rooms & hardware no longer works out dripper flow from a catch
+  test. Pressure-compensating drippers give a fixed flow: type the number on the dripper.
 
 ### 🔧 Technical notes
 
@@ -30,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entry. `scripts/release.py` refuses an Unreleased section with no `- ` line before
   `### 🔧 Technical notes`, and `scripts/release_notes.py` publishes an entry up to that heading.
   `CLAUDE.md` and `docs/RELEASING.md` say so.
+- Dashboard: `CatchTestCalculator` and `frontend/src/lib/catch-test.ts` are removed, with their
+  styles, unit tests, browser check and the user guide's paragraph. The substrate-preset browser
+  check now runs the accessibility scan of the zone's sizing helpers that the catch-test check ran.
 
 ## [2.35.2] - 2026-10-04
 
