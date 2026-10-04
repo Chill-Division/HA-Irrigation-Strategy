@@ -21,7 +21,7 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
-## Unreleased
+## 2.35.1 - 2026-10-04
 
 - The Overview's VWC and EC tiles are named for your probe choice, such as Lowest VWC.
 
