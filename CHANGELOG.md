@@ -28,10 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The house button in the dashboard's top bar opens Home Assistant's sidebar, as before.
 - **Feed recipes to start from, and recipe files.** A new feed recipe can start from Athena's Grow,
   Bloom or Fade as Chill Division runs them (240 mL a part), or from Front Row's 3-2-2 stock
-  concentrate chart at high strength (Veg, Stretch, Stack, Swell, Ripen; plain, + Triologic, or
-  + BioFlo, with Front Row Si as the pH up). Each nutrient goes on the doser your recipes already
-  give it, and a note says where any went that no recipe names. Each recipe can be saved to a file
-  and imported, in this room or another, as strategies can.
+  concentrate chart at high strength (Veg, Stretch, Stack, Swell and Ripen, each also with Triologic
+  or with BioFlo, and Front Row Si as the pH up). Each nutrient goes on the doser your recipes
+  already give it, and a note says where any went that no recipe names. Each recipe can be saved to
+  a file and imported, in this room or another, as strategies can.
 
 ### 🔧 Technical notes
 
