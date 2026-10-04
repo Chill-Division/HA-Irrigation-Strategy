@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Light by default.** The dashboard opens light, whatever the device is set to. **Settings →
   Appearance** can still follow Home Assistant's theme (or the device's, outside Home Assistant) or
   stay dark: each browser keeps its own choice, and one already made is kept.
+- **No Home Assistant title bar above the dashboard.** The dashboard is now a custom panel, so Home
+  Assistant no longer draws its black "Crop Steering" bar above it, and the page starts at the top.
+  The house button in the dashboard's top bar opens Home Assistant's sidebar, as before.
 
 ### 🔧 Technical notes
 
@@ -39,6 +42,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`themePreference` defaults to `light`, not `auto`); Appearance's options are Home Assistant, Light
   and Dark, in one row on a laptop. The browser checks that emulate a dark device save `auto` first
   where nothing is saved, so they still check the dark theme and the README's dark screenshots stay.
+- Integration: `setup_panel` registers the sidebar panel as a custom panel (component `custom`, its
+  `_panel_custom` the module `/crop_steering/panel.js?v=<version>` and the element
+  `crop-steering-panel`, not embedded in a frame of its own) instead of the built-in iframe panel,
+  whose `hass-subpage` draws a title bar. Its URL path, `/crop-steering`, is the same. The element
+  (`www/panel.js`) holds the dashboard in a frame the size of the panel, less the safe-area padding
+  Home Assistant puts around a custom panel, so the dashboard finds Home Assistant through its frame
+  as before: its kiosk event and its house button work unchanged.
 - Docs: the user guide's Overview; the Overview screenshot.
 - Tests: the grow-day browser checks read the zone lines and the key through their popovers, and
   check the key's popover on a dark theme.

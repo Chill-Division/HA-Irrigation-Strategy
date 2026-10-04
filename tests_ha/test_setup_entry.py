@@ -5,6 +5,8 @@ panel registration with a no-op, so an entry that failed to set up there still p
 registration now runs against the real frontend.
 """
 
+from pathlib import Path
+
 from homeassistant.components import frontend
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.data_entry_flow import FlowResultType
@@ -45,6 +47,16 @@ async def test_the_entry_registers_its_sidebar_panel_through_the_frontend(hass, 
     assert asked and set(asked) == {PANEL}
     assert PANEL in hass.data[frontend.DATA_PANELS]
     assert hass.http.async_register_static_paths.await_count == 1
+    # A custom panel: Home Assistant draws no title bar above it, and its element (shipped in www/)
+    # holds the dashboard.
+    panel = hass.data[frontend.DATA_PANELS][PANEL]
+    assert panel.component_name == "custom"
+    custom = panel.config["_panel_custom"]
+    assert (custom["name"], custom["embed_iframe"]) == ("crop-steering-panel", False)
+    assert custom["module_url"].startswith("/crop_steering/panel.js?v=")
+    assert panel.config["url"].startswith("/crop_steering/dashboard.html?v=")
+    www = Path(__file__).parents[1] / "custom_components" / "crop_steering" / "www"
+    assert (www / "panel.js").is_file() and (www / "dashboard.html").is_file()
 
 
 async def test_a_sidebar_path_somebody_else_owns_is_left_alone(hass):
