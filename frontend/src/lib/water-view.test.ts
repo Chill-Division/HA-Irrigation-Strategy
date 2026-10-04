@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mlPerPlant, plantAmount, roomPerPlant } from "./water-view";
+import { mlPerPlant, plantAmount, plantText, roomPerPlant } from "./water-view";
 import type { Zone } from "./types";
 
 const zone = (id: number, value: number | null, unit = "L") =>
@@ -13,9 +13,21 @@ describe("water per plant", () => {
     for (const plants of [null, 0, -3, 2.5]) expect(mlPerPlant(5.3, plants)).toBeNull();
     expect(mlPerPlant(null, 36)).toBeNull();
   });
-  it("reads in mL below a litre and in litres from one up", () => {
-    expect(plantAmount(147.2)).toEqual({ value: 147.2, unit: "mL", digits: 0 });
-    expect(plantAmount(1111.1)).toEqual({ value: 1.1111, unit: "L", digits: 1 });
+  it("reads in whole mL below a litre and in litres to two places from one up", () => {
+    expect(plantAmount(147.2)).toEqual({ value: "147", unit: "mL" });
+    expect(plantAmount(1111.1)).toEqual({ value: "1.11", unit: "L" });
+    expect([980, 1000, 1040, 1260, 3000, 12345].map(plantText)).toEqual([
+      "980 mL",
+      "1.00 L",
+      "1.04 L",
+      "1.26 L",
+      "3.00 L",
+      "12.35 L",
+    ]);
+  });
+  it("goes to litres by the mL as they would read: 999.6 mL is 1.00 L, not 1,000 mL", () => {
+    expect(plantText(999.4)).toBe("999 mL");
+    expect(plantText(999.6)).toBe("1.00 L");
   });
   it("across the room, weights each zone by its plants and leaves out a zone it cannot divide", () => {
     const zones = [zone(1, 5.3), zone(2, 6.2), zone(3, 7.1), zone(4, 9)];

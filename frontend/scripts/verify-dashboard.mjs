@@ -1013,7 +1013,7 @@ try {
     await axe("settings: water per plant");
     // The demo's zone 1: 5.3 L for 36 plants, a 40 L limit.
     await visit("overview");
-    assert.equal((await cells())[0], "147 mL / 1.1 L\n13% of limit");
+    assert.equal((await cells())[0], "147 mL / 1.11 L\n13% of limit");
     const water = page.locator(".zone-table-desktop th", { hasText: "Water today" });
     assert.equal((await water.innerText()).replace(/\s+/g, " "), "Water today per plant");
     assert.match(
@@ -1029,7 +1029,7 @@ try {
     const tile = page.getByRole("dialog").locator(".detail-metrics > div", {
       hasText: "Water today per plant",
     });
-    assert.match(await tile.innerText(), /147 mL \/ 1\.1 L/);
+    assert.match(await tile.innerText(), /147 mL \/ 1\.11 L/);
     await page.keyboard.press("Escape");
     // The choice is Flower 2's: Flower 1 still shows each zone's total.
     await page.locator("#desktop-room").selectOption("room:f1_");
@@ -1041,7 +1041,7 @@ try {
     await visit("overview");
     assert.match(
       await page.locator(".zone-mobile-row").first().innerText(),
-      /Water today per plant\n147 mL \/ 1\.1 L/,
+      /Water today per plant\n147 mL \/ 1\.11 L/,
     );
     await noOverflow();
     await page.setViewportSize({ width: 1440, height: 1000 });

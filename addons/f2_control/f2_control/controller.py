@@ -4739,7 +4739,9 @@ class Controller:
                     plants = self._zone_num(room, z, "plant_count", 0)
                     if plants >= 1 and float(plants).is_integer():
                         ml = st["daily_vol"] * 1000 / plants
-                        water = f"{ml:.0f} mL/plant day" if ml < 1000 else f"{ml / 1000:.1f} L/plant day"
+                        # As the dashboard reads it: whole mL below a litre, litres to two places from
+                        # one up, judged by the mL as shown (999.6 mL is 1.00 L, not "1000 mL").
+                        water = f"{ml:.0f} mL/plant day" if round(ml) < 1000 else f"{ml / 1000:.2f} L/plant day"
                 lines.append(
                     f"{indent}Z{z} {d['phase']}: VWC {vwc} EC {ec} (FC~{fc}) | {water} | last {ago}"
                 )

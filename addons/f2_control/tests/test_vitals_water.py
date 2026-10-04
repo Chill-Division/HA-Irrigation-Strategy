@@ -28,7 +28,14 @@ def test_each_zones_total_until_the_room_chooses_per_plant():
 
 def test_per_plant_divides_the_zones_water_by_its_plants():
     assert _water(12.4, {VIEW: ("Per plant", {}), PLANTS: ("36", {})}) == "344 mL/plant day"
-    assert _water(43.2, {VIEW: ("Per plant", {}), PLANTS: ("36", {})}) == "1.2 L/plant day"
+    assert _water(43.2, {VIEW: ("Per plant", {}), PLANTS: ("36", {})}) == "1.20 L/plant day"
+    assert _water(45.4, {VIEW: ("Per plant", {}), PLANTS: ("36", {})}) == "1.26 L/plant day"
+
+
+def test_per_plant_goes_to_litres_by_the_ml_as_they_would_read():
+    """999.6 mL reads 1.00 L, not "1000 mL", as on the dashboard."""
+    assert _water(35.9784, {VIEW: ("Per plant", {}), PLANTS: ("36", {})}) == "999 mL/plant day"
+    assert _water(35.9856, {VIEW: ("Per plant", {}), PLANTS: ("36", {})}) == "1.00 L/plant day"
 
 
 def test_a_zone_without_a_plant_count_stays_in_litres():

@@ -9,6 +9,26 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **Water per plant in litres to two decimal places.** From a litre up, water per plant reads in
+  litres to two places, so 1.04 L reads **1.04 L**, not 1 L; below a litre it stays in whole
+  millilitres (**980 mL**). The Overview, a zone's details, the Water page and the controller's
+  notification all show it the same way, and 999.6 mL now reads 1.00 L instead of "1,000 mL".
+  Zone totals are unchanged.
+
+### 🔧 Technical notes
+
+- Dashboard: `plantAmount` (`frontend/src/lib/water-view.ts`) returns the figure as text, whole mL
+  below a litre and litres with exactly two decimals from one up, choosing by `Math.round(ml)` so
+  the mL as shown decide; `plantText` is the same in words, shared by the Overview, zone details
+  and the Water page's per-plant note, which showed whole mL even above a litre.
+- Controller: the vitals notification's water per plant reads as the dashboard does,
+  `1.26 L/plant day` from `round(ml)` of 1000 up. Tests: `water-view.test.ts`,
+  `verify-dashboard.mjs` and `test_vitals_water.py`.
+
 ## [2.35.1] - 2026-10-04
 
 Integration and controller **2.35.1**.
