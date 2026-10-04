@@ -7,7 +7,7 @@
 
 Crop Steering waters a grow room automatically. Every minute it reads each zone's moisture and EC probes, decides whether the zone needs a shot and how big, and runs your pump and valves to deliver it, through the four-phase day that crop-steering growers use. It runs inside [Home Assistant](https://www.home-assistant.io/) with the probes, pumps and valves you already have, on your own hardware: no cloud account, no subscription.
 
-**Predictable by design.** No AI makes any decision. Every shot comes from your setpoints and fixed arithmetic, so the same readings and settings, at the same point in the day, always give the same decision, and the dashboard shows the numbers behind each one. Nothing guesses, nothing makes up a reading, and nothing apologises after the fact.
+**Deterministic, sensor-driven crop steering.** No AI makes any decision. Every shot comes from a published rule and your setpoints: the same readings, settings and day so far always give the same decision, and the dashboard shows the numbers behind each one. Nothing guesses, nothing makes up a reading, and nothing apologises after the fact.
 
 ![The Overview: today's grow day for every zone, the zones and the tank](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/operator-dashboard.png)
 
