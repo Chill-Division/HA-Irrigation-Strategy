@@ -560,6 +560,49 @@ try {
     await bar.getByRole("button", { name: "Discard" }).click(); // leave nothing unsaved behind
     await bar.waitFor({ state: "hidden" });
   });
+  await check("reservoir: a template or a recipe file puts each nutrient on the doser that carries it", async () => {
+    await go("reservoir");
+    const recipes = page.locator("section.res-recipes");
+    await expectVisible(recipes);
+    const cards = recipes.locator(".res-recipe");
+    const before = await cards.count();
+    // Athena Bloom as Chill Division runs it: each nutrient goes on the doser the room's recipes give it.
+    await page.getByLabel("Start from").selectOption("athena-cd-bloom");
+    await page.getByRole("button", { name: "Add a feed recipe" }).click();
+    const note = page.locator("[data-recipe-added]");
+    await expectVisible(
+      note.getByText(
+        "Added Athena Bloom (Chill Division modified). Each nutrient went on the doser that carries it.",
+      ),
+    );
+    assert.equal(await cards.count(), before + 1);
+    const added = cards.last();
+    assert.equal(await added.getByLabel("Stage name").inputValue(), "Athena Bloom (Chill Division modified)");
+    // Its recipe file, back in: the same recipe, under a name of its own.
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      added.getByRole("button", { name: "Export Athena Bloom (Chill Division modified)" }).click(),
+    ]);
+    assert.equal(download.suggestedFilename(), "feed-recipe-athena-bloom-chill-division-modified.json");
+    await page.getByLabel("Import a feed recipe file").setInputFiles(await download.path());
+    await expectVisible(note.getByText(/^Added Athena Bloom \(Chill Division modified\) 2\./));
+    assert.equal(await cards.count(), before + 2);
+    // A file that isn't one says so, and adds nothing.
+    await page.getByLabel("Import a feed recipe file").setInputFiles({
+      name: "not-a-recipe.json",
+      mimeType: "application/json",
+      buffer: Buffer.from("{}"),
+    });
+    await expectVisible(note.getByText("That file isn't a Crop Steering feed recipe."));
+    assert.equal(await cards.count(), before + 2);
+    await axe("feed recipes from a template and a recipe file");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await noOverflow();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    const bar = page.getByRole("region", { name: "Unsaved changes" });
+    await bar.getByRole("button", { name: "Discard" }).click(); // leave nothing unsaved behind
+    await bar.waitFor({ state: "hidden" });
+  });
   await check("tests: a zone's test shot says what it gives, and is asked for once confirmed", async () => {
     await go("setup");
     const tests = page.locator("[data-room-tests]");

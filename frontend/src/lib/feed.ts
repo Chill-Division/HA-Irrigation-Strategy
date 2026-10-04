@@ -116,7 +116,7 @@ export function levelPct(mm: number | null, fullMm: number, emptyMm: number): nu
 /** The nutrient names the recipe editor offers; anything else can be typed. */
 export const NUTRIENT_LINES: Record<string, string[]> = {
   Athena: ["Core", "Grow", "Bloom", "Fade", "Balance", "Cleanse"],
-  "Front Row": ["Part A", "Part B", "Bloom", "PhosZyme", "Power Si"],
+  "Front Row": ["Part A", "Part B", "Bloom", "PhosZyme", "Front Row Si", "Triologic", "BioFlo"],
 };
 export const STAGE_NAMES = ["Vege", "Flower", "Bloom", "Fade"];
 

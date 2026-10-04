@@ -26,6 +26,7 @@ version being released.
 - A tidier Overview: each zone's predictions and the chart's key are a tap away, under the grow day.
 - The dashboard opens in light mode; Settings → Appearance can still follow Home Assistant or go dark.
 - No more Home Assistant title bar above the dashboard: the page starts at the top.
+- Feed recipes can start from Athena or Front Row charts, and be saved to a file and imported.
 
 ## 2.34.0 - 2026-10-04
 
