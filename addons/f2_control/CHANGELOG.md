@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** Rooms & hardware no longer has the catch-test calculator. No change to the controller.
+
 # 2.35.2
 
 Pair with integration 2.35.2.
