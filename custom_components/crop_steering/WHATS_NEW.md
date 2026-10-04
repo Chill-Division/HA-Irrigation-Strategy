@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- The Overview's VWC and EC tiles are named for your probe choice, such as Lowest VWC.
+
 ## 2.35.0 - 2026-10-04
 
 - A tidier Overview: each zone's predictions and the chart's key are a tap away, under the grow day.

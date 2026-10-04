@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** the Overview's VWC and EC tiles are named for how the zones read their probes, such as Lowest VWC for a room of one zone reading its lowest probe. No change to the controller.
+
 # 2.35.0
 
 Pair with integration 2.35.0.
