@@ -1,6 +1,6 @@
 # Current workspace screenshots
 
-Captured in September 2026 from the compiled application with isolated demo data and inherited Home Assistant dark-theme variables. These are current UI examples, not photographs or live facility readings.
+Captured in October 2026 from the compiled application with isolated demo data, in the light theme the dashboard opens in, on a laptop and on a phone. These are current UI examples, not photographs or live facility readings.
 
 ## Overview
 
@@ -54,8 +54,10 @@ Captured in September 2026 from the compiled application with isolated demo data
 
 ![Rooms & hardware](../img/rooms-setup.png)
 
-## Mobile overview
+## On a phone
 
-![Mobile room overview](../img/mobile-overview.png)
+| The Overview | Feed: Reservoir | Irrigation plan: Today |
+| --- | --- | --- |
+| ![The Overview on a phone](../img/mobile-overview.png) | ![The Reservoir on a phone: a batch's steps, the doses inside Fill and mix](../img/mobile-reservoir.png) | ![Today's targets on a phone](../img/mobile-plan.png) |
 
-Reproduce these captures by building the frontend and running the browser checks in `frontend/scripts/` (`verify-workspace.mjs`, `verify-steering-visuals.mjs`, `verify-dashboard.mjs`, `verify-tank-status.mjs` and `verify-recipe-library.mjs`); each writes its screenshots into `img/`.
+Reproduce these captures by building the frontend and running the browser checks in `frontend/scripts/` (`verify-workspace.mjs`, `verify-steering-visuals.mjs`, `verify-dashboard.mjs`, `verify-tank-status.mjs` and `verify-recipe-library.mjs`); each writes its screenshots into `img/`, in the light theme, even where its own checks run dark (`light-shot.mjs`). The README links these images on `ChillingSilence/HA-Irrigation-Strategy` until the public repository has them.
