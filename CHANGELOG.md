@@ -9,6 +9,22 @@ notes**, the entity- and code-level detail for developers and AI agents working 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🌱 In plain English
+
+- **One branch.** Changes are merged into `main` and released from it; the separate `testing`
+  branch is retired. Rooms are still offered an update only at a release.
+
+### 🔧 Technical notes
+
+- Docs: `CONTRIBUTING.md`, `docs/RELEASING.md` and `CLAUDE.md` describe one long-lived branch,
+  `main`. Pull requests target it, and `release.py` releases it once Validate has passed on the
+  last merge, with no fast-forward from `testing` and no push back to it. A controller built
+  between releases (a fresh install, a Rebuild) builds what is merged on `main` then, under the last
+  released number, so merges are made close to releasing. An assistant merges a pull request or
+  runs the release command only when the owner asks, each time.
+
 ## [2.35.2] - 2026-10-04
 
 Integration and controller **2.35.2**.

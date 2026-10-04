@@ -12,14 +12,12 @@ python scripts/release.py 2.26.0 --public   # later, the same commit for everyon
 
 | Repository | Who installs from it | What moves its `main` |
 | --- | --- | --- |
-| `ChillingSilence/HA-Irrigation-Strategy` (this one) | The maintainer's own rooms. They are the test. | A release: a fast-forward to `testing`, then `release.py <version>` |
+| `ChillingSilence/HA-Irrigation-Strategy` (this one) | The maintainer's own rooms. They are the test. | Merged pull requests, and `release.py <version>`'s commit |
 | `Chill-Division/HA-Irrigation-Strategy` | Everyone else | Only `release.py <version> --public`, which fast-forwards it to a version already released here |
 
-This repository has a second long-lived branch, `testing`. **`testing` holds what is waiting;
-`main` holds what is released.** Every pull request is merged into `testing`
-([CONTRIBUTING.md](../CONTRIBUTING.md)), and what is merged waits there until the owner releases it.
-The public repository has only `main`, and takes no pull requests and no commits of its own:
-everything on it was released here first, byte for byte.
+Every pull request is merged into `main` ([CONTRIBUTING.md](../CONTRIBUTING.md)), and releases are
+made from it. The public repository takes no pull requests and no commits of its own: everything on
+it was released here first, byte for byte.
 
 ## How an update reaches a box
 
@@ -35,12 +33,11 @@ What follows from that (checked against the Supervisor source):
 - **The repository address is the controller's identity.** The same controller installed from the
   other repository is a different app with an empty `/data`: phase, counters, water history and
   learned peaks start again. Moving a box is a migration ([INSTALL.md](INSTALL.md)), not an edit.
-- **Between releases, `main` is the last release.** Merged changes wait on `testing`, so rebuilding
-  or reinstalling the controller on a box that tracks this repository builds the released code.
-  A box added with the repository address followed by `#testing` tracks `testing` instead: a
-  Rebuild builds whatever is waiting, under the last released number, since only a release changes
-  the number. Keep that to a staging room. The public repository's `main` likewise only ever moves
-  to a released commit.
+- **Between releases, `main` also carries what was merged since the last one.** Only a release
+  changes the number, so no box is offered anything new before then. But a controller built in
+  the meantime (a fresh install, a Rebuild, or an update to the last release taken late) builds
+  `main` as it is then, under the last released number. So merge close to releasing. The public
+  repository's `main` only ever moves to a released commit.
 
 ## Writing the notes
 
@@ -61,21 +58,13 @@ No pull request changes a version number. The release command is the only thing 
 
 ## Releasing here
 
-When the changes for a release are merged into `testing`:
+When the changes for a release are merged into `main` and Validate has passed on the last merge:
 
 ```bash
 git checkout main && git pull --ff-only
-git merge --ff-only origin/testing           # main takes what is waiting
-git push origin main                         # Validate runs on it; wait for it to pass
 python scripts/release.py 2.26.0 --dry-run   # the files it changes, and the release notes
 python scripts/release.py 2.26.0
-git push origin main:testing                 # testing takes the release commit
 ```
-
-The fast-forward works only while `testing` has everything `main` has. The last line keeps it so:
-after every release, `testing` takes the release commit. If a pull request was merged into
-`testing` while the release was being made, that push is refused; merge `main` into `testing`
-instead.
 
 The release command refuses unless `main` is checked out, clean, the same as `origin/main` and
 green in Validate, the number is new and higher, and `CHANGELOG.md` has its Unreleased notes. Then
