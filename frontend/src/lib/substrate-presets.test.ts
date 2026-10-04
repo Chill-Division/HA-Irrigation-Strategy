@@ -19,10 +19,12 @@ describe("substrate presets", () => {
     expect(preset("rockwool-hugo").dimensionsCm).toEqual([15, 15, 14.2]);
     expect(preset("rockwool-hugo").litres).toBe(3.2);
   });
-  it("offers exactly the agreed blocks and pots, with nominal litres for US pots", () => {
+  it("offers exactly the agreed blocks, bags and pots, with nominal litres for US pots", () => {
     expect(SUBSTRATE_PRESETS.map((item) => [item.name, item.litres])).toEqual([
       ["Rockwool 4 in cube", 0.65],
       ["Rockwool Hugo", 3.2],
+      ["Nutrifield 0.9 gal", 3.37],
+      ["Nutrifield 1.5 gal", 5.8],
       ["1 gal pot", 3.8],
       ["2 gal pot", 7.6],
       ["3 gal pot", 11.4],
@@ -47,6 +49,16 @@ describe("substrate presets", () => {
     );
     expect(presetLabel(preset("rockwool-hugo"))).toBe("Rockwool Hugo · 15 × 15 × 14.2 cm · 3.2 L");
     expect(presetLabel(preset("pot-5gal"))).toBe("5 gal pot (nominal) · 18.9 L");
+    // Nutrifield's own litres, under its own heading: not worked out from the dimensions.
+    expect(presetLabel(preset("nutrifield-15x15x16"))).toBe(
+      "Nutrifield 0.9 gal · 15 × 15 × 16 cm · 3.37 L",
+    );
+    expect(presetLabel(preset("nutrifield-18x18x18"))).toBe(
+      "Nutrifield 1.5 gal · 18 × 18 × 18 cm · 5.8 L",
+    );
+    expect(SUBSTRATE_PRESET_GROUPS.find((group) => group.id === "nutrifield")?.label).toBe(
+      "Nutrifield",
+    );
     expect(presetLabel(preset("pot-10l"))).toBe("10 L pot · 10 L");
     for (const item of SUBSTRATE_PRESETS) expect(presetLabel(item)).toContain(`${item.litres} L`);
   });

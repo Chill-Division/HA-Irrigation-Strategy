@@ -627,6 +627,8 @@ try {
         "Custom · type the pot volume",
         "Rockwool 4 in cube · 10 × 10 × 6.5 cm · 0.65 L",
         "Rockwool Hugo · 15 × 15 × 14.2 cm · 3.2 L",
+        "Nutrifield 0.9 gal · 15 × 15 × 16 cm · 3.37 L",
+        "Nutrifield 1.5 gal · 18 × 18 × 18 cm · 5.8 L",
         "1 gal pot (nominal) · 3.8 L",
         "2 gal pot (nominal) · 7.6 L",
         "3 gal pot (nominal) · 11.4 L",
@@ -646,6 +648,17 @@ try {
           .first(),
       );
       await axe("setup-sizing-helpers");
+      assert.deepEqual(
+        await preset.locator("optgroup").evaluateAll((groups) => groups.map((g) => g.label)),
+        [
+          "Rockwool blocks · volume from dimensions",
+          "Nutrifield",
+          "Pots · nominal US gallons",
+          "Pots · litres",
+        ],
+      );
+      await preset.selectOption("nutrifield-15x15x16");
+      assert.equal(await page.locator("#zone-1-substrate_volume").inputValue(), "3.37");
       await preset.selectOption("rockwool-4in");
       assert.equal(await page.locator("#zone-1-substrate_volume").inputValue(), "0.65");
       assert.equal(await preset.inputValue(), "rockwool-4in", "The preset just picked shows");

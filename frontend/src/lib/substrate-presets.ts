@@ -1,15 +1,16 @@
 /** Common substrate sizes that fill the pot-volume field. Volumes are litres per plant. */
-export type SubstrateGroup = "block" | "us-pot" | "metric-pot";
+export type SubstrateGroup = "block" | "nutrifield" | "us-pot" | "metric-pot";
 export interface SubstratePreset {
   id: string;
   group: SubstrateGroup;
   name: string;
   litres: number;
-  /** Width × depth × height of a block, the source of its volume. */
+  /** Width × depth × height in centimetres: a block's volume comes from them. */
   dimensionsCm?: readonly [number, number, number];
 }
 export const SUBSTRATE_PRESET_GROUPS: { id: SubstrateGroup; label: string }[] = [
   { id: "block", label: "Rockwool blocks · volume from dimensions" },
+  { id: "nutrifield", label: "Nutrifield" },
   { id: "us-pot", label: "Pots · nominal US gallons" },
   { id: "metric-pot", label: "Pots · litres" },
 ];
@@ -23,6 +24,18 @@ const block = (id: string, name: string, ...dimensionsCm: [number, number, numbe
   litres: blockLitres(...dimensionsCm),
   dimensionsCm,
 });
+/** A Nutrifield size: its stated volume, beside its outer dimensions. */
+const nutrifield = (
+  gallons: number,
+  litres: number,
+  ...dimensionsCm: [number, number, number]
+) => ({
+  id: `nutrifield-${dimensionsCm.join("x")}`,
+  group: "nutrifield" as const,
+  name: `Nutrifield ${gallons} gal`,
+  litres,
+  dimensionsCm,
+});
 const pot = (group: "us-pot" | "metric-pot", size: number, litres: number) => ({
   id: `pot-${size}${group === "us-pot" ? "gal" : "l"}`,
   group,
@@ -32,6 +45,9 @@ const pot = (group: "us-pot" | "metric-pot", size: number, litres: number) => ({
 export const SUBSTRATE_PRESETS: readonly SubstratePreset[] = [
   block("rockwool-4in", "Rockwool 4 in cube", 10, 10, 6.5),
   block("rockwool-hugo", "Rockwool Hugo", 15, 15, 14.2),
+  // Their stated volumes: 15 × 15 × 16 cm outside would be 3.6 L.
+  nutrifield(0.9, 3.37, 15, 15, 16),
+  nutrifield(1.5, 5.8, 18, 18, 18),
   // Nominal trade sizes, not exact US gallons.
   pot("us-pot", 1, 3.8),
   pot("us-pot", 2, 7.6),
