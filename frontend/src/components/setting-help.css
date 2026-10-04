@@ -30,6 +30,9 @@
   font-size: var(--text-sm);
   line-height: 1.5;
 }
+.setting-help p + p {
+  margin-top: 8px;
+}
 .setting-help-head {
   display: flex;
   flex-wrap: wrap;

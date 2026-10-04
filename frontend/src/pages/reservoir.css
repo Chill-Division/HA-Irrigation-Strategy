@@ -193,22 +193,32 @@
   padding: 0;
   font-size: inherit;
 }
+/* The dosers: small cards like the schedule's weeks, side by side. */
+.res-dosers-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .res-dosers {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
   gap: 8px;
-  margin: 12px 0;
+  margin: 12px 0 0;
   padding: 0;
   list-style: none;
 }
 .res-doser {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 150px;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
+}
+.res-doser strong {
+  font-weight: 600;
 }
 /* A recipe's rows are in the order they dose: drag one by its handle, or move it with its arrows. */
 .res-recipe-table tr[data-dragging] td {
@@ -245,23 +255,14 @@
   background: transparent;
   color: var(--muted-foreground);
 }
-.res-doser-name {
-  display: grid;
-  min-width: 0;
-}
-.res-entity {
-  overflow: hidden;
-  font-size: var(--text-xs);
-  color: var(--muted-foreground);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .res-flow {
-  display: grid;
-  gap: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
 }
-.res-flow label {
-  font-size: var(--text-xs);
+.res-flow input {
+  width: 64px;
 }
 .res-doser-move {
   display: flex;
@@ -361,9 +362,6 @@
   }
   .res-setting-grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .res-doser {
-    grid-template-columns: minmax(0, 1fr) 120px;
   }
   .res-recipe-head {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto;

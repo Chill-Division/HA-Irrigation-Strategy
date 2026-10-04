@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   above it; how it is tracking against yesterday, its targets, the water so far and what comes next
   are behind **Predictions**, and the chart's key is behind the **?**, both at the right of Today's
   events. A zone's last irrigation reads on one line: how long ago, and the time.
+- **Compact dosers.** On the Reservoir page each doser is a small card, like the schedule's weeks:
+  what it pumps in the stage in use and its flow, side by side instead of a row each across the
+  page, with what they mean behind a **?**.
 
 ### 🔧 Technical notes
 
@@ -26,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   under the chart and beside the title into a popover behind a **?**; both popovers carry the
   `day-timeline` class so the key keeps its colours outside the panel. `LastIrrigation` shows the
   relative time and the time (or day and time) on one line, the full timestamp as its tooltip.
+- Dashboard: the Reservoir page's dosers are small cards in a wrapping grid (each its number, what it
+  pumps in the stage in use, and its flow in mL/min, with its switch's entity id as its tooltip); the
+  note under them is a **?** popover beside the heading, reworded. Popovers space their paragraphs.
 - Docs: the user guide's Overview; the Overview screenshot.
 - Tests: the grow-day browser checks read the zone lines and the key through their popovers, and
   check the key's popover on a dark theme.
