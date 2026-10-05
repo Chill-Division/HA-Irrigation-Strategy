@@ -20,6 +20,7 @@ import {
   libraryKey,
   MAX_PLAN_BYTES,
   MAX_RECIPES,
+  planFileName,
   prepareRecipeDraft,
   readLibrary,
   removeRecipe,
@@ -303,7 +304,7 @@ export function RecipeLibrary({
                       size="sm"
                       variant="ghost"
                       onClick={() =>
-                        download(exportRecipe(recipe, roomName), "crop-steering-plan.json")
+                        download(exportRecipe(recipe, roomName), planFileName(recipe.name))
                       }
                       aria-label={`Export recipe ${recipe.name}`}
                     >

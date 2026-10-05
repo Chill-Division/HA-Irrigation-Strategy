@@ -31,6 +31,7 @@ import {
   SensorContextCard,
   useSensorContext,
 } from "@/components/sensor-context";
+import { planFileName } from "@/lib/recipe-library";
 import { fieldCapacitySuggestion, referenceLines, suggestedDraft } from "@/lib/sensor-context";
 import { syncPlanZones } from "@/lib/sync-plan-zones";
 import type { Controller } from "@/lib/types";
@@ -369,7 +370,11 @@ export function GrowPlanner({
     );
     const a = window.document.createElement("a");
     a.href = url;
-    a.download = "crop-steering-plan.json";
+    // Named for the room and the profiles it holds.
+    a.download = planFileName(
+      controller.room.room.name,
+      ...plan.profiles.map((profile) => profile.name),
+    );
     a.click();
     URL.revokeObjectURL(url);
   }

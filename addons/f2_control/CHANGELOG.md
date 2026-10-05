@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** exported plans and recipes are named for what they hold. No change to the controller.
+
 # 2.36.0
 
 Pair with integration 2.36.0.
