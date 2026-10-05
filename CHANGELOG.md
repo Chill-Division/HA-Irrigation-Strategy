@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The overnight hold says which peak its dryback is from.** The vitals and the Overview read
   "shot when VWC < 46.64% (now 69.1%), the 45% dryback from the 84.8% peak", where "the 45%
   dryback (now 69.1%)" read as 45% below the current reading. The dryback was always from the peak.
+- **New rooms start with Athena's dryback targets.** A new room's overnight dryback targets are
+  35% vegetative and 45% generative below the day's peak, the middle of Athena's ranges, where they
+  were 50% and 40%: the wrong way round, and deep. A room already set up keeps its own.
 
 ### 🔧 Technical notes
 
@@ -52,6 +55,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Engine, app and dashboard: `waiting_for`'s `p3_hold` gains `peak` (the add-on's vendored engine
   with it). `next_text` and the dashboard's `waitingText` put the reading beside the hold's
   threshold and say the dryback's peak.
+- Integration: `DEFAULT_VALUES` (`number.py`) has `vegetative_dryback_target` 35 and
+  `generative_dryback_target` 45 (were 50 and 40), room and per-zone. A restored value still beats
+  the default: `tests_ha/test_dryback_defaults.py` shows a new room at 35/45 and a seeded 2.17 room
+  keeping 50/40 (`_upgrade` takes more restored states).
 
 ## [2.37.0] - 2026-10-05
 
