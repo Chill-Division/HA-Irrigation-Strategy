@@ -1224,6 +1224,18 @@ try {
     assert.equal(await card.getAttribute("data-tour-step"), "welcome");
     await card.getByRole("button", { name: "Close the tour", exact: true }).click();
     await card.waitFor({ state: "detached" });
+    // The tour, and no What's new with it, even where the window's record is behind (a room set
+    // up again on an installation that had one): someone new is shown round, not what changed.
+    await page.goto("about:blank");
+    await page.goto(`${base}/dashboard.html?demo&tour=new&whats-new=2.22.0#/overview`, {
+      waitUntil: "networkidle",
+    });
+    await expectVisible(card);
+    await page.waitForTimeout(300);
+    const whatsNew = page.getByRole("dialog", { name: "What’s new in Crop Steering", exact: true });
+    assert.equal(await whatsNew.count(), 0, "no What's new with the tour");
+    await card.getByRole("button", { name: "Close the tour", exact: true }).click();
+    await card.waitFor({ state: "detached" });
   });
   await check(
     "activity: every record's type is a coloured pill, in the log and the panel",
