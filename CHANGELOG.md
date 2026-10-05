@@ -17,8 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The tank chart's times stay apart.** On a wide screen the Overview puts the tank in a narrow
   side column, where the level chart's times ran together ("6:05 PM6:05 AM"). A chart too narrow
   for three now shows the window's start and Now; a phone and wider charts keep the middle time.
-- **The README asks for Home Assistant OS.** Its requirements name Home Assistant OS for the
-  controller app, and no longer Supervised, whose support Home Assistant ended at 2025.12.
+- **Home Assistant OS only.** The README and the install guide ask for Home Assistant OS, where
+  the controller installs from Settings → Apps (HACS installs the integration). The Supervised,
+  Container and Core routes are gone: Home Assistant ended support for Supervised at 2025.12.
 
 ### 🔧 Technical notes
 
@@ -32,8 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fits between the start and Now on the axis's width, at about 6.5 px a character and 8 px apart;
   the chart's tick leaves it out where it does not. The tank-status browser check holds every two
   times at least 6 px apart at 1440 and 390 px, and fails on the bundle before this.
-- Docs: the README's What you need row for the controller app says Home Assistant OS only;
-  docs/INSTALL.md still describes the Supervised and Container/Core routes.
+- Docs: the README's What you need row and docs/INSTALL.md's requirements name Home Assistant OS
+  only, and say Settings → Apps (its name since Home Assistant 2026.2) where they said app store.
+  The install guide drops the Supervised and Container/Core routes and Core's Python version.
 
 ## [2.37.0] - 2026-10-05
 
