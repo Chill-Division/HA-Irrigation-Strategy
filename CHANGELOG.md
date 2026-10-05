@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **An older last batch names its nutrients too.** A batch recorded before 2.36.0's controller kept
   only doser numbers; the stage's recipe now names them, in its dosing order, where it read
   "doser 2 121 mL · doser 3 253 mL …".
+- **A simpler README.** It asks for Home Assistant OS or Supervised, a smart switch and a moisture
+  probe, and leaves nutrient batches out for now.
 
 ### 🔧 Technical notes
 
@@ -40,6 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard: `lastBatchWords` takes the room's recipes; a record without `doses` (an older
   controller's) is named from the recipe called its `stage`, ordered by `doserOrder`, and stays by
   doser number when no recipe has that name.
+- Docs: the README's requirements drop the app's architectures, its Python and the Container/Core
+  route, and its hardware row asks for a smart switch and a moisture probe; the Nutrient batches
+  feature and the Reservoir screenshots go, the plan editor's screenshot taking the desktop one's
+  place.
 
 ## [2.36.0] - 2026-10-04
 

@@ -4,7 +4,8 @@ The minimum Home Assistant lives in six places: `hacs.json` (what HACS enforces 
 the controller app's `config.yaml` (what the Supervisor enforces for the app), the oldest leg of the
 Real Home Assistant job (what is tested), the README badge, the README's *What you need* table and
 docs/INSTALL.md. docs/TESTING.md says to move them together; this fails when one is left behind. The
-Python and HACS versions the README names are read from where they are set.
+HACS version the README names, and the controller's Python and architectures the install guide
+names, are read from where they are set.
 """
 
 from __future__ import annotations
@@ -77,7 +78,9 @@ def test_the_controller_python_is_the_one_its_image_is_built_on():
         for image in build["build_from"].values()
     }
     assert len(pythons) == 1, pythons
-    assert f"brings its own Python {pythons.pop()}" in _requirements_table()
+    assert (
+        f"brings its own Python {pythons.pop()}" in INSTALL
+    ), "docs/INSTALL.md: Requirements"
 
 
 def test_the_controller_architectures_are_the_ones_it_is_built_for():
@@ -86,7 +89,7 @@ def test_the_controller_architectures_are_the_ones_it_is_built_for():
     )
     arches = config["arch"]
     named = ", ".join(arches[:-1]) + f" or {arches[-1]}"
-    assert f"({named})" in _requirements_table(), named
+    assert f"built for {named}" in INSTALL, named
 
 
 def test_hacs_is_the_version_its_file_asks_for():
