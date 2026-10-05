@@ -509,9 +509,14 @@ describe("who changed a setting", () => {
     );
     expect(who({ eventType: "script_started", source: "Flush" })).toBe("Script “Flush”");
     expect(who({ eventType: "automation_triggered" })).toBe("An automation");
-    // The controller writes as Home Assistant's Supervisor, nobody's person, and only a zone's four
-    // moisture levels.
+    // The controller writes as Home Assistant's Supervisor, nobody's person, and only three of a
+    // zone's moisture levels: never its rescue level.
     expect(who({ userId: "supervisor" })).toBe("Auto setpoints");
+    const rescue = {
+      ...change,
+      entityId: "number.crop_steering_zone_1_p3_emergency_vwc_threshold",
+    };
+    expect(who({ userId: "supervisor" }, rescue)).toBe(null);
     const room = { ...change, entityId: "number.crop_steering_f1_p2_vwc_threshold" };
     expect(who({ userId: "supervisor" }, room)).toBe(null);
     const other = { ...change, entityId: shots, to: 10 };
