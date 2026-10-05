@@ -11,11 +11,11 @@ The menu has six entries; where one holds more than one page, tabs across the to
 | Insights        | Zone, Water, Compare runs, Activity               |
 | Feed            | Reservoir (once one is mapped), Stock tanks       |
 | Settings        | General, Rooms & hardware                         |
-| Help            | Terms & phases, error codes, What's new           |
+| Help            | Terms & phases, error codes, What's new, the tour |
 
 Existing `#/strategy` and `#/grow-plan` bookmarks open **Irrigation plan → Today** and **Schedule**; bookmarks to the retired Zones and Sensors pages open **Overview**.
 
-New installation? Start with [Install, upgrade and rollback](INSTALL.md).
+New installation? Start with [Install, upgrade and rollback](INSTALL.md). The first time anyone opens the dashboard on a new installation, a short tour walks through it: the Overview, the Irrigation plan, Feed, Settings' Rooms & hardware and its test shot, and how to switch the room and its watering on. It starts by itself once; **Help → Take the tour** starts it again at any time.
 
 ## What each action changes
 

@@ -45,6 +45,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the litres and rounds of shots left before the minimum. It comes again each day it stays that
   low, and goes once it is refilled. The Overview's tank chart draws the level as a dotted line,
   and **Refill soon** shows under the tank once it is down to it.
+- **A tour for first-timers.** The first time anyone opens the dashboard on a new installation, a
+  short tour walks through it, on a computer or a phone: the Overview, the Irrigation plan, Feed,
+  Settings' Rooms & hardware and its test shot, and how to switch the room and its watering on.
+  It starts by itself once; **Help → Take the tour** starts it at any time.
 
 ### 🔧 Technical notes
 
@@ -101,6 +105,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   chart draws `LevelSource.remindPct` (`.tank-remind-line`) and Refill soon shows under the tank;
   the Reservoir page marks it in its tank drawing, shows Refill soon at Now, and offers Remind me
   at only where it can remind. A browser check sets one in the demo.
+- Integration: `whats_new_get` says whether the first-run tour is due (`tour`), and
+  `whats_new_tour_seen` records that it has started, for the whole installation, under its own
+  storage key (`crop_steering.tour`): due on a new installation only, and the What's new record is
+  untouched. Anyone who can open the dashboard may call it, like `whats_new_seen`; the
+  administrator tests class it with it.
+- Dashboard: `Tour` (`frontend/src/components/tour.tsx`) walks the steps `tourSteps`
+  (`frontend/src/lib/tour.ts`) lists, opening each page and ringing what the stop is about and,
+  where the menu shows, its entry; `WhatsNewOnUpdate` starts it when due. The demo answers as an
+  installation the tour has been through, `?tour=new` as a new one; a browser check walks it on a
+  desktop and a phone.
 
 ## [2.36.0] - 2026-10-04
 
