@@ -9,7 +9,7 @@ Crop Steering waters a grow room automatically. Every minute it reads each zone'
 
 **Deterministic, sensor-driven crop steering.** No AI makes any decision. Every shot comes from a published rule and your setpoints: the same readings, settings and day so far always give the same decision, and the dashboard shows the numbers behind each one. Nothing guesses, nothing makes up a reading, and nothing apologises after the fact.
 
-![The Overview: today's grow day for every zone, the zones and the tank](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/operator-dashboard.png)
+![The Overview: today's grow day for every zone, and the zones](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/operator-dashboard.png)
 
 > **Safety first.** This switches real pumps and valves, unattended, on living plants. Set each room up with watering switched off, check every probe and switch it uses, and do a catch test (measure what the drippers actually deliver) before you let it water. It does not replace physical safety devices: use valves that close when power is lost, and a float switch or timer that can stop a pump on its own.
 
@@ -19,7 +19,6 @@ Crop Steering waters a grow room automatically. Every minute it reads each zone'
 - **Shots sized from your hardware.** Each zone's pot size, plant count, drippers and dripper flow turn a shot's percentage into litres and seconds, within a daily water limit and a maximum shot length.
 - **A plan for the whole grow.** Steer each zone week by week, or day by day, between vegetative and generative; the targets change at lights-on. Keep the plans that worked in a recipe library.
 - **The grow day on one chart.** Each zone's phases, shots, holds and setting changes since lights-on, against its targets, yesterday and the projected rest of the day. Every setting change says who made it and what it replaced.
-- **Nutrient batches.** Refills the reservoir before the next shots would take it under its minimum, recirculates and runs each doser in turn from the feed recipe for the growth stage; with automatic refills off, watering waits at the minimum, so the pump never runs it dry. Stock tanks count down with every batch and warn before they run out.
 - **Water use and runs compared.** Litres per zone by day, week and grow, today's water per plant, and this run lined up against an earlier one at the same age.
 - **It fails safe.** Every switch it turns off is read back, and one that stays on holds the room and alerts you. A zone whose probe dies follows a working zone, or a cautious timer. An empty room switches off: no watering, no alerts.
 - **Alerts you can act on.** Each alert, as a Repairs card or a notification, carries a code (such as CS-601) that the built-in Help explains: what it means, what happens to watering meanwhile, and what to do.
@@ -27,13 +26,13 @@ Crop Steering waters a grow room automatically. Every minute it reads each zone'
 - **Set up without YAML.** Map the valves, pumps and probes you already have from the dashboard. Every save is checked before it applies, and the controller confirms it has picked the change up.
 - **A log you can read.** The controller app's log says, every minute and in plain words, what each zone is doing and what it is waiting for.
 
-| Today's targets on the zone's own readings | Nutrient batches | Water use per zone |
+| Today's targets on the zone's own readings | A plan for the whole grow | Water use per zone |
 | --- | --- | --- |
-| ![Today's targets on the zone's recorded moisture and EC, with the projected day](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/plan-graph.png) | ![The Reservoir page: a batch's steps, the doses going in while it fills, and the reservoir's level](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/reservoir.png) | ![Today, this week, this grow and an estimate for the whole grow, with litres per grow week](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/water-use.png) |
+| ![Today's targets on the zone's recorded moisture and EC, with the projected day](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/plan-graph.png) | ![A zone's plan for its days: its steering between vegetative and generative, and the day's moisture and EC targets](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/grow-plan.png) | ![Today, this week, this grow and an estimate for the whole grow, with litres per grow week](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/water-use.png) |
 
-| On a phone: the Overview | The Reservoir | Today's targets |
-| --- | --- | --- |
-| ![The Overview on a phone](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/mobile-overview.png) | ![The Reservoir on a phone: a batch's steps, the doses inside Fill and mix](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/mobile-reservoir.png) | ![Today's targets on a phone](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/mobile-plan.png) |
+| On a phone: the Overview | Today's targets |
+| --- | --- |
+| ![The Overview on a phone](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/mobile-overview.png) | ![Today's targets on a phone](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/mobile-plan.png) |
 
 More in the [screenshots](https://github.com/ChillingSilence/HA-Irrigation-Strategy/blob/main/docs/SCREENSHOTS.md).
 
@@ -42,9 +41,9 @@ More in the [screenshots](https://github.com/ChillingSilence/HA-Irrigation-Strat
 | | |
 | --- | --- |
 | **Home Assistant** | **2026.5.0 or newer.** Every change is tested on 2026.5.0 and on 2026.9.3. |
-| **The controller app** | Home Assistant OS or Supervised, where it installs from the app store (amd64, aarch64 or armv7) and brings its own Python 3.12. On Home Assistant Container or Core, run the controller yourself (see the [install guide](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/INSTALL.md)). |
+| **The controller app** | Home Assistant OS or Supervised, where it installs from the app store. |
 | **HACS** | 1.6.0 or newer for the guided download, or copy `custom_components/crop_steering` into Home Assistant by hand. |
-| **Hardware** | A switch Home Assistant can control for each zone's valve (and for your pump and main line, if you have them), and a moisture probe per zone. EC probes and tank sensors are optional but recommended. |
+| **Hardware** | A smart switch that Home Assistant can control for irrigation (a pump, a valve, whatever you have) and a moisture probe to steer from. Several substrate sensors are ideal. |
 
 ## Install
 
