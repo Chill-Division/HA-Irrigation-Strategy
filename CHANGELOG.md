@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **Version 1.0, for everyone.** The first release published at
+  github.com/Chill-Division/HA-Irrigation-Strategy, where HACS and Settings → Apps install it from.
+  The numbers start again: 1.0.0 follows 2.37.1. On a box already running 2.37, the Supervisor
+  offers the controller app as usual, but HACS offers no lower number: redownload Crop Steering in
+  HACS and pick 1.0.0. What's new then shows what's new in 1.0.
 - **A new icon.** A tank of water with a seedling in front of it, white on the same blue tile: in
   the dashboard's menu, on Home Assistant's integrations page, in HACS, and for the controller app
   in Settings → Apps. The logo beside it says Crop Steering in the tile's blue, which reads on a
@@ -21,6 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Technical notes
 
+- Release: `scripts/release.py --start-again` releases a number below the last one, never one the
+  changelog already has (`check_number`). It leaves `WHATS_NEW.md` with only the sections numbered
+  up to the new release (`drop_numbered_above`), since the dashboard orders releases by number; the
+  changelogs keep everything. `test_version_consistency` now holds every release to one number for
+  the pair: it skipped anything below 2.21.0, which 1.x would have been. Integration:
+  `WhatsNew.async_init` reads a record numbered above the installed release as unknown, so a box
+  that last showed 2.37.1 shows the last 30 days of releases up to 1.0.0 and marks it. The
+  real-HA What's new tests number their earlier releases 0.x, under every real one.
 - Dashboard, integration and app: `BrandGlyph` (`frontend/src/components/brand-glyph.tsx`)
   replaces the menu's droplets. Its seedling is drawn twice, first wide in the tile's colour
   (`.brand-glyph-halo`), so the tank's lines stop short of it. A new script,

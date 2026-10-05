@@ -8,7 +8,8 @@ Which release the window last showed is kept for the whole installation, not per
 person, so it shows once, to the first person who opens the dashboard after an update. A new
 installation starts at its own version, with nothing to catch up on. One that was already running
 before this existed has missed an unknown number of releases (`seen` None): the dashboard then
-shows the last 30 days of them.
+shows the last 30 days of them. So has one whose record is numbered above the installed release:
+the numbers started again (1.0.0 came after 2.37.1), or an older release was put back.
 
 The first-run tour, a short walk through the dashboard, starts by itself once on a new installation,
 for the first person who opens the dashboard; Help starts it at any time. An installation that was
@@ -89,6 +90,8 @@ class WhatsNew:
         if isinstance(data, dict) and "seen" in data:
             seen = data["seen"]
             self.seen = seen if isinstance(seen, str) and VERSION.match(seen) else None
+            if self.seen and version_key(self.seen) > version_key(SOFTWARE_VERSION):
+                self.seen = None  # shown up to a number above this one: it cannot say what is new
             return
         # The first start with this. A room set up just now is a new installation: nothing to catch
         # up on. A room that was already here has been running an older release.

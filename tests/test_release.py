@@ -173,6 +173,35 @@ def test_it_refuses_a_release_nobody_has_written_up():
         release.prepare(_files(**{release.WHATS_NEW: stray}), "9.9.9", DAY)
 
 
+def test_numbers_only_go_up():
+    release.check_number("2.37.2", "2.37.1", False, CHANGELOG)
+    for same_or_lower in ("2.37.1", "1.0.0"):
+        with pytest.raises(release.Refused, match="is not newer than 2.37.1"):
+            release.check_number(same_or_lower, "2.37.1", False, CHANGELOG)
+
+
+def test_the_numbers_start_again_only_lower_and_never_on_a_used_number():
+    release.check_number("1.0.0", "2.37.1", True, CHANGELOG)  # as 1.0.0 followed 2.37.1
+    with pytest.raises(release.Refused, match="for a number below 2.37.1"):
+        release.check_number("2.38.0", "2.37.1", True, CHANGELOG)
+    with pytest.raises(release.Refused, match="2.24.0 was released before"):
+        release.check_number("2.24.0", "2.37.1", True, CHANGELOG)
+
+
+def test_starting_again_leaves_whats_new_with_the_new_numbers_only():
+    after = release.prepare(_files(), "1.0.0", DAY, start_again=True)
+    text = after[release.WHATS_NEW]
+    # The dashboard orders releases by number: 2.24.0 would come before 1.0.0.
+    assert [r["version"] for r in parse(text)] == ["1.0.0"]
+    assert text.startswith("# What's new\n\nThe rules.\n\n## 1.0.0 - ")
+    assert text.endswith("- Bug fixes and improvements.\n")
+    # The changelogs keep everything, and a release that does not start again keeps every section.
+    assert "## [2.24.0]" in after[release.CHANGELOG]
+    assert "# 2.24.0" in after[release.ADDON_CHANGELOG]
+    kept = release.prepare(_files(), "9.9.9", DAY)[release.WHATS_NEW]
+    assert [r["version"] for r in parse(kept)] == ["9.9.9", "2.24.0"]
+
+
 @pytest.mark.parametrize("version", ["2.25", "v2.25.0", "2.25.0-rc1", ""])
 def test_a_version_is_three_numbers(version):
     with pytest.raises(release.Refused, match="not a version"):
