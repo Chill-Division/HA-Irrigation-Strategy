@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "doser 2 121 mL · doser 3 253 mL …".
 - **A simpler README.** It asks for Home Assistant OS or Supervised, a smart switch and a moisture
   probe, and leaves nutrient batches out for now.
+- **A shorter setup wizard.** The room temperature, humidity and VPD sensors and the notification
+  service are gone from the wizard and Configure: nothing used them, for watering or on the
+  dashboard. A value saved for one goes the next time the room's setup is saved.
 
 ### 🔧 Technical notes
 
@@ -46,6 +49,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   route, and its hardware row asks for a smart switch and a moisture probe; the Nutrient batches
   feature and the Reservoir screenshots go, the plan editor's screenshot taking the desktop one's
   place.
+- Integration: `temperature_sensor`, `humidity_sensor`, `vpd_sensor` and `notification_service`
+  leave the wizard's and Configure's hardware step (`_hardware_schema`, `_build_hardware`) and their
+  strings; the first three leave `HARDWARE_DOMAINS` too. All four join `RETIRED_HARDWARE`, so a
+  stored value goes on the room's next save. None was ever read at runtime. The real-Home-Assistant
+  Configure tests clear and keep the lights mapping instead of the room temperature.
 
 ## [2.36.0] - 2026-10-04
 
