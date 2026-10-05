@@ -89,6 +89,18 @@ export const MAX_DOSERS = 6;
 export const DOSER_KEYS = Array.from({ length: MAX_DOSERS }, (_, i) => `doser_${i + 1}_switch`);
 export const BATCH_SWITCH_KEYS = ["fresh_water_switch", "recirc_switch", ...DOSER_KEYS];
 export const RESERVOIR_KEYS = ["reservoir_distance_sensor", ...BATCH_SWITCH_KEYS];
+/** Whether the room has what a refill needs, from its descriptor: a fresh-water solenoid, a
+ * recirculation solenoid, the room's pump and a doser (controller.py _batch_refusal). Without them
+ * no refill can run, so nothing offers one. */
+export function canRefill(attributes: Record<string, unknown>): boolean {
+  const mapped = (key: string) => typeof attributes[key] === "string" && !!attributes[key];
+  return (
+    mapped("fresh_water_switch") &&
+    mapped("recirc_switch") &&
+    mapped("pump") &&
+    DOSER_KEYS.some(mapped)
+  );
+}
 export const DEFAULT_FLOW = 600;
 export const MAX_ML_PER_L = 60;
 export const NAME_LEN = 40;
