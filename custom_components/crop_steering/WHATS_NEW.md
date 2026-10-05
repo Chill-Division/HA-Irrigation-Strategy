@@ -24,6 +24,7 @@ version being released.
 ## Unreleased
 
 - Exported plans and recipes are named after the room, profiles or recipe in them.
+- A room that can't refill its reservoir no longer shows refill buttons and steps.
 
 ## 2.36.0 - 2026-10-04
 
