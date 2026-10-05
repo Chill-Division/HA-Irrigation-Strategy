@@ -723,6 +723,22 @@
         "Check the reservoir by eye until it reads again.",
         "An ESPHome ultrasonic whose echoes fail keeps showing its last good value unless a timeout filter reports unknown: add one (the user guide's Reservoir section) so a failed sensor is noticed."
       ]
+    },
+    {
+      "code": "CS-706",
+      "title": "Reservoir low, refill it",
+      "source": "notification",
+      "severity": "info",
+      "meaning": "The room's reservoir has read at or under its reminder level (Remind me at, on the Feed → Reservoir page) for 3 minutes, and nothing refills it by itself: automatic refills are off, or the room has no fresh-water or recirculation solenoid, pump or doser to refill it with. The notification gives the level, and once a refill has shown what 1% holds, the litres left and the rounds of shots before its minimum.",
+      "watering": "Carries on as normal until the reservoir reaches its minimum. There it waits for a refill (CS-704).",
+      "causes": [
+        "The room's shots have drawn the reservoir down since it was last filled."
+      ],
+      "fixes": [
+        "Refill the reservoir by hand. The reminder goes once the level reads 5 points above its reminder level; it comes again each day the level stays at or under it.",
+        "To have it refill by itself, map its fresh-water and recirculation solenoids and dosers in Settings → Rooms & hardware, then turn on automatic refills on the Feed → Reservoir page.",
+        "To stop these reminders, set Remind me at to 0%."
+      ]
     }
   ]
 }

@@ -400,3 +400,27 @@ def test_a_file_from_before_nutrient_batches_or_a_damaged_batch_loads_as_no_batc
     again = _make([1], p)
     again._load_state()
     assert again.rooms[0].batch["step"] == "dosing" and again.rooms[0]._batch_crashed
+
+
+def test_a_batch_record_from_before_the_refill_reminder_loads_with_none_up(tmp_path):
+    """2.36's `_batch` block has no `reminded_at`: it loads as it was saved, with no refill reminder
+    (CS-706) up, so the first time the reservoir runs low after the update it reminds at once.
+    """
+    saved = {
+        "step": "idle",
+        "armed": False,
+        "low_seen": 2,
+        "litres_per_pct": 2.07,
+        "last": {"at": "2026-10-01T10:00:00", "result": "done", "stage": "Flower"},
+    }
+    p = tmp_path / "state.json"
+    p.write_text(json.dumps({"default": {"1": {"phase": "P2"}, "_batch": saved}}))
+    c = _make([1], p)
+    c._load_state()
+    batch = c.rooms[0].batch
+    assert (batch["armed"], batch["low_seen"], batch["litres_per_pct"]) == (
+        False,
+        2,
+        2.07,
+    )
+    assert batch["last"]["stage"] == "Flower" and batch["reminded_at"] is None

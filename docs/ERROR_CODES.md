@@ -71,6 +71,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 | [CS-703](#cs-703) | A nutrient batch could not start | Warning | Notification |
 | [CS-704](#cs-704) | Watering held, reservoir too low | Critical | Notification |
 | [CS-705](#cs-705) | Reservoir level not reading | Warning | Notification |
+| [CS-706](#cs-706) | Reservoir low, refill it | Information | Notification |
 
 ## Sensors (CS-1xx)
 
@@ -931,3 +932,23 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 - Check the level sensor and its device in Home Assistant.
 - Check the reservoir by eye until it reads again.
 - An ESPHome ultrasonic whose echoes fail keeps showing its last good value unless a timeout filter reports unknown: add one (the user guide's Reservoir section) so a failed sensor is noticed.
+
+<a id="cs-706"></a>
+
+### CS-706: Reservoir low, refill it
+
+*Information · Notification*
+
+**What it means.** The room's reservoir has read at or under its reminder level (Remind me at, on the Feed → Reservoir page) for 3 minutes, and nothing refills it by itself: automatic refills are off, or the room has no fresh-water or recirculation solenoid, pump or doser to refill it with. The notification gives the level, and once a refill has shown what 1% holds, the litres left and the rounds of shots before its minimum.
+
+**Watering meanwhile.** Carries on as normal until the reservoir reaches its minimum. There it waits for a refill (CS-704).
+
+**Likely causes**
+
+- The room's shots have drawn the reservoir down since it was last filled.
+
+**Suggested fixes**
+
+- Refill the reservoir by hand. The reminder goes once the level reads 5 points above its reminder level; it comes again each day the level stays at or under it.
+- To have it refill by itself, map its fresh-water and recirculation solenoids and dosers in Settings → Rooms & hardware, then turn on automatic refills on the Feed → Reservoir page.
+- To stop these reminders, set Remind me at to 0%.
