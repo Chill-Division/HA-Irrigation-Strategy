@@ -2,8 +2,12 @@
 update, and the one record of the last release it showed, kept for the whole installation.
 
 A new installation starts at its own version and shows nothing. One that was already running before
-this existed has missed an unknown number of releases. Marking only ever moves forward, never past
-the installed version, and survives a restart.
+this existed has missed an unknown number of releases, and so has one whose record is numbered above
+the installed release (the numbers started again at 1.0.0 after 2.37.1). Marking only ever moves
+forward, never past the installed version, and survives a restart.
+
+The releases these say were shown before are numbered 0.x, under every real one, so they hold
+whatever the installed release is.
 
 The first-run tour starts by itself once, on a new installation; one that was already running has
 used the dashboard and starts it from Help.
@@ -67,26 +71,37 @@ async def test_an_installation_that_was_already_running_has_missed_an_unknown_nu
 
 
 async def test_marking_moves_forward_only_and_survives_a_restart(hass, hass_storage):
-    hass_storage[STORE] = _stored("2.22.0")  # the window last showed 2.22.0 here
+    hass_storage[STORE] = _stored("0.22.0")  # the window last showed 0.22.0 here
     entry = await _install(hass)
-    assert (await _get(hass))["seen"] == "2.22.0"
+    assert (await _get(hass))["seen"] == "0.22.0"
 
-    assert await _seen(hass, "2.23.0") == {"seen": "2.23.0"}
-    assert await _seen(hass, "2.22.0") == {"seen": "2.23.0"}  # never back
-    assert await _seen(hass, "99.0.0") == {"seen": "2.23.0"}  # never past what is installed
+    assert await _seen(hass, "0.23.0") == {"seen": "0.23.0"}
+    assert await _seen(hass, "0.22.0") == {"seen": "0.23.0"}  # never back
+    assert await _seen(hass, "99.0.0") == {"seen": "0.23.0"}  # never past what is installed
     with pytest.raises(HomeAssistantError):
         await _seen(hass, "latest")
 
     assert await hass.config_entries.async_reload(entry.entry_id)
     await hass.async_block_till_done()
-    assert (await _get(hass))["seen"] == "2.23.0"
-    assert hass_storage[STORE]["data"] == {"seen": "2.23.0"}
+    assert (await _get(hass))["seen"] == "0.23.0"
+    assert hass_storage[STORE]["data"] == {"seen": "0.23.0"}
+
+
+async def test_a_record_numbered_above_the_installed_release_is_unknown(hass, hass_storage):
+    """The numbers started again at 1.0.0 after 2.37.1: a dashboard that last showed 2.37.1 shows
+    what came since (the last 30 days), then carries on from the installed release."""
+    hass_storage[STORE] = _stored("99.0.0")
+    await _install(hass)
+    assert (await _get(hass))["seen"] is None
+    assert await _seen(hass, VERSION) == {"seen": VERSION}
+    await hass.async_block_till_done()
+    assert hass_storage[STORE]["data"] == {"seen": VERSION}
 
 
 async def test_a_room_added_later_does_not_reset_what_the_installation_has_seen(
     hass, hass_storage
 ):
-    hass_storage[STORE] = _stored("2.22.0")
+    hass_storage[STORE] = _stored("0.22.0")
     await _upgrade(
         hass,
         "entry_2_17_wizard.json",
@@ -113,7 +128,7 @@ async def test_a_room_added_later_does_not_reset_what_the_installation_has_seen(
     )
     assert done["type"] is FlowResultType.CREATE_ENTRY
     await hass.async_block_till_done()
-    assert (await _get(hass))["seen"] == "2.22.0"
+    assert (await _get(hass))["seen"] == "0.22.0"
 
 
 async def test_a_new_installation_starts_the_tour_once(hass, hass_storage):
@@ -130,12 +145,12 @@ async def test_a_new_installation_starts_the_tour_once(hass, hass_storage):
 
 
 async def test_an_installation_that_was_already_running_does_not_start_the_tour(hass, hass_storage):
-    hass_storage[STORE] = _stored("2.36.0")  # updated in place from 2.36.0
+    hass_storage[STORE] = _stored("0.36.0")  # updated in place from 0.36.0
     await _upgrade(
         hass,
         "entry_2_17_wizard.json",
         registry_ids={"sensor.crop_steering_engine_config": "engine_config"},
     )
     shown = await _get(hass)
-    assert (shown["tour"], shown["seen"]) == (False, "2.36.0")
+    assert (shown["tour"], shown["seen"]) == (False, "0.36.0")
     assert hass_storage[TOUR]["data"] == {"toured": True}
