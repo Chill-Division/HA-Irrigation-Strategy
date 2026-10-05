@@ -35,6 +35,8 @@ import {
   phaseTargets,
   reachedHour,
   readings,
+  readingsPath,
+  recordedGaps,
   setpointChanges,
   setpointSteps,
   stoppedTargets,
@@ -53,6 +55,7 @@ import {
   type Reading,
   type SetpointChange,
   type Shot,
+  type Span,
   type TargetStep,
   type TimelineRows,
   type TypicalPoint,
@@ -154,6 +157,8 @@ interface Lane {
   shots: Shot[];
   blocks: Block[];
   points: Reading[];
+  /** Where today's VWC has no line (`recordedGaps`). */
+  gaps: Span[];
   changes: Change[];
   phase: string | null;
   since: number | null;
@@ -532,6 +537,7 @@ function Timeline({
     const bands = alignBands(phaseBands(ids && rows[ids.phase], day.start, now), shots);
     const blocks = zoneBlocks(decisions, zone.id, day.start, now);
     const points = ids?.vwc ? readings(rows[ids.vwc], day.start, now) : [];
+    const gaps = ids?.vwc ? recordedGaps(rows[ids.vwc], day.start, now) : [];
     const water = waterParameters(controller, zone.id);
     // The phase now is the band that reaches now: none while the sensor is unreadable.
     const last = bands.at(-1);
@@ -677,6 +683,7 @@ function Timeline({
       shots,
       blocks,
       points,
+      gaps,
       changes: changes.filter((change) => change.zoneId === zone.id),
       phase,
       since,
@@ -696,10 +703,7 @@ function Timeline({
       projection,
       yesterday,
       past,
-      typical:
-        layers.compare === "typical" && past.length >= 3
-          ? typicalDay(past.map((trace) => trace.points))
-          : [],
+      typical: layers.compare === "typical" && past.length >= 3 ? typicalDay(past) : [],
       comparison: compareDays(compared, hour, zone.vwc.value, level),
       level,
       reached: level === null ? null : reachedHour(today, level),
@@ -1081,7 +1085,7 @@ function LaneChart({
   strip: Strip;
   layers: Layers;
 }) {
-  const { zone, next, points, target } = lane;
+  const { zone, next, points, gaps, target } = lane;
   const name = zone.name;
   const hourOf = (time: number) => (time - day.start) / 3_600_000;
   // Earlier days sit on today's axis by hours since their own lights-on.
@@ -1096,6 +1100,10 @@ function LaneChart({
   const before = (yesterday?.points ?? [])
     .filter((point) => point.hour <= hourOf(day.end))
     .map((point) => ({ time: day.start + point.hour * 3_600_000, value: point.value }));
+  const beforeGaps = (yesterday?.gaps ?? []).map((gap) => ({
+    start: aligned(yesterday!, gap.start),
+    end: aligned(yesterday!, gap.end),
+  }));
   const earlierShots = yesterday
     ? yesterday.shots.filter((shot) => aligned(yesterday, shot.start) < day.end)
     : [];
@@ -1183,7 +1191,7 @@ function LaneChart({
     const hour = hourOf(time);
     const parts: string[] = [];
     if (yesterday) {
-      const value = atHour(yesterday.points, hour);
+      const value = atHour(yesterday.points, hour, yesterday.gaps);
       parts.push(
         `yesterday at ${clock(time)}: ${value === null ? "not recorded" : `${number(value)} %`}`,
       );
@@ -1354,7 +1362,7 @@ function LaneChart({
           )}
           {!!before.length && (
             <g data-layer="yesterday">
-              <path d={path(before, x, y)} className="yesterday-line" />
+              <path d={readingsPath(before, x, y, beforeGaps)} className="yesterday-line" />
               {edges.map((edge, index) => (
                 <line
                   key={index}
@@ -1386,7 +1394,7 @@ function LaneChart({
               ))}
             </g>
           )}
-          <path d={path(points, x, y)} className="vwc-line" />
+          <path d={readingsPath(points, x, y, gaps)} className="vwc-line" />
           {projection && (
             <path
               data-layer="projected"
@@ -1498,15 +1506,6 @@ function LaneChart({
 
 const diamond = (cx: number, cy: number) =>
   `M${cx} ${cy - 5}L${cx + 5} ${cy}L${cx} ${cy + 5}L${cx - 5} ${cy}Z`;
-/** The recorded VWC as one path, broken where readings stop for more than 20 minutes. */
-function path(points: Reading[], x: (time: number) => number, y: (value: number) => number) {
-  return points
-    .map((point, index) => {
-      const gap = index === 0 || point.time - points[index - 1].time > 20 * 60_000;
-      return `${gap ? "M" : "L"}${x(point.time).toFixed(1)} ${y(point.value).toFixed(1)}`;
-    })
-    .join("");
-}
 /** The targets as one stepped line, joined where one step starts as the last ends. */
 function steps(targets: TargetStep[], x: (time: number) => number, y: (value: number) => number) {
   return targets
