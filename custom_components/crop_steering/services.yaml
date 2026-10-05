@@ -409,3 +409,6 @@ whats_new_seen:
       example: "2.25.0"
       selector:
         text:
+whats_new_tour_seen:
+  name: Mark the first-run tour as shown
+  description: Record that the dashboard's first-run tour has started, for the whole installation, so it does not start by itself again. Help still starts it. Changes nothing else.

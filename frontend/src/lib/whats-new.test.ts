@@ -75,6 +75,16 @@ describe("the integration's answer", () => {
     expect(read?.seen).toBeNull();
     expect(shown(read!)).toEqual(["2.30.0"]);
   });
+  it("says the first-run tour is due only when it says so, as a new installation's does", () => {
+    const answer = {
+      version: "2.30.0",
+      seen: "2.30.0",
+      releases: [release("2.30.0", "2026-12-20")],
+    };
+    expect(readWhatsNew({ ...answer, tour: true })?.tour).toBe(true);
+    expect(readWhatsNew({ ...answer, tour: "yes" })?.tour).toBe(false);
+    expect(readWhatsNew(answer)?.tour).toBe(false); // an integration from before the tour
+  });
 });
 
 describe("Help", () => {

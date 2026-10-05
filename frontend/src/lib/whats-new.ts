@@ -16,6 +16,8 @@ export interface WhatsNewDocument {
   version: string;
   seen: string | null;
   releases: WhatsNewRelease[];
+  /** The first-run tour is due: it starts by itself (a new installation). */
+  tour: boolean;
 }
 export interface WhatsNewSelection {
   releases: WhatsNewRelease[];
@@ -44,7 +46,7 @@ export function compareVersions(a: string, b: string): number {
 /** The integration's answer, or null when it is not one: a missing service, an older integration. */
 export function readWhatsNew(response: unknown): WhatsNewDocument | null {
   if (!response || typeof response !== "object") return null;
-  const { version, seen, releases } = response as Record<string, unknown>;
+  const { version, seen, releases, tour } = response as Record<string, unknown>;
   if (typeof version !== "string" || !VERSION.test(version) || !Array.isArray(releases))
     return null;
   const valid = releases.filter(
@@ -63,6 +65,7 @@ export function readWhatsNew(response: unknown): WhatsNewDocument | null {
     releases: valid
       .filter((release) => compareVersions(release.version, version) <= 0)
       .sort((a, b) => compareVersions(b.version, a.version)),
+    tour: tour === true,
   };
 }
 

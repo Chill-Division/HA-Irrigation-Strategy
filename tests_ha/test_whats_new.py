@@ -4,6 +4,9 @@ update, and the one record of the last release it showed, kept for the whole ins
 A new installation starts at its own version and shows nothing. One that was already running before
 this existed has missed an unknown number of releases. Marking only ever moves forward, never past
 the installed version, and survives a restart.
+
+The first-run tour starts by itself once, on a new installation; one that was already running has
+used the dashboard and starts it from Help.
 """
 
 import json
@@ -17,6 +20,7 @@ from test_upgrade_in_place import _upgrade
 
 DOMAIN = "crop_steering"
 STORE = "crop_steering.whats_new"
+TOUR = "crop_steering.tour"
 MANIFEST = Path(__file__).resolve().parents[1] / "custom_components" / DOMAIN / "manifest.json"
 VERSION = json.loads(MANIFEST.read_text(encoding="utf-8"))["version"]
 
@@ -30,6 +34,12 @@ async def _get(hass):
 async def _seen(hass, version):
     return await hass.services.async_call(
         DOMAIN, "whats_new_seen", {"version": version}, blocking=True, return_response=True
+    )
+
+
+async def _toured(hass):
+    return await hass.services.async_call(
+        DOMAIN, "whats_new_tour_seen", {}, blocking=True, return_response=True
     )
 
 
@@ -104,3 +114,28 @@ async def test_a_room_added_later_does_not_reset_what_the_installation_has_seen(
     assert done["type"] is FlowResultType.CREATE_ENTRY
     await hass.async_block_till_done()
     assert (await _get(hass))["seen"] == "2.22.0"
+
+
+async def test_a_new_installation_starts_the_tour_once(hass, hass_storage):
+    entry = await _install(hass)
+    assert (await _get(hass))["tour"] is True
+    assert hass_storage[TOUR]["data"] == {"toured": False}
+    assert await _toured(hass) == {"tour": False}
+    assert (await _get(hass))["tour"] is False
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert (await _get(hass))["tour"] is False  # not again after a restart
+    assert hass_storage[TOUR]["data"] == {"toured": True}
+    assert hass_storage[STORE]["data"] == {"seen": VERSION}  # the window's record is its own
+
+
+async def test_an_installation_that_was_already_running_does_not_start_the_tour(hass, hass_storage):
+    hass_storage[STORE] = _stored("2.36.0")  # updated in place from 2.36.0
+    await _upgrade(
+        hass,
+        "entry_2_17_wizard.json",
+        registry_ids={"sensor.crop_steering_engine_config": "engine_config"},
+    )
+    shown = await _get(hass)
+    assert (shown["tour"], shown["seen"]) == (False, "2.36.0")
+    assert hass_storage[TOUR]["data"] == {"toured": True}

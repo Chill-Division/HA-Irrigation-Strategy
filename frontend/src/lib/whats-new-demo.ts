@@ -4,7 +4,7 @@ import type { WhatsNewDocument } from "./whats-new";
  * highlights from custom_components/crop_steering/WHATS_NEW.md. Frozen on purpose: the dashboard
  * bundle must not read that file, or every release, which dates a section in it, would have to
  * rebuild the bundle, and the release command does not. */
-export const DEMO_WHATS_NEW: Omit<WhatsNewDocument, "seen"> = {
+export const DEMO_WHATS_NEW: Omit<WhatsNewDocument, "seen" | "tour"> = {
   version: "2.24.0",
   releases: [
     {

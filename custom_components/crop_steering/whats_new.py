@@ -9,6 +9,11 @@ person, so it shows once, to the first person who opens the dashboard after an u
 installation starts at its own version, with nothing to catch up on. One that was already running
 before this existed has missed an unknown number of releases (`seen` None): the dashboard then
 shows the last 30 days of them.
+
+The first-run tour, a short walk through the dashboard, starts by itself once on a new installation,
+for the first person who opens the dashboard; Help starts it at any time. An installation that was
+already running when this came has used the dashboard, so it does not start there by itself. That
+record is kept apart from the window's, under its own key.
 """
 
 from __future__ import annotations
@@ -20,8 +25,9 @@ from pathlib import Path
 from .const import DOMAIN, SOFTWARE_VERSION
 
 STORAGE_KEY = f"{DOMAIN}.whats_new"
+TOUR_KEY = f"{DOMAIN}.tour"
 STORAGE_VERSION = 1
-SERVICES = ("whats_new_get", "whats_new_seen")
+SERVICES = ("whats_new_get", "whats_new_seen", "whats_new_tour_seen")
 NOTES = Path(__file__).with_name("WHATS_NEW.md")
 HEADING = re.compile(r"^## (\d+\.\d+\.\d+) - (\d{4}-\d{2}-\d{2})\s*$")
 VERSION = re.compile(r"^\d+\.\d+\.\d+$")
@@ -71,11 +77,14 @@ class WhatsNew:
 
         self.hass = hass
         self.store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
+        self.tour_store = Store(hass, STORAGE_VERSION, TOUR_KEY)
         self.seen: str | None = None
+        self.toured = True
         self.lock = asyncio.Lock()
         self._releases: list[dict] | None = None
 
     async def async_init(self, fresh: bool) -> None:
+        await self._init_tour(fresh)
         data = await self.store.async_load()
         if isinstance(data, dict) and "seen" in data:
             seen = data["seen"]
@@ -85,6 +94,15 @@ class WhatsNew:
         # up on. A room that was already here has been running an older release.
         self.seen = SOFTWARE_VERSION if fresh else None
         await self.store.async_save({"seen": self.seen})
+
+    async def _init_tour(self, fresh: bool) -> None:
+        data = await self.tour_store.async_load()
+        if isinstance(data, dict) and isinstance(data.get("toured"), bool):
+            self.toured = data["toured"]
+            return
+        # The first start with the tour: due on a new installation only.
+        self.toured = not fresh
+        await self.tour_store.async_save({"toured": self.toured})
 
     async def releases(self) -> list[dict]:
         if self._releases is None:
@@ -105,7 +123,17 @@ class WhatsNew:
             "version": SOFTWARE_VERSION,
             "seen": self.seen,
             "releases": await self.releases(),
+            # The first-run tour is due: it starts by itself when the dashboard opens.
+            "tour": not self.toured,
         }
+
+    async def mark_toured(self) -> dict:
+        """The first-run tour has started: it does not start by itself again."""
+        async with self.lock:
+            if not self.toured:
+                self.toured = True
+                await self.tour_store.async_save({"toured": True})
+        return {"tour": False}
 
     async def mark_seen(self, version: str) -> dict:
         """The window has shown the highlights up to `version`. Only ever forward, and never past
@@ -144,6 +172,8 @@ async def async_setup_whats_new(hass, entry, fresh: bool) -> None:
         try:
             if call.service == "whats_new_get":
                 return await manager.response()
+            if call.service == "whats_new_tour_seen":
+                return await manager.mark_toured()
             return await manager.mark_seen(call.data["version"])
         except ValueError as error:
             raise HomeAssistantError(str(error)) from error
@@ -160,6 +190,13 @@ async def async_setup_whats_new(hass, entry, fresh: bool) -> None:
         "whats_new_seen",
         handle,
         schema=vol.Schema({vol.Required("version"): str}),
+        supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "whats_new_tour_seen",
+        handle,
+        schema=vol.Schema({}),
         supports_response=SupportsResponse.ONLY,
     )
 
