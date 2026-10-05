@@ -96,7 +96,8 @@ const connected = (controller: Controller) =>
 /** Once, the first time anyone opens the dashboard after an update: what changed since the window
  * last showed on this installation. It says so for everyone as it opens, so the next person, or
  * the next page load, does not see it again. An integration without What's new shows nothing.
- * On a new installation, the first-run tour starts instead (`onTour`), once, the same way. */
+ * On a new installation, the first-run tour starts instead (`onTour`), once, the same way, and
+ * What's new counts as shown: someone new is shown round the dashboard, not what changed in it. */
 export function WhatsNewOnUpdate({
   controller,
   onTour,
@@ -118,6 +119,8 @@ export function WhatsNewOnUpdate({
       if (doc?.tour) {
         tour.current();
         await operator("whats_new_tour_seen").catch(() => null);
+        await operator("whats_new_seen", { version: doc.version }).catch(() => null);
+        return;
       }
       if (!doc || (doc.seen !== null && compareVersions(doc.seen, doc.version) >= 0)) return;
       const found = unseen(doc);

@@ -25,6 +25,7 @@ version being released.
 
 - This is version 1.0, the first release for everyone.
 - A new icon, a tank of water with a seedling in front of it: in the menu, in HACS and in Settings → Apps.
+- Bug fixes and improvements.
 
 ## 2.37.1 - 2026-10-05
 

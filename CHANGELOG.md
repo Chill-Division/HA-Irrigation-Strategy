@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The numbers start again: 1.0.0 follows 2.37.1. On a box already running 2.37, the Supervisor
   offers the controller app as usual, but HACS offers no lower number: redownload Crop Steering in
   HACS and pick 1.0.0. What's new then shows what's new in 1.0.
+- **No What's new with the first-run tour.** Someone shown round the dashboard for the first time
+  is not also shown what changed in it. The two met only where a room was set up again on a box
+  that had run an older release.
 - **A new icon.** A tank of water with a seedling in front of it, white on the same blue tile: in
   the dashboard's menu, on Home Assistant's integrations page, in HACS, and for the controller app
   in Settings → Apps. The logo beside it says Crop Steering in the tile's blue, which reads on a
@@ -26,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Technical notes
 
+- Dashboard: `WhatsNewOnUpdate` marks the installed release seen and opens no window when it starts
+  the first-run tour (`whats_new_get`'s `tour`), as its comment already said it did. The
+  verify-dashboard tour check opens the demo as a new installation whose record is behind
+  (`?tour=new&whats-new=2.22.0`): the tour, and no What's new, which the bundle before this opened
+  too.
 - Release: `scripts/release.py --start-again` releases a number below the last one, never one the
   changelog already has (`check_number`). It leaves `WHATS_NEW.md` with only the sections numbered
   up to the new release (`drop_numbered_above`), since the dashboard orders releases by number; the
