@@ -6,6 +6,8 @@ Numbers mirror F2 Zone 1 as measured 2026-09-19: the probe saturates near 36 %, 
 """
 import json
 
+import pytest
+
 import auto_setpoints as au
 
 T0 = 1_800_000_000.0
@@ -167,9 +169,12 @@ def test_wanted_keeps_the_vwc_ladder_attainable_and_in_order():
     assert want["p1_target_vwc"] == 33.9
     assert want["field_capacity"] == 40.0  # target + 2, held at the engine's lower bound
     assert want["p2_vwc_threshold"] == round(33.9 - learn["gain"] * 3.0, 1)  # one maintenance shot under the peak
-    assert "p3_emergency_vwc_threshold" not in want  # 22 already sits 3 below the threshold: not ours to touch
+    assert "p3_emergency_vwc_threshold" not in want  # the rescue level is the operator's, never ours
+    # A rescue level crowding the trigger stays where it is: the trigger keeps the ladder over it.
     crowded = au.wanted(learn, dict(CURRENT, p3_emergency_vwc_threshold=31.5), vwc=33.8, phase="P2", plan_ctx=None)
-    assert crowded["p3_emergency_vwc_threshold"] == round(crowded["p2_vwc_threshold"] - 3.0, 1)
+    assert "p3_emergency_vwc_threshold" not in crowded
+    assert crowded["p2_vwc_threshold"] == 34.5  # 31.5 + 3
+    assert "p3_emergency_vwc_threshold" not in au.MANAGED
 
 
 def test_with_a_complete_model_the_p2_threshold_is_scheduled_through_the_day():
@@ -196,15 +201,17 @@ def test_the_steering_mode_sets_how_early_the_afternoon_s_maintenance_shots_may_
     _quiet_days(learn)
     ctx = dict(lights_on_h=10, lights_off_h=22, shots_today=6, dryback_pct=30.0, p0_wait_min=60,
                p1_shot_pct=3.0, p1_gap_min=20, start_vwc=31.0, minutes_since_lights_on=420)  # 17:00
+    # A rescue level well under where 30% ends: only the zone's uptake limits the dryback here.
+    current = dict(CURRENT, p3_emergency_vwc_threshold=15.0)
     band = round(learn["peak"] - learn["gain"] * 3.0, 1)
-    veg = au.wanted(learn, CURRENT, vwc=35.0, phase="P2", plan_ctx=dict(ctx, generative=False))
-    gen = au.wanted(learn, CURRENT, vwc=35.0, phase="P2", plan_ctx=dict(ctx, generative=True))
+    veg = au.wanted(learn, current, vwc=35.0, phase="P2", plan_ctx=dict(ctx, generative=False))
+    gen = au.wanted(learn, current, vwc=35.0, phase="P2", plan_ctx=dict(ctx, generative=True))
     assert veg["p2_vwc_threshold"] == band  # still watering at 17:00
     assert gen["p2_vwc_threshold"] < band  # drying since 16:00
-    _recipe, plan = au.day_plan(learn, CURRENT, dict(ctx, generative=False))
+    _recipe, plan = au.day_plan(learn, current, dict(ctx, generative=False))
     assert plan.note.startswith("30% dryback unreachable at this zone's uptake: about ")
     assert plan.note.endswith(", with maintenance shots until 19:00")
-    assert au.day_plan(au.fresh(), CURRENT, ctx) is None  # nothing planned before the model is complete
+    assert au.day_plan(au.fresh(), current, ctx) is None  # nothing planned before the model is complete
     assert au.status(learn, True, plan.note)[1]["dryback_note"] == plan.note
     assert au.status(learn, True)[1]["dryback_note"] is None
     assert au.status(learn, True, plan.note, au.clock(plan.p2_stop_h))[1]["p2_stop"] == "19:00"
@@ -300,6 +307,37 @@ def test_against_the_real_engine_a_plateau_hands_p1_over_to_p2_and_the_peak_carr
     assert sum(r["shot"] for r in a2) < sum(r["shot"] for r in b2)  # and the day as a whole uses less
     thresholds = {new for _h, s, _old, new, _w in changes if s == "p2_vwc_threshold"}
     assert len(thresholds) <= 3  # the band is set from a stable gain: no hourly creep
+
+
+def test_a_dryback_target_under_the_rescue_level_is_planned_only_as_deep_as_the_rescue_lets_it_go():
+    """GR2, 5 Oct 2026: a generative zone peaking at 84.8% with a 45% dryback target (hold 46.6%) and a
+    50% rescue level. Auto setpoints stopped maintenance shots half-way through the day for the full
+    45%, stepped the trigger down to 44.5% and, to keep the ladder, the rescue level down to 41.5%. The
+    rescue is the operator's emergency floor: it stays at 50%, the dryback is planned only as deep as
+    it lets the zone go (a hold 5 points over it, the trigger 3 over it), and the note says why."""
+    # Drying 3 points an hour by day and 2 by night: fast enough for the stop to move.
+    learn = dict(au.fresh(), peak=84.8, gain=0.6, day_rate=3.0, night_rate=2.0,
+                 day_n=au.MIN_RATE_DAYS, night_n=au.MIN_RATE_DAYS, outcome="reached", hold_days=2)
+    current = dict(p1_target_vwc=84.8, field_capacity=86.8, p2_vwc_threshold=79.5,
+                   p3_emergency_vwc_threshold=50.0, p2_shot_size=3.0)
+    ctx = dict(lights_on_h=7, lights_off_h=20, shots_today=5, dryback_pct=45.0, p0_wait_min=60,
+               p1_shot_pct=3.0, p1_gap_min=15, start_vwc=67.0, generative=True)
+    recipe, plan = au.day_plan(learn, current, ctx)
+    assert recipe.dryback_pct == pytest.approx((1 - 55.0 / 84.8) * 100)  # about 35%: a hold at 55%
+    assert plan.note.startswith(
+        "45% dryback would end at 46.6%, under the 50% rescue level, which stops it there: about 35% tonight"
+    )
+    full = au.day_plan(learn, dict(current, p3_emergency_vwc_threshold=40.0), ctx)[1]
+    assert plan.p2_stop_h > full.p2_stop_h  # maintenance shots run on later than for the full 45%
+    night = au.wanted(learn, current, vwc=69.1, phase="P3", plan_ctx=dict(ctx, minutes_since_lights_on=None))
+    assert "p3_emergency_vwc_threshold" not in night
+    assert night["p2_vwc_threshold"] == 53.0  # 3 over the rescue level, 2 under the 55% hold
+    # The supervisor writes it, the ladder in order, and never the rescue level.
+    writes = ss.writes(current, night)
+    assert [suffix for suffix, _value, _why in writes] == ["p2_vwc_threshold"]
+    # A rescue level well under the target's hold leaves the target alone, and says nothing of it.
+    low = au.day_plan(learn, dict(current, p3_emergency_vwc_threshold=40.0), ctx)
+    assert low[0].dryback_pct == 45.0 and "rescue" not in low[1].note
 
 
 def test_the_overnight_threshold_sits_under_where_the_dryback_target_ends_so_p0_still_runs():
