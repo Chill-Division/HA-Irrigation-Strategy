@@ -7,15 +7,15 @@
 | Component                 | Where it runs                                                       | Purpose                                                                                                                                |
 | ------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Crop Steering integration | Home Assistant custom integration                                   | Room/zone configuration, entities, stored plans, reviewed APIs and the native sidebar workspace.                                       |
-| Crop Steering Controller  | One existing/new Supervisor app, or a separately managed controller | Reads the configuration and sensors, makes irrigation decisions and sequences equipment.                                               |
+| Crop Steering Controller  | A Home Assistant app (Settings → Apps)                              | Reads the configuration and sensors, makes irrigation decisions and sequences equipment.                                               |
 
-Install the integration and controller together. HACS, the HA integration config flow and the Supervisor app store are separate steps. The guided links open those screens; they cannot pair devices, prove flow or bypass HA confirmations.
+Install the integration and controller together. HACS, the integration's setup and Settings → Apps are separate steps. The guided links open those screens; they cannot pair devices, prove flow or bypass HA confirmations.
 
 ## Requirements
 
-- Home Assistant 2026.5 or newer. Python requirements follow your HA version; HA 2026.5 requires Python 3.14.
+- Home Assistant OS, running Home Assistant 2026.5 or newer.
 - HACS for the guided integration download, or access to copy a custom integration manually.
-- Home Assistant OS/Supervised with the app store for the guided controller install. The controller app is built for amd64 or aarch64 (64-bit only) and brings its own Python 3.12. Container/Core users must run the companion controller separately; a true one-click controller install is not available there.
+- The controller app installs from Settings → Apps. It is built for amd64 or aarch64 (64-bit only) and brings its own Python 3.12.
 - An HA administrator account for Settings → Rooms & hardware and its configuration services.
 - Existing HA entities for the actual pump and zone valves, fresh VWC/EC probes and any configured interlocks. This integration maps entities; it does not provision sensor firmware or pair devices.
 
@@ -25,7 +25,7 @@ Install the integration and the controller app at the same version: from 2.21.0 
 
 1. [Open this repository in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=Chill-Division&repository=HA-Irrigation-Strategy&category=integration). Download the integration and restart HA. If HACS is absent, install HACS first or use the manual path below.
 2. [Start the Crop Steering config flow](https://my.home-assistant.io/redirect/config_flow_start/?domain=crop_steering). Select manual setup for a new installation. Enter a room name and initial zone count. Existing environment-import installations remain supported.
-3. [Add the app repository](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FChill-Division%2FHA-Irrigation-Strategy). In the app store, install **Crop Steering Controller**. Keep the affected engine enable flags OFF, review the app options, then start the app so it can publish its heartbeat and discover configuration. From then on it starts with the host (**Start on boot** is on unless you turn it off); turn on **Watchdog** as well, so Supervisor restarts it if it stops. Supervisor supplies the internal HA token; do not paste a token into a repository file.
+3. [Add the app repository](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FChill-Division%2FHA-Irrigation-Strategy). In **Settings → Apps**, install **Crop Steering Controller**. Keep the affected engine enable flags OFF, review the app options, then start the app so it can publish its heartbeat and discover configuration. From then on it starts with the host (**Start on boot** is on unless you turn it off); turn on **Watchdog** as well, so Supervisor restarts it if it stops. Supervisor supplies the internal HA token; do not paste a token into a repository file.
 4. Open **Crop Steering** in the HA sidebar. The integration serves its bundled dashboard automatically; no manual dashboard YAML or custom Lovelace card installation is required. The controller's ingress can also serve the same dashboard. In supported HA shells, use the workspace's **Home Assistant** or house button to reopen the temporarily collapsed HA sidebar; see [sidebar behavior](HA_SIDEBAR.md).
 5. In **Settings → Rooms & hardware**, select or add a room. Name its zones. Search HA entities by friendly name or ID and check their units/current states while mapping valves, VWC probes, EC probes and room equipment. Multiple probes can be selected per zone. Every zone needs its valve. Under **Shared room hardware**, say how the room is plumbed: a tent with one smart plug or solenoid is *Zone valves only* and maps that switch as the zone's valve and nothing else; a room where water only flows while a pump runs is *A pump, then zone valves* and must have the pump chosen. The switches have to match the answer, and the controller holds a room whose switches stop matching rather than watering it with no pump.
 6. Enter substrate litres **per plant**, plant count, drippers per plant and each dripper's L/hour. Catch-test actual output using **Insights → Calibration**. The calculator proposes a value; it does not write it automatically.
@@ -66,13 +66,13 @@ Update an existing controller in place from this repository. A controller instal
 5. Start the controller with engines still off. Verify its version, fresh heartbeat, both room descriptors, sensor readings, setup acknowledgement and grow-plan capability. Compare current setpoints and pot/dripper sizing with the backup.
 6. Restore the engines' previous enabled states after these checks. An upgrade does not require arming a recipe or replacing existing values with defaults.
 
-If an update is missing from the app store, refresh the repository information first. Use Update for published versions or Rebuild for a local source installation. HACS and the app store update separate components.
+If an update is missing from Settings → Apps, refresh the repository information there first. Use Update for published versions or Rebuild for a local source installation. HACS and Settings → Apps update separate components.
 
 ### Moving a controller installed from another repository
 
 Crop Steering started at `JakeTheRabbit/HA-Irrigation-Strategy`, and its controller was also mirrored to `JakeTheRabbit/f2-control`. Supervisor names an app after the repository it came from, so the same controller from another repository is a separate app with its own data: `f50c47e4_f2_control` from this repository, `6db5faba_f2_control` from `JakeTheRabbit/HA-Irrigation-Strategy` and `4d457e60_f2_control` from the mirror. Moving is a one-time reinstall that carries the runtime state across:
 
-1. Add this repository to the app store and install **Crop Steering Controller** from it. Do not start it, and turn its **Start on boot** off for now: it is on by default, and a host restart before step 6 would otherwise start both apps.
+1. Add this repository in Settings → Apps and install **Crop Steering Controller** from it. Do not start it, and turn its **Start on boot** off for now: it is on by default, and a host restart before step 6 would otherwise start both apps.
 2. Copy the old app's Configuration into the new app: every option.
 3. Turn every engine kill switch off and wait until the pump, mainline and valves read OFF.
 4. Stop the old app and turn off its Start on boot and Watchdog.
