@@ -78,19 +78,21 @@ def test_p2_p3_and_a_held_plan():
 
 def test_p3_the_dryback_it_holds_then_the_rescue_level_beneath_it():
     hold = {"rule": "p3_hold", "shot": True, "metric": "vwc", "op": "<", "value": 60.55, "now": 74.2,
-            "dryback": 30}
+            "dryback": 30, "peak": 86.5}
     p3 = [
         {"rule": "p3_emergency", "shot": True, "metric": "vwc", "op": "<", "value": 50, "now": 74.2},
         hold,
         {"rule": "lights_on", "to": "P0", "in_min": 600},
     ]
     assert controller.next_text(p3, AT) == (
-        "shot when VWC < 60.55%, the 30% dryback (now 74.2%) · rescue shot if VWC < 50% · P0 at 17:36"
+        "shot when VWC < 60.55% (now 74.2%), the 30% dryback from the 86.5% peak · rescue shot if VWC < 50%"
+        " · P0 at 17:36"
     )
     # Under it, the next hold shot may still wait out the time between P2 shots.
     p3[1] = {**hold, "now": 60.4, "in_min": 3}
     assert controller.next_text(p3, AT) == (
-        "shot at 07:39 (VWC 60.4% under 60.55%, the 30% dryback) · rescue shot if VWC < 50% · P0 at 17:36"
+        "shot at 07:39 (VWC 60.4% under 60.55%, the 30% dryback from the 86.5% peak) · rescue shot if VWC"
+        " < 50% · P0 at 17:36"
     )
     # A rescue level at or over the dryback's end fires first, so it is the only shot to say.
     p3[1] = {**hold, "value": 28.7}
