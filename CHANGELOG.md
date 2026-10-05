@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Steadier browser checks.** A check that shrinks the window to a phone's width no longer
   fails now and then on a page that was still catching up with the resize. A page that is really
   too wide still fails, and the failure now names what sticks out.
+- **The tank chart's times stay apart.** On a wide screen the Overview puts the tank in a narrow
+  side column, where the level chart's times ran together ("6:05 PM6:05 AM"). A chart too narrow
+  for three now shows the window's start and Now; a phone and wider charts keep the middle time.
 
 ### 🔧 Technical notes
 
@@ -23,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   requests #123 and #132 that way. On a timeout it names the outermost elements past the window's
   edge that no narrower scrolling box clips. The dashboard, workspace, steering visuals, tank
   status, recipe library and Home Assistant shell checks use it, the last in the panel's frame.
+- Dashboard: `middleTimeFits` (`frontend/src/lib/tank-telemetry.ts`) says whether the middle time
+  fits between the start and Now on the axis's width, at about 6.5 px a character and 8 px apart;
+  the chart's tick leaves it out where it does not. The tank-status browser check holds every two
+  times at least 6 px apart at 1440 and 390 px, and fails on the bundle before this.
 
 ## [2.37.0] - 2026-10-05
 

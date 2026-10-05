@@ -103,6 +103,26 @@ try {
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await fitsWidth(page, `horizontal overflow at ${width}`);
+    // The times under the level chart stay apart: a chart too narrow for three (the side column
+    // at 1440) leaves the middle one out. The chart redraws for the new width a little later.
+    const apart = await page
+      .waitForFunction(
+        () => {
+          const times = [...document.querySelectorAll(
+            "[data-tank-history] .recharts-cartesian-axis-tick-label text",
+          )]
+            .filter((text) => text.textContent.trim() && !text.textContent.endsWith("%"))
+            .map((text) => text.getBoundingClientRect());
+          return times.length >= 2 && times.slice(1).every((box, i) => box.left - times[i].right >= 6);
+        },
+        null,
+        { polling: "raf", timeout: 2_000 },
+      )
+      .then(
+        () => true,
+        () => false,
+      );
+    assert.ok(apart, `the level chart's times run together at ${width} px`);
     const audit = await new AxeBuilder({ page }).include("[data-tank-status]").analyze();
     assert.deepEqual(
       audit.violations.map((v) => ({ id: v.id, impact: v.impact })),
@@ -221,7 +241,7 @@ try {
   const checks = [
     "graphical mapped tank readings, no tank EC or pH",
     "refills from the controller's record, none for a room without a reservoir",
-    "the level over the last 12 or 24 hours beside the tank",
+    "the level over the last 12 or 24 hours beside the tank, its times apart at 1440 and 390 px",
     "zone event timestamps",
     "mobile layout and accessibility, light and dark",
     "Overview two screens at most, zones beside the tank, Map sensors on the heading's line",

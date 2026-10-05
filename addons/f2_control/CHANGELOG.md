@@ -1,3 +1,7 @@
+# Unreleased
+
+- **The dashboard the app serves:** the tank chart's times no longer run together in the Overview's side column. No change to the controller.
+
 # 2.37.0
 
 Pair with integration 2.37.0.
