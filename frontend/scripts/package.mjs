@@ -19,9 +19,14 @@ const entry =
   '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Crop Steering</title></head><body><p>Opening Crop Steering…</p><noscript><a href="./dashboard.html">Open dashboard</a> · JavaScript is required.</noscript><script>\n' +
   'location.replace("./dashboard.html"+location.search+(location.hash||"#/overview"));\n' +
   "</script></body></html>\n";
+// The licences of the packages the dashboard is built from travel with it (vite.config.ts).
+const licences = await readFile(
+  new URL("../dist/THIRD_PARTY_LICENSES.txt", import.meta.url),
+  "utf8",
+);
 const pages = new Map([
-  [addon, { "dashboard.html": html, "index.html": entry }],
-  [integration, { "dashboard.html": html }],
+  [addon, { "dashboard.html": html, "index.html": entry, "THIRD_PARTY_LICENSES.txt": licences }],
+  [integration, { "dashboard.html": html, "THIRD_PARTY_LICENSES.txt": licences }],
 ]);
 for (const [folder, files] of pages) {
   await mkdir(folder, { recursive: true });

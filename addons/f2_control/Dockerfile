@@ -8,8 +8,9 @@ RUN apk add --no-cache nginx tzdata && rm -rf /var/cache/apk/* /etc/nginx/http.d
 
 RUN pip3 install --no-cache-dir requests
 
-# vendored: the pure engine package + the IO-shell controller
+# vendored: the pure engine package + the IO-shell controller, and the licence they are under
 COPY f2_control /app
+COPY LICENSE /app/LICENSE
 # The controller reports its own version (heartbeat -> the dashboard's sidebar). It reads it from
 # this copy of the config.yaml Supervisor built the image from: one source of truth, nothing
 # to bump anywhere else.
