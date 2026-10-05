@@ -11,12 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **A new icon.** A tank of water with a seedling in front of it, white on the same blue tile: in
+  the dashboard's menu, on Home Assistant's integrations page, in HACS, and for the controller app
+  in Settings → Apps. The logo beside it says Crop Steering in the tile's blue, which reads on a
+  light theme and a dark one.
 - **Steadier accessibility checks.** The checks that read the dashboard's contrast in the dark
   theme no longer fail now and then on text that was still turning light. They wait until nothing
   on the page is changing colour, so what they measure is what a grower sees.
 
 ### 🔧 Technical notes
 
+- Dashboard, integration and app: `BrandGlyph` (`frontend/src/components/brand-glyph.tsx`)
+  replaces the menu's droplets. Its seedling is drawn twice, first wide in the tile's colour
+  (`.brand-glyph-halo`), so the tank's lines stop short of it. A new script,
+  `frontend/scripts/make-brand-images.mjs` (run after `npm run build`), draws the integration's
+  `brand/` images and the app's `icon.png` and `logo.png` from the built dashboard's own mark, in
+  its light theme's colours and font. It replaces `scripts/make_brand_images.py` and that
+  script's 2.2 MB source picture, `img/crop-steering-logo.png`. The `dark_` images are gone: Home
+  Assistant serves the light ones in their place, which `tests_ha/test_brand_images.py` proves
+  through its web server.
 - Tests: `settled` (`frontend/scripts/settled.mjs`) waits until no finite animation or transition
   is running (at most 5 s), then two frames, and every axe audit in the browser checks calls it
   first. At reduced motion every element eases every property for 0.01 ms, and an element added

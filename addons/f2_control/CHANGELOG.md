@@ -1,3 +1,7 @@
+# Unreleased
+
+- **A new icon and logo in Settings → Apps:** a tank of water with a seedling in front of it, white on a blue tile. **The dashboard the app serves** has the same mark in its menu. No change to the controller.
+
 # 2.37.1
 
 Pair with integration 2.37.1.

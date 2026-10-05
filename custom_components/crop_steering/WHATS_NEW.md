@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- A new icon, a tank of water with a seedling in front of it: in the menu, in HACS and in Settings → Apps.
+
 ## 2.37.1 - 2026-10-05
 
 - Auto setpoints never changes your rescue level: a dryback that would go below it stops at it.

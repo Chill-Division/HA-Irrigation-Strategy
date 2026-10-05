@@ -209,6 +209,9 @@ input[type="number"] {
   place-items: center;
   border-radius: 10px;
 }
+.brand-glyph-halo {
+  stroke: var(--primary); /* the tile's own colour, around the seedling */
+}
 .brand small {
   display: block;
   font-size: var(--text-xs);
