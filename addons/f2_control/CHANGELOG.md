@@ -4,6 +4,7 @@
 - **The dashboard the app serves:** a room without the solenoids, pump and dosers a refill needs offers no refill, and its Reservoir page shows only the tank's level and minimum. No change to the controller.
 - **The dashboard the app serves:** a last batch recorded by an older controller names its nutrients from the stage's recipe. No change to the controller.
 - **The dashboard the app serves:** the tank card no longer shows the water's temperature, and Rooms & hardware no longer maps a tank temperature sensor. No change to the controller.
+- **64-bit only.** The app is built for amd64 and aarch64; its armv7 (32-bit) build is gone, as Home Assistant has had no 32-bit release since 2025.12 and the app needs 2026.5 or newer. No change to the controller.
 
 # 2.36.0
 
