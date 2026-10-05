@@ -122,14 +122,15 @@ def test_p3_rescues_exactly_below_its_floor_and_waits_for_lights_on():
 
 
 def test_p3_holds_exactly_below_the_dryback_target_and_says_which_dryback():
-    """A 30% dryback from an 86.5% peak ends at 60.55%: the hold fires just under it, not at it."""
+    """A 30% dryback from an 86.5% peak ends at 60.55%: the hold fires just under it, not at it, and
+    says which dryback, from which peak."""
     p = P(p3_emergency_floor=50, dryback_target=30)
     for vwc in (60.5, 60.55, 74.2):
         s = S(phase="P3", vwc=vwc, peak_vwc=86.5, lights_on=False, hours_to_lights_on=6)
         items = waiting_for(s, p)
         assert rules(items) == ["p3_emergency", "p3_hold", "lights_on"]
         hold = by_rule(items, "p3_hold")
-        assert (hold["value"], hold["dryback"], hold["shot"]) == (60.55, 30, True)
+        assert (hold["value"], hold["dryback"], hold["peak"], hold["shot"]) == (60.55, 30, 86.5, True)
         assert decide(s, p)[2] == holds(hold), vwc
 
 

@@ -400,7 +400,7 @@ def waiting_for(s: ZoneSnapshot, p: ZoneParams) -> list:
             add("p3_hold", shot=True, metric="vwc", op="<", value=hold, now=s.vwc,
                 in_min=(p.p2_time_between_min - s.minutes_since_shot
                         if p.p2_time_between_min > 0 else None),
-                dryback=round(p.dryback_target, 2))
+                dryback=round(p.dryback_target, 2), peak=round(s.peak_vwc, 1))
         add("lights_on", to="P0", in_min=s.hours_to_lights_on * 60.0)
     return items
 
