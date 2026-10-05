@@ -78,16 +78,12 @@ export function createDemo(now = Date.now()): States {
         2: `switch.demo_${prefix}valve_2`,
         3: `switch.demo_${prefix}valve_3`,
       },
-      tank_temperature_sensor: `sensor.demo_${prefix}tank_temperature`,
       // Flower 2 mixes its own nutrient batches; Flower 1 has no reservoir mapped.
       ...(index ? {} : DEMO_RESERVOIR),
       // Both rooms have been saved in Rooms & hardware.
       setup_revision: 1,
     });
     put(`switch.demo_${prefix}pump`, index ? "off" : "on");
-    put(`sensor.demo_${prefix}tank_temperature`, index ? 19.2 : 17.6, {
-      unit_of_measurement: "°C",
-    });
     // A probe's estimated pore EC as some probe firmware publishes it, unrounded. Nothing maps it,
     // so it is only among the entities Rooms & hardware offers.
     if (!index)

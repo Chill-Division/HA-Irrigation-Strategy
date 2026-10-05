@@ -189,7 +189,6 @@ const hardwareFields = [
   ["pump_switch", "Room pump", "switch"],
   ["main_line_switch", "Mainline valve", "switch"],
   ["light_entity", "Room lights", "light"],
-  ["tank_temperature_sensor", "Tank temperature", "temperature"],
 ] as const;
 /** The reservoir and dosers a room's nutrient batches use (Feed → Reservoir); the controller app
  * switches these. */
@@ -562,8 +561,7 @@ export function Setup({
                   <div>
                     <h2>Shared room hardware</h2>
                     <p className="muted">
-                      How the room is plumbed, then the switches that go with it. Tank display
-                      mappings show readings in Overview; they do not operate the fill valve.
+                      How the room is plumbed, then the switches that go with it.
                     </p>
                   </div>
                 </div>

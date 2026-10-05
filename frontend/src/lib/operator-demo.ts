@@ -68,7 +68,7 @@ export class OperatorDemo {
           pump_switch: "switch.demo_" + room.prefix + "pump",
           main_line_switch: "switch.demo_" + index + "_mainline",
           ...Object.fromEntries(
-            ["tank_temperature_sensor", ...RESERVOIR_KEYS].map((key) => [
+            RESERVOIR_KEYS.map((key) => [
               key,
               String(
                 states["sensor.crop_steering_" + room.prefix + "engine_config"]?.attributes[key] ||

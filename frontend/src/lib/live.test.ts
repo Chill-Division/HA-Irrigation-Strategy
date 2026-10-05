@@ -101,7 +101,7 @@ describe("watched entities", () => {
         enable_flag: "input_boolean.f2_control_enabled",
         pump: "switch.pump",
         valves: { 1: "switch.valve_1", 2: "switch.valve_2" },
-        tank_temperature_sensor: "sensor.tank_temperature",
+        reservoir_distance_sensor: "sensor.reservoir_distance",
         zone_names: { 1: "Front" },
       }),
       entity("sensor.crop_steering_f1_engine_config", "ready", { prefix: "f1_", num_zones: 1 }),
@@ -114,7 +114,7 @@ describe("watched entities", () => {
         "switch.pump",
         "switch.valve_1",
         "switch.valve_2",
-        "sensor.tank_temperature",
+        "sensor.reservoir_distance",
         "switch.custom_flag",
         "light.kitchen",
         "sensor.outdoor_temperature",
@@ -128,7 +128,7 @@ describe("watched entities", () => {
       "input_boolean.f2_control_enabled",
       "switch.pump",
       "switch.valve_2",
-      "sensor.tank_temperature",
+      "sensor.reservoir_distance",
       "switch.custom_flag",
     ])
       expect(ids).toContain(id);

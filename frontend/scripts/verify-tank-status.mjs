@@ -53,10 +53,10 @@ try {
   const tank = page.locator("[data-tank-status]");
   await tank.waitFor();
   // The reservoir's own level, as the controller works it out: 640 mm between 125 (full) and 850
-  // (empty) is 29%, ahead of the room's level sensor in % (42).
+  // (empty) is 29%.
   assert.equal(await tank.locator("[data-tank-level]").getAttribute("data-tank-level"), "29");
   assert.equal(await tank.locator("[data-pump-state]").getAttribute("data-pump-state"), "on");
-  assert.match(await tank.innerText(), /17.6 °C/);
+  assert.doesNotMatch(await tank.innerText(), /°C/, "no water temperature any more");
   assert.doesNotMatch(await tank.innerText(), /mS\/cm|\bpH\b/, "no tank EC or pH any more");
   assert.ok(await tank.locator("time").getAttribute("datetime"));
   // The refills are the controller's own record: none running, and when the last one ended.
