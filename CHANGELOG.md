@@ -9,6 +9,21 @@ and code-level detail for developers and AI agents working on the repo.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- **Steadier browser checks.** A check that shrinks the window to a phone's width no longer
+  fails now and then on a page that was still catching up with the resize. A page that is really
+  too wide still fails, and the failure now names what sticks out.
+
+### 🔧 Technical notes
+
+- Tests: `fitsWidth` (`frontend/scripts/fits-width.mjs`) gives a resized page up to two seconds,
+  polled each frame, to fit its window. The checks measured once, two frames after the resize at
+  most, and a busy CI runner could still be laying the page out at the old width: it failed pull
+  requests #123 and #132 that way. On a timeout it names the outermost elements past the window's
+  edge that no narrower scrolling box clips. The dashboard, workspace, steering visuals, tank
+  status, recipe library and Home Assistant shell checks use it, the last in the panel's frame.
+
 ## [2.37.0] - 2026-10-05
 
 Integration and controller **2.37.0**.
