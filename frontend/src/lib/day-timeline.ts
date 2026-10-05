@@ -410,6 +410,56 @@ export function readings(rows: TimelineRow[] = [], from: number, to: number): Re
     return value !== null && row.time >= from && row.time <= to ? [{ time: row.time, value }] : [];
   });
 }
+/** Home Assistant records a change, not a reading that holds still: only a silence this long is
+ * taken for a probe that stopped reporting, or for Home Assistant not running. */
+export const SILENCE_MS = 2 * 3_600_000;
+/** Where the recorded readings have no line inside the window: from each state recorded as
+ * unreadable (unavailable, unknown) to the next number, and each silence longer than SILENCE_MS
+ * between two numbers. A shorter quiet stretch is the last reading holding. */
+export function recordedGaps(rows: TimelineRow[] = [], from: number, to: number): Span[] {
+  const found: Span[] = [];
+  let last: number | null = null,
+    unreadable: number | null = null;
+  for (const row of rows) {
+    if (row.time > to) break;
+    if (numberOf(row.state) === null) {
+      unreadable ??= row.time;
+      continue;
+    }
+    if (unreadable !== null) found.push({ start: unreadable, end: row.time });
+    else if (last !== null && row.time - last > SILENCE_MS)
+      found.push({ start: last, end: row.time });
+    unreadable = null;
+    last = row.time;
+  }
+  if (unreadable !== null) found.push({ start: unreadable, end: to });
+  return found
+    .map((gap) => ({ start: Math.max(gap.start, from), end: Math.min(gap.end, to) }))
+    .filter((gap) => gap.end > gap.start);
+}
+/** The first of `gaps` to start between two readings, at or after the earlier one. */
+export function gapBetween(gaps: readonly Span[], from: number, to: number): Span | null {
+  return gaps.find((gap) => gap.start >= from && gap.start < to) ?? null;
+}
+/** Readings as one SVG path. Between two readings the line is what held; it breaks at `gaps`, the
+ * earlier reading held until the gap starts. */
+export function readingsPath(
+  points: readonly Reading[],
+  x: (time: number) => number,
+  y: (value: number) => number,
+  gaps: readonly Span[] = [],
+): string {
+  const at = (time: number, value: number) => `${x(time).toFixed(1)} ${y(value).toFixed(1)}`;
+  return points
+    .map((point, index) => {
+      const before = points[index - 1];
+      const gap = before ? gapBetween(gaps, before.time, point.time) : null;
+      if (before && !gap) return `L${at(point.time, point.value)}`;
+      const held = gap && gap.start > before.time ? `L${at(gap.start, before.value)}` : "";
+      return `${held}M${at(point.time, point.value)}`;
+    })
+    .join("");
+}
 /** A numeric entity's value over the window, as steps; unreadable stretches are gaps. */
 export function levels(rows: TimelineRow[] = [], from: number, to: number): Level[] {
   const steps: Level[] = [];
@@ -493,6 +543,8 @@ export interface DayTrace {
   day: GrowDay;
   /** The zone's VWC in ten-minute medians, by hours since that day's own lights-on. */
   points: RecordedPoint[];
+  /** Where that day's VWC has no line (`recordedGaps`). */
+  gaps: Span[];
   shots: Shot[];
 }
 /** One earlier grow-day of a zone, to compare today with. Null when there is nothing to compare:
@@ -510,12 +562,18 @@ export function dayTrace(
       row.time < day.end &&
       (active[index + 1]?.time ?? Infinity) > day.start,
   );
-  const points = smoothRecorded(readings(ids.vwc ? rows[ids.vwc] : [], day.start, day.end)).map(
-    (point) => ({ ...point, hour: (point.time - day.start) / 3_600_000 }),
-  );
+  const vwc = (ids.vwc && rows[ids.vwc]) || [];
+  // Home Assistant records a change, so the reading carried in at lights-on starts the day's line,
+  // as it starts today's.
+  const carried = vwc.filter((row) => row.time < day.start).at(-1);
+  const start = carried ? numberOf(carried.state) : null;
+  const recorded = readings(vwc, day.start, day.end);
+  const points = smoothRecorded(
+    start === null ? recorded : [{ time: day.start, value: start }, ...recorded],
+  ).map((point) => ({ ...point, hour: (point.time - day.start) / 3_600_000 }));
   if (off || points.length < 2) return null;
   const shots = ids.valve ? valveShots(rows[ids.valve], [], zoneId, day.start, day.end) : [];
-  return { day, points, shots };
+  return { day, points, gaps: recordedGaps(vwc, day.start, day.end), shots };
 }
 
 /** The room's setup revision in force at `time`, from its descriptor's recorded attributes. A
@@ -567,12 +625,14 @@ export function earlierTraces(
   };
 }
 
-/** VWC `hour` hours after lights-on: read between the readings either side when they are no more
- * than `within` hours apart, else the nearest one if it is within half of that. */
+/** VWC `hour` hours after lights-on, read between the readings either side. Where one of `gaps`
+ * starts between them, the earlier reading holds until the gap and the later one from its end, with
+ * none inside it. Before the first reading or after the last, the nearest one within `near` hours. */
 export function atHour(
   points: readonly RecordedPoint[],
   hour: number,
-  within = 1 / 3,
+  gaps: readonly Span[] = [],
+  near = 1 / 6,
 ): number | null {
   let low = 0,
     high = points.length;
@@ -582,10 +642,14 @@ export function atHour(
     else high = middle;
   }
   const [a, b] = [points[low - 1], points[low]];
-  if (a && b && b.hour - a.hour <= within)
-    return a.value + ((b.value - a.value) * (hour - a.hour)) / (b.hour - a.hour);
-  const near = [a, b].find((point) => point && Math.abs(point.hour - hour) <= within / 2);
-  return near ? near.value : null;
+  if (a && b) {
+    const gap = gapBetween(gaps, a.time, b.time),
+      time = a.time + (hour - a.hour) * 3_600_000;
+    if (!gap) return a.value + ((b.value - a.value) * (hour - a.hour)) / (b.hour - a.hour);
+    return time <= gap.start ? a.value : time >= gap.end ? b.value : null;
+  }
+  const nearest = [a, b].find((point) => point && Math.abs(point.hour - hour) <= near);
+  return nearest ? nearest.value : null;
 }
 
 /** When VWC first rose to `level`, in hours since lights-on: the first reading at or above it after
@@ -657,13 +721,15 @@ export interface TypicalPoint {
 }
 /** The typical day: every ten minutes after lights-on, the median VWC of the recorded days and
  * their middle half (25th to 75th percentile), wherever three or more of them were recorded. */
-export function typicalDay(days: readonly (readonly RecordedPoint[])[]): TypicalPoint[] {
+export function typicalDay(days: readonly Pick<DayTrace, "points" | "gaps">[]): TypicalPoint[] {
   const step = 1 / 6,
-    last = Math.max(0, ...days.map((points) => points.at(-1)?.hour ?? 0));
+    last = Math.max(0, ...days.map((trace) => trace.points.at(-1)?.hour ?? 0));
   const typical: TypicalPoint[] = [];
   for (let index = 0; index * step <= last; index++) {
     const hour = index * step;
-    const values = days.flatMap((points) => atHour(points, hour) ?? []).sort((a, b) => a - b);
+    const values = days
+      .flatMap((trace) => atHour(trace.points, hour, trace.gaps) ?? [])
+      .sort((a, b) => a - b);
     if (values.length >= 3)
       typical.push({
         hour,
@@ -694,7 +760,7 @@ export function compareDays(
   target: number | null,
 ): Comparison | null {
   if (!days.length) return null;
-  const then = middle(days.flatMap((trace) => atHour(trace.points, hour) ?? []));
+  const then = middle(days.flatMap((trace) => atHour(trace.points, hour, trace.gaps) ?? []));
   // A day that never reached the target counts as the latest of all.
   const reached =
     target === null ? [] : days.map((trace) => reachedHour(trace.points, target) ?? Infinity);

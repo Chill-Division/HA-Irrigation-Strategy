@@ -27,6 +27,8 @@ import {
   phaseTargets,
   reachedHour,
   readings,
+  readingsPath,
+  recordedGaps,
   revisionAt,
   setpointChanges,
   setpointSteps,
@@ -377,6 +379,58 @@ describe("setpoint changes", () => {
       { value: 30.2, start: START, end: at("22:10:00") },
       { value: 31, start: at("22:20:00"), end: at("23:00:00") },
     ]);
+  });
+});
+
+describe("where the VWC line breaks", () => {
+  const minutes = (count: number) => START + count * 60_000;
+  it("a reading that holds still is not a gap: Home Assistant records only a change", () => {
+    // Overnight a probe can read 41.2 % for 50 minutes; nothing is recorded until it moves.
+    const rows = [row("41.3", START), row("41.2", minutes(10)), row("41.1", minutes(60))];
+    expect(recordedGaps(rows, START, minutes(120))).toEqual([]);
+  });
+  it("breaks from each unreadable state to the next number, and at the window's end", () => {
+    const rows = [
+      row("41.3", START),
+      row("unavailable", minutes(30)),
+      row("unknown", minutes(35)),
+      row("41.0", minutes(50)),
+      row("unavailable", minutes(90)),
+    ];
+    expect(recordedGaps(rows, START, minutes(120))).toEqual([
+      { start: minutes(30), end: minutes(50) },
+      { start: minutes(90), end: minutes(120) },
+    ]);
+  });
+  it("breaks at a silence over two hours, which can be Home Assistant not running", () => {
+    const rows = [row("41.3", START), row("40.1", minutes(121)), row("40.0", minutes(240))];
+    expect(recordedGaps(rows, START, minutes(300))).toEqual([{ start: START, end: minutes(121) }]);
+  });
+  it("cuts a gap to the window, and reads the state carried into it", () => {
+    const rows = [row("unavailable", START - 60_000), row("41.3", minutes(20))];
+    expect(recordedGaps(rows, START, minutes(60))).toEqual([{ start: START, end: minutes(20) }]);
+    expect(
+      recordedGaps([row("41.3", START), row("unknown", minutes(90))], START, minutes(60)),
+    ).toEqual([]);
+  });
+  it("draws through a quiet stretch, and holds the last reading up to a gap", () => {
+    const x = (time: number) => (time - START) / 60_000,
+      y = (value: number) => value;
+    const points = [
+      { time: START, value: 41 },
+      { time: minutes(50), value: 40 },
+      { time: minutes(70), value: 39 },
+      { time: minutes(100), value: 38 },
+    ];
+    expect(readingsPath(points, x, y)).toBe("M0.0 41.0L50.0 40.0L70.0 39.0L100.0 38.0");
+    // Unreadable from 60 to 70 minutes: 40 holds until 60, and the line starts again at 70.
+    expect(readingsPath(points, x, y, [{ start: minutes(60), end: minutes(70) }])).toBe(
+      "M0.0 41.0L50.0 40.0L60.0 40.0M70.0 39.0L100.0 38.0",
+    );
+    // A silence from the reading itself has nothing to hold.
+    expect(readingsPath(points, x, y, [{ start: minutes(70), end: minutes(100) }])).toBe(
+      "M0.0 41.0L50.0 40.0L70.0 39.0M100.0 38.0",
+    );
   });
 });
 
@@ -908,6 +962,7 @@ describe("how today is tracking", () => {
       [3.3, 27],
       [3.5, 26.6],
     ]),
+    gaps: [],
     shots: [shot(0.6, 120), shot(1, 150), shot(3.4, 90)],
   };
   it("VWC now, the P1 target and water so far against yesterday at the same hour", () => {
@@ -917,8 +972,17 @@ describe("how today is tracking", () => {
     expect(now.reachedBy).toBe(1);
     expect(now.seconds).toBe(270); // the two shots before 3.25 h, not the one at 3.4 h
     expect(openSeconds(yesterday.shots, START, 3.41)).toBeCloseTo(270 + 36, 6); // 36 s of the third
-    // Readings too far apart to read between, and none near: nothing.
-    expect(atHour(yesterday.points, 2.25)).toBeNull();
+    // A quiet hour and a half between two readings reads between them: the reading held, then moved.
+    expect(atHour(yesterday.points, 2.25)).toBeCloseTo(28.1, 6);
+    // Where the probe could not be read, the reading before holds until then, and there is none
+    // inside it; the reading after it holds from its end.
+    const unreadable = [{ start: START + 2 * 3_600_000, end: START + 2.75 * 3_600_000 }];
+    expect(atHour(yesterday.points, 1.75, unreadable)).toBe(28.6);
+    expect(atHour(yesterday.points, 2.25, unreadable)).toBeNull();
+    expect(atHour(yesterday.points, 2.9, unreadable)).toBe(27.6);
+    // Before the first reading and after the last: the nearest within ten minutes.
+    expect(atHour(yesterday.points, 3.6)).toBe(26.6);
+    expect(atHour(yesterday.points, 3.75)).toBeNull();
     // Today reached 28.4 % ten minutes later than yesterday.
     expect(
       reachedHour(
@@ -997,12 +1061,47 @@ describe("how today is tracking", () => {
     );
     expect(off).toBeNull();
   });
+  it("an earlier day keeps where its probe could not be read", () => {
+    const hour = (count: number) => START + count * 3_600_000;
+    const trace = dayTrace(
+      { vwc: [row("27", hour(0)), row("unavailable", hour(1)), row("26", hour(2))] },
+      { vwc: "vwc", valve: null, active: null },
+      1,
+      day,
+    )!;
+    expect(trace.gaps).toEqual([{ start: hour(1), end: hour(2) }]);
+    expect(atHour(trace.points, 0.5, trace.gaps)).toBe(27);
+    expect(atHour(trace.points, 1.5, trace.gaps)).toBeNull();
+    expect(compareDays([trace], 1.5, 27, null)!.vwc).toBeNull();
+  });
+  it("an earlier day's line starts at lights-on on the reading carried in, as today's does", () => {
+    const hour = (count: number) => START + count * 3_600_000;
+    const trace = dayTrace(
+      { vwc: [row("27.4", hour(-3)), row("27.1", hour(0.5)), row("26.8", hour(1))] },
+      { vwc: "vwc", valve: null, active: null },
+      1,
+      day,
+    )!;
+    expect(trace.points.map((point) => [point.hour, point.value])).toEqual([
+      [0, 27.4],
+      [0.5, 27.1],
+      [1, 26.8],
+    ]);
+    // Carried in unreadable: the line starts at the first reading.
+    const unreadable = dayTrace(
+      { vwc: [row("unavailable", hour(-3)), row("27.1", hour(0.5)), row("26.8", hour(1))] },
+      { vwc: "vwc", valve: null, active: null },
+      1,
+      day,
+    )!;
+    expect(unreadable.points[0].hour).toBe(0.5);
+  });
   it("the typical day: the median and middle half of the days recorded, where three or more were", () => {
     const days = [0, 1, 2, 3, 4].map((offset) =>
       hours(Array.from({ length: 13 }, (_, index) => [index / 2, 25 + offset] as [number, number])),
     );
     days[3] = days[3].filter((point) => point.hour <= 3); // one day stopped recording at 3 h
-    const typical = typicalDay(days);
+    const typical = typicalDay(days.map((points) => ({ points, gaps: [] })));
     expect(typical[0]).toEqual({ hour: 0, low: 26, median: 27, high: 28 });
     expect(typical.find((point) => point.hour > 4)).toMatchObject({
       low: 25.75,
@@ -1010,7 +1109,8 @@ describe("how today is tracking", () => {
       high: 27.5,
     });
     expect(typical.at(-1)!.hour).toBeCloseTo(6, 9);
-    expect(typicalDay(days.slice(0, 2))).toEqual([]); // two days are not a typical one
+    // Two days are not a typical one.
+    expect(typicalDay(days.slice(0, 2).map((points) => ({ points, gaps: [] })))).toEqual([]);
   });
   it("marks P2's levels from Auto setpoints' planned stop as stopped, not as a trigger", () => {
     const hour = (h: number) => START + h * 3_600_000;
