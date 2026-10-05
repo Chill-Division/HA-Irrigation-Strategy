@@ -1,4 +1,6 @@
-# Unreleased
+# 2.37.1
+
+Pair with integration 2.37.1.
 
 - **The dashboard the app serves:** the tank chart's times no longer run together in the Overview's side column. No change to the controller.
 - **Auto setpoints never moves the rescue level.** It keeps the maintenance trigger at least 3 points over the rescue level instead, and plans a dryback that would end under it only as deep as the rescue lets the zone go; the plan's note says so. **The dashboard the app serves** no longer credits a rescue level change to Auto setpoints. No new options; no change to the state file.
