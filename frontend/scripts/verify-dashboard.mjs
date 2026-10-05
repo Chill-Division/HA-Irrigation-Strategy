@@ -637,10 +637,44 @@ try {
     const card = page.locator("[data-setup-reservoir]");
     await expectVisible(card);
     assert.equal(await card.locator(".mapping-picker").count(), 9);
+    // Nothing here can refill: the Tests offer no refill, and say nothing about one.
+    const tests = page.locator("[data-room-tests]");
+    await expectVisible(tests.getByRole("button", { name: "Run a test shot" }));
+    assert.equal(await tests.getByText(/refill/i).count(), 0);
     await inBothThemes("rooms & hardware reservoir card", async () => {
       await go("setup", "room:f1_");
       await expectVisible(page.locator("[data-setup-reservoir]"));
     });
+  });
+  await check("reservoir: a room that cannot refill shows its level, and no refill", async () => {
+    // Flower 2 without its recirculation solenoid: nothing can refill it. (A setup change needs
+    // watering off.)
+    await go("overview");
+    await page.getByRole("button", { name: "Switch watering off…", exact: true }).click();
+    await page.getByRole("button", { name: /Apply \d+ change/ }).click();
+    await page.getByRole("dialog").waitFor({ state: "hidden" });
+    await page.evaluate(() => (location.hash = "#/setup"));
+    const card = page.locator("[data-setup-reservoir]");
+    await expectVisible(card);
+    await card.getByRole("button", { name: "Map Recirculation solenoid", exact: true }).click();
+    await page.getByRole("button", { name: "Clear mapping", exact: true }).click();
+    await page.getByRole("button", { name: "Done", exact: true }).click();
+    await page.getByRole("button", { name: "Review configuration", exact: true }).click();
+    await page.getByRole("button", { name: "Save configuration", exact: true }).click();
+    await page.getByRole("dialog").waitFor({ state: "hidden" });
+    const tests = page.locator("[data-room-tests]");
+    await expectVisible(tests.getByRole("button", { name: "Run a test shot" }));
+    assert.equal(await tests.getByText(/refill/i).count(), 0, "the Tests offer no refill");
+    await page.evaluate(() => (location.hash = "#/reservoir"));
+    const panel = page.locator(".res-batch");
+    await expectVisible(panel.getByText("Level", { exact: true }));
+    for (const gone of ["Refill by hand…", "Fill and mix", "Automatic refills", "A batch cannot start"])
+      assert.equal(await panel.getByText(gone).count(), 0, gone);
+    // Its last batch, recorded when it could, still shows.
+    await expectVisible(panel.getByText("Last batch", { exact: true }));
+    // go() changes only the hash of a page on the same address, which keeps this demo's changes:
+    // the next check starts from a fresh one.
+    await page.goto("about:blank");
   });
   await check("overview: every zone and room metric has its mini visual", async () => {
     await go("overview");

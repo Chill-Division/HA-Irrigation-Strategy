@@ -19,6 +19,7 @@ import {
   removeSchedule,
   scheduleWeek,
   doserOrder,
+  canRefill,
   type FeedDocument,
   type FeedDraft,
 } from "./feed";
@@ -540,5 +541,20 @@ describe("the last batch, in words", () => {
       "Balance 252 mL · Bloom 600 of 1,200 mL · Core and doser 2 not dosed",
     );
     expect(lastBatchWords(last([]))).toBe("Nothing dosed");
+  });
+});
+
+describe("a refill by hand", () => {
+  it("is offered only with a fresh-water solenoid, a recirculation solenoid, the pump and a doser", () => {
+    const room: Record<string, unknown> = {
+      fresh_water_switch: "switch.fresh",
+      recirc_switch: "switch.recirc",
+      pump: "switch.pump",
+      doser_3_switch: "switch.doser_3",
+    };
+    expect(canRefill(room)).toBe(true);
+    for (const missing of Object.keys(room))
+      expect(canRefill({ ...room, [missing]: "" }), missing).toBe(false);
+    expect(canRefill({})).toBe(false);
   });
 });

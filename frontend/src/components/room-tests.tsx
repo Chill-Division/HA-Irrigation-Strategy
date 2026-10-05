@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { number } from "@/components/dashboard";
-import { duration, levelPct, RESERVOIR_KEYS, type FeedDocument } from "@/lib/feed";
+import { canRefill, duration, levelPct, type FeedDocument } from "@/lib/feed";
 import { fillRefusal, levelMm, readBatchStatus } from "@/lib/feed-status";
 import { descriptor } from "@/lib/model";
 import type { Controller } from "@/lib/types";
@@ -75,16 +75,15 @@ export function RoomTests({
 
   const room = controller.room.room;
   const attributes = descriptor(controller.states, room)?.attributes ?? {};
-  const reservoir = RESERVOIR_KEYS.some((key) => attributes[key]);
+  // Only a room with what a refill needs is offered one.
+  const refillable = canRefill(attributes);
   const status = readBatchStatus(controller.states, room.prefix);
   const running = !!status?.step && status.step !== "idle";
-  const refillWhy = !reservoir
-    ? "Map the reservoir and its dosers above first."
-    : running
-      ? "A refill is running: Feed → Reservoir shows its steps."
-      : status?.blocked
-        ? `A refill cannot start now: ${status.blocked}.`
-        : null;
+  const refillWhy = running
+    ? "A refill is running: Feed → Reservoir shows its steps."
+    : status?.blocked
+      ? `A refill cannot start now: ${status.blocked}.`
+      : null;
   // What the controller checks before a refill asked for by hand (controller.py _fill_overflow).
   const sensor = attributes.reservoir_distance_sensor;
   // The controller's reading once it reports, as on the Reservoir page.
@@ -209,20 +208,22 @@ export function RoomTests({
             </Button>
           </div>
         </div>
-        <div className="room-test">
-          <h3>Test refill</h3>
-          <p className="muted small">
-            Refills and mixes the reservoir now, as an automatic refill does: fresh water, then the
-            pump and recirculation, then each doser in turn. Every room's watering waits while it
-            runs.
-          </p>
-          <div className="room-test-controls">
-            <Button disabled={!!why || busy || !!refillWhy} onClick={() => void openRefill()}>
-              <Beaker size={16} /> Run a test refill
-            </Button>
-            {!why && refillWhy && <small className="muted">{refillWhy}</small>}
+        {refillable && (
+          <div className="room-test">
+            <h3>Test refill</h3>
+            <p className="muted small">
+              Refills and mixes the reservoir now, as an automatic refill does: fresh water, then
+              the pump and recirculation, then each doser in turn. Every room's watering waits while
+              it runs.
+            </p>
+            <div className="room-test-controls">
+              <Button disabled={!!why || busy || !!refillWhy} onClick={() => void openRefill()}>
+                <Beaker size={16} /> Run a test refill
+              </Button>
+              {!why && refillWhy && <small className="muted">{refillWhy}</small>}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       {ask === "shot" && zone && (
         <Dialog open onOpenChange={(open) => !open && close()}>

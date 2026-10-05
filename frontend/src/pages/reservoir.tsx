@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { Empty, Heading, number, ReviewDialog, type Page } from "@/components/dashboard";
 import { Pill } from "@/components/mini-visuals";
 import {
+  canRefill,
   documentOf,
   doseOf,
   draftErrors,
@@ -268,6 +269,7 @@ function BatchPanel({
   level,
   pct,
   mapped,
+  refillable,
 }: {
   controller: Controller;
   doc: FeedDocument;
@@ -277,6 +279,9 @@ function BatchPanel({
   /** How full the reservoir reads, %: the controller's, or worked out the same way before it reports. */
   pct: number | null;
   mapped: boolean;
+  /** It has what a refill needs (canRefill). Without it the panel offers no refill and shows none of
+   * one: its level, minimum and whether a shot would wait are what is left. */
+  refillable: boolean;
 }) {
   const [review, setReview] = useState(false);
   const running = !!status?.step && status.step !== "idle";
@@ -312,35 +317,40 @@ function BatchPanel({
         </div>
         <div className="res-batch-actions">
           {/* A refill by hand is a test, out of the way: Settings → Rooms & hardware → Tests. */}
-          <Button
-            variant="outline"
-            disabled={!mapped}
-            onClick={() => {
-              window.location.hash = "#/setup?tests";
-            }}
-          >
-            <Beaker size={16} /> Refill by hand…
-          </Button>
-          <small className="muted">In Settings → Rooms & hardware, under Tests.</small>
-          {!running && status?.blocked && (
+          {refillable && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  window.location.hash = "#/setup?tests";
+                }}
+              >
+                <Beaker size={16} /> Refill by hand…
+              </Button>
+              <small className="muted">In Settings → Rooms & hardware, under Tests.</small>
+            </>
+          )}
+          {refillable && !running && status?.blocked && (
             <small className="muted">A batch cannot start: {status.blocked}.</small>
           )}
         </div>
       </div>
-      <ol className="res-steps" aria-label={running ? "This batch's steps" : "What a batch does"}>
-        <StepItem step={steps.fill} />
-        <StepItem step={steps.fillMix}>
-          {!!steps.doses.length && (
-            <ol className="res-steps" aria-label="The doses, going in while it fills">
-              {steps.doses.map((dose) => (
-                <StepItem key={dose.key} step={dose} />
-              ))}
-            </ol>
-          )}
-        </StepItem>
-        {steps.mix && <StepItem step={steps.mix} />}
-      </ol>
-      {steps.mix && (
+      {refillable && (
+        <ol className="res-steps" aria-label={running ? "This batch's steps" : "What a batch does"}>
+          <StepItem step={steps.fill} />
+          <StepItem step={steps.fillMix}>
+            {!!steps.doses.length && (
+              <ol className="res-steps" aria-label="The doses, going in while it fills">
+                {steps.doses.map((dose) => (
+                  <StepItem key={dose.key} step={dose} />
+                ))}
+              </ol>
+            )}
+          </StepItem>
+          {steps.mix && <StepItem step={steps.mix} />}
+        </ol>
+      )}
+      {refillable && steps.mix && (
         <p className="muted small">
           The doses take {duration(steps.dosing)}, longer than the fill&rsquo;s mixing half (
           {duration(plan.fill_s / 2)}): the last of them go in after the fresh water stops.
@@ -361,14 +371,16 @@ function BatchPanel({
               <dt>Minimum</dt>
               <dd>{minimum > 0 ? `${number(minimum, 0)}%` : "Off"}</dd>
             </div>
-            <div>
-              <dt>1% holds</dt>
-              <dd>
-                {status?.litresPerPct
-                  ? `about ${number(status.litresPerPct, 2)} L`
-                  : "Not known yet: the first refill shows it"}
-              </dd>
-            </div>
+            {(refillable || !!status?.litresPerPct) && (
+              <div>
+                <dt>1% holds</dt>
+                <dd>
+                  {status?.litresPerPct
+                    ? `about ${number(status.litresPerPct, 2)} L`
+                    : "Not known yet: the first refill shows it"}
+                </dd>
+              </div>
+            )}
             <div>
               <dt>Now</dt>
               <dd>
@@ -387,53 +399,57 @@ function BatchPanel({
             </div>
           </dl>
         </div>
-        <div className="res-auto">
-          <span className="eyebrow">Automatic refills</span>
-          <p>
-            {auto === true
-              ? !levelSet
-                ? "On, but the reservoir's level is not set up (its distances when full and when empty), so none starts by itself."
-                : minimum <= 0
-                  ? "On, but its minimum is 0%, so none starts by itself."
-                  : `On: a refill starts by itself when the room's next shots would take the reservoir under its ${number(minimum, 0)}% minimum, three passes in a row.${status && !status.armed ? " Waiting for the reservoir to read enough after the last one." : ""}`
-              : auto === false
-                ? minimum > 0 && levelSet
-                  ? `Off: refills start only by hand, and watering waits whenever a shot would take the reservoir under its ${number(minimum, 0)}% minimum.`
-                  : "Off: refills start only by hand."
-                : "Unavailable: update the Crop Steering integration."}
-          </p>
-          {autoId && (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={
-                auto === null || !["live", "demo"].includes(controller.connection) || !mapped
-              }
-              onClick={() => setReview(true)}
-            >
-              <Sparkles size={15} /> {auto ? "Turn automatic off…" : "Turn automatic on…"}
-            </Button>
-          )}
-        </div>
-        <div className="res-last">
-          <span className="eyebrow">Last batch</span>
-          {status?.last ? (
-            <>
-              <p>
-                <strong>{status.last.stage ?? "No stage"}</strong>, {when(status.last.at)}{" "}
-                <Pill tone={status.last.result === "done" ? "on" : "warn"}>
-                  {status.last.result === "done" ? "Done" : "Stopped"}
-                </Pill>
-              </p>
-              {status.last.result !== "done" && (
-                <p className="muted small">{status.last.result.replace(/^stopped: /, "")}</p>
-              )}
-              <p className="muted small">{lastBatchWords(status.last)}</p>
-            </>
-          ) : (
-            <p className="muted">{status ? "None yet" : "Not reported"}</p>
-          )}
-        </div>
+        {refillable && (
+          <div className="res-auto">
+            <span className="eyebrow">Automatic refills</span>
+            <p>
+              {auto === true
+                ? !levelSet
+                  ? "On, but the reservoir's level is not set up (its distances when full and when empty), so none starts by itself."
+                  : minimum <= 0
+                    ? "On, but its minimum is 0%, so none starts by itself."
+                    : `On: a refill starts by itself when the room's next shots would take the reservoir under its ${number(minimum, 0)}% minimum, three passes in a row.${status && !status.armed ? " Waiting for the reservoir to read enough after the last one." : ""}`
+                : auto === false
+                  ? minimum > 0 && levelSet
+                    ? `Off: refills start only by hand, and watering waits whenever a shot would take the reservoir under its ${number(minimum, 0)}% minimum.`
+                    : "Off: refills start only by hand."
+                  : "Unavailable: update the Crop Steering integration."}
+            </p>
+            {autoId && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={
+                  auto === null || !["live", "demo"].includes(controller.connection) || !mapped
+                }
+                onClick={() => setReview(true)}
+              >
+                <Sparkles size={15} /> {auto ? "Turn automatic off…" : "Turn automatic on…"}
+              </Button>
+            )}
+          </div>
+        )}
+        {(refillable || !!status?.last) && (
+          <div className="res-last">
+            <span className="eyebrow">Last batch</span>
+            {status?.last ? (
+              <>
+                <p>
+                  <strong>{status.last.stage ?? "No stage"}</strong>, {when(status.last.at)}{" "}
+                  <Pill tone={status.last.result === "done" ? "on" : "warn"}>
+                    {status.last.result === "done" ? "Done" : "Stopped"}
+                  </Pill>
+                </p>
+                {status.last.result !== "done" && (
+                  <p className="muted small">{status.last.result.replace(/^stopped: /, "")}</p>
+                )}
+                <p className="muted small">{lastBatchWords(status.last)}</p>
+              </>
+            ) : (
+              <p className="muted">{status ? "None yet" : "Not reported"}</p>
+            )}
+          </div>
+        )}
       </div>
       {!status && mapped && (
         <p className="workspace-message res-note">
@@ -1208,6 +1224,7 @@ export function Reservoir({
             level={level}
             pct={pct}
             mapped={reservoir}
+            refillable={canRefill(attributes)}
           />
           <FeedSchedulePanel draft={draft} today={today} onChange={setDraft} />
           <div className="res-columns">
