@@ -250,8 +250,8 @@ async def test_a_feed_document_stored_by_2_30_loads_with_its_mark_as_the_empty_d
 ):
     """In place: a room's feed settings as 2.30.1 stored them (made by its own feed.clean), with an
     "almost empty at" mark of 800 mm and a 20 s settle. They load: the mark is the distance when
-    empty, the settle is gone, and the distance when full and the minimum start at their defaults;
-    nothing else changes, its recipe and revision included."""
+    empty, the settle is gone, and the distance when full, the minimum and the refill reminder start
+    at their defaults; nothing else changes, its recipe and revision included."""
     stored = {
         "revision": 5,
         "fill_s": 690,
@@ -288,6 +288,7 @@ async def test_a_feed_document_stored_by_2_30_loads_with_its_mark_as_the_empty_d
         plan.attributes["fill_s"],
         plan.attributes["batch_l"],
     ) == (800.0, 0.0, 5.0, 600, 690, 145.0)
+    assert plan.attributes["remind_pct"] == 20.0
     assert "settle_s" not in plan.attributes and plan.attributes["revision"] == 5
 
 

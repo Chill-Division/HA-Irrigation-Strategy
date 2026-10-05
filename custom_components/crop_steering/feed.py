@@ -10,7 +10,9 @@ The controller app runs it; this module says what it runs.
 
 The reservoir's level: a distance sensor above the water reads further as it empties. Its distances
 when full and when empty make that a percentage, as the controller works it out, and the reservoir
-keeps at least the minimum: a refill comes before a shot that would take it lower.
+keeps at least the minimum: a refill comes before a shot that would take it lower. While nothing refills
+it by itself (automatic refills off, or no refill switches mapped), the controller reminds a person to
+refill it by hand from the reminder level, above the minimum (CS-706).
 
 The amounts: a feed recipe gives each nutrient a number of parts, and the stage a strength in mL per
 litre per part. The fill's litres scale them (what is left in the reservoir is already mixed): a doser
@@ -63,6 +65,11 @@ SETTINGS = {
         50,
         False,
     ),  # the least the reservoir keeps: a refill comes first; 0 = off
+    "remind_pct": (
+        0,
+        90,
+        False,
+    ),  # without automatic refills, a reminder to refill by hand from here; 0 = off
     "pause_s": (0, 600, True),  # between one doser and the next
     "mix_s": (0, 7200, True),  # recirculating after the last dose
 }
@@ -72,6 +79,7 @@ DEFAULTS = {
     "full_mm": 0.0,
     "empty_mm": 0.0,
     "min_pct": 5.0,
+    "remind_pct": 20.0,
     "pause_s": 10,
     "mix_s": 10,
 }
