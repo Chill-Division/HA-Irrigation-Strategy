@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   setpoints no longer lowers it to make room for a dryback (on GR2 it took it from 50% to 41.5%). A
   dryback target that would end under it is planned only as deep as the rescue lets the zone go, so
   maintenance shots stop no earlier than that needs, and the plan's note says so.
+- **The overnight hold says which peak its dryback is from.** The vitals and the Overview read
+  "shot when VWC < 46.64% (now 69.1%), the 45% dryback from the 84.8% peak", where "the 45%
+  dryback (now 69.1%)" read as 45% below the current reading. The dryback was always from the peak.
 
 ### 🔧 Technical notes
 
@@ -46,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   level, its note naming the rescue level. The steering-mode tests' rescue level moves to 15% so
   only the zone's uptake limits their dryback. Dashboard: Today's events no longer credit a rescue
   level change to Auto setpoints, and the demo's sensors manage three settings.
+- Engine, app and dashboard: `waiting_for`'s `p3_hold` gains `peak` (the add-on's vendored engine
+  with it). `next_text` and the dashboard's `waitingText` put the reading beside the hold's
+  threshold and say the dryback's peak.
 
 ## [2.37.0] - 2026-10-05
 
