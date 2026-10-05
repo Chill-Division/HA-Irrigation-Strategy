@@ -55,14 +55,9 @@ To move a zone to another phase, open it from **Overview** and pick one under **
 
 ### Tank and pump display
 
-Choose **Map sensors** on the tank panel, or open **Settings → Rooms & hardware → Shared room hardware**. These are explicit mappings; the dashboard does not guess that a room-temperature probe is a tank probe.
+Choose **Map sensors** on the tank panel, or open **Settings → Rooms & hardware → Shared room hardware**, to map the **Room pump**: the room pump's actual HA switch (`pump_switch`), which the controller descriptor publishes as `pump`.
 
-| Setup label         | Configuration key         | Select                                                                                |
-| ------------------- | ------------------------- | ------------------------------------------------------------------------------------- |
-| Room pump           | `pump_switch`             | The room pump's actual HA switch. The controller descriptor publishes this as `pump`. |
-| Tank temperature    | `tank_temperature_sensor` | A tank-water temperature sensor in °C, °F or K; its unit is retained.                 |
-
-How full the tank is comes from the reservoir's level sensor (**Feed → Reservoir**), as the controller works it out from the distances when full and when empty; until those are set the tank reads **Not set up**, and a room without a reservoir level sensor reads **Not mapped**. Beside the tank, a chart shows how full it has been over the last 24 hours, or the last 12 (the buttons above it). It is Home Assistant's recorded history of that sensor, worked out the same way, and it ends on the level shown now: a refill shows as a jump, each round of shots as a step down, and a dashed line marks the reservoir's minimum. It needs Home Assistant's recorder to keep that sensor's history, which it does by default, and it reloads every 10 minutes. Where a tank temperature sensor is mapped, its reading is the last line in the tank, under how full it is.
+How full the tank is comes from the reservoir's level sensor (**Feed → Reservoir**), as the controller works it out from the distances when full and when empty; until those are set the tank reads **Not set up**, and a room without a reservoir level sensor reads **Not mapped**. Beside the tank, a chart shows how full it has been over the last 24 hours, or the last 12 (the buttons above it). It is Home Assistant's recorded history of that sensor, worked out the same way, and it ends on the level shown now: a refill shows as a jump, each round of shots as a step down, and a dashed line marks the reservoir's minimum. It needs Home Assistant's recorder to keep that sensor's history, which it does by default, and it reloads every 10 minutes.
 
 **Refill** and **Last refill** are the controller's own record of the refills it runs for the room's reservoir (**Feed → Reservoir**), so there is nothing to map for them: what its refill is doing now (not running, filling, dosing, mixing) and when the last one ended, marked *stopped* if it stopped part-way. A room without a reservoir has neither row; they read **Unavailable** until the controller app has reported for the room.
 
