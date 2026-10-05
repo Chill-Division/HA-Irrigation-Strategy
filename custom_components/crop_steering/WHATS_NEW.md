@@ -23,6 +23,7 @@ version being released.
 
 ## Unreleased
 
+- Auto setpoints never changes your rescue level: a dryback that would go below it stops at it.
 - Bug fixes and improvements.
 
 ## 2.37.0 - 2026-10-05
