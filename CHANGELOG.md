@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dashboard. A value saved for one goes the next time the room's setup is saved.
 - **No tank water temperature.** The tank card no longer shows the water's temperature, and its
   sensor is no longer asked for anywhere: nothing steered with it.
+- **64-bit only.** The controller app is built for 64-bit systems, amd64 and aarch64; its 32-bit
+  (armv7) build is gone. Home Assistant has had no 32-bit release since 2025.12, and the app
+  needs Home Assistant 2026.5 or newer.
 
 ### 🔧 Technical notes
 
@@ -61,6 +64,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fingerprint never read it. Dashboard: the tank card and Rooms & hardware drop it, and the demo
   loses its two temperature sensors. `tests/test_tank_setup.py` now checks every retired mapping:
   dropped on the next save, published by nothing, offered by nothing, refused when named.
+- App: `armv7` leaves `arch` in `addons/f2_control/config.yaml`, and its base image leaves
+  `build.yaml`; docs/INSTALL.md names amd64 and aarch64. Home Assistant ended i386, armhf and armv7
+  with 2025.12 and the app asks for 2026.5.0, so no install that can run it loses a build.
 
 ## [2.36.0] - 2026-10-04
 

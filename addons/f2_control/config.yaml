@@ -11,7 +11,6 @@ url: https://github.com/Chill-Division/HA-Irrigation-Strategy
 arch:
   - amd64
   - aarch64
-  - armv7
 init: false
 boot: auto
 startup: application
