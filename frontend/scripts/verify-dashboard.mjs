@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
+import { fitsWidth } from "./fits-width.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const publicRoot = path.join(root, "addons/f2_control/www/public");
@@ -93,16 +94,7 @@ async function openZone(name) {
   await expectVisible(page.getByRole("dialog"));
 }
 async function noOverflow() {
-  // A window just resized reaches the page's layout a frame or two later: measured at once, the
-  // top bar can still be as wide as before (seen in CI on the Reservoir check, after 390 px).
-  await page.evaluate(
-    () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
-  );
-  assert.equal(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
-    true,
-    "Page has horizontal overflow",
-  );
+  await fitsWidth(page);
 }
 async function planViewsShareRow() {
   const views = page.getByRole("navigation", { name: "Irrigation plan views" });
