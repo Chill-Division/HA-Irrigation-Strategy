@@ -668,8 +668,9 @@ try {
     await page.evaluate(() => (location.hash = "#/reservoir"));
     const panel = page.locator(".res-batch");
     await expectVisible(panel.getByText("Level", { exact: true }));
-    for (const gone of ["Refill by hand…", "Fill and mix", "Automatic refills", "A batch cannot start"])
+    for (const gone of ["Refill by hand…", "Fill and mix", "Automatic refills", "A batch cannot start", "Next refill"])
       assert.equal(await panel.getByText(gone).count(), 0, gone);
+    assert.equal(await panel.locator(".eyebrow").first().innerText(), "Reservoir");
     // Its last batch, recorded when it could, still shows.
     await expectVisible(panel.getByText("Last batch", { exact: true }));
     // go() changes only the hash of a page on the same address, which keeps this demo's changes:

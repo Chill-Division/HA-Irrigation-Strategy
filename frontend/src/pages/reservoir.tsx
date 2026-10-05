@@ -297,23 +297,28 @@ function BatchPanel({
     <section className="panel res-batch" data-batch-status={status?.step ?? "none"}>
       <div className="res-batch-head">
         <div>
-          <span className="eyebrow">Nutrient batch</span>
-          <div className="res-step">
-            <strong>{status?.step ? STEP_LABELS[status.step] : "Not reported"}</strong>
-            {running && status?.step === "dosing" && status.nutrient && (
-              <span>
-                {status.nutrient} <span className="muted">(doser {status.doser})</span>
-              </span>
-            )}
-            {left && <Pill tone="water">{left}</Pill>}
-          </div>
-          <p className="muted small">
-            {running
-              ? `${status!.stage ?? "No stage"} refill. Watering in this room waits until it finishes.`
-              : plan.stage
-                ? `Next refill: ${plan.stage}, ${number(plan.batch_l, 1)} L.`
-                : "No feed stage is chosen."}
-          </p>
+          {/* A room that cannot refill has a reservoir to watch, not batches. */}
+          <span className="eyebrow">{refillable ? "Nutrient batch" : "Reservoir"}</span>
+          {refillable && (
+            <>
+              <div className="res-step">
+                <strong>{status?.step ? STEP_LABELS[status.step] : "Not reported"}</strong>
+                {running && status?.step === "dosing" && status.nutrient && (
+                  <span>
+                    {status.nutrient} <span className="muted">(doser {status.doser})</span>
+                  </span>
+                )}
+                {left && <Pill tone="water">{left}</Pill>}
+              </div>
+              <p className="muted small">
+                {running
+                  ? `${status!.stage ?? "No stage"} refill. Watering in this room waits until it finishes.`
+                  : plan.stage
+                    ? `Next refill: ${plan.stage}, ${number(plan.batch_l, 1)} L.`
+                    : "No feed stage is chosen."}
+              </p>
+            </>
+          )}
         </div>
         <div className="res-batch-actions">
           {/* A refill by hand is a test, out of the way: Settings → Rooms & hardware → Tests. */}
