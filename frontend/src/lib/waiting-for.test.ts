@@ -130,6 +130,7 @@ describe("saying what a zone waits for", () => {
       value: 60.55,
       now: 74.2,
       dryback: 30,
+      peak: 86.5,
     };
     const rescue = {
       rule: "p3_emergency",
@@ -141,12 +142,12 @@ describe("saying what a zone waits for", () => {
     };
     const on = { rule: "lights_on", to: "P0", in_min: 600 };
     expect(waitingText(waiting(rescue as Partial<WaitingCondition>, hold, on), format)).toBe(
-      "shot when VWC < 60.55%, the 30% dryback (now 74.2%) · rescue shot if VWC < 50% · P0 at 17:36",
+      "shot when VWC < 60.55% (now 74.2%), the 30% dryback from the 86.5% peak · rescue shot if VWC < 50% · P0 at 17:36",
     );
     // Under it, the next hold shot may still wait out the time between P2 shots.
     const under = { ...hold, now: 60.4, in_min: 3 };
     expect(waitingText(waiting(rescue as Partial<WaitingCondition>, under, on), format)).toBe(
-      "shot at 07:39 (VWC 60.4% under 60.55%, the 30% dryback) · rescue shot if VWC < 50% · P0 at 17:36",
+      "shot at 07:39 (VWC 60.4% under 60.55%, the 30% dryback from the 86.5% peak) · rescue shot if VWC < 50% · P0 at 17:36",
     );
     // A rescue level at or over the dryback's end fires first, so it is the only shot to say.
     const high = { ...rescue, value: 40 } as Partial<WaitingCondition>;

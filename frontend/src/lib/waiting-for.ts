@@ -17,6 +17,8 @@ export interface WaitingCondition {
   ec_now?: number | null;
   /** p3_hold: the P3 dryback target its level is worked out from, % of the day's peak. */
   dryback?: number;
+  /** p3_hold: that peak, the day's highest reading. */
+  peak?: number;
 }
 export interface Waiting {
   /** When the controller worked it out: a wait ends `in_min` after this. */
@@ -147,12 +149,15 @@ export function waitingText(waiting: Waiting, format: WaitingFormat): string {
       hold?.now !== null &&
       hold?.now !== undefined &&
       hold.now < (hold.value ?? 0);
-    const dryback = `the ${n(hold?.dryback ?? NaN)}% dryback`;
+    // Which dryback, from which peak: never a dryback from the reading beside it.
+    const dryback =
+      `the ${n(hold?.dryback ?? NaN)}% dryback` +
+      (hold?.peak ? ` from the ${n(hold.peak)}% peak` : "");
     return [
       hold
         ? below
           ? `shot at ${wait} (VWC ${n(hold.now ?? NaN)}% under ${n(hold.value ?? NaN)}%, ${dryback})`
-          : `shot when ${test(hold, "%", "VWC")}, ${dryback} (${now(hold, "%")})`
+          : `shot when ${test(hold, "%", "VWC")} (${now(hold, "%")}), ${dryback}`
         : null,
       // The reading is said once: with the hold, beside it.
       rescue
