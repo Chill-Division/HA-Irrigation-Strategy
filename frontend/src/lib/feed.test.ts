@@ -20,6 +20,7 @@ import {
   scheduleWeek,
   doserOrder,
   canRefill,
+  reminderPct,
   type FeedDocument,
   type FeedDraft,
 } from "./feed";
@@ -44,6 +45,7 @@ const flower = (change: Partial<FeedDraft> = {}): FeedDraft => ({
   full_mm: 125,
   empty_mm: 850,
   min_pct: 5,
+  remind_pct: 20,
   pause_s: 10,
   mix_s: 10,
   dosers: {},
@@ -579,5 +581,17 @@ describe("a refill by hand", () => {
     for (const missing of Object.keys(room))
       expect(canRefill({ ...room, [missing]: "" }), missing).toBe(false);
     expect(canRefill({})).toBe(false);
+  });
+});
+
+describe("the refill reminder", () => {
+  it("comes only while nothing refills the reservoir by itself, and above its minimum", () => {
+    expect(reminderPct(20, 5, false, true)).toBe(20); // automatic refills off
+    expect(reminderPct(20, 5, null, true)).toBe(20); // unreadable: off, as to the controller
+    expect(reminderPct(20, 5, true, true)).toBeNull(); // automatic refills keep it up
+    expect(reminderPct(20, 5, true, false)).toBe(20); // on, but nothing to refill it with
+    expect(reminderPct(5, 5, false, true)).toBeNull(); // at the minimum, watering waits instead
+    expect(reminderPct(0, 0, false, true)).toBeNull(); // turned off
+    expect(reminderPct(undefined, 5, false, true)).toBeNull(); // an integration from before it
   });
 });

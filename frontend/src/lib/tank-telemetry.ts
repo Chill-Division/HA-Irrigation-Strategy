@@ -1,6 +1,6 @@
 import type { Room, States } from "./types";
 import { descriptor } from "./model";
-import { RESERVOIR_KEYS, levelPct } from "./feed";
+import { RESERVOIR_KEYS, canRefill, levelPct, reminderPct } from "./feed";
 import { STEP_LABELS, distanceMm, levelMm, readBatchStatus } from "./feed-status";
 
 export interface TankReading {
@@ -17,6 +17,9 @@ export interface LevelSource {
   distance: { unit: string; fullMm: number; emptyMm: number };
   /** The least the controller keeps, %; null without one. */
   minPct: number | null;
+  /** While nothing refills it by itself, the level a person is reminded to refill it by hand at, %
+   * (reminderPct); null where no reminder comes. */
+  remindPct: number | null;
 }
 
 /** The refills the controller runs for the room's reservoir, as it records them. */
@@ -79,6 +82,13 @@ export function tankTelemetry(states: States, room: Room) {
         }
       : null;
   const minPct = status?.minPct ?? Number(plan?.min_pct);
+  const auto = states[`switch.crop_steering_${room.prefix}auto_batches`]?.state;
+  const remindPct = reminderPct(
+    plan?.remind_pct,
+    minPct > 0 ? minPct : 0,
+    auto === "on" ? true : auto === "off" ? false : null,
+    canRefill(config),
+  );
   const source: LevelSource | null =
     own && distanceId
       ? {
@@ -89,6 +99,7 @@ export function tankTelemetry(states: States, room: Room) {
             emptyMm: empty,
           },
           minPct: minPct > 0 ? minPct : null,
+          remindPct,
         }
       : null;
   return {

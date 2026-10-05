@@ -66,7 +66,10 @@ export function TankLevelChart({
     ? `Tank level over the last ${hours} hours: ${Math.round(shown[0])}% then, ` +
       `${Math.round(shown[shown.length - 1])}% now, lowest ${Math.round(Math.min(...shown))}%, ` +
       `highest ${Math.round(Math.max(...shown))}%` +
-      (source?.minPct ? `; the dashed line is the ${source.minPct}% minimum` : "")
+      (source?.minPct ? `; the dashed line is the ${source.minPct}% minimum` : "") +
+      (source?.remindPct
+        ? `; the dotted line is ${source.remindPct}%, where a reminder to refill it comes`
+        : "")
     : "";
   return (
     <div className="tank-history" aria-labelledby={titleId} role="group">
@@ -142,6 +145,15 @@ export function TankLevelChart({
                   stroke="var(--warning)"
                   strokeDasharray="4 3"
                   ifOverflow="extendDomain"
+                />
+              )}
+              {source.remindPct !== null && (
+                <ReferenceLine
+                  y={source.remindPct}
+                  stroke="var(--muted-foreground)"
+                  strokeDasharray="2 3"
+                  ifOverflow="extendDomain"
+                  className="tank-remind-line"
                 />
               )}
               <Tooltip
