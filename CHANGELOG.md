@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   its pump and a doser no longer offers a refill by hand or a test refill. Its Reservoir page shows
   the tank's level, its minimum and whether watering would wait, under a Reservoir heading, without
   a refill's steps or automatic refills.
+- **An older last batch names its nutrients too.** A batch recorded before 2.36.0's controller kept
+  only doser numbers; the stage's recipe now names them, in its dosing order, where it read
+  "doser 2 121 mL · doser 3 253 mL …".
 
 ### 🔧 Technical notes
 
@@ -32,9 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `_batch_refusal` needs: `fresh_water_switch`, `recirc_switch`, `pump` and a doser. Without it the
   Reservoir page's batch panel is headed Reservoir and drops the batch's state and next refill,
   Refill by hand and its note, the blocked line, the steps, Automatic refills, Last batch (with no
-  record) and 1% holds (while unknown), and Settings →
-  Rooms & hardware → Tests drops Test refill. A new browser check unmaps Flower 2's recirculation
-  solenoid and checks both pages.
+  record) and 1% holds (while unknown), and Settings → Rooms & hardware → Tests drops Test refill.
+  A new browser check unmaps Flower 2's recirculation solenoid and checks both pages.
+- Dashboard: `lastBatchWords` takes the room's recipes; a record without `doses` (an older
+  controller's) is named from the recipe called its `stage`, ordered by `doserOrder`, and stays by
+  doser number when no recipe has that name.
 
 ## [2.36.0] - 2026-10-04
 

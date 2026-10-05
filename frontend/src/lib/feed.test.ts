@@ -542,6 +542,29 @@ describe("the last batch, in words", () => {
     );
     expect(lastBatchWords(last([]))).toBe("Nothing dosed");
   });
+  it("names an older controller's dosers from the stage's recipe, in its dosing order", () => {
+    // GR2's 4 October batch, recorded by doser number before the controller kept names.
+    const old = { ...last(null), dosed: { "2": 121, "3": 253, "5": 721, "6": 1201 } };
+    const bloom = {
+      id: "bloom",
+      name: "Bloom",
+      strength: 1.6552,
+      doses: {
+        "2": { label: "Cleanse", parts: 0.5 },
+        "3": { label: "Balance", parts: 1.05 },
+        "5": { label: "Core", parts: 3 },
+        "6": { label: "Bloom", parts: 5 },
+      },
+      order: [3, 6, 5, 2],
+    };
+    expect(lastBatchWords(old, [bloom])).toBe(
+      "Balance 253 mL · Bloom 1,201 mL · Core 721 mL · Cleanse 121 mL",
+    );
+    // Without that recipe here any more, by number, as recorded.
+    expect(lastBatchWords(old, [])).toBe(
+      "doser 2 121 mL · doser 3 253 mL · doser 5 721 mL · doser 6 1,201 mL",
+    );
+  });
 });
 
 describe("a refill by hand", () => {

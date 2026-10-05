@@ -2,6 +2,7 @@
 
 - **The dashboard the app serves:** exported plans and recipes are named for what they hold. No change to the controller.
 - **The dashboard the app serves:** a room without the solenoids, pump and dosers a refill needs offers no refill, and its Reservoir page shows only the tank's level and minimum. No change to the controller.
+- **The dashboard the app serves:** a last batch recorded by an older controller names its nutrients from the stage's recipe. No change to the controller.
 
 # 2.36.0
 
