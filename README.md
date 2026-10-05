@@ -41,7 +41,7 @@ More in the [screenshots](https://github.com/ChillingSilence/HA-Irrigation-Strat
 | | |
 | --- | --- |
 | **Home Assistant** | **2026.5.0 or newer.** Every change is tested on 2026.5.0 and on 2026.9.3. |
-| **The controller app** | Home Assistant OS or Supervised, where it installs from the app store. |
+| **The controller app** | Home Assistant OS, where it installs from the app store. |
 | **HACS** | 1.6.0 or newer for the guided download, or copy `custom_components/crop_steering` into Home Assistant by hand. |
 | **Hardware** | A smart switch that Home Assistant can control for irrigation (a pump, a valve, whatever you have) and a moisture probe to steer from. Several substrate sensors are ideal. |
 
