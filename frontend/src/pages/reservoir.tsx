@@ -448,7 +448,7 @@ function BatchPanel({
                 {status.last.result !== "done" && (
                   <p className="muted small">{status.last.result.replace(/^stopped: /, "")}</p>
                 )}
-                <p className="muted small">{lastBatchWords(status.last)}</p>
+                <p className="muted small">{lastBatchWords(status.last, doc.recipes)}</p>
               </>
             ) : (
               <p className="muted">{status ? "None yet" : "Not reported"}</p>

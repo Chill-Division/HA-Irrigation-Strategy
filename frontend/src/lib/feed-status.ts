@@ -1,4 +1,4 @@
-import type { PlannedDose } from "./feed";
+import { doserOrder, type FeedRecipe, type PlannedDose } from "./feed";
 import type { EntityState, States } from "./types";
 
 /** A room's nutrient batch as the controller app reports it: sensor.crop_steering_<prefix>batch_status
@@ -223,15 +223,23 @@ export function timeLeft(until: number | null, now = Date.now()): string | null 
 }
 
 /** The last batch's doses in words, in the order they went in: "Balance 252 mL · Bloom 600 of
- * 1,200 mL · Core and Cleanse not dosed". An older controller's record lists its dosers by number. */
-export function lastBatchWords(last: LastBatch): string {
+ * 1,200 mL · Core and Cleanse not dosed". An older controller's record kept only each doser's
+ * number and what it gave: the recipe of the stage it mixed, while it is still here, names them, in
+ * its dosing order. */
+export function lastBatchWords(last: LastBatch, recipes: FeedRecipe[] = []): string {
   const mL = (value: number) => value.toLocaleString(undefined, { maximumFractionDigits: 0 });
-  if (!last.doses)
+  if (!last.doses) {
+    const recipe = recipes.find((item) => item.name === last.stage);
+    const dosers = Object.keys(last.dosed).map(Number);
     return (
-      Object.entries(last.dosed)
-        .map(([doser, ml]) => `doser ${doser} ${mL(ml)} mL`)
+      (recipe ? doserOrder(recipe.order, dosers) : dosers)
+        .map((doser) => {
+          const label = recipe?.doses[String(doser)]?.label || `doser ${doser}`;
+          return `${label} ${mL(last.dosed[String(doser)])} mL`;
+        })
         .join(" · ") || "Nothing dosed"
     );
+  }
   const name = (dose: LastDose) => dose.label || `doser ${dose.doser}`;
   const list = (items: string[]) =>
     items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
