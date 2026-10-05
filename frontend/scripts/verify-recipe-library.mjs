@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 import { lightShot } from "./light-shot.mjs";
+import { fitsWidth } from "./fits-width.mjs";
 const out = fileURLToPath(new URL("../../output/playwright/", import.meta.url));
 await mkdir(out, { recursive: true });
 const html = await readFile(new URL("../../addons/f2_control/www/public/dashboard.html", import.meta.url));
@@ -181,7 +182,7 @@ try {
     await page.getByRole("button", { name: "Save to library", exact: true }).click();
     await page.getByRole("dialog").waitFor({ state: "hidden" });
     await page.setViewportSize({ width: 390, height: 844 });
-    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    await fitsWidth(page);
     await axe("recipe library mobile");
     await page.getByRole("button", { name: "Preview recipe Imported copy", exact: true }).click();
     await axe("recipe preview mobile");

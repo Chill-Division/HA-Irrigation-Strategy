@@ -5,6 +5,7 @@ import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
+import { fitsWidth } from "./fits-width.mjs";
 const out = fileURLToPath(new URL("../../output/playwright/", import.meta.url));
 await mkdir(out, { recursive: true });
 // CI must exercise the checked-out artifact without relying on a developer's server.
@@ -105,11 +106,7 @@ async function setBalance(value) {
   await page.locator("#steering-balance").fill(String(value));
 }
 async function noOverflow() {
-  assert.equal(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
-    true,
-    "Document overflow",
-  );
+  await fitsWidth(page, "Document overflow");
 }
 // Colours animate when the theme changes (transition-colors). Contrast measured mid-transition
 // fails at random, so let the running finite animations and transitions finish (at most 2 s: a

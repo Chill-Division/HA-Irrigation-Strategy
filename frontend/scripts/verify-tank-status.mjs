@@ -5,6 +5,7 @@ import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 import { lightShot } from "./light-shot.mjs";
+import { fitsWidth } from "./fits-width.mjs";
 const html = await readFile(new URL("../../addons/f2_control/www/public/dashboard.html", import.meta.url));
 const out = new URL("../../output/playwright/", import.meta.url);
 const file = (name) => new URL(name, out).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -101,10 +102,7 @@ try {
   await lightShot(page, tank, { path: img("tank-status.png") });
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
-    assert.ok(
-      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
-      `no horizontal overflow at ${width}`,
-    );
+    await fitsWidth(page, `horizontal overflow at ${width}`);
     const audit = await new AxeBuilder({ page }).include("[data-tank-status]").analyze();
     assert.deepEqual(
       audit.violations.map((v) => ({ id: v.id, impact: v.impact })),

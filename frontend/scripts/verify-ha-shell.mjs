@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { chromium } from "playwright";
+import { fitsWidth } from "./fits-width.mjs";
 const html = await readFile(new URL("../../addons/f2_control/www/public/dashboard.html", import.meta.url));
 const panelJs = await readFile(
   new URL("../../custom_components/crop_steering/www/panel.js", import.meta.url),
@@ -61,7 +62,8 @@ try {
   assert.ok(await page.evaluate(() => events.some((e) => e[0] === "menu")));
   await page.setViewportSize({ width: 390, height: 844 });
   await frame.getByRole("button", { name: "Open Home Assistant menu", exact: true }).click();
-  assert.ok(await frame.locator("html").evaluate((el) => el.scrollWidth <= innerWidth + 1));
+  const panel = await page.locator("crop-steering-panel iframe").elementHandle();
+  await fitsWidth(await panel.contentFrame());
   await page.evaluate(() => {
     history.pushState({}, "", "/lovelace");
     dispatchEvent(new Event("location-changed"));

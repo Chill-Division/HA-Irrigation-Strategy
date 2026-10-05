@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 import { lightShot } from "./light-shot.mjs";
+import { fitsWidth } from "./fits-width.mjs";
 const out = fileURLToPath(new URL("../../output/playwright/", import.meta.url));
 await mkdir(out, { recursive: true });
 const html = await readFile(new URL("../../addons/f2_control/www/public/dashboard.html", import.meta.url));
@@ -80,11 +81,7 @@ async function axe(name) {
   );
 }
 async function noOverflow() {
-  assert.equal(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
-    true,
-    "Document overflow",
-  );
+  await fitsWidth(page, "Document overflow");
 }
 const field = (suffix) => page.locator(`[id="setting-number.crop_steering_zone_1_${suffix}"]`);
 const line = (name) => page.locator(`[data-planning-line="${name}"]`);
