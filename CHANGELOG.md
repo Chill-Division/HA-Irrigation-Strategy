@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The numbers start again: 1.0.0 follows 2.37.1. On a box already running 2.37, the Supervisor
   offers the controller app as usual, but HACS offers no lower number: redownload Crop Steering in
   HACS and pick 1.0.0. What's new then shows what's new in 1.0.
+- **Fresh screenshots.** The README and the screenshots page show this release, the new icon
+  included.
 - **No What's new with the first-run tour.** Someone shown round the dashboard for the first time
   is not also shown what changed in it. The two met only where a room was set up again on a box
   that had run an older release.
@@ -29,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Technical notes
 
+- Docs: the twelve `img/` screenshots that show the menu or the time of day are retaken by the
+  browser checks that write them, at 2:35 PM in the demo (`TZ=Asia/Dubai`), as the last set was
+  taken in the afternoon. `docs/SCREENSHOTS.md` says to take them while the day is under way.
 - Dashboard: `WhatsNewOnUpdate` marks the installed release seen and opens no window when it starts
   the first-run tour (`whats_new_get`'s `tour`), as its comment already said it did. The
   verify-dashboard tour check opens the demo as a new installation whose record is behind
