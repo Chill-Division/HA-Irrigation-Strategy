@@ -4,12 +4,17 @@
     python scripts/release.py 2.25.0             # release it here; the boxes that track it update
     python scripts/release.py 2.25.0 --public    # then the same commit, for everyone else
     python scripts/release.py 2.25.0 --dry-run   # either one: show what it would do, change nothing
+    python scripts/release.py 1.0.0 --start-again   # once: a lower number, never used before
 
 The first form releases `main` as it is, once the Validate workflow has passed on it. It dates the
 Unreleased sections of CHANGELOG.md, the controller's CHANGELOG.md and WHATS_NEW.md as this version,
 sets the version in manifest.json, const.py, the controller's config.yaml and the README badge,
 checks the result with the version and notes tests, commits it as "release: <version>", tags it
 v<version>, pushes both and publishes the GitHub release, its notes taken from the changelog.
+
+Numbers only go up. `--start-again` releases a lower one instead, as 1.0.0 followed 2.37.1: never a
+number the changelog already has. What's new then keeps only the releases numbered up to it, since
+the dashboard orders them by number; the changelogs keep everything.
 
 `--public` takes that tagged commit, unchanged, once Validate has passed on it too, to the main
 branch of PUBLIC (only ever a fast-forward) and publishes the same release there. Nothing is
@@ -65,6 +70,18 @@ def version_tuple(version: str) -> tuple[int, int, int]:
         raise Refused(f"'{version}' is not a version: use three numbers, like 2.25.0")
     major, minor, patch = (int(part) for part in version.split("."))
     return major, minor, patch
+
+
+def check_number(version: str, now: str, start_again: bool, changelog: str) -> None:
+    """Refuse a number that cannot follow `now`: one not above it, or with `start_again` one not
+    below it, or one the changelog already has (a number is never reused)."""
+    if start_again:
+        if version_tuple(version) >= version_tuple(now):
+            raise Refused(f"--start-again is for a number below {now}, not {version}")
+        if re.search(rf"^## \[{re.escape(version)}\]", changelog, re.M):
+            raise Refused(f"{version} was released before: a number is never reused")
+    elif version_tuple(version) <= version_tuple(now):
+        raise Refused(f"{version} is not newer than {now}")
 
 
 # --------------------------------------------------------------------------- the edits
@@ -133,6 +150,21 @@ def date_addon_changelog(text: str, version: str) -> str:
     return f"{text[:start]}# {version}\n\n{pair}\n\n{body}{text[end:]}"
 
 
+def drop_numbered_above(text: str, version: str) -> str:
+    """WHATS_NEW.md without its sections numbered above `version`, which the dashboard, ordering
+    releases by number, would put ahead of it."""
+    keep, lines = True, []
+    for line in text.splitlines(keepends=True):
+        heading = re.match(r"^## (\d+\.\d+\.\d+) - ", line)
+        if heading:
+            keep = version_tuple(heading[1]) <= version_tuple(version)
+        elif re.match(r"^#{1,2} ", line):
+            keep = True
+        if keep:
+            lines.append(line)
+    return "".join(lines).rstrip("\n") + "\n"
+
+
 def date_whats_new(text: str, version: str, day: str) -> str:
     heading = f"## {version} - {day}"
     span = _section(text, "## Unreleased", "##")
@@ -163,13 +195,17 @@ def date_whats_new(text: str, version: str, day: str) -> str:
     return f"{text[:start]}{heading}\n\n" + "\n".join(items) + f"\n\n{text[end:]}"
 
 
-def prepare(files: dict[str, str], version: str, day: str) -> dict[str, str]:
+def prepare(
+    files: dict[str, str], version: str, day: str, start_again: bool = False
+) -> dict[str, str]:
     """Every file the release commit changes, as it will be. Pure: `files` maps each path in
     FILES to its current text."""
     out = set_versions(files, version)
     out[CHANGELOG] = date_changelog(files[CHANGELOG], version, day)
     out[ADDON_CHANGELOG] = date_addon_changelog(files[ADDON_CHANGELOG], version)
     out[WHATS_NEW] = date_whats_new(files[WHATS_NEW], version, day)
+    if start_again:
+        out[WHATS_NEW] = drop_numbered_above(out[WHATS_NEW], version)
     return out
 
 
@@ -283,7 +319,7 @@ def checks_pass() -> bool:
 
 
 # --------------------------------------------------------------------------- the two steps
-def release_here(version: str, dry_run: bool) -> None:
+def release_here(version: str, dry_run: bool, start_again: bool = False) -> None:
     version_tuple(version)
     tag = f"v{version}"
     run("git", "fetch", "--quiet", "--tags", "origin", BRANCH)
@@ -311,8 +347,7 @@ def release_here(version: str, dry_run: bool) -> None:
         raise Refused(f"{BRANCH} is not origin/{BRANCH}: pull (or push) first")
     files = read_files()
     now = current_version(files)
-    if version_tuple(version) <= version_tuple(now):
-        raise Refused(f"{version} is not newer than {now}")
+    check_number(version, now, start_again, files[CHANGELOG])
     if run("git", "tag", "--list", tag):
         raise Refused(
             f"{tag} exists here but not on origin: delete it (git tag -d {tag})"
@@ -325,7 +360,7 @@ def release_here(version: str, dry_run: bool) -> None:
         print(f"(a real run would stop here: {why})")
 
     day = date.today().isoformat()
-    after = prepare(files, version, day)
+    after = prepare(files, version, day, start_again)
     write_files(after)
     try:
         if not checks_pass():
@@ -365,6 +400,11 @@ def release_here(version: str, dry_run: bool) -> None:
         "Boxes that track this repository are offered it now. When it has run well there:\n"
         f"  python scripts/release.py {version} --public"
     )
+    if start_again:
+        print(
+            f"HACS offers {version} to no box on {now}, a higher number: there, Redownload in "
+            "HACS picks it. The Supervisor offers the controller app."
+        )
 
 
 def release_public(version: str, dry_run: bool) -> None:
@@ -411,10 +451,18 @@ def main(argv: list[str] | None = None) -> None:
         "--public", action="store_true", help=f"release a tagged version on {PUBLIC}"
     )
     parser.add_argument("--dry-run", action="store_true", help="change nothing")
+    parser.add_argument(
+        "--start-again",
+        action="store_true",
+        help="release a number below the last one, never used before (1.0.0 after 2.37.1)",
+    )
     args = parser.parse_args(argv)
     sys.stdout.reconfigure(encoding="utf-8")  # the notes may carry emoji
-    step = release_public if args.public else release_here
-    step(args.version.removeprefix("v"), args.dry_run)
+    version = args.version.removeprefix("v")
+    if args.public:
+        release_public(version, args.dry_run)
+    else:
+        release_here(version, args.dry_run, args.start_again)
 
 
 if __name__ == "__main__":

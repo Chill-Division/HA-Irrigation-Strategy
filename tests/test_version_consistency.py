@@ -16,8 +16,6 @@ import json
 import re
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -100,17 +98,13 @@ def test_the_release_names_the_controller_it_pairs_with():
     )
 
 
-ONE_NUMBER_FROM = (2, 21, 0)
-
-
-def test_from_2_21_the_controller_carries_the_integration_number():
+def test_the_controller_carries_the_integration_number():
     """One number for the pair. Every release changes both halves anyway (scripts/release.py
-    sets both), so a second number only hid a mismatched pair.
+    sets both), so a second number only hid a mismatched pair. Before 2.21.0 the controller had
+    its own; from then on, and from 1.0.0 when the numbers started again, they share one.
     """
     manifest = _manifest_version()
-    if tuple(int(part) for part in manifest.split(".")) < ONE_NUMBER_FROM:
-        pytest.skip(f"{manifest}: before 2.21.0 the controller had its own number")
     assert _addon_version() == manifest, (
-        f"integration {manifest}, controller {_addon_version()}: from 2.21.0 both halves "
-        "carry one number (docs/RELEASING.md, Versions)"
+        f"integration {manifest}, controller {_addon_version()}: both halves carry one number "
+        "(docs/RELEASING.md, Versions)"
     )
