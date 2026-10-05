@@ -6,7 +6,6 @@ import {
   Beaker,
   ChevronRight,
   CircleHelp,
-  Droplets,
   House,
   Menu,
   RefreshCw,
@@ -41,6 +40,7 @@ import { StatusLines } from "@/components/status-line";
 import { WaterViewProvider } from "@/lib/water-view";
 import { WhatsNewOnUpdate } from "@/components/whats-new";
 import { Tour } from "@/components/tour";
+import { BrandGlyph } from "@/components/brand-glyph";
 import { tourSteps } from "@/lib/tour";
 import { time, type Page } from "@/components/dashboard";
 import { Overview } from "@/pages/overview";
@@ -214,7 +214,7 @@ export default function App() {
         }}
       >
         <span className="brand-mark">
-          <Droplets size={23} />
+          <BrandGlyph />
         </span>
         <span>
           Crop Steering<small>Irrigation control</small>
