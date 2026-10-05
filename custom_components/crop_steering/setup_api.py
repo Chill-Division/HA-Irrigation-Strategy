@@ -27,9 +27,6 @@ HARDWARE_DOMAINS = {
     "main_line_switch": {"switch"},
     "waste_switch": {"switch"},
     "light_entity": {"light", "switch"},
-    "temperature_sensor": {"sensor"},
-    "humidity_sensor": {"sensor"},
-    "vpd_sensor": {"sensor"},
     "tank_temperature_sensor": {"sensor"},
     # The reservoir and its dosers, for nutrient batches (feed.py): the controller drives these.
     "reservoir_distance_sensor": {"sensor"},
@@ -47,6 +44,11 @@ RETIRED_HARDWARE = (
     "tank_ph_sensor",
     # The tank's level in %: the reservoir's distance sensor gives it (the controller's level_pct).
     "water_level_sensor",
+    # The room's temperature, humidity and VPD and a notification service: nothing ever read them.
+    "temperature_sensor",
+    "humidity_sensor",
+    "vpd_sensor",
+    "notification_service",
 )
 SIZING = {
     "plant_count": (1, 1000, True),
@@ -642,9 +644,6 @@ HARDWARE_WORDS = {
     "main_line_switch": "main-line valve",
     "waste_switch": "waste valve",
     "light_entity": "lights",
-    "temperature_sensor": "temperature sensor",
-    "humidity_sensor": "humidity sensor",
-    "vpd_sensor": "VPD sensor",
     "tank_temperature_sensor": "tank temperature sensor",
     "reservoir_distance_sensor": "reservoir level sensor",
     "fresh_water_switch": "fresh-water solenoid",

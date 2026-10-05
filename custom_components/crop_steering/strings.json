@@ -343,10 +343,6 @@
           "drippers_per_plant": "Drippers per plant",
           "field_capacity": "Field capacity (VWC %)",
           "max_ec": "Maximum safe EC (mS/cm)",
-          "temperature_sensor": "Room temperature sensor (optional)",
-          "humidity_sensor": "Room humidity sensor (optional)",
-          "vpd_sensor": "VPD sensor (optional)",
-          "notification_service": "Notification service (optional)",
           "tank_temperature_sensor": "Tank water temperature sensor (optional)"
         },
         "data_description": {
@@ -362,10 +358,6 @@
           "drippers_per_plant": "Number of drippers/emitters per plant.",
           "field_capacity": "Maximum VWC% your substrate holds after draining — the saturation ceiling.",
           "max_ec": "Maximum safe pore EC (mS/cm). Above this the engine flushes with feed water rather than adding nutrients.",
-          "temperature_sensor": "Room/canopy temperature sensor. Optional, for analytics only.",
-          "humidity_sensor": "Recorded for the dashboard. The controller does not use it.",
-          "vpd_sensor": "Recorded for the dashboard. The controller does not use it.",
-          "notification_service": "Recorded only. Alerts are sent by the controller add-on, using its own notify_service option.",
           "tank_temperature_sensor": "Read-only tank-water temperature in °C, °F or K. This is separate from room/canopy temperature."
         }
       }
@@ -512,10 +504,6 @@
           "drippers_per_plant": "Drippers per plant",
           "field_capacity": "Field capacity (VWC %)",
           "max_ec": "Maximum safe EC (mS/cm)",
-          "temperature_sensor": "Room temperature sensor (optional)",
-          "humidity_sensor": "Room humidity sensor (optional)",
-          "vpd_sensor": "VPD sensor (optional)",
-          "notification_service": "Notification service (optional)",
           "zone_1_name": "Zone 1 label",
           "zone_1_active": "Zone 1 active (off archives this slot)",
           "zone_2_name": "Zone 2 label",
@@ -675,10 +663,6 @@
           "drippers_per_plant": "Number of drippers/emitters per plant.",
           "field_capacity": "Maximum VWC% your substrate holds after draining — the saturation ceiling.",
           "max_ec": "Maximum safe pore EC (mS/cm). Above this the engine flushes with feed water rather than adding nutrients.",
-          "temperature_sensor": "Room/canopy temperature sensor. Optional, for analytics only.",
-          "humidity_sensor": "Recorded for the dashboard. The controller does not use it.",
-          "vpd_sensor": "Recorded for the dashboard. The controller does not use it.",
-          "notification_service": "Recorded only. Alerts are sent by the controller add-on, using its own notify_service option.",
           "tank_temperature_sensor": "Read-only tank-water temperature in °C, °F or K. This is separate from room/canopy temperature.",
           "zone_1_name": "What you call zone 1, e.g. 'Tent' or 'Bench 2'. Shown on the dashboard. Changing it later never changes an entity id.",
           "zone_1_active": "Untick to park zone 1: it keeps its number, settings and history, and is never watered.",
