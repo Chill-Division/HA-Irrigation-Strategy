@@ -13,11 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Pull requests start with what they change.** The pull request template's first section is
   "What", without the "In plain English" title the changelog dropped in 2.36.0.
+- **Exports named for what they hold.** A plan exported from the Schedule saves as, for example,
+  `crop-steering-plan-gr2-chill1.json` (the room and its profiles), and a recipe from the library
+  as `crop-steering-plan-chill1.json`, where every file was `crop-steering-plan.json`.
 
 ### 🔧 Technical notes
 
 - CI: `.github/pull_request_template.md` opens with `## What` and its checklist asks for the
   changelog's summary, then its technical notes.
+- Dashboard: `planFileName` (`frontend/src/lib/recipe-library.ts`) names the Schedule's export
+  after the room and its profiles and a library recipe's after the recipe, each name once, cut at
+  a word after 100 characters. The recipe-library browser check reads both names.
 
 ## [2.36.0] - 2026-10-04
 

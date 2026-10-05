@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- Exported plans and recipes are named after the room, profiles or recipe in them.
+
 ## 2.36.0 - 2026-10-04
 
 - Rooms & hardware is simpler: litres only, no catch-test calculator, and no separate tank level sensor.
