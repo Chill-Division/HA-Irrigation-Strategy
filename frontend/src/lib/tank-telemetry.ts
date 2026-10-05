@@ -113,6 +113,20 @@ export function tankTelemetry(states: States, room: Room) {
 /** How many steps the level chart's window is drawn in: 10 minutes each over 24 hours. */
 export const LEVEL_STEPS = 144;
 
+/** About how wide a time on the level chart's axis is drawn (12 px), in px. */
+const timeWidth = (text: string) => text.length * 6.5;
+/** Whether the level chart's middle time fits on an axis `width` px wide, a little apart from the
+ * window's start on its left and Now on its right: a narrow chart (the Overview's side column on a
+ * wide screen) leaves it out rather than run the times together. */
+export function middleTimeFits(width: number, start: string, middle: string, end: string): boolean {
+  const half = width / 2,
+    gap = 8;
+  return (
+    timeWidth(start) + timeWidth(middle) / 2 + gap <= half &&
+    timeWidth(middle) / 2 + gap + timeWidth(end) <= half
+  );
+}
+
 /** The reservoir's recorded readings as % full over the last `hours`, in LEVEL_STEPS steps: each step
  * the middle reading recorded in it, or with none the level it held (Home Assistant records a change,
  * not a level that holds still). It ends on `current`, the level the card shows now. */

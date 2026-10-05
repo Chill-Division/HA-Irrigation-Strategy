@@ -9,7 +9,7 @@ import {
   YAxis,
 } from "recharts";
 import type { Controller, Series } from "@/lib/types";
-import { levelSeries, type LevelSource } from "@/lib/tank-telemetry";
+import { levelSeries, middleTimeFits, type LevelSource } from "@/lib/tank-telemetry";
 import { whileVisible } from "@/lib/live";
 import { errorText } from "@/lib/utils";
 
@@ -112,9 +112,16 @@ export function TankLevelChart({
                 tickLine={false}
                 axisLine={false}
                 stroke="var(--muted-foreground)"
-                // The window's start and Now sit inside the chart's edges, not centred on them.
+                // The window's start and Now sit inside the chart's edges, not centred on them, and
+                // the middle time shows only where it fits between them.
                 tick={(props) => {
                   const at = Number(props.payload?.value);
+                  if (
+                    at > start &&
+                    at < now &&
+                    !middleTimeFits(Number(props.width), clock(start), clock(at), clock(now))
+                  )
+                    return <g />;
                   return (
                     <text
                       x={props.x}

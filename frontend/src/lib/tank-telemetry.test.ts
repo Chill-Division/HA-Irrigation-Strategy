@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDemo } from "./demo";
-import { LEVEL_STEPS, levelSeries, tankTelemetry } from "./tank-telemetry";
+import { LEVEL_STEPS, levelSeries, middleTimeFits, tankTelemetry } from "./tank-telemetry";
 const room = { id: "room:", name: "Flower 2", prefix: "" };
 const now = Date.parse("2026-09-08T08:00:00Z");
 /** The demo without Flower 2's reservoir distances: its tank card has no level to show. */
@@ -135,6 +135,15 @@ describe("room tank telemetry", () => {
     expect(series[143].pct).toBe(100);
     // It ends on the level the card shows now.
     expect(series[LEVEL_STEPS]).toEqual({ at: now, pct: 29 });
+  });
+  it("leaves the middle time out where the times would run together", () => {
+    // The Overview's side column on a 1440 px screen: about 145 px of axis.
+    expect(middleTimeFits(145, "6:05 PM", "6:05 AM", "Now")).toBe(false);
+    // A phone's full-width card: about 175 px.
+    expect(middleTimeFits(175, "6:05 PM", "6:05 AM", "Now")).toBe(true);
+    expect(middleTimeFits(175, "6:05 AM", "12:05 PM", "Now")).toBe(true);
+    // Shorter times, as a 24-hour clock writes them, fit a narrower chart.
+    expect(middleTimeFits(145, "18:05", "06:05", "Now")).toBe(true);
   });
   it("does not guess another room's mappings", () => {
     const states = createDemo(now);
