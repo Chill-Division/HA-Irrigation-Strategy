@@ -21,7 +21,7 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
-## Unreleased
+## 2.37.0 - 2026-10-05
 
 - A short tour of the dashboard, for anyone new to it: Help → Take the tour.
 - Without automatic refills, a reminder to refill the reservoir by hand once it gets low: set its level on the Reservoir page.

@@ -1,4 +1,6 @@
-# Unreleased
+# 2.37.0
+
+Pair with integration 2.37.0.
 
 - **The dashboard the app serves:** exported plans and recipes are named for what they hold. No change to the controller.
 - **The dashboard the app serves:** a room without the solenoids, pump and dosers a refill needs offers no refill, and its Reservoir page shows only the tank's level and minimum. No change to the controller.
