@@ -51,9 +51,9 @@ READS = {
     "feed_get": {"room_id": ROOM},
     "whats_new_get": {},
 }
-# Changes nothing but whether the dashboard's What's new window shows again: whoever opens the
-# dashboard first after an update may dismiss it, administrator or not.
-NOTICES = {"whats_new_seen": {"version": "2.0.0"}}
+# Changes nothing but whether the dashboard's What's new window shows again, or its first-run tour
+# starts by itself again: whoever opens the dashboard first may dismiss them, administrator or not.
+NOTICES = {"whats_new_seen": {"version": "2.0.0"}, "whats_new_tour_seen": {}}
 EVENTS = ("crop_steering_manual_override",)
 
 
@@ -89,8 +89,9 @@ async def test_an_ordinary_user_can_look_and_changes_nothing(hass):
     for name, data in CHANGES.items():
         with pytest.raises(HomeAssistantError, match=REFUSED):
             await _call(hass, staff, name, data)
+    answers = {"whats_new_seen": "seen", "whats_new_tour_seen": "tour"}
     for name, data in NOTICES.items():
-        assert "seen" in await _call(hass, staff, name, data)
+        assert answers[name] in await _call(hass, staff, name, data)
     await hass.async_block_till_done()
     assert hass.states.get(OVERRIDE).state == "off"
     assert dict(hass.states.get(PLAN).attributes) == plan  # not saved, armed or disarmed

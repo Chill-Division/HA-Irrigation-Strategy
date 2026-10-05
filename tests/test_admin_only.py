@@ -43,9 +43,9 @@ READ_ONLY = {
     "feed_get",
     "whats_new_get",
 }
-# Changes nothing but whether the dashboard's What's new window shows again: whoever opens the
-# dashboard first after an update may dismiss it, administrator or not.
-NOTICES = {"whats_new_seen": {"version": "2.0.0"}}
+# Changes nothing but whether the dashboard's What's new window shows again, or its first-run tour
+# starts by itself again: whoever opens the dashboard first may dismiss them, administrator or not.
+NOTICES = {"whats_new_seen": {"version": "2.0.0"}, "whats_new_tour_seen": {}}
 SETUP = {"setup_read", "setup_create", "setup_save", "setup_remove"}
 # Every other service changes something. What each is called with:
 CHANGES = {
@@ -138,6 +138,7 @@ def rig(monkeypatch):
         async_init=AsyncMock(),
         response=AsyncMock(return_value={"seen": None}),
         mark_seen=AsyncMock(return_value={"seen": "2.0.0"}),
+        mark_toured=AsyncMock(return_value={"tour": False}),
     )
     monkeypatch.setattr(whats_new, "WhatsNew", lambda hass: notice)
     setup = {
@@ -223,6 +224,16 @@ def test_anyone_may_dismiss_the_whats_new_window_and_it_changes_nothing_else(rig
     before = rig.effects()
     assert rig.call("whats_new_seen", user) == {"seen": "2.0.0"}
     rig.notice.mark_seen.assert_awaited_once_with("2.0.0")
+    assert rig.effects() == before
+
+
+@pytest.mark.parametrize("user", [STAFF, ADMIN, None])
+def test_anyone_may_say_the_first_run_tour_has_started_and_it_changes_nothing_else(
+    rig, user
+):
+    before = rig.effects()
+    assert rig.call("whats_new_tour_seen", user) == {"tour": False}
+    rig.notice.mark_toured.assert_awaited_once_with()
     assert rig.effects() == before
 
 
