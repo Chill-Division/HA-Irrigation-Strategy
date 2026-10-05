@@ -5,6 +5,7 @@
     python scripts/release.py 2.25.0 --public    # then the same commit, for everyone else
     python scripts/release.py 2.25.0 --dry-run   # either one: show what it would do, change nothing
     python scripts/release.py 1.0.0 --start-again   # once: a lower number, never used before
+    python scripts/release.py --sync             # commits that ship nothing, to everyone, no release
 
 The first form releases `main` as it is, once the Validate workflow has passed on it. It dates the
 Unreleased sections of CHANGELOG.md, the controller's CHANGELOG.md and WHATS_NEW.md as this version,
@@ -19,6 +20,11 @@ the dashboard orders them by number; the changelogs keep everything.
 `--public` takes that tagged commit, unchanged, once Validate has passed on it too, to the main
 branch of PUBLIC (only ever a fast-forward) and publishes the same release there. Nothing is
 rebuilt: the commit everyone else gets is the one the boxes tracking this repository ran.
+
+`--sync` takes main as it is to PUBLIC's main between releases, once Validate has passed on it (a
+fast-forward, with no version and no release), when nothing since changes what a box installs: the
+README, the docs, the pictures, the scripts and the tests go, the integration and the app wait for
+a release.
 
 It needs git, an authenticated GitHub CLI (`gh auth login`) and pytest. docs/RELEASING.md says
 when to run it.
@@ -45,6 +51,9 @@ PUBLIC = "Chill-Division/HA-Irrigation-Strategy"
 BRANCH = "main"
 WORKFLOW = "ci-validate.yml"
 FIXES = "Bug fixes and improvements."
+# What a box installs: the integration (HACS, from a release) and the app, which the Supervisor
+# builds from the main branch it tracks. A change to either reaches people only as a release.
+SHIPPED = ("custom_components/", "addons/f2_control/")
 
 MANIFEST = "custom_components/crop_steering/manifest.json"
 CONST = "custom_components/crop_steering/const.py"
@@ -282,6 +291,17 @@ def publish_release(slug: str, version: str, changelog: str) -> str:
     return json.loads(created)["html_url"]
 
 
+def sync_refusal(changed: list[str]) -> str | None:
+    """Why these changed files cannot go to PUBLIC's main without a release, or None. The
+    Supervisor builds the app from that main, so a change to it would reach every box that installs
+    or rebuilds the app, under the last released number; the integration's wait for a release too."""
+    shipped = sorted(path for path in changed if path.startswith(SHIPPED))
+    if not shipped:
+        return None
+    more = f" and {len(shipped) - 1} more" if len(shipped) > 1 else ""
+    return f"{shipped[0]}{more} ship to boxes: release them instead (release.py <version>)"
+
+
 def release_exists(slug: str, tag: str) -> bool:
     found = subprocess.run(
         ["gh", "api", f"repos/{slug}/releases/tags/{tag}"],
@@ -442,11 +462,44 @@ def release_public(version: str, dry_run: bool) -> None:
     print(f"Released {version} on {PUBLIC}: {url}")
 
 
+def release_sync(dry_run: bool) -> None:
+    run("git", "fetch", "--quiet", "origin", BRANCH)
+    origin = run("git", "remote", "get-url", "origin")
+    slug = slug_of(origin)
+    sha = run("git", "rev-parse", f"origin/{BRANCH}")
+    if subprocess.run(["gh", "api", f"repos/{PUBLIC}"], capture_output=True).returncode:
+        raise Refused(f"{PUBLIC} does not exist (or this login cannot see it)")
+    public = public_url(origin)
+    listed = run("git", "ls-remote", public, f"refs/heads/{BRANCH}").split()
+    if not listed:
+        raise Refused(f"{PUBLIC} has no {BRANCH} yet: its first release makes it (--public)")
+    there = listed[0]
+    if there == sha:
+        print(f"{PUBLIC} {BRANCH} is {sha[:12]} already: nothing to take")
+        return
+    run("git", "fetch", "--quiet", public, f"refs/heads/{BRANCH}")
+    if subprocess.run(["git", "merge-base", "--is-ancestor", there, sha], cwd=ROOT).returncode:
+        raise Refused(
+            f"{PUBLIC} {BRANCH} ({there[:12]}) is not behind {BRANCH} here: only a fast-forward goes"
+        )
+    why = sync_refusal(run("git", "diff", "--name-only", there, sha).splitlines())
+    if why:
+        raise Refused(why)
+    require_ci(slug, sha)
+    commits = run("git", "log", "--oneline", f"{there}..{sha}")
+    if dry_run:
+        print(f"Would push {sha[:12]} to {PUBLIC} {BRANCH}, with no release:\n{commits}")
+        return
+    # No "+": git refuses anything but a fast-forward.
+    run("git", "push", public, f"{sha}:refs/heads/{BRANCH}")
+    print(f"Pushed {BRANCH} ({sha[:12]}) to {PUBLIC}, with no release:\n{commits}")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("version", help="the new version, e.g. 2.25.0")
+    parser.add_argument("version", nargs="?", help="the new version, e.g. 2.25.0")
     parser.add_argument(
         "--public", action="store_true", help=f"release a tagged version on {PUBLIC}"
     )
@@ -456,8 +509,20 @@ def main(argv: list[str] | None = None) -> None:
         action="store_true",
         help="release a number below the last one, never used before (1.0.0 after 2.37.1)",
     )
+    parser.add_argument(
+        "--sync",
+        action="store_true",
+        help=f"take main to {PUBLIC} with no release, when nothing that ships changed",
+    )
     args = parser.parse_args(argv)
     sys.stdout.reconfigure(encoding="utf-8")  # the notes may carry emoji
+    if args.sync:
+        if args.version or args.public or args.start_again:
+            parser.error("--sync takes no version and goes alone (with --dry-run if you like)")
+        release_sync(args.dry_run)
+        return
+    if not args.version:
+        parser.error("the version to release, e.g. 2.25.0 (or --sync)")
     version = args.version.removeprefix("v")
     if args.public:
         release_public(version, args.dry_run)
