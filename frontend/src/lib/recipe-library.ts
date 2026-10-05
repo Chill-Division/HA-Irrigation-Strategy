@@ -367,6 +367,21 @@ export function removeRecipe(
     prior.recipes.filter((recipe) => recipe.id !== id),
   );
 }
+/** A plan file's name, from the names of what it holds: "crop-steering-plan-gr2-chill1.json". Long
+ * lists of names are cut short at a word. */
+export function planFileName(...names: string[]): string {
+  const words = [...new Set(names)]
+    .map((name) =>
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, ""),
+    )
+    .filter(Boolean)
+    .join("-");
+  const cut = words.length > 100 ? words.slice(0, words.lastIndexOf("-", 100)) : words;
+  return `crop-steering-plan${cut ? `-${cut}` : ""}.json`;
+}
 export function exportRecipe(recipe: Recipe, roomName: string): string {
   return JSON.stringify(
     {

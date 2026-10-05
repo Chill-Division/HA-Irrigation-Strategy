@@ -51,10 +51,13 @@ async function openLibrary() {
   if ((await library().getAttribute("open")) === null)
     await library().locator("summary").first().click();
 }
+let downloaded = "";
 async function downloadPlan(button) {
   const pending = page.waitForEvent("download");
   await button.click();
-  return JSON.parse(await readFile(await (await pending).path(), "utf8"));
+  const download = await pending;
+  downloaded = download.suggestedFilename();
+  return JSON.parse(await readFile(await download.path(), "utf8"));
 }
 async function check(name, fn) {
   try {
@@ -85,6 +88,8 @@ try {
     "Named recipes persist without randomUUID; draft replacement retains current dates",
     async () => {
       const initial = await downloadPlan(page.getByRole("button", { name: "Export", exact: true }));
+      // Named for the room and its profiles.
+      assert.match(downloaded, /^crop-steering-plan-flower-2-zone-1-demo-endpoints-.+\.json$/);
       await openLibrary();
       assert.equal(await library().locator(".recipe-list li").count(), 2);
       await page
@@ -110,6 +115,7 @@ try {
       const saved = await downloadPlan(
         page.getByRole("button", { name: "Export recipe My saved plan", exact: true }),
       );
+      assert.equal(downloaded, "crop-steering-plan-my-saved-plan.json");
       assert.deepEqual(saved.plan, initial.plan);
       await page.locator("#zone-start-date").fill("2026-08-01");
       await page.getByRole("button", { name: "Preview recipe My saved plan", exact: true }).click();
