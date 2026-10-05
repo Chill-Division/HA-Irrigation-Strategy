@@ -9,6 +9,24 @@ and code-level detail for developers and AI agents working on the repo.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- **Steadier accessibility checks.** The checks that read the dashboard's contrast in the dark
+  theme no longer fail now and then on text that was still turning light. They wait until nothing
+  on the page is changing colour, so what they measure is what a grower sees.
+
+### 🔧 Technical notes
+
+- Tests: `settled` (`frontend/scripts/settled.mjs`) waits until no finite animation or transition
+  is running (at most 5 s), then two frames, and every axe audit in the browser checks calls it
+  first. At reduced motion every element eases every property for 0.01 ms, and an element added
+  while its parent's colour is still changing starts its own change only when the parent's ends,
+  so after the theme flips a colour reaches nested text one level a frame: the strategy page's
+  headings took about twelve frames on a CPU slowed sixfold. The two-frame wait read them still
+  dark on dark (#212121 on #1c1c1c, 1.05:1) in "setting explainer, dark", which failed pull
+  requests #58 and #139. With the race forced, the old wait failed 6 runs of 6 and `settled`
+  none. It replaces `verify-workspace`'s own one-pass `settle` and `light-shot.mjs`'s `settled`.
+
 ## [2.37.1] - 2026-10-05
 
 Integration and controller **2.37.1**.
