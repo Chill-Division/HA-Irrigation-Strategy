@@ -15,7 +15,7 @@ Install the integration and controller together. HACS, the HA integration config
 
 - Home Assistant 2026.5 or newer. Python requirements follow your HA version; HA 2026.5 requires Python 3.14.
 - HACS for the guided integration download, or access to copy a custom integration manually.
-- Home Assistant OS/Supervised with the app store for the guided controller install. The controller app is built for amd64, aarch64 or armv7 and brings its own Python 3.12. Container/Core users must run the companion controller separately; a true one-click controller install is not available there.
+- Home Assistant OS/Supervised with the app store for the guided controller install. The controller app is built for amd64 or aarch64 (64-bit only) and brings its own Python 3.12. Container/Core users must run the companion controller separately; a true one-click controller install is not available there.
 - An HA administrator account for Settings → Rooms & hardware and its configuration services.
 - Existing HA entities for the actual pump and zone valves, fresh VWC/EC probes and any configured interlocks. This integration maps entities; it does not provision sensor firmware or pair devices.
 
