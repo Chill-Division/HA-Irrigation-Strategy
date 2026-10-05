@@ -282,12 +282,9 @@ export function createDemo(now = Date.now()): States {
         p2_stop: supervisor === "tracking" ? "19:00" : null,
         managed: index
           ? []
-          : [
-              "p1_target_vwc",
-              "field_capacity",
-              "p2_vwc_threshold",
-              "p3_emergency_vwc_threshold",
-            ].map((suffix) => `number.crop_steering_${prefix}${key}${suffix}`),
+          : ["p1_target_vwc", "field_capacity", "p2_vwc_threshold"].map(
+              (suffix) => `number.crop_steering_${prefix}${key}${suffix}`,
+            ),
         updated: new Date(now - 120_000).toISOString(),
       });
       for (const family of ["veg", "gen"])

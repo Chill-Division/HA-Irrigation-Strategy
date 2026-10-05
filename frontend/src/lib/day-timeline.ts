@@ -355,10 +355,11 @@ export function peopleByUser(
   return people;
 }
 
-/** The only settings the controller changes: a zone's own four moisture levels, which Auto
- * setpoints adjusts through Home Assistant's Supervisor user (nobody's person). */
+/** The only settings the controller changes: three of a zone's own moisture levels, which Auto
+ * setpoints adjusts through Home Assistant's Supervisor user (nobody's person). Never the rescue
+ * level, the operator's emergency floor. */
 const AUTO_SETPOINTS =
-  /^number\.crop_steering_.*zone_\d+_(p1_target_vwc|field_capacity|p2_vwc_threshold|p3_emergency_vwc_threshold)$/;
+  /^number\.crop_steering_.*zone_\d+_(p1_target_vwc|field_capacity|p2_vwc_threshold)$/;
 
 /** Who made a setting change, by its logbook entry: an automation or a script by its name, a person
  * by their name, Auto setpoints for a setting it adjusts, or null when that is not known. */

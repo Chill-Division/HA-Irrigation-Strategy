@@ -34,12 +34,13 @@ async def test_the_zones_steering_mode_keeps_its_afternoon_and_the_sensor_says_w
         {"entity_id": "switch.crop_steering_auto_setpoints"},
         blocking=True,
     )
-    # The zone as Auto Setpoints left it this morning, so one step reaches where it goes next.
+    # The zone as Auto Setpoints left it this morning, so one step reaches where it goes next, and a
+    # rescue level well under where 30% ends, so only the zone's uptake limits the dryback.
     for key, value in (
         ("p1_target_vwc", 36),
         ("field_capacity", 40),
         ("p2_vwc_threshold", 34),
-        ("p3_emergency_vwc_threshold", 22),
+        ("p3_emergency_vwc_threshold", 15),
     ):
         await hass.services.async_call(
             "number",

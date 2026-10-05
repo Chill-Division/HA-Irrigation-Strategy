@@ -166,7 +166,12 @@ def test_a_dryback_the_nights_cannot_reach_keeps_the_zones_afternoon_by_its_stee
     day after the ramp. At 17:00 (lights 10:00-22:00) a vegetative zone is still watered, a generative
     one has been drying since the middle of the day, and the dashboard is told why."""
     c, fake, room = _rig(
-        numbers={**NUMBERS, "select.crop_steering_zone_1_steering_mode": (mode, {})}
+        numbers={
+            **NUMBERS,
+            "select.crop_steering_zone_1_steering_mode": (mode, {}),
+            # a rescue level well under where 30% ends: only the zone's uptake limits the dryback here
+            "number.crop_steering_zone_1_p3_emergency_vwc_threshold": ("15", {}),
+        }
     )
     room.state[1]["learn"] = dict(
         au.fresh(), peak=36.0, gain=0.6, day_rate=0.72, night_rate=0.37,

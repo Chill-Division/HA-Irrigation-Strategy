@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Home Assistant OS only.** The README and the install guide ask for Home Assistant OS, where
   the controller installs from Settings → Apps (HACS installs the integration). The Supervised,
   Container and Core routes are gone: Home Assistant ended support for Supervised at 2025.12.
+- **Auto setpoints leaves the rescue level alone.** The rescue level is your emergency floor: Auto
+  setpoints no longer lowers it to make room for a dryback (on GR2 it took it from 50% to 41.5%). A
+  dryback target that would end under it is planned only as deep as the rescue lets the zone go, so
+  maintenance shots stop no earlier than that needs, and the plan's note says so.
 
 ### 🔧 Technical notes
 
@@ -36,6 +40,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docs: the README's What you need row and docs/INSTALL.md's requirements name Home Assistant OS
   only, and say Settings → Apps (its name since Home Assistant 2026.2) where they said app store.
   The install guide drops the Supervised and Container/Core routes and Core's Python version.
+- App: `p3_emergency_vwc_threshold` leaves Auto setpoints' `MANAGED`. `wanted` keeps the
+  maintenance trigger at least `LADDER_PTS` (3) over the rescue level instead of moving it, and
+  `day_plan` caps the dryback at `rescue_allows`, a hold `RESCUE_ROOM_PTS` (5) over the rescue
+  level, its note naming the rescue level. The steering-mode tests' rescue level moves to 15% so
+  only the zone's uptake limits their dryback. Dashboard: Today's events no longer credit a rescue
+  level change to Auto setpoints, and the demo's sensors manage three settings.
 
 ## [2.37.0] - 2026-10-05
 
