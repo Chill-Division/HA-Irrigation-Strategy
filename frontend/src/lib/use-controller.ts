@@ -94,6 +94,9 @@ export class ControllerStore {
         typeof window !== "undefined"
           ? new URLSearchParams(window.location.search).get("whats-new")
           : null,
+        // ?tour=new: the demo as a new installation, whose first-run tour starts by itself.
+        typeof window !== "undefined" &&
+          new URLSearchParams(window.location.search).get("tour") === "new",
       );
     const requested =
       typeof window !== "undefined"

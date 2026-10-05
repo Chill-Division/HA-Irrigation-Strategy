@@ -95,10 +95,19 @@ const connected = (controller: Controller) =>
 
 /** Once, the first time anyone opens the dashboard after an update: what changed since the window
  * last showed on this installation. It says so for everyone as it opens, so the next person, or
- * the next page load, does not see it again. An integration without What's new shows nothing. */
-export function WhatsNewOnUpdate({ controller }: { controller: Controller }) {
+ * the next page load, does not see it again. An integration without What's new shows nothing.
+ * On a new installation, the first-run tour starts instead (`onTour`), once, the same way. */
+export function WhatsNewOnUpdate({
+  controller,
+  onTour,
+}: {
+  controller: Controller;
+  onTour: () => void;
+}) {
   const [selection, setSelection] = useState<WhatsNewSelection | null>(null);
   const asked = useRef(false);
+  const tour = useRef(onTour);
+  tour.current = onTour;
   const ready = connected(controller);
   const { operator } = controller;
   useEffect(() => {
@@ -106,6 +115,10 @@ export function WhatsNewOnUpdate({ controller }: { controller: Controller }) {
     asked.current = true;
     void (async () => {
       const doc = readWhatsNew(await operator("whats_new_get").catch(() => null));
+      if (doc?.tour) {
+        tour.current();
+        await operator("whats_new_tour_seen").catch(() => null);
+      }
       if (!doc || (doc.seen !== null && compareVersions(doc.seen, doc.version) >= 0)) return;
       const found = unseen(doc);
       if (found.releases.length) setSelection(found);

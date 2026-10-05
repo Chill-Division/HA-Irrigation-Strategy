@@ -1,0 +1,71 @@
+/* The first-run tour: a card in the corner on a wide screen, along the bottom on a phone, above the
+   page and its menu but under a dialog, and a ring round what each stop is about. */
+.tour-card {
+  position: fixed;
+  z-index: 40;
+  right: 24px;
+  bottom: 24px;
+  width: min(380px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 14px 18px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--foreground);
+  box-shadow: 0 12px 40px rgb(20 45 30 / 22%);
+}
+.tour-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-right: -8px;
+}
+.tour-count {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.tour-card h2 {
+  margin: 2px 0 8px;
+  font-size: 18px;
+}
+.tour-card h2:focus {
+  outline: none;
+}
+.tour-card p {
+  margin: 0;
+  line-height: 1.5;
+}
+.tour-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+.tour-ring {
+  position: fixed;
+  z-index: 39;
+  pointer-events: none;
+  border: 2px solid var(--primary);
+  border-radius: 12px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 22%, transparent);
+  transition:
+    top 0.2s,
+    left 0.2s,
+    width 0.2s,
+    height 0.2s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-ring {
+    transition: none;
+  }
+}
+@media (max-width: 720px) {
+  .tour-card {
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    width: auto;
+    max-height: 55vh;
+  }
+}

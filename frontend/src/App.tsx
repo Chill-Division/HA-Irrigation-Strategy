@@ -40,6 +40,8 @@ import { ActivityPanel } from "@/components/activity-panel";
 import { StatusLines } from "@/components/status-line";
 import { WaterViewProvider } from "@/lib/water-view";
 import { WhatsNewOnUpdate } from "@/components/whats-new";
+import { Tour } from "@/components/tour";
+import { tourSteps } from "@/lib/tour";
 import { time, type Page } from "@/components/dashboard";
 import { Overview } from "@/pages/overview";
 import { Strategy, type Drafts } from "@/pages/strategy";
@@ -121,6 +123,8 @@ export default function App() {
   const [pending, setPending] = useState<(() => void) | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState("");
+  // The first-run tour's stop on show; null while it is not.
+  const [tour, setTour] = useState<number | null>(null);
   const theme = useHaTheme();
   const haShell = useHaShell();
   const pageRef = useRef(page);
@@ -486,7 +490,7 @@ export default function App() {
                 embedded={haShell.available}
               />
             )}
-            {page === "help" && <Help controller={controller} />}
+            {page === "help" && <Help controller={controller} startTour={() => setTour(0)} />}
           </div>
         </main>
         <footer className="page-footer">
@@ -494,7 +498,17 @@ export default function App() {
           <span>{controller.room.room.name} · Controller-reported data</span>
         </footer>
       </div>
-      <WhatsNewOnUpdate controller={controller} />
+      <WhatsNewOnUpdate controller={controller} onTour={() => setTour(0)} />
+      {tour !== null && (
+        <Tour
+          steps={tourSteps(reservoirMapped)}
+          index={tour}
+          page={page}
+          navigate={navigate}
+          onIndex={setTour}
+          onClose={() => setTour(null)}
+        />
+      )}
       <Dialog
         open={Boolean(pending)}
         onOpenChange={(open) => {

@@ -20,7 +20,8 @@ export type OperatorAction =
   | "feed_mix"
   | "test_shot"
   | "whats_new_get"
-  | "whats_new_seen";
+  | "whats_new_seen"
+  | "whats_new_tour_seen";
 
 export interface ParameterLimit {
   value: number | null;

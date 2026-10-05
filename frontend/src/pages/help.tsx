@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, Compass, Search } from "lucide-react";
 import { Heading } from "@/components/dashboard";
 import { WhatsNewButton } from "@/components/whats-new";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -59,10 +60,27 @@ const glossary = [
     "The planning curve is a schematic drawn from targets. Recorded history comes from Home Assistant Recorder. Neither an event acknowledgement nor a modeled curve proves physical delivery.",
   ],
 ];
-export function Help({ controller }: { controller: Controller }) {
+export function Help({
+  controller,
+  startTour,
+}: {
+  controller: Controller;
+  /** The first-run tour, from its first stop. */
+  startTour: () => void;
+}) {
   return (
     <>
-      <Heading title="Help" action={<WhatsNewButton controller={controller} />} />
+      <Heading
+        title="Help"
+        action={
+          <div className="heading-actions">
+            <Button variant="outline" onClick={startTour}>
+              <Compass size={16} aria-hidden="true" /> Take the tour
+            </Button>
+            <WhatsNewButton controller={controller} />
+          </div>
+        }
+      />
       <section className="panel">
         <div className="panel-heading">
           <div>

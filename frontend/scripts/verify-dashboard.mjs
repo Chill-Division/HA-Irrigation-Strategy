@@ -1154,6 +1154,87 @@ try {
     await dialog.getByRole("button", { name: "Got it", exact: true }).click();
     await dialog.waitFor({ state: "hidden" });
   });
+  await check("first-run tour: by itself on a new installation, on a desktop and a phone, and from Help", async () => {
+    const card = page.locator(".tour-card");
+    // Every other check opens the demo as an installation the tour has been through.
+    await go("overview");
+    await page.waitForTimeout(300);
+    assert.equal(await card.count(), 0, "the tour starts by itself only on a new installation");
+    // A new one: it starts at once, opens each page in turn, rings what each stop is about and,
+    // on a wide screen, its entry in the menu, and ends on the room's switches.
+    await page.goto(`${base}/dashboard.html?demo&tour=new#/overview`, { waitUntil: "networkidle" });
+    await expectVisible(card);
+    const walked = [];
+    for (;;) {
+      await page.waitForTimeout(250);
+      walked.push([
+        await card.getAttribute("data-tour-step"),
+        new URL(page.url()).hash,
+        await page.locator("[data-tour-ring]").count(),
+      ]);
+      const next = card.getByRole("button", { name: /^(Show me|Next)$/ });
+      if (!(await next.count())) break;
+      await next.click();
+    }
+    assert.deepEqual(walked, [
+      ["welcome", "#/overview", 0],
+      ["overview", "#/overview", 2],
+      ["plan", "#/strategy", 2],
+      ["feed", "#/reservoir", 2],
+      ["settings", "#/setup", 2],
+      ["switch", "#/overview", 2],
+    ]);
+    const ringed = await page.evaluate(() => {
+      const ring = document.querySelector("[data-tour-ring]").getBoundingClientRect();
+      return [...document.querySelectorAll(".page-heading .room-power")].every((group) => {
+        const box = group.getBoundingClientRect();
+        return (
+          box.left >= ring.left && box.right <= ring.right && box.top >= ring.top && box.bottom <= ring.bottom
+        );
+      });
+    });
+    assert.ok(ringed, "the last stop rings the room's switches");
+    await axe("first-run tour");
+    await page.screenshot({ path: path.join(out, "tour-desktop.png") });
+    await card.getByRole("button", { name: "Done", exact: true }).click();
+    await card.waitFor({ state: "detached" });
+    await page.evaluate(() => (location.hash = "#/water")); // another page, same visit
+    await page.waitForTimeout(300);
+    assert.equal(await card.count(), 0, "once, not on every page");
+    // A phone: the card along the bottom, inside the screen, and each stop's ring above it. A
+    // fresh load: the same address but for its hash would only change the page.
+    await page.goto("about:blank");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${base}/dashboard.html?demo&tour=new#/overview`, { waitUntil: "networkidle" });
+    await expectVisible(card);
+    await card.getByRole("button", { name: "Show me", exact: true }).click();
+    await page.waitForTimeout(400);
+    const fit = await page.evaluate(() => {
+      const box = document.querySelector(".tour-card").getBoundingClientRect();
+      const ring = document.querySelector("[data-tour-ring]").getBoundingClientRect();
+      return {
+        margins: Math.min(box.left, innerWidth - box.right),
+        inside: box.top >= 0 && box.bottom <= innerHeight,
+        ringAbove: ring.top >= 0 && ring.top < box.top - 40,
+      };
+    });
+    assert.ok(fit.margins >= 12, `${fit.margins}px from the screen's edge`);
+    assert.ok(fit.inside, "the card fits the screen");
+    assert.ok(fit.ringAbove, "the stop's ring shows above the card");
+    await axe("first-run tour on a phone");
+    await noOverflow();
+    await page.screenshot({ path: path.join(out, "tour-phone.png") });
+    await page.keyboard.press("Escape");
+    await card.waitFor({ state: "detached" });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    // Help starts it at any time, from its first stop.
+    await go("help");
+    await page.getByRole("button", { name: "Take the tour", exact: true }).click();
+    await expectVisible(card);
+    assert.equal(await card.getAttribute("data-tour-step"), "welcome");
+    await card.getByRole("button", { name: "Close the tour", exact: true }).click();
+    await card.waitFor({ state: "detached" });
+  });
   await check(
     "activity: every record's type is a coloured pill, in the log and the panel",
     async () => {

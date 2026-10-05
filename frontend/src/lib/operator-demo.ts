@@ -32,6 +32,8 @@ export class OperatorDemo {
     private getStates: () => States,
     private updateStates: (states: States) => void,
     whatsNew: string | null = null,
+    /** The demo as a new installation, whose first-run tour starts by itself once. */
+    private tour = false,
   ) {
     this.whatsNewSeen =
       whatsNew === "unknown"
@@ -255,7 +257,11 @@ export class OperatorDemo {
   }
   async call<T>(action: OperatorAction, data: Record<string, unknown>): Promise<T> {
     if (action === "whats_new_get")
-      return clone({ ...DEMO_WHATS_NEW, seen: this.whatsNewSeen }) as T;
+      return clone({ ...DEMO_WHATS_NEW, seen: this.whatsNewSeen, tour: this.tour }) as T;
+    if (action === "whats_new_tour_seen") {
+      this.tour = false;
+      return { tour: false } as T;
+    }
     if (action === "whats_new_seen") {
       const version = String(data.version);
       if (
