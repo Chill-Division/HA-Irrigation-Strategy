@@ -74,17 +74,19 @@ def clock(monkeypatch):
 
 
 def _room(plan=FLOWER, pct=4.0, level=None, auto="off", pressed="unknown", **extra):
+    reservoir = {
+        "reservoir_distance_sensor": DISTANCE,
+        "fresh_water_switch": FRESH,
+        "recirc_switch": RECIRC,
+        "doser_1_switch": DOSER[1],
+        "doser_2_switch": DOSER[2],
+    }
     descriptor = _desc(
         enable_flag=KILL,
         pump=PUMP,
         mainline=MAIN,
         valves={"1": VALVE},
-        reservoir_distance_sensor=DISTANCE,
-        fresh_water_switch=FRESH,
-        recirc_switch=RECIRC,
-        doser_1_switch=DOSER[1],
-        doser_2_switch=DOSER[2],
-        **extra,
+        **{**reservoir, **extra},  # a test can unmap one: fresh_water_switch=None
     )
     states = {
         "sensor.crop_steering_engine_config": ("ok", descriptor),
@@ -800,6 +802,117 @@ def test_stopping_the_app_mid_batch_switches_it_off_and_says_so_once_at_the_next
     assert len(_alerts(fake, "CS-701")) == 1 and room.batch["interrupted"] is None
 
 
+# ---------------------------------------------------------------- the refill reminder (CS-706)
+REMINDING = {**FLOWER, "remind_pct": 20.0}
+
+
+def _passes(c, room, count=1):
+    """`count` passes of the loop, a minute apart."""
+    for _ in range(count):
+        _tick(c, room)
+        _later(60)
+
+
+def test_with_automatic_refills_off_a_low_reservoir_reminds_after_three_passes_and_not_every_pass():
+    c, fake, room = _room(plan=REMINDING, pct=19.0)
+    _passes(c, room, 2)
+    assert not _alerts(fake, "CS-706")  # one bad echo is not a low reservoir
+    _passes(c, room)
+    (alert,) = _alerts(fake, "CS-706")
+    assert alert["title"] == "Reservoir down to 19%, refill it (CS-706)"
+    assert alert["message"].startswith(
+        "The reservoir is down to 19%: refill it by hand. Watering stops at its 5% minimum. It comes "
+        "again each day it stays at or under 20%, and goes once it reads 25%."
+    )
+    _passes(c, room, 90)
+    assert len(_alerts(fake, "CS-706")) == 1  # not each pass, nor each half hour
+
+
+def test_once_a_refill_has_shown_what_one_percent_holds_it_says_the_litres_and_rounds_left():
+    c, fake, room = _room(plan=REMINDING, pct=20.0)
+    room.batch["litres_per_pct"] = 2.07  # 41 L at 20%, as the owner's 145 L fills showed
+    room._next_round_l = 5.0  # the room's next round of shots
+    _passes(c, room, 3)
+    (alert,) = _alerts(fake, "CS-706")
+    assert alert["message"].startswith(
+        "The reservoir is down to 20% (about 41 L): refill it by hand. Watering stops at its 5% "
+        "minimum, about 6 rounds of shots from now."  # 15 points of 2.07 L, 5 L a round
+    )
+    _level(fake, 90.0)  # refilled, then run down again by a room drinking 40 L a round
+    _passes(c, room)
+    room._next_round_l = 40.0
+    _level(fake, 20.0)
+    _passes(c, room, 3)
+    assert "Watering stops at its 5% minimum, within the next round of shots." in (
+        _alerts(fake, "CS-706")[-1]["message"]
+    )
+
+
+def test_it_comes_again_each_day_it_stays_low_and_a_restart_does_not_say_it_sooner():
+    c, fake, room = _room(plan=REMINDING, pct=18.0)
+    _passes(c, room, 3)
+    assert len(_alerts(fake, "CS-706")) == 1
+    _later(20 * 3600)
+    again = controller.Controller.__new__(controller.Controller)
+    again.__dict__.update(c.__dict__)
+    again._alerted, again._alert_codes = {}, {}  # a new process remembers no notification
+    again.rooms = [controller.Room("default", "", room.zones, room.hw, KILL, 10, 22)]
+    again._load_state()
+    room = again.rooms[0]
+    _passes(again, room, 5)
+    assert len(_alerts(fake, "CS-706")) == 1  # said 20 hours ago: kept across the restart
+    _later(4 * 3600)
+    _passes(again, room, 1)
+    assert len(_alerts(fake, "CS-706")) == 2  # a day on, it comes again
+
+
+def test_it_goes_once_the_reservoir_reads_five_points_above_and_then_can_come_again():
+    c, fake, room = _room(plan=REMINDING, pct=19.0)
+    _passes(c, room, 3)
+    assert len(_alerts(fake, "CS-706")) == 1
+    _level(fake, 23.0)  # topped up a little: still under 25%, the reminder stays up
+    _passes(c, room, 3)
+    assert room.batch["reminded_at"] is not None and not _dismissed(fake, "res_remind_default")
+    _level(fake, 90.0)  # refilled by hand
+    _passes(c, room)
+    assert room.batch["reminded_at"] is None and len(_dismissed(fake, "res_remind_default")) == 1
+    _level(fake, 20.0)  # run down again: the next time it reminds at once, not a day after the last
+    _passes(c, room, 3)
+    assert len(_alerts(fake, "CS-706")) == 2
+
+
+def test_never_while_automatic_refills_keep_it_up_but_a_room_with_nothing_to_refill_with_is_reminded():
+    c, fake, room = _room(plan=REMINDING, pct=19.0, auto="on")
+    _passes(c, room, 5)
+    assert not _alerts(fake, "CS-706")
+    # automatic refills on, but no fresh-water solenoid: nothing refills it by itself
+    c, fake, room = _room(plan=REMINDING, pct=19.0, auto="on", fresh_water_switch=None)
+    _passes(c, room, 3)
+    assert len(_alerts(fake, "CS-706")) == 1
+    # a reminder up when automatic refills are turned on goes
+    c, fake, room = _room(plan=REMINDING, pct=19.0)
+    _passes(c, room, 3)
+    fake.set_state(AUTO, "on")
+    _passes(c, room)
+    assert room.batch["reminded_at"] is None and len(_dismissed(fake, "res_remind_default")) == 1
+
+
+@pytest.mark.parametrize(
+    "plan, level, room_active",
+    [
+        ({**REMINDING, "remind_pct": 0.0}, mm(10.0), "on"),  # turned off
+        ({**REMINDING, "min_pct": 20.0}, mm(10.0), "on"),  # at the minimum: watering waits (CS-704)
+        (REMINDING, "unavailable", "on"),  # the level reads nothing (CS-705 says so)
+        (REMINDING, mm(10.0), "off"),  # the room is switched off: no alerts
+    ],
+)
+def test_no_reminder_when_it_is_off_at_the_minimum_unreadable_or_the_room_is_off(plan, level, room_active):
+    c, fake, room = _room(plan=plan, level=level)
+    fake.set_state("switch.crop_steering_room_active", room_active)
+    _passes(c, room, 5)
+    assert not _alerts(fake, "CS-706") and room.batch["reminded_at"] is None
+
+
 # ---------------------------------------------------------------- what it publishes and keeps
 def test_the_status_sensor_says_how_full_it_is_what_runs_and_what_went_in():
     c, fake, room = _room(pct=40.0)
@@ -831,14 +944,16 @@ def test_the_status_sensor_says_how_full_it_is_what_runs_and_what_went_in():
 def test_an_old_state_file_or_a_damaged_batch_record_loads_as_no_batch():
     assert controller.restore_batch(None) == controller.fresh_batch()
     damaged = controller.restore_batch({"step": "flooding", "index": "two", "armed": "yes", "plan": 5,
-                                        "litres_per_pct": -2, "start_pct": "low", "fill_end": 7})
+                                        "litres_per_pct": -2, "start_pct": "low", "fill_end": 7,
+                                        "reminded_at": 7})
     assert damaged["step"] == "idle" and damaged["index"] == 0 and damaged["armed"] is True
     assert damaged["plan"] is None and damaged["litres_per_pct"] is None
-    assert damaged["start_pct"] is None and damaged["fill_end"] is None
+    assert damaged["start_pct"] is None and damaged["fill_end"] is None and damaged["reminded_at"] is None
     # A record from before the level: no litres per 1% yet. One an older controller saved settling
     # is kept, so the next start switches that batch off.
     old = controller.restore_batch({"step": "settling", "armed": False, "low_seen": 1})
     assert (old["step"], old["armed"], old["litres_per_pct"]) == ("settling", False, None)
+    assert old["reminded_at"] is None  # from before the refill reminder: none is up
     assert controller.restore_batch({"litres_per_pct": 2.07})["litres_per_pct"] == 2.07
 
 
@@ -853,6 +968,11 @@ def test_a_plan_from_an_integration_before_the_level_reads_as_no_level_and_no_mi
     old = {key: value for key, value in FLOWER.items() if key not in ("full_mm", "min_pct")}
     plan = controller.feed_plan({**old, "settle_s": 20, "empty_mm": 800})
     assert (plan["full_mm"], plan["empty_mm"], plan["min_pct"]) == (0.0, 800.0, 0.0)
+
+
+def test_a_plan_from_an_integration_before_the_refill_reminder_reads_as_no_reminder():
+    assert controller.feed_plan(FLOWER)["remind_pct"] == 0.0
+    assert controller.feed_plan(REMINDING)["remind_pct"] == 20.0
 
 
 def test_a_distance_in_cm_or_m_reads_in_mm():

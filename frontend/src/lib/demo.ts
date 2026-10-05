@@ -104,6 +104,7 @@ export function createDemo(now = Date.now()): States {
           full_mm: 0,
           empty_mm: 0,
           min_pct: 5,
+          remind_pct: 20,
           pause_s: 10,
           mix_s: 10,
           doses: [],

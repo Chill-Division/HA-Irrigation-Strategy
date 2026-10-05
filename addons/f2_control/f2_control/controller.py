@@ -461,6 +461,11 @@ LEARN_RISE_PCT = 10.0  # a refill that raised it less than this does not teach i
 # this low, or the room's minimum if higher: a timed fill into a fuller reservoir could overflow it.
 UNLEARNED_FILL_FROM_PCT = 10.0
 LEVEL_MISSING_PASSES = 5  # passes the level sensor may read nothing before it is reported (CS-705)
+# The refill reminder (CS-706), while nothing refills the reservoir by itself: said after
+# BATCH_LOW_PASSES passes in a row at or under the room's reminder level, again each day it stays
+# there, and taken down once the level reads this many points above it.
+REMIND_EVERY_S = 86400.0
+REMIND_CLEAR_PCT = 5.0
 # Between passes, while a batch fills or doses, how often it is checked for a reason to stop (the
 # room's watering switched off, a switch gone off): the fresh water stops within seconds, not a pass.
 BATCH_WATCH_S = 5.0
@@ -509,6 +514,7 @@ def fresh_batch():
         "fill_end": None,  # when its fresh water stops; None once it has
         "interrupted": None,  # stopped by the app stopping: said once when it starts again
         "switches": None,  # what this batch drives, taken when it starts (so a restart can stop them)
+        "reminded_at": None,  # when the refill reminder (CS-706) was said; None while it is not up
     }
 
 
@@ -527,7 +533,7 @@ def restore_batch(saved):
             type(value) in (int, float) and math.isfinite(value) and (value > 0 or key == "start_pct")
         ):
             continue
-        if key == "fill_end" and value is not None and not isinstance(value, str):
+        if key in ("fill_end", "reminded_at") and value is not None and not isinstance(value, str):
             continue
         if key in ("plan", "last", "interrupted", "switches") and value is not None and not isinstance(
             value, dict
@@ -553,9 +559,10 @@ def feed_plan(attrs):
         return None
     try:
         plan = {key: float(attrs[key]) for key in ("fill_s", "batch_l", "pause_s", "mix_s")}
-        # The reservoir's distances and minimum: an integration from before them has none (0: no
-        # level, no minimum); settle_s is an older integration's, read and not used.
-        for key in ("full_mm", "empty_mm", "min_pct", "settle_s"):
+        # The reservoir's distances, minimum and refill reminder: an integration from before them has
+        # none (0: no level, no minimum, no reminder); settle_s is an older integration's, read and
+        # not used.
+        for key in ("full_mm", "empty_mm", "min_pct", "remind_pct", "settle_s"):
             plan[key] = float(attrs.get(key) or 0.0)
         doses = []
         for dose in attrs.get("doses") or []:
@@ -2146,6 +2153,7 @@ class Controller:
                 self._batch_step(room, now, res)
         elif res is not None:
             self._batch_idle(room, now, res)
+            self._refill_reminder(room, now, res)
         if res is not None:
             self._batch_publish(room, now, res)
 
@@ -2173,6 +2181,73 @@ class Controller:
             elif not missing:
                 self._resolve_alert(f"res_level_{room.slug}")
         return {"plan": plan, "mm": mm, "pct": pct, "min": (plan or {}).get("min_pct", 0.0) or 0.0}
+
+    def _refill_reminder(self, room, now, res):
+        """Remind a person to refill the reservoir by hand (CS-706) while nothing refills it by itself:
+        automatic refills are off, or the room has no fresh-water or recirculation solenoid, pump or
+        doser to refill with. Said once the level has read at or under the room's reminder level for
+        BATCH_LOW_PASSES passes in a row (one bad echo), again each day it stays there (REMIND_EVERY_S,
+        kept across a restart), and taken down once it reads REMIND_CLEAR_PCT above it. A reminder at or
+        under the minimum is none: watering waits there instead (CS-704). A level that reads nothing,
+        or a batch running, changes nothing."""
+        batch, reading = room.batch, room._res
+        if batch["step"] != "idle" or reading["pct"] is None:
+            return
+        remind = (reading["plan"] or {}).get("remind_pct", 0.0) or 0.0
+        hardware = res.get("fresh") and res.get("recirc") and room.hw.get("pump") and res.get("dosers")
+        auto = self._on(f"switch.crop_steering_{room.prefix}auto_batches", False)
+        if remind <= reading["min"] or (hardware and auto) or not self._room_active(room):
+            room._remind_seen = 0
+            self._end_reminder(room)
+            return
+        pct = reading["pct"]
+        if pct > remind:
+            room._remind_seen = 0
+            if pct >= remind + REMIND_CLEAR_PCT:
+                self._end_reminder(room)
+            return
+        room._remind_seen = getattr(room, "_remind_seen", 0) + 1
+        last = _when(batch["reminded_at"])
+        if room._remind_seen < BATCH_LOW_PASSES or (
+            last is not None and 0 <= (now - last).total_seconds() < REMIND_EVERY_S
+        ):
+            return
+        per_pct = batch.get("litres_per_pct")
+        held = f" (about {pct * per_pct:.0f} L)" if per_pct else ""
+        minimum = reading["min"]
+        if minimum > 0:
+            need = getattr(room, "_next_round_l", 0.0) or 0.0
+            rounds = int((pct - minimum) * per_pct // need) if per_pct and need else None
+            stop = f"Watering stops at its {minimum:g}% minimum" + (
+                "" if rounds is None
+                else ", within the next round of shots" if rounds < 1
+                else f", about {rounds} round{'s' if rounds > 1 else ''} of shots from now"
+            ) + "."
+        else:
+            stop = "It has no minimum, so watering carries on until it runs dry."
+        if self._alert(
+            f"res_remind_{room.slug}",
+            "CS-706",
+            f"reservoir down to {pct:.0f}%, refill it",
+            f"The reservoir is down to {pct:.0f}%{held}: refill it by hand. {stop} It comes again "
+            f"each day it stays at or under {remind:g}%, and goes once it reads "
+            f"{remind + REMIND_CLEAR_PCT:g}%.",
+            room=room,
+        ):  # Home Assistant has it: not again today
+            batch["reminded_at"] = now.isoformat()
+            self._save_state()
+
+    def _end_reminder(self, room):
+        """Take the refill reminder down, and let it be said again the next time the level runs low.
+        Its time is kept across a restart, so this takes down one said before the restart too."""
+        if room.batch.get("reminded_at") is None:
+            return
+        room.batch["reminded_at"] = None
+        self._save_state()
+        key = f"res_remind_{room.slug}"
+        self._alerted.pop(key, None)
+        self._alert_codes.pop(key, None)
+        ha_call("persistent_notification", "dismiss", notification_id=f"f2_{key}")
 
     def _level_now(self, entity):
         """The level sensor's distance now, in mm (level_mm), or None when it reads nothing (unavailable,
@@ -3060,9 +3135,10 @@ class Controller:
     def _alert(self, key, code, title, message, room=None, zone=None):
         """Raise notification `f2_{key}` with its error code (docs/error-codes.json; the dashboard's
         Help lists the same catalog). The key, and so the notification id, never changes
-        with the wording: an update replaces an old notification instead of adding a second one."""
+        with the wording: an update replaces an old notification instead of adding a second one.
+        Returns whether Home Assistant has it now."""
         if not self._alert_due(key, code):
-            return
+            return False
         where = self._where(room, zone) if room is not None else ""
         title = f"{where}: {title} ({code})" if where else f"{title[:1].upper()}{title[1:]} ({code})"
         log("ALERT", title, "-", " ".join(message.split()))
@@ -3080,12 +3156,13 @@ class Controller:
             message=message,
             notification_id=f"f2_{key}",
         ):
-            return
+            return False
         self._alerted[key] = datetime.now()
         self._alert_codes[key] = code
         dom, _, svc = self.notify_service.partition("/")
         if dom and svc:
             ha_call(dom, svc, title=title, message=message)
+        return True
 
     def _unreadable(self, entity, lo=0.0, hi=100.0, max_age_min=20):
         """Why `_read_sensor` found no usable moisture reading at `entity`, as (code, sentence).

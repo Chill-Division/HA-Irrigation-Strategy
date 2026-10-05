@@ -161,6 +161,46 @@ try {
   );
   await lightContext.close();
 
+  // Without automatic refills, a reminder to refill the reservoir by hand comes at a level of its
+  // own: set on the Reservoir page, a dotted line on the chart, and Refill soon under the tank once
+  // it is down to it. While automatic refills keep it up, there is no reminder to set.
+  await page.goto(`${origin}/dashboard.html?demo=1#/reservoir`);
+  await page.locator(".res-batch").waitFor();
+  const remind = page.getByLabel("Remind me at (%)");
+  assert.equal(await remind.count(), 0, "no reminder while automatic refills keep it up");
+  await page.getByRole("button", { name: "Turn automatic off…" }).click();
+  await page.getByRole("button", { name: "Apply 1 change" }).click();
+  await page.getByRole("dialog").waitFor({ state: "detached" });
+  assert.equal(await remind.inputValue(), "20");
+  await remind.fill("4");
+  await page.locator("[data-remind-note]").waitFor(); // at or under the 5% minimum: never reminds
+  await remind.fill("30");
+  assert.equal(await page.locator("[data-remind-note]").count(), 0);
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByText("Saved. The controller app runs the next batch").waitFor();
+  await page.locator(".res-batch [data-refill-soon]").waitFor(); // 29%, at or under 30%
+  await page.evaluate(() => {
+    location.hash = "#/overview";
+  });
+  const reminded = page.locator("[data-tank-status]");
+  await reminded.locator("[data-refill-soon]").waitFor();
+  await reminded.locator(".tank-remind-line").first().waitFor({ state: "attached" });
+  assert.match(
+    await reminded.locator("[data-tank-history]").getAttribute("aria-label"),
+    /the dotted line is 30%, where a reminder to refill it comes/,
+  );
+  const heading = await reminded.evaluate((panel) => ({
+    mapTop: panel.querySelector(".tank-actions button").getBoundingClientRect().top,
+    titleBottom: panel.querySelector(".panel-heading h2").getBoundingClientRect().bottom,
+  }));
+  assert.ok(heading.mapTop < heading.titleBottom, "Map sensors stays on the title's line");
+  const remindAudit = await new AxeBuilder({ page }).include("[data-tank-status]").analyze();
+  assert.deepEqual(
+    remindAudit.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) })),
+    [],
+    "tank panel accessibility, with Refill soon",
+  );
+
   await page.goto(`${origin}/dashboard.html?demo=1&room=room%3Af1_#/overview`);
   // Flower 1 has no reservoir: no level sensor reads it and nothing refills it, so its level is not
   // mapped, there is nothing to chart and the card has no refill rows.
@@ -187,6 +227,7 @@ try {
     "zone event timestamps",
     "mobile layout and accessibility, light and dark",
     "Overview two screens at most, zones beside the tank, Map sensors on the heading's line",
+    "without automatic refills, a reminder level: its setting, a line on the chart and Refill soon",
     "room isolation",
   ];
   await writeFile(

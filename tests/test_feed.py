@@ -163,6 +163,7 @@ def test_a_recipe_that_doses_nothing_says_so():
         ({"fill_s": 12.5}, "fill s must be a number from 10 to 7200"),
         ({"mix_s": True}, "mix s must be a number"),
         ({"min_pct": 60}, "min pct must be a number from 0 to 50"),
+        ({"remind_pct": 95}, "remind pct must be a number from 0 to 90"),
         (
             {"full_mm": 850, "empty_mm": 125},
             "The distance when full must be less than the distance when empty",
@@ -226,6 +227,9 @@ def test_a_fresh_room_has_the_defaults_and_nothing_to_run():
     )  # no level until both are set
     assert feed.plan(doc, MAPPED)["problem"] == "No feed stage is chosen."
     assert feed.flow(doc, 1) == 600.0
+    assert (
+        doc["remind_pct"] == 20.0
+    )  # a reminder to refill by hand, above the 5% minimum
 
 
 # ------------------------------------------------------------------ the store
@@ -345,6 +349,20 @@ def test_a_document_saved_before_the_reservoirs_level_loads_with_its_mark_as_the
         600,
     )
     assert "settle_s" not in data and data["revision"] == 3
+
+
+def test_the_refill_reminder_reaches_the_controllers_plan_and_an_older_room_gets_it_at_20():
+    """The level the controller reminds a person to refill by hand at (CS-706). A document stored
+    before it had one loads at 20%; 0 turns it off. One at or under the minimum is kept as it is:
+    the controller does not remind there, and the dashboard says so, but no other save is refused
+    for it, nor is the document when it loads."""
+    assert feed.plan(settings(remind_pct=30), MAPPED)["remind_pct"] == 30
+    assert feed.plan(settings(remind_pct=0), MAPPED)["remind_pct"] == 0
+    stored = {"revision": 4, "fill_s": 690, "batch_l": 145, "min_pct": 25}
+    store = rig(stored)
+    assert store.error is None
+    assert (store.data["remind_pct"], store.data["min_pct"]) == (20.0, 25)
+    assert feed.plan(store.data, MAPPED)["remind_pct"] == 20.0
 
 
 def test_a_stored_document_loads_as_it_was_saved():

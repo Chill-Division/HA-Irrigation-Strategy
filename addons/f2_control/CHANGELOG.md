@@ -6,6 +6,7 @@
 - **The dashboard the app serves:** the tank card no longer shows the water's temperature, and Rooms & hardware no longer maps a tank temperature sensor. No change to the controller.
 - **64-bit only.** The app is built for amd64 and aarch64; its armv7 (32-bit) build is gone, as Home Assistant has had no 32-bit release since 2025.12 and the app needs 2026.5 or newer. No change to the controller.
 - **The dashboard the app serves:** the grow-day chart's line runs on through a stretch where the reading held still, and breaks only where the probe could not be read. No change to the controller.
+- **A reminder to refill the reservoir by hand (CS-706).** Without automatic refills, once the reservoir has read at or under the feed plan's `remind_pct` three passes in a row, a notification says how full it is and what is left before its minimum, again each day it stays there, and goes at 5 points above. Its time is kept in the batch record (`reminded_at`); an older state file loads with none up. No new options. **The dashboard the app serves** sets the level, draws it on the tank chart and shows Refill soon.
 
 # 2.36.0
 

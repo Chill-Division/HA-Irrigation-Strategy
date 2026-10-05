@@ -30,6 +30,7 @@ import { Empty, Heading, number, ReviewDialog, type Page } from "@/components/da
 import { Pill } from "@/components/mini-visuals";
 import {
   canRefill,
+  reminderPct,
   documentOf,
   doseOf,
   draftErrors,
@@ -108,6 +109,8 @@ const HINTS: Record<keyof FeedSettings, string> = {
     "The level sensor's distance to the water when the reservoir is empty. 0 means no level: no automatic refills, no minimum.",
   min_pct:
     "A refill comes before any shot would take the reservoir under this; without automatic refills, watering waits here. 0 turns it off.",
+  remind_pct:
+    "Without automatic refills, a notification to refill the reservoir by hand once it gets this low, and again each day it stays there. 0 turns it off.",
   pause_s:
     "A gap before the first doser, once the pump runs, and between one doser and the next, so each mixes in before the next goes in.",
   mix_s:
@@ -136,7 +139,16 @@ function useNow(active: boolean) {
 }
 
 /** The reservoir drawn as a vessel: the water as full as it reads, its minimum dashed across. */
-function Vessel({ pct, min }: { pct: number | null; min: number | null }) {
+function Vessel({
+  pct,
+  min,
+  remind,
+}: {
+  pct: number | null;
+  min: number | null;
+  /** The level a person is reminded to refill it by hand at (reminderPct), or null. */
+  remind: number | null;
+}) {
   const clip = useId();
   const markSet = min !== null && min > 0;
   const y = (level: number) => 99 - (98 * Math.min(Math.max(level, 0), 100)) / 100;
@@ -149,7 +161,7 @@ function Vessel({ pct, min }: { pct: number | null; min: number | null }) {
       aria-label={
         pct === null
           ? "No level reading"
-          : `The reservoir is ${number(pct, 0)}% full${markSet ? `; it keeps at least ${number(min, 0)}%` : ""}`
+          : `The reservoir is ${number(pct, 0)}% full${markSet ? `; it keeps at least ${number(min, 0)}%` : ""}${remind !== null ? `; a reminder to refill it comes at ${number(remind, 0)}%` : ""}`
       }
       data-low={low ? "" : undefined}
     >
@@ -165,6 +177,7 @@ function Vessel({ pct, min }: { pct: number | null; min: number | null }) {
         </g>
       )}
       {markSet && <path d={`M1 ${y(min)} H59`} className="res-mark" />}
+      {remind !== null && <path d={`M1 ${y(remind)} H59`} className="res-remind-mark" />}
     </svg>
   );
 }
@@ -292,6 +305,9 @@ function BatchPanel({
   const minimum = plan.min_pct ?? 0;
   const levelSet = (plan.full_mm ?? 0) > 0 && plan.full_mm < plan.empty_mm;
   const due = status?.due ?? (pct === null || minimum <= 0 ? null : pct < minimum);
+  // Nothing refills it by itself: a reminder to refill it by hand comes from this level (CS-706).
+  const remind = reminderPct(plan.remind_pct, minimum, auto, refillable);
+  const soon = remind !== null && pct !== null && pct <= remind;
   const steps = stepsOf(plan, status);
   return (
     <section className="panel res-batch" data-batch-status={status?.step ?? "none"}>
@@ -363,7 +379,7 @@ function BatchPanel({
       )}
       <div className="res-batch-body">
         <div className="res-level">
-          <Vessel pct={pct} min={minimum} />
+          <Vessel pct={pct} min={minimum} remind={remind} />
           <dl className="res-facts">
             <div>
               <dt>Level</dt>
@@ -389,12 +405,16 @@ function BatchPanel({
             <div>
               <dt>Now</dt>
               <dd>
-                {due === null ? (
-                  <Pill tone="unknown">Unknown</Pill>
-                ) : due ? (
+                {due ? (
                   <Pill tone="warn" dot>
                     Refill due
                   </Pill>
+                ) : soon ? (
+                  <Pill tone="warn" dot data-refill-soon>
+                    Refill soon
+                  </Pill>
+                ) : due === null ? (
+                  <Pill tone="unknown">Unknown</Pill>
                 ) : (
                   <Pill tone="on" dot>
                     Enough water
@@ -1075,6 +1095,8 @@ export function Reservoir({
 
   const attributes = descriptor(controller.states, controller.room.room)?.attributes ?? {};
   const reservoir = RESERVOIR_KEYS.some((key) => attributes[key]);
+  // A reminder to refill it by hand can come only while automatic refills don't keep it up.
+  const reminds = !(canRefill(attributes) && controller.room.autoBatches.enabled === true);
   const status = readBatchStatus(controller.states, controller.room.room.prefix);
   const sensor = attributes.reservoir_distance_sensor;
   // Once the controller reports, its reading is the one: none there (the sensor reads nothing to it)
@@ -1169,6 +1191,12 @@ export function Reservoir({
           {unit === "s" && Number.isFinite(value) && value >= 60 ? `${duration(value)}. ` : ""}
           {HINTS[key]}
         </small>
+        {key === "remind_pct" && value > 0 && value <= draft!.min_pct && (
+          <small className="res-setting-note" data-remind-note>
+            At or under the {number(draft!.min_pct, 0)}% minimum, where watering waits for a refill:
+            set it higher to be reminded first.
+          </small>
+        )}
         {(key === "empty_mm" || key === "full_mm") && level !== null && (
           <Button
             type="button"
@@ -1304,7 +1332,9 @@ export function Reservoir({
             <section className="panel workspace-card res-settings">
               <h2>Batch</h2>
               <div className="res-setting-grid">
-                {(Object.keys(SETTINGS) as (keyof FeedSettings)[]).map(setting)}
+                {(Object.keys(SETTINGS) as (keyof FeedSettings)[])
+                  .filter((key) => key !== "remind_pct" || reminds)
+                  .map(setting)}
               </div>
             </section>
           </div>

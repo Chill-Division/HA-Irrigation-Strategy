@@ -39,6 +39,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   held still, and breaks only where the probe could not be read or nothing was recorded for two
   hours. Hovering, the typical day and the comparison with yesterday read the same way, and an
   earlier day's line starts at lights-on, as today's does.
+- **A reminder to refill by hand.** Without automatic refills, a room now reminds you to refill
+  its reservoir once it is down to a level you set: **Remind me at** on the Reservoir page, 20% to
+  start with, 0 for none. The notification says how full it is and, once a refill has shown it,
+  the litres and rounds of shots left before the minimum. It comes again each day it stays that
+  low, and goes once it is refilled. The Overview's tank chart draws the level as a dotted line,
+  and **Refill soon** shows under the tank once it is down to it.
 
 ### 🔧 Technical notes
 
@@ -80,6 +86,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   between them, where it gave up after 20 minutes, so the hover, `typicalDay` and `compareDays`
   read a quiet stretch too. `DayTrace` gains `gaps`, and `dayTrace` starts an earlier day on the
   reading carried in at its lights-on.
+- Integration: `remind_pct` joins `feed.SETTINGS`, 0 to 90 %, 20 unless set, and so the feed plan
+  sensor; a document stored before it loads at 20 %. One at or under `min_pct` is refused neither
+  at a save nor at a load: the controller does not remind there.
+- App: `_refill_reminder` raises CS-706 while nothing refills the reservoir by itself
+  (`auto_batches` off, or no fresh-water or recirculation switch, pump or doser), after
+  `BATCH_LOW_PASSES` passes at or under `remind_pct`, again after `REMIND_EVERY_S` (a day), and
+  takes it down at `REMIND_CLEAR_PCT` (5 points) above. Its time is the batch record's
+  `reminded_at`, which `restore_batch` reads as none up in an older record, so a restart neither
+  says it sooner nor leaves one up that is over. `_alert` returns whether Home Assistant has the
+  notification. CS-706 joins docs/error-codes.json; a real Home Assistant test has the real
+  controller say it once from a level saved through `feed_save`.
+- Dashboard: `reminderPct` (`frontend/src/lib/feed.ts`) keeps the controller's rule. The tank
+  chart draws `LevelSource.remindPct` (`.tank-remind-line`) and Refill soon shows under the tank;
+  the Reservoir page marks it in its tank drawing, shows Refill soon at Now, and offers Remind me
+  at only where it can remind. A browser check sets one in the demo.
 
 ## [2.36.0] - 2026-10-04
 

@@ -245,13 +245,61 @@ async def test_the_reservoirs_distances_and_minimum_reach_the_real_controller_as
     assert (status["level_pct"], status["min_pct"], status["due"]) == (0.5, 5.0, True)
 
 
+async def test_the_refill_reminder_reaches_the_real_controller_which_says_it_once(
+    hass, hass_admin_user, controller_for
+):
+    """Saved through the real feed_save, the refill reminder's level is on the feed plan sensor. With
+    the room's automatic refills off, as a new room has them, the real controller reminds a person to
+    refill the reservoir by hand (CS-706) once it has read at or under that level three passes in a
+    row, and says it once, not each pass."""
+    hass.states.async_set(
+        "sensor.res_distance", "719.5", {"unit_of_measurement": "mm"}
+    )  # 18% full between 125 and 850 mm
+    for entity in list(RESERVOIR.values())[1:]:
+        hass.states.async_set(entity, "off")
+    await _install(hass)
+    room = await _room(hass, hass_admin_user)
+    await _service(
+        hass, hass_admin_user, "setup_save", _payload(room, hardware=RESERVOIR)
+    )
+    await hass.async_block_till_done()
+    doc = await _service(hass, hass_admin_user, "feed_get", {"room_id": "room:"})
+    await _service(
+        hass,
+        hass_admin_user,
+        "feed_save",
+        {
+            "room_id": "room:",
+            "expected_revision": doc["revision"],
+            "document": {"full_mm": 125, "empty_mm": 850, "remind_pct": 25},
+        },
+    )
+    assert hass.states.get(PLAN).attributes["remind_pct"] == 25.0
+    assert hass.states.get(AUTO).state == "off"
+
+    c, fake, _clock = controller_for({})
+    controller_room = c.rooms[0]
+    for _ in range(5):
+        c._batch_tick(controller_room, datetime.now())
+    reminders = [
+        call
+        for domain, service, call in fake.calls
+        if (domain, service) == ("persistent_notification", "create")
+        and "(CS-706)" in call["title"]
+    ]
+    assert len(reminders) == 1
+    assert reminders[0]["message"].startswith(
+        "The reservoir is down to 18%: refill it by hand. Watering stops at its 5% minimum."
+    )
+
+
 async def test_a_feed_document_stored_by_2_30_loads_with_its_mark_as_the_empty_distance(
     hass, hass_storage
 ):
     """In place: a room's feed settings as 2.30.1 stored them (made by its own feed.clean), with an
     "almost empty at" mark of 800 mm and a 20 s settle. They load: the mark is the distance when
-    empty, the settle is gone, and the distance when full and the minimum start at their defaults;
-    nothing else changes, its recipe and revision included."""
+    empty, the settle is gone, and the distance when full, the minimum and the refill reminder start
+    at their defaults; nothing else changes, its recipe and revision included."""
     stored = {
         "revision": 5,
         "fill_s": 690,
@@ -288,6 +336,7 @@ async def test_a_feed_document_stored_by_2_30_loads_with_its_mark_as_the_empty_d
         plan.attributes["fill_s"],
         plan.attributes["batch_l"],
     ) == (800.0, 0.0, 5.0, 600, 690, 145.0)
+    assert plan.attributes["remind_pct"] == 20.0
     assert "settle_s" not in plan.attributes and plan.attributes["revision"] == 5
 
 

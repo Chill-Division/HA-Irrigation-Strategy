@@ -35,6 +35,9 @@ export interface FeedSettings {
   empty_mm: number;
   /** The least the reservoir keeps, %: a refill comes before a shot that would take it lower. */
   min_pct: number;
+  /** While nothing refills it by itself, the level a person is reminded to refill it by hand at, %;
+   * 0 = off. */
+  remind_pct: number;
   pause_s: number;
   mix_s: number;
 }
@@ -101,6 +104,21 @@ export function canRefill(attributes: Record<string, unknown>): boolean {
     DOSER_KEYS.some(mapped)
   );
 }
+/** The level the controller reminds a person to refill the reservoir by hand at (CS-706), or null
+ * where it does not: automatic refills keep it up (on, in a room that can refill), or the reminder is
+ * off, or at or under the minimum, where watering waits for a refill instead. Unreadable, the
+ * Automatic refills switch counts as off, as it does to the controller. */
+export function reminderPct(
+  remind: unknown,
+  minimum: number,
+  auto: boolean | null,
+  refillable: boolean,
+): number | null {
+  const level = Number(remind);
+  return Number.isFinite(level) && level > 0 && level > minimum && !(refillable && auto === true)
+    ? level
+    : null;
+}
 export const DEFAULT_FLOW = 600;
 export const MAX_ML_PER_L = 60;
 export const NAME_LEN = 40;
@@ -111,11 +129,18 @@ export const SETTINGS: Record<keyof FeedSettings, [string, string, number, numbe
   full_mm: ["Distance when full", "mm", 0, 10000, false],
   empty_mm: ["Distance when empty", "mm", 0, 10000, false],
   min_pct: ["Minimum level", "%", 0, 50, false],
+  remind_pct: ["Remind me at", "%", 0, 90, false],
   pause_s: ["Pause between dosers", "s", 0, 600, true],
   mix_s: ["Recirculate after the last dose", "s", 0, 7200, true],
 };
 /** An integration older than the reservoir's level sends none of these: they start as feed.py's. */
-const SETTING_DEFAULTS: Partial<FeedSettings> = { full_mm: 0, empty_mm: 0, min_pct: 5, mix_s: 10 };
+const SETTING_DEFAULTS: Partial<FeedSettings> = {
+  full_mm: 0,
+  empty_mm: 0,
+  min_pct: 5,
+  remind_pct: 20,
+  mix_s: 10,
+};
 
 /** How full the reservoir is, %, as the controller works it out (controller.py level_pct): 100 at
  * the distance when full, 0 at the distance when empty, clamped between. null without a reading or
@@ -139,6 +164,7 @@ export const draftOf = (doc: FeedDocument): FeedDraft =>
     full_mm: doc.full_mm ?? SETTING_DEFAULTS.full_mm!,
     empty_mm: doc.empty_mm ?? SETTING_DEFAULTS.empty_mm!,
     min_pct: doc.min_pct ?? SETTING_DEFAULTS.min_pct!,
+    remind_pct: doc.remind_pct ?? SETTING_DEFAULTS.remind_pct!,
     pause_s: doc.pause_s,
     mix_s: doc.mix_s ?? SETTING_DEFAULTS.mix_s!,
     dosers: doc.dosers,

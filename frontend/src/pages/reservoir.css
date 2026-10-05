@@ -128,6 +128,11 @@
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
 }
+.res-remind-mark {
+  stroke: var(--muted-foreground);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 3;
+}
 .res-facts {
   display: grid;
   gap: 8px;
@@ -188,6 +193,9 @@
 }
 .res-setting small {
   line-height: 1.45;
+}
+.res-setting-note {
+  color: var(--warning);
 }
 .inline-link.inline-link {
   justify-self: start;

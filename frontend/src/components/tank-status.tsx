@@ -1,6 +1,7 @@
 import { useId } from "react";
 import { Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Pill } from "@/components/mini-visuals";
 import type { Controller } from "@/lib/types";
 import { tankTelemetry, type TankReading } from "@/lib/tank-telemetry";
 import { TankLevelChart } from "./tank-level-chart";
@@ -24,6 +25,9 @@ export function TankStatus({
   const pump = tank.pump.on === null ? tank.pump.issue : tank.pump.on ? "On" : "Off";
   const lastKnown = connected ? "" : " · last known";
   const level = tank.level.value;
+  // Nothing refills it by itself, and it is down to the level a reminder comes at (CS-706).
+  const remind = tank.source?.remindPct ?? null;
+  const soon = remind !== null && level !== null && level <= remind;
   // The drawing's inside runs from y=119 (empty) to y=1 (full): 1.18 units per percent.
   const surface = level === null ? null : 119 - level * 1.18;
   return (
@@ -66,6 +70,11 @@ export function TankStatus({
               {tank.level.issue || "full"}
             </text>
           </svg>
+          {soon && (
+            <Pill tone="warn" dot data-refill-soon>
+              Refill soon
+            </Pill>
+          )}
         </div>
         <TankLevelChart controller={controller} source={tank.source} current={level} />
         <dl className="tank-equipment">

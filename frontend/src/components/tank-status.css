@@ -36,6 +36,11 @@
   width: 100%;
   height: auto;
 }
+/* Under the tank, while it is down to the level a reminder to refill it comes at. */
+.tank-vessel .pill {
+  margin-top: 10px;
+  white-space: nowrap;
+}
 .tank-shell {
   fill: var(--muted);
   stroke: var(--border);
