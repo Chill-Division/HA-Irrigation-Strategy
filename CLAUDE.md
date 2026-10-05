@@ -136,7 +136,10 @@ the shot. Lives in the f2-control add-on (`addons/f2_control/`).
   (`manifest.json`, `const.py`, the app's `config.yaml`, the README badge), commits, tags, pushes
   and publishes the GitHub release on this repository, whose rooms are the test.
   `--public` then fast-forwards `Chill-Division/HA-Irrigation-Strategy`'s `main` to that same
-  tagged commit and publishes the release there, for everyone else. `--dry-run` changes nothing.
+  tagged commit and publishes the release there, for everyone else. Between releases, `--sync` takes
+  merged commits that ship nothing (README, docs, pictures, scripts, tests) to that `main` with no
+  release; anything under `custom_components/` or `addons/f2_control/` waits for one. `--dry-run`
+  changes nothing.
   The controller is built on each box from the branch it tracks, so **a push that changes
   `version:` on `main` IS a release** of the part that drives the pump, and a controller built
   between releases (a fresh install, a Rebuild) builds what is merged on `main` then, under the last

@@ -9,6 +9,20 @@ and code-level detail for developers and AI agents working on the repo.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- **The public repository's README and docs between releases.** A change to the README, the docs,
+  the pictures, the scripts or the tests can now go to the public repository without a new version.
+  A change to the integration or the controller app still waits for a release.
+
+### 🔧 Technical notes
+
+- Release: `scripts/release.py --sync` fast-forwards the public `main` to `main` here once Validate
+  has passed on it, with no version, tag or release. `sync_refusal` refuses when the commits since
+  touch `custom_components/` or `addons/f2_control/`: the Supervisor builds the app from the public
+  `main`, so they would reach every box that installs or rebuilds it under the last released
+  number. `docs/RELEASING.md` (Commits that ship nothing) and CLAUDE.md say when to use it.
+
 ## [1.0.0] - 2026-10-05
 
 Integration and controller **1.0.0**.
