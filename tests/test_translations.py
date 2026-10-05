@@ -146,9 +146,6 @@ def test_a_field_nothing_reads_does_not_promise_that_something_will():
     promised = {
         "waste_switch": ("forced closed", "closed during a shot"),
         "light_entity": ("knows day", "day vs night"),
-        "notification_service": ("where alerts go",),
-        "humidity_sensor": ("analytics",),
-        "vpd_sensor": (),
     }
     strings = _strings()
     for key, claims in promised.items():

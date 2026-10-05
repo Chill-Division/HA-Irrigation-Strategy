@@ -204,22 +204,22 @@ def _suggested(flow):
 
 
 async def test_a_mapping_can_be_removed_not_just_swapped(hass):
-    hass.states.async_set("sensor.room_temp", "24", {"unit_of_measurement": "°C"})
+    hass.states.async_set("light.room", "on")
     entry = await _install(hass)
-    await _save_map(hass, entry, temperature_sensor="sensor.room_temp")
-    assert entry.data["hardware"]["temperature_sensor"] == "sensor.room_temp"
+    await _save_map(hass, entry, light_entity="light.room")
+    assert entry.data["hardware"]["light_entity"] == "light.room"
 
-    flow = await _save_map(hass, entry, temperature_sensor=None)
+    flow = await _save_map(hass, entry, light_entity=None)
     # The form opened showing the mapping, so an untouched save could not have wiped it...
-    assert _suggested(flow)["temperature_sensor"] == "sensor.room_temp"
+    assert _suggested(flow)["light_entity"] == "light.room"
     # ...and clearing it cleared it. It used to come straight back.
-    assert entry.data["hardware"]["temperature_sensor"] == ""
+    assert entry.data["hardware"]["light_entity"] == ""
 
 
 async def test_an_untouched_save_keeps_every_mapping(hass):
-    hass.states.async_set("sensor.room_temp", "24", {"unit_of_measurement": "°C"})
+    hass.states.async_set("light.room", "on")
     entry = await _install(hass)
-    await _save_map(hass, entry, temperature_sensor="sensor.room_temp")
+    await _save_map(hass, entry, light_entity="light.room")
     before = dict(entry.data["hardware"])
     await _save_map(hass, entry)
     assert entry.data["hardware"] == before

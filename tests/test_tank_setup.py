@@ -32,7 +32,13 @@ def tank_rig():
 
 def test_tank_mappings_roundtrip_without_changing_plumbing_identity_or_setpoints():
     hass, entry, _states = tank_rig()
-    entry.data["hardware"]["temperature_sensor"] = "sensor.temp"
+    # the room's climate sensors and a notification service, which nothing read
+    entry.data["hardware"].update(
+        temperature_sensor="sensor.temp",
+        humidity_sensor="sensor.rh",
+        vpd_sensor="sensor.vpd",
+        notification_service="notify.phone",
+    )
     # a setup from before 2.26.0: its feed and tank EC/pH probes are dropped on its next save
     entry.data["hardware"]["feed_ec_sensor"] = "sensor.ec"
     entry.data["hardware"]["tank_ph_sensor"] = "sensor.tank_ph"
@@ -46,10 +52,15 @@ def test_tank_mappings_roundtrip_without_changing_plumbing_identity_or_setpoints
     for key, value in MAPPINGS.items():
         assert result["hardware"][key] == value
         assert entry.data["hardware"][key] == value
-    assert entry.data["hardware"]["temperature_sensor"] == "sensor.temp"
-    assert not {"feed_ec_sensor", "tank_ph_sensor", "water_level_sensor"} & set(
-        entry.data["hardware"]
-    )
+    assert not {
+        "feed_ec_sensor",
+        "tank_ph_sensor",
+        "water_level_sensor",
+        "temperature_sensor",
+        "humidity_sensor",
+        "vpd_sensor",
+        "notification_service",
+    } & set(entry.data["hardware"])
     assert entry.data["room_prefix"] == before["room_prefix"]
     assert entry.data["parameters"] == before["parameters"]
     assert entry.data["zones"]["1"]["special"] == 123
@@ -165,5 +176,17 @@ def test_a_tank_level_in_percent_is_no_longer_a_mapping():
     assert "water_level_sensor" not in api.read_setup(hass)["rooms"][0]["hardware"]
     data = payload()
     data["hardware"]["water_level_sensor"] = "sensor.tank_level"
+    with pytest.raises(ValueError, match="Unknown hardware mapping field"):
+        api.prepare_setup(hass, data, entry.data, entry.entry_id)
+
+
+@pytest.mark.parametrize("key", ["temperature_sensor", "humidity_sensor", "vpd_sensor"])
+def test_the_rooms_climate_sensors_are_no_longer_mappings(key):
+    """Nothing read them: not the controller, not the dashboard."""
+    hass, entry, _states = tank_rig()
+    assert key not in api.HARDWARE_DOMAINS
+    assert key not in api.read_setup(hass)["rooms"][0]["hardware"]
+    data = payload()
+    data["hardware"][key] = "sensor.tank_temp"
     with pytest.raises(ValueError, match="Unknown hardware mapping field"):
         api.prepare_setup(hass, data, entry.data, entry.entry_id)

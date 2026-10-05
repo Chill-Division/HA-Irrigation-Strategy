@@ -167,15 +167,7 @@ def _hardware_schema(
     out[vol.Optional("max_ec", default=params.get("max_ec", 9.0))] = vol.All(
         vol.Coerce(float), vol.Range(min=1.0, max=15.0)
     )
-    _ent("temperature_sensor", _sensor_one())
-    _ent("humidity_sensor", _sensor_one())
-    _ent("vpd_sensor", _sensor_one())
     _ent("tank_temperature_sensor", _sensor_one())
-    out[
-        vol.Optional(
-            "notification_service", default=hardware.get("notification_service") or ""
-        )
-    ] = str
     return out
 
 
@@ -215,11 +207,7 @@ def _build_hardware(data: dict) -> dict:
         "main_line_switch": data.get("main_line_switch", ""),
         "waste_switch": data.get("waste_switch", ""),
         "light_entity": data.get("light_entity", ""),
-        "temperature_sensor": data.get("temperature_sensor", ""),
-        "humidity_sensor": data.get("humidity_sensor", ""),
-        "vpd_sensor": data.get("vpd_sensor", ""),
         "tank_temperature_sensor": data.get("tank_temperature_sensor", ""),
-        "notification_service": data.get("notification_service", ""),
     }
 
 

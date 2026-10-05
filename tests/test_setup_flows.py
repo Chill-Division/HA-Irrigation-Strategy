@@ -139,6 +139,13 @@ def test_native_hardware_schema_retains_explicit_tank_telemetry(
         "feed_ph_sensor",
     ):
         assert gone not in fields  # removed in 2.26.0
+    # Nothing ever read the room's temperature, humidity or VPD, or a notification service.
+    assert not {
+        "temperature_sensor",
+        "humidity_sensor",
+        "vpd_sensor",
+        "notification_service",
+    } & set(fields)
     # The tank's filling status and last fill are the controller's own record of its refills, and
     # its level comes from the reservoir's distance sensor.
     assert not {
