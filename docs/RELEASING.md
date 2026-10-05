@@ -106,6 +106,13 @@ number here. **A version number is never reused for different code.**
   of them did not change. `tests/test_version_consistency.py` keeps `manifest.json`, `const.py`, the
   controller's `config.yaml`, the README badge and both changelogs on it.
 - Numbers only go up. A patch number for fixes, the minor number for anything new.
+- Once, they started again: 1.0.0, the first release for everyone, followed 2.37.1
+  (`release.py 1.0.0 --start-again`). The 2.x numbers up to 2.37.1 are used, so the major number
+  after 1 is 3. `--start-again` refuses a number that is not lower, or that the changelog already
+  has. It leaves What's new with only the releases numbered up to the new one, since the dashboard
+  orders them by number; the changelogs keep everything. HACS offers a box no number lower than
+  the one it has, so a box on 2.37 gets 1.0.0 by Redownload in HACS; the Supervisor offers the
+  controller app at any new number.
 
 ## Rolling back a room
 
