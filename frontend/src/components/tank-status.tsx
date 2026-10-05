@@ -22,8 +22,6 @@ export function TankStatus({
       ? r.issue
       : `${r.value.toLocaleString(undefined, { maximumFractionDigits: digits })} ${r.unit}`;
   const pump = tank.pump.on === null ? tank.pump.issue : tank.pump.on ? "On" : "Off";
-  // The water's temperature, a line in the tank under how full it is: only where a sensor is mapped.
-  const temperature = tank.temperature.entityId ? value(tank.temperature, 1) : null;
   const lastKnown = connected ? "" : " · last known";
   const level = tank.level.value;
   // The drawing's inside runs from y=119 (empty) to y=1 (full): 1.18 units per percent.
@@ -45,11 +43,7 @@ export function TankStatus({
           data-tank-level={level ?? "unknown"}
           title={tank.level.entityId || undefined}
         >
-          <svg
-            viewBox="0 0 100 120"
-            role="img"
-            aria-label={`Tank level: ${value(tank.level)}${temperature ? `, water ${temperature}` : ""}`}
-          >
+          <svg viewBox="0 0 100 120" role="img" aria-label={`Tank level: ${value(tank.level)}`}>
             <defs>
               <clipPath id={clipId}>
                 <rect x="1" y="1" width="98" height="118" rx="12" />
@@ -65,17 +59,12 @@ export function TankStatus({
             {[25, 50, 75].map((p) => (
               <path key={p} d={`M86 ${119 - p * 1.18}h13`} className="tank-tick" />
             ))}
-            <text x="50" y={temperature ? 52 : 58} textAnchor="middle" className="tank-percent">
+            <text x="50" y="58" textAnchor="middle" className="tank-percent">
               {level === null ? "—" : `${Math.round(level)}%`}
             </text>
-            <text x="50" y={temperature ? 69 : 76} textAnchor="middle" className="tank-caption">
+            <text x="50" y="76" textAnchor="middle" className="tank-caption">
               {tank.level.issue || "full"}
             </text>
-            {temperature && (
-              <text x="50" y="88" textAnchor="middle" className="tank-temperature">
-                {temperature}
-              </text>
-            )}
           </svg>
         </div>
         <TankLevelChart controller={controller} source={tank.source} current={level} />

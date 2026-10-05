@@ -104,11 +104,10 @@ def test_native_zone_builder_retains_archived_ids_and_unknown_values(flow_module
     assert result["1"]["special"] == 123 and result["2"]["max_daily_volume"] == 37
 
 
-def test_native_hardware_schema_retains_explicit_tank_telemetry(
-    flow_module, monkeypatch
-):
+def test_native_hardware_schema_retains_explicit_mappings(flow_module, monkeypatch):
     mappings = {
-        "tank_temperature_sensor": "sensor.tank_temp",
+        "pump_switch": "switch.pump",
+        "light_entity": "light.room",
     }
     defaults = {}
     original = flow_module.vol.Optional
@@ -139,12 +138,14 @@ def test_native_hardware_schema_retains_explicit_tank_telemetry(
         "feed_ph_sensor",
     ):
         assert gone not in fields  # removed in 2.26.0
-    # Nothing ever read the room's temperature, humidity or VPD, or a notification service.
+    # Nothing ever read the room's temperature, humidity or VPD, or a notification service, and only
+    # the tank card showed the tank's water temperature.
     assert not {
         "temperature_sensor",
         "humidity_sensor",
         "vpd_sensor",
         "notification_service",
+        "tank_temperature_sensor",
     } & set(fields)
     # The tank's filling status and last fill are the controller's own record of its refills, and
     # its level comes from the reservoir's distance sensor.
@@ -153,7 +154,6 @@ def test_native_hardware_schema_retains_explicit_tank_telemetry(
         "tank_fill_entity",
         "water_level_sensor",
     } & set(fields)
-    assert fields["tank_temperature_sensor"][1]["domain"] == "sensor"
     hardware = flow_module._build_hardware(mappings)
     assert all(hardware[key] == value for key, value in mappings.items())
 

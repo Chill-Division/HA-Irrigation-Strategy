@@ -167,7 +167,6 @@ def _hardware_schema(
     out[vol.Optional("max_ec", default=params.get("max_ec", 9.0))] = vol.All(
         vol.Coerce(float), vol.Range(min=1.0, max=15.0)
     )
-    _ent("tank_temperature_sensor", _sensor_one())
     return out
 
 
@@ -207,7 +206,6 @@ def _build_hardware(data: dict) -> dict:
         "main_line_switch": data.get("main_line_switch", ""),
         "waste_switch": data.get("waste_switch", ""),
         "light_entity": data.get("light_entity", ""),
-        "tank_temperature_sensor": data.get("tank_temperature_sensor", ""),
     }
 
 

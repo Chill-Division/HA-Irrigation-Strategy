@@ -161,8 +161,6 @@ def build_engine_config(
         "mainline": hw.get("main_line_switch", ""),
         "valves": valves,
         "enable_flag": setup.get("enable_flag") or enable_flag,
-        # Read-only overview mapping. No ambient-temperature fallback.
-        "tank_temperature_sensor": hw.get("tank_temperature_sensor", ""),
         # Only when mapped: a room without a reservoir publishes the descriptor it always did.
         **{key: hw[key] for key in RESERVOIR_KEYS if hw.get(key)},
     }

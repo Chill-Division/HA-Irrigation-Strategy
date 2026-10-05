@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A shorter setup wizard.** The room temperature, humidity and VPD sensors and the notification
   service are gone from the wizard and Configure: nothing used them, for watering or on the
   dashboard. A value saved for one goes the next time the room's setup is saved.
+- **No tank water temperature.** The tank card no longer shows the water's temperature, and its
+  sensor is no longer asked for anywhere: nothing steered with it.
 
 ### 🔧 Technical notes
 
@@ -54,6 +56,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   strings; the first three leave `HARDWARE_DOMAINS` too. All four join `RETIRED_HARDWARE`, so a
   stored value goes on the room's next save. None was ever read at runtime. The real-Home-Assistant
   Configure tests clear and keep the lights mapping instead of the room temperature.
+- Integration: `tank_temperature_sensor` leaves the wizard, Configure, `HARDWARE_DOMAINS` (with its
+  unit check) and the room descriptor, and joins `RETIRED_HARDWARE`. The controller's setup
+  fingerprint never read it. Dashboard: the tank card and Rooms & hardware drop it, and the demo
+  loses its two temperature sensors. `tests/test_tank_setup.py` now checks every retired mapping:
+  dropped on the next save, published by nothing, offered by nothing, refused when named.
 
 ## [2.36.0] - 2026-10-04
 

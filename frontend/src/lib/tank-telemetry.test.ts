@@ -129,13 +129,11 @@ describe("room tank telemetry", () => {
     // It ends on the level the card shows now.
     expect(series[LEVEL_STEPS]).toEqual({ at: now, pct: 29 });
   });
-  it("does not guess ambient temperature or other-room mappings", () => {
+  it("does not guess another room's mappings", () => {
     const states = createDemo(now);
-    states["sensor.crop_steering_engine_config"].attributes = {
-      temperature_sensor: "sensor.demo_tank_temperature",
-    };
+    states["sensor.crop_steering_engine_config"].attributes = {};
     const tank = tankTelemetry(states, room);
-    expect(tank.temperature.value).toBeNull();
+    expect(tank.level).toMatchObject({ value: null, issue: "Not mapped" });
     expect(tank.pump.on).toBeNull();
   });
   it("has no level until the reservoir's distances when full and when empty are set", () => {
@@ -146,11 +144,6 @@ describe("room tank telemetry", () => {
       entityId: "sensor.demo_reservoir_distance",
     });
     expect(tank.source).toBeNull();
-  });
-  it("keeps the temperature sensor's own units", () => {
-    const states = createDemo(now);
-    states["sensor.demo_tank_temperature"].attributes.unit_of_measurement = "°F";
-    expect(tankTelemetry(states, room).temperature.unit).toBe("°F");
   });
   it("distinguishes unknown from off", () => {
     const states = createDemo(now);

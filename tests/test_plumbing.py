@@ -165,12 +165,12 @@ def test_a_room_that_never_declared_publishes_the_descriptor_it_always_did():
     fingerprint reads; addons/f2_control/tests/test_versions.py pins that side.) The feed and tank
     EC/pH keys left in 2.26.0; the controller compares a fingerprint saved with them without them
     (addons/f2_control/tests/test_declared_plumbing.py). The tank's filling status and last fill
-    left later, and later still its level sensor in %; the fingerprint never read any of them.
+    left later, and later still its level sensor in % and its water temperature; the fingerprint
+    never read any of them.
     """
     legacy = {
         "setup_api_version", "setup_revision", "active", "room_name", "active_zone_ids", "zone_names",
         "slug", "prefix", "num_zones", "pump", "mainline", "valves", "enable_flag",
-        "tank_temperature_sensor",
     }  # fmt: skip
     hass, entry, _ = rig()
     data = api.effective(entry)

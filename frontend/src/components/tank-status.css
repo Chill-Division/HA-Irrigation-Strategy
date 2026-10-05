@@ -64,16 +64,9 @@
     sans-serif;
   fill: var(--muted-foreground);
 }
-.tank-temperature {
-  font:
-    600 13px Roboto,
-    sans-serif;
-  fill: var(--foreground);
-}
 /* A halo in the tank's own colour: the waterline passes behind the words at any level. */
 .tank-percent,
-.tank-caption,
-.tank-temperature {
+.tank-caption {
   paint-order: stroke;
   stroke: var(--muted);
   stroke-width: 4px;

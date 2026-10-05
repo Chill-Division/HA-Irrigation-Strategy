@@ -27,7 +27,6 @@ HARDWARE_DOMAINS = {
     "main_line_switch": {"switch"},
     "waste_switch": {"switch"},
     "light_entity": {"light", "switch"},
-    "tank_temperature_sensor": {"sensor"},
     # The reservoir and its dosers, for nutrient batches (feed.py): the controller drives these.
     "reservoir_distance_sensor": {"sensor"},
     "fresh_water_switch": {"switch"},
@@ -49,6 +48,8 @@ RETIRED_HARDWARE = (
     "humidity_sensor",
     "vpd_sensor",
     "notification_service",
+    # The tank's water temperature: only the tank card showed it.
+    "tank_temperature_sensor",
 )
 SIZING = {
     "plant_count": (1, 1000, True),
@@ -59,7 +60,6 @@ SIZING = {
 UNITS = {
     "vwc": units.accepted("vwc"),  # converted to % where the probe reports a fraction
     "ec": units.accepted("ec"),  # converted to mS/cm where the probe reports uS/cm
-    "tank_temperature": {"°c", "°f", "k"},
     "distance": {"mm", "cm", "m"},
 }
 
@@ -353,10 +353,7 @@ def prepare_setup(hass, payload, old=None, entry_id=None):
                 hass,
                 value,
                 HARDWARE_DOMAINS[key],
-                {
-                    "tank_temperature_sensor": "tank_temperature",
-                    "reservoir_distance_sensor": "distance",
-                }.get(key),
+                {"reservoir_distance_sensor": "distance"}.get(key),
             )
         hw[key] = value or ""
     shared = {
@@ -644,7 +641,6 @@ HARDWARE_WORDS = {
     "main_line_switch": "main-line valve",
     "waste_switch": "waste valve",
     "light_entity": "lights",
-    "tank_temperature_sensor": "tank temperature sensor",
     "reservoir_distance_sensor": "reservoir level sensor",
     "fresh_water_switch": "fresh-water solenoid",
     "recirc_switch": "recirculation solenoid",

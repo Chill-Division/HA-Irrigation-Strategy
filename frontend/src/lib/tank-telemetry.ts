@@ -35,22 +35,6 @@ export function tankTelemetry(states: States, room: Room) {
   const config = descriptor(states, room)?.attributes || {};
   const mapped = (key: string) =>
     typeof config[key] === "string" && config[key] ? String(config[key]) : null;
-  const reading = (key: string, units: string[], min = -Infinity, max = Infinity): TankReading => {
-    const entityId = mapped(key),
-      entity = entityId ? states[entityId] : undefined;
-    const unit = String(entity?.attributes.unit_of_measurement || "");
-    const value = entity?.state.trim() ? Number(entity.state) : NaN;
-    const issue = !entityId
-      ? "Not mapped"
-      : !Number.isFinite(value)
-        ? "Unavailable"
-        : !units.includes(unit.toLowerCase())
-          ? "Check units"
-          : value < min || value > max
-            ? "Out of range"
-            : null;
-    return { entityId, value: issue ? null : value, unit, issue };
-  };
   const binary = (key: string) => {
     const entityId = mapped(key),
       state = entityId ? states[entityId]?.state : undefined;
@@ -109,7 +93,6 @@ export function tankTelemetry(states: States, room: Room) {
       : null;
   return {
     level,
-    temperature: reading("tank_temperature_sensor", ["°c", "°f", "k"]),
     pump: binary("pump"),
     refill,
     source,
