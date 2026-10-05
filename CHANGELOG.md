@@ -18,8 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as `crop-steering-plan-chill1.json`, where every file was `crop-steering-plan.json`.
 - **No refill where none can run.** A room without a fresh-water solenoid, a recirculation solenoid,
   its pump and a doser no longer offers a refill by hand or a test refill. Its Reservoir page shows
-  the tank's level, its minimum and whether watering would wait, without a refill's steps or
-  automatic refills.
+  the tank's level, its minimum and whether watering would wait, under a Reservoir heading, without
+  a refill's steps or automatic refills.
 
 ### 🔧 Technical notes
 
@@ -30,8 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a word after 100 characters. The recipe-library browser check reads both names.
 - Dashboard: `canRefill` (`frontend/src/lib/feed.ts`) mirrors the hardware the controller's
   `_batch_refusal` needs: `fresh_water_switch`, `recirc_switch`, `pump` and a doser. Without it the
-  Reservoir page's batch panel drops Refill by hand and its note, the blocked line, the steps,
-  Automatic refills, Last batch (with no record) and 1% holds (while unknown), and Settings →
+  Reservoir page's batch panel is headed Reservoir and drops the batch's state and next refill,
+  Refill by hand and its note, the blocked line, the steps, Automatic refills, Last batch (with no
+  record) and 1% holds (while unknown), and Settings →
   Rooms & hardware → Tests drops Test refill. A new browser check unmaps Flower 2's recirculation
   solenoid and checks both pages.
 
