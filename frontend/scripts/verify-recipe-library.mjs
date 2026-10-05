@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 import { lightShot } from "./light-shot.mjs";
+import { settled } from "./settled.mjs";
 import { fitsWidth } from "./fits-width.mjs";
 const out = fileURLToPath(new URL("../../output/playwright/", import.meta.url));
 await mkdir(out, { recursive: true });
@@ -75,6 +76,7 @@ async function check(name, fn) {
   }
 }
 async function axe(name) {
+  await settled(page);
   const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
   assert.deepEqual(
     r.violations.map((v) => v.id),

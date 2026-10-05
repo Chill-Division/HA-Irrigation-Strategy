@@ -5,6 +5,7 @@ import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 import { lightShot } from "./light-shot.mjs";
+import { settled } from "./settled.mjs";
 import { fitsWidth } from "./fits-width.mjs";
 const html = await readFile(new URL("../../addons/f2_control/www/public/dashboard.html", import.meta.url));
 const out = new URL("../../output/playwright/", import.meta.url);
@@ -123,6 +124,7 @@ try {
         () => false,
       );
     assert.ok(apart, `the level chart's times run together at ${width} px`);
+    await settled(page);
     const audit = await new AxeBuilder({ page }).include("[data-tank-status]").analyze();
     assert.deepEqual(
       audit.violations.map((v) => ({ id: v.id, impact: v.impact })),
@@ -171,6 +173,7 @@ try {
   const light = await open(lightContext);
   await light.goto(`${origin}/dashboard.html?demo=1#/overview`);
   await light.locator("[data-tank-status]").waitFor();
+  await settled(light);
   const audit = await new AxeBuilder({ page: light }).include("[data-tank-status]").analyze();
   assert.deepEqual(
     audit.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) })),
@@ -212,6 +215,7 @@ try {
     titleBottom: panel.querySelector(".panel-heading h2").getBoundingClientRect().bottom,
   }));
   assert.ok(heading.mapTop < heading.titleBottom, "Map sensors stays on the title's line");
+  await settled(page);
   const remindAudit = await new AxeBuilder({ page }).include("[data-tank-status]").analyze();
   assert.deepEqual(
     remindAudit.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) })),

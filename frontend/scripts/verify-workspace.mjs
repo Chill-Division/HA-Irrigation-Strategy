@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 import { fitsWidth } from "./fits-width.mjs";
+import { settled } from "./settled.mjs";
 const out = fileURLToPath(new URL("../../output/playwright/", import.meta.url));
 await mkdir(out, { recursive: true });
 // CI must exercise the checked-out artifact without relying on a developer's server.
@@ -108,22 +109,8 @@ async function setBalance(value) {
 async function noOverflow() {
   await fitsWidth(page, "Document overflow");
 }
-// Colours animate when the theme changes (transition-colors). Contrast measured mid-transition
-// fails at random, so let the running finite animations and transitions finish (at most 2 s: a
-// paused one never does), then two frames.
-async function settle(target = page) {
-  await target.locator("html").evaluate(async () => {
-    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-    const running = document
-      .getAnimations()
-      .filter((a) => a.playState === "running" && a.effect?.getTiming().iterations !== Infinity);
-    await Promise.race([Promise.all(running.map((a) => a.finished.catch(() => {}))), wait(2000)]);
-    for (let frame = 0; frame < 2; frame++)
-      await Promise.race([new Promise((resolve) => requestAnimationFrame(resolve)), wait(100)]);
-  });
-}
 async function axe(label) {
-  await settle();
+  await settled(page);
   const result = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();
@@ -1186,7 +1173,7 @@ try {
         await tp.screenshot({ path: out + "workspace-ha-native-dark.png", fullPage: true });
         await navigateSetup(frame);
         await visible(frame.locator("#setup-room"));
-        await settle(frame); // the tabs ease between their colours
+        await settled(frame); // the tabs ease between their colours
         await tp.screenshot({ path: out + "ha-native-dark-rooms-setup.png" });
         await frame
           .locator(".desktop-sidebar")
@@ -1268,18 +1255,18 @@ try {
           await lp.evaluate(() => document.documentElement.classList.contains("dark")),
           false,
         );
-        await settle(lp);
+        await settled(lp);
         await lp.screenshot({ path: img("operator-dashboard.png") });
         await navigateSchedule(lp);
         await visible(lp.locator("#steering-balance"));
-        await settle(lp);
+        await settled(lp);
         await lp
           .locator(".workspace-card")
           .filter({ has: lp.locator(".planning-curve") })
           .screenshot({ path: img("grow-plan.png") });
         await navigateSetup(lp);
         await visible(lp.locator("#setup-room"));
-        await settle(lp);
+        await settled(lp);
         await lp.screenshot({ path: img("rooms-setup.png") });
         // On a phone: the Overview, the Reservoir and today's plan.
         await lp.setViewportSize({ width: 390, height: 844 });
@@ -1290,7 +1277,7 @@ try {
         ]) {
           await open(route);
           await lp.locator(ready).first().waitFor();
-          await settle(lp);
+          await settled(lp);
           await lp.screenshot({ path: img(name) });
         }
       } finally {
