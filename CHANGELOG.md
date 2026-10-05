@@ -33,6 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **64-bit only.** The controller app is built for 64-bit systems, amd64 and aarch64; its 32-bit
   (armv7) build is gone. Home Assistant has had no 32-bit release since 2025.12, and the app
   needs Home Assistant 2026.5 or newer.
+- **The grow-day chart's line holds through quiet stretches.** Home Assistant records a probe only
+  when its reading changes, and the chart broke the line after 20 minutes without a change, so
+  yesterday's overnight line came out in pieces. It now runs on through a stretch where the reading
+  held still, and breaks only where the probe could not be read or nothing was recorded for two
+  hours. Hovering, the typical day and the comparison with yesterday read the same way, and an
+  earlier day's line starts at lights-on, as today's does.
 
 ### 🔧 Technical notes
 
@@ -67,6 +73,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - App: `armv7` leaves `arch` in `addons/f2_control/config.yaml`, and its base image leaves
   `build.yaml`; docs/INSTALL.md names amd64 and aarch64. Home Assistant ended i386, armhf and armv7
   with 2025.12 and the app asks for 2026.5.0, so no install that can run it loses a build.
+- Dashboard: `recordedGaps` (`frontend/src/lib/day-timeline.ts`) finds where a recorded reading has
+  no line: from each unreadable state to the next number, and each silence over `SILENCE_MS`, two
+  hours, the sensor chart's rule. `readingsPath`, moved out of the component, breaks only there and
+  holds the earlier reading up to the gap. `atHour` reads between any two readings without a gap
+  between them, where it gave up after 20 minutes, so the hover, `typicalDay` and `compareDays`
+  read a quiet stretch too. `DayTrace` gains `gaps`, and `dayTrace` starts an earlier day on the
+  reading carried in at its lights-on.
 
 ## [2.36.0] - 2026-10-04
 

@@ -26,6 +26,7 @@ version being released.
 - Exported plans and recipes are named after the room, profiles or recipe in them.
 - A room that can't refill its reservoir no longer shows refill buttons and steps.
 - A shorter setup wizard: the room and tank temperature sensors nothing steered with are gone.
+- Yesterday's line on the grow-day chart no longer breaks overnight while the moisture holds still.
 
 ## 2.36.0 - 2026-10-04
 
