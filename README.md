@@ -9,7 +9,7 @@ Crop Steering waters a grow room automatically. Every minute it reads each zone'
 
 **Deterministic, sensor-driven crop steering.** No AI makes any decision. Every shot comes from a published rule and your setpoints: the same readings, settings and day so far always give the same decision, and the dashboard shows the numbers behind each one. Nothing guesses, nothing makes up a reading, and nothing apologises after the fact.
 
-![The Overview: today's grow day for every zone, and the zones](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/operator-dashboard.png)
+![The Overview: today's grow day for every zone, and the zones](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/operator-dashboard.png)
 
 > **Safety first.** This switches real pumps and valves, unattended, on living plants. Set each room up with watering switched off, check every probe and switch it uses, and do a catch test (measure what the drippers actually deliver) before you let it water. It does not replace physical safety devices: use valves that close when power is lost, and a float switch or timer that can stop a pump on its own.
 
@@ -28,13 +28,13 @@ Crop Steering waters a grow room automatically. Every minute it reads each zone'
 
 | Today's targets on the zone's own readings | A plan for the whole grow | Water use per zone |
 | --- | --- | --- |
-| ![Today's targets on the zone's recorded moisture and EC, with the projected day](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/plan-graph.png) | ![A zone's plan for its days: its steering between vegetative and generative, and the day's moisture and EC targets](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/grow-plan.png) | ![Today, this week, this grow and an estimate for the whole grow, with litres per grow week](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/water-use.png) |
+| ![Today's targets on the zone's recorded moisture and EC, with the projected day](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/plan-graph.png) | ![A zone's plan for its days: its steering between vegetative and generative, and the day's moisture and EC targets](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/grow-plan.png) | ![Today, this week, this grow and an estimate for the whole grow, with litres per grow week](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/water-use.png) |
 
 | On a phone: the Overview | Today's targets |
 | --- | --- |
-| ![The Overview on a phone](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/mobile-overview.png) | ![Today's targets on a phone](https://raw.githubusercontent.com/ChillingSilence/HA-Irrigation-Strategy/main/img/mobile-plan.png) |
+| ![The Overview on a phone](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/mobile-overview.png) | ![Today's targets on a phone](https://raw.githubusercontent.com/Chill-Division/HA-Irrigation-Strategy/main/img/mobile-plan.png) |
 
-More in the [screenshots](https://github.com/ChillingSilence/HA-Irrigation-Strategy/blob/main/docs/SCREENSHOTS.md).
+More in the [screenshots](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/SCREENSHOTS.md).
 
 ## What you need
 
