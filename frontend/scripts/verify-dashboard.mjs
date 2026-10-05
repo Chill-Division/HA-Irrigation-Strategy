@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 import { fitsWidth } from "./fits-width.mjs";
+import { settled } from "./settled.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const publicRoot = path.join(root, "addons/f2_control/www/public");
@@ -130,10 +131,6 @@ async function inBothThemes(label, open) {
       await page.evaluate(() => document.documentElement.classList.contains("dark")),
       theme === "dark",
     );
-    // Colours transition (even at reduced motion); measure after two frames, not mid-change.
-    await page.evaluate(
-      () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
-    );
     await axe(theme === "dark" ? `${label}, dark` : label);
   }
   await page.evaluate(() => localStorage.setItem("irrigation-theme", "light"));
@@ -147,7 +144,9 @@ async function pillTones(scope) {
       pills.map((pill) => [pill.textContent.trim(), pill.dataset.tone ?? pill.dataset.phase]),
     );
 }
+/** axe on the page once nothing is easing any more (settled.mjs). */
 async function axe(label) {
+  await settled(page);
   const result = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();
@@ -787,15 +786,14 @@ try {
       await expectVisible(layer("yesterday"));
       // Dark: the timeline's own layers and controls, as the error codes are checked below.
       await page.evaluate(() => document.documentElement.classList.add("dark"));
-      await page.evaluate(
-        () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
-      );
+      await settled(page);
       const dark = await new AxeBuilder({ page })
         .include("[data-day-timeline]")
         .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
         .analyze();
       // The key's popover, its switches on the popover's own background.
       await openKey();
+      await settled(page);
       const darkKey = await new AxeBuilder({ page })
         .include(".timeline-popover")
         .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
@@ -1466,10 +1464,7 @@ try {
     // Dark: only the new section. Toggling the class alone is not the app's full dark theme, so
     // the rest of the page is not judged on it here.
     await page.evaluate(() => document.documentElement.classList.add("dark"));
-    // Colours transition (even at reduced motion); measure after two frames, not mid-change.
-    await page.evaluate(
-      () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
-    );
+    await settled(page);
     const dark = await new AxeBuilder({ page })
       .include(".error-codes")
       .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
@@ -1648,9 +1643,7 @@ try {
     await axe("water use");
     await page.screenshot({ path: path.join(out, "dashboard-water-use.png"), fullPage: true });
     await page.evaluate(() => document.documentElement.classList.add("dark"));
-    await page.evaluate(
-      () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
-    );
+    await settled(page);
     const dark = await new AxeBuilder({ page })
       .include(".wu-panel")
       .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
