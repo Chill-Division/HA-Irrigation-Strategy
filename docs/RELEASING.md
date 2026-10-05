@@ -13,7 +13,7 @@ python scripts/release.py 2.26.0 --public   # later, the same commit for everyon
 | Repository | Who installs from it | What moves its `main` |
 | --- | --- | --- |
 | `ChillingSilence/HA-Irrigation-Strategy` (this one) | The maintainer's own rooms. They are the test. | Merged pull requests, and `release.py <version>`'s commit |
-| `Chill-Division/HA-Irrigation-Strategy` | Everyone else | Only `release.py <version> --public`, which fast-forwards it to a version already released here |
+| `Chill-Division/HA-Irrigation-Strategy` | Everyone else | `release.py <version> --public`, which fast-forwards it to a version already released here, and `release.py --sync`, for commits that ship nothing |
 
 Every pull request is merged into `main` ([CONTRIBUTING.md](../CONTRIBUTING.md)), and releases are
 made from it. The public repository takes no pull requests and no commits of its own: everything on
@@ -96,6 +96,20 @@ python scripts/release.py 2.26.0 --public
 It checks that `v2.26.0` is released here and green in Validate, pushes that exact commit and its tag
 to the public `main` (a fast-forward, or nothing: git refuses anything else), and publishes the same
 release there. Nothing is rebuilt or re-tagged.
+
+## Commits that ship nothing
+
+```bash
+python scripts/release.py --sync --dry-run
+python scripts/release.py --sync
+```
+
+The README, the docs, the pictures, the scripts and the tests can go to the public `main` between
+releases. `--sync` takes `main` as it is here, once Validate has passed on it, to the public `main`:
+a fast-forward, with no version and no release. It refuses when anything since the public `main`
+changes the integration or the controller app (`custom_components/`, `addons/f2_control/`). The
+Supervisor builds the app from the public `main`, so a change there would reach every box that
+installs or rebuilds it, under the last released number: release those instead.
 
 A version that goes wrong here is never made public. Fix it, merge the fix, and release the next
 number here. **A version number is never reused for different code.**

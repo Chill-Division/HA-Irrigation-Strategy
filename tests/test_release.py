@@ -202,6 +202,37 @@ def test_starting_again_leaves_whats_new_with_the_new_numbers_only():
     assert [r["version"] for r in parse(kept)] == ["9.9.9", "2.24.0"]
 
 
+def test_commits_that_ship_nothing_go_public_without_a_release():
+    assert (
+        release.sync_refusal(
+            [
+                "README.md",
+                "LICENSE",
+                "CHANGELOG.md",
+                "docs/INSTALL.md",
+                "img/operator-dashboard.png",
+                "scripts/release.py",
+                "tests/test_release.py",
+                "frontend/scripts/verify-dashboard.mjs",
+            ]
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "shipped",
+    [
+        "addons/f2_control/f2_control/controller.py",  # the app is built from the public main
+        "addons/f2_control/www/public/dashboard.html",
+        "custom_components/crop_steering/sensor.py",
+    ],
+)
+def test_a_change_a_box_installs_waits_for_a_release(shipped):
+    why = release.sync_refusal(["README.md", shipped, "docs/USER_GUIDE.md"])
+    assert why and why.startswith(shipped) and "release them instead" in why
+
+
 @pytest.mark.parametrize("version", ["2.25", "v2.25.0", "2.25.0-rc1", ""])
 def test_a_version_is_three_numbers(version):
     with pytest.raises(release.Refused, match="not a version"):
