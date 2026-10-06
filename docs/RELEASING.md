@@ -109,7 +109,9 @@ releases. `--sync` takes `main` as it is here, once Validate has passed on it, t
 a fast-forward, with no version and no release. It refuses when anything since the public `main`
 changes the integration or the controller app (`custom_components/`, `addons/f2_control/`). The
 Supervisor builds the app from the public `main`, so a change there would reach every box that
-installs or rebuilds it, under the last released number: release those instead.
+installs or rebuilds it, under the last released number: release those instead. The app's
+changelog, documentation and pictures (`CHANGELOG.md`, `DOCS.md`, `icon.png`, `logo.png`) and the
+controller's tests go: the Supervisor only shows those, and none of them is built into the image.
 
 A version that goes wrong here is never made public. Fix it, merge the fix, and release the next
 number here. **A version number is never reused for different code.**

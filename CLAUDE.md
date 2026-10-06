@@ -138,7 +138,8 @@ the shot. Lives in the f2-control add-on (`addons/f2_control/`).
   `--public` then fast-forwards `Chill-Division/HA-Irrigation-Strategy`'s `main` to that same
   tagged commit and publishes the release there, for everyone else. Between releases, `--sync` takes
   merged commits that ship nothing (README, docs, pictures, scripts, tests) to that `main` with no
-  release; anything under `custom_components/` or `addons/f2_control/` waits for one. `--dry-run`
+  release; anything under `custom_components/` or `addons/f2_control/` waits for one, apart from
+  the app's changelog, docs and pictures, which the Supervisor only shows. `--dry-run`
   changes nothing.
   The controller is built on each box from the branch it tracks, so **a push that changes
   `version:` on `main` IS a release** of the part that drives the pump, and a controller built

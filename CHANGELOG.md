@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   touch `custom_components/` or `addons/f2_control/`: the Supervisor builds the app from the public
   `main`, so they would reach every box that installs or rebuilds it under the last released
   number. `docs/RELEASING.md` (Commits that ship nothing) and CLAUDE.md say when to use it.
+  The app's changelog, documentation and pictures and the controller's tests go too
+  (`SHOWN_ONLY`): the Supervisor only shows them, and none is built into the image.
 
 ## [1.0.0] - 2026-10-05
 
