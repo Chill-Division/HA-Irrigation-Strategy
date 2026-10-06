@@ -23,8 +23,8 @@ rebuilt: the commit everyone else gets is the one the boxes tracking this reposi
 
 `--sync` takes main as it is to PUBLIC's main between releases, once Validate has passed on it (a
 fast-forward, with no version and no release), when nothing since changes what a box installs: the
-README, the docs, the pictures, the scripts and the tests go, the integration and the app wait for
-a release.
+README, the docs, the pictures, the scripts and the tests go, and so do the app's changelog, docs
+and pictures, which the Supervisor only shows; the integration and the app wait for a release.
 
 It needs git, an authenticated GitHub CLI (`gh auth login`) and pytest. docs/RELEASING.md says
 when to run it.
@@ -54,6 +54,15 @@ FIXES = "Bug fixes and improvements."
 # What a box installs: the integration (HACS, from a release) and the app, which the Supervisor
 # builds from the main branch it tracks. A change to either reaches people only as a release.
 SHIPPED = ("custom_components/", "addons/f2_control/")
+# In the app's folder, what the Supervisor only shows (its changelog, documentation and pictures)
+# and the controller's tests: none of it goes into the image a box builds.
+SHOWN_ONLY = (
+    "addons/f2_control/CHANGELOG.md",
+    "addons/f2_control/DOCS.md",
+    "addons/f2_control/icon.png",
+    "addons/f2_control/logo.png",
+    "addons/f2_control/tests/",
+)
 
 MANIFEST = "custom_components/crop_steering/manifest.json"
 CONST = "custom_components/crop_steering/const.py"
@@ -295,7 +304,9 @@ def sync_refusal(changed: list[str]) -> str | None:
     """Why these changed files cannot go to PUBLIC's main without a release, or None. The
     Supervisor builds the app from that main, so a change to it would reach every box that installs
     or rebuilds the app, under the last released number; the integration's wait for a release too."""
-    shipped = sorted(path for path in changed if path.startswith(SHIPPED))
+    shipped = sorted(
+        path for path in changed if path.startswith(SHIPPED) and not path.startswith(SHOWN_ONLY)
+    )
     if not shipped:
         return None
     more = f" and {len(shipped) - 1} more" if len(shipped) > 1 else ""
