@@ -220,10 +220,28 @@ def test_commits_that_ship_nothing_go_public_without_a_release():
     )
 
 
+def test_what_the_supervisor_only_shows_goes_too():
+    assert (
+        release.sync_refusal(
+            [
+                "addons/f2_control/CHANGELOG.md",
+                "addons/f2_control/DOCS.md",
+                "addons/f2_control/icon.png",
+                "addons/f2_control/logo.png",
+                "addons/f2_control/tests/test_controller.py",
+            ]
+        )
+        is None
+    )
+
+
 @pytest.mark.parametrize(
     "shipped",
     [
         "addons/f2_control/f2_control/controller.py",  # the app is built from the public main
+        "addons/f2_control/config.yaml",
+        "addons/f2_control/Dockerfile",
+        "addons/f2_control/LICENSE",  # copied into the image
         "addons/f2_control/www/public/dashboard.html",
         "custom_components/crop_steering/sensor.py",
     ],
