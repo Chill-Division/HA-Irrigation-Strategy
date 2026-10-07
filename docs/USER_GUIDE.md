@@ -1,6 +1,6 @@
 # User guide
 
-Use **Overview** to check a room and **Irrigation plan** for **Today** and **Schedule**. Today shows the current zone targets; Schedule edits the dated plan. Select the room before editing; zone numbers belong to that room.
+Use **Overview** to check a room and **Irrigation strategy** for **Today** and **Schedule**. Today shows the current zone targets; Schedule edits the dated strategy. Select the room before editing; zone numbers belong to that room.
 
 The menu has six entries; where one holds more than one page, tabs across the top choose it.
 
@@ -9,13 +9,13 @@ Why a zone did what it did, in plain words: [How it works](HOW_IT_WORKS.md).
 | Menu            | What it holds                                     |
 | --------------- | ------------------------------------------------- |
 | Overview        | The room now, with its room and watering switches |
-| Irrigation plan | Today, Schedule                                   |
+| Irrigation strategy | Today, Schedule                                   |
 | Insights        | Zone, Water, Compare runs, Activity               |
 | Feed            | Reservoir (once one is mapped), Stock tanks       |
 | Settings        | General, Rooms & hardware                         |
 | Help            | Terms & phases, error codes, What's new, the tour |
 
-New installation? Start with [Install, upgrade and rollback](INSTALL.md). The first time anyone opens the dashboard on a new installation, a short tour walks through it: the Overview, the Irrigation plan, Feed, Settings' Rooms & hardware and its test shot, and how to switch the room and its watering on. It starts by itself once; **Help → Take the tour** starts it again at any time.
+New installation? Start with [Install, upgrade and rollback](INSTALL.md). The first time anyone opens the dashboard on a new installation, a short tour walks through it: the Overview, the Irrigation strategy, Feed, Settings' Rooms & hardware and its test shot, and how to switch the room and its watering on. It starts by itself once; **Help → Take the tour** starts it again at any time.
 
 ## What each action changes
 
@@ -23,9 +23,9 @@ New installation? Start with [Install, upgrade and rollback](INSTALL.md). The fi
 | ----------------------------- | ---------------------------------------------------------------------- |
 | Edit manual fields/graph      | Local draft until reviewed and applied.                                |
 | Apply reviewed manual changes | Existing HA setpoint entities; inspect readback.                       |
-| Review & save a grow plan     | HA's stored draft plan; separate from arming.                          |
-| Arm plan                      | Requests the eligible boundary activation; does not enable the engine. |
-| Save a library recipe         | This browser/site/room library; no HA write.                           |
+| Review & save an irrigation strategy     | HA's stored draft; separate from arming.                          |
+| Arm strategy                      | Requests the eligible boundary activation; does not enable the engine. |
+| Save to the strategy library  | This browser/site/room library; no HA write.                           |
 | Save a run record             | Run metadata and its captured reference; no irrigation activation.     |
 | Save configuration            | HA room/zone setup; wait for controller acknowledgement.               |
 
@@ -45,7 +45,7 @@ New installation? Start with [Install, upgrade and rollback](INSTALL.md). The fi
 | Water today                   | The controller's recorded delivery estimate since the room's lights-on boundary, against the zone's daily limit.                                                    |
 | Water use                     | On **Insights → Water**: litres per zone today, this week, since the grow start and estimated for the whole grow, with a bar for each grow week.                    |
 
-**Water use** counts grow-days from lights-on to lights-on. It reads Home Assistant's long-term statistics, which Home Assistant keeps indefinitely; opened outside Home Assistant it can only read recorded history, as far back as the recorder keeps it. The grow start is the zone's grow plan start date when the plan is armed or has been saved. Without one it is inferred: the first day with water after at least five grow-days without any. The panel says which. A day Home Assistant did not record is flagged, never counted as zero.
+**Water use** counts grow-days from lights-on to lights-on. It reads Home Assistant's long-term statistics, which Home Assistant keeps indefinitely; opened outside Home Assistant it can only read recorded history, as far back as the recorder keeps it. The grow start is the zone's irrigation strategy start date when the strategy is armed or has been saved. Without one it is inferred: the first day with water after at least five grow-days without any. The panel says which. A day Home Assistant did not record is flagged, never counted as zero.
 
 The switch beside the **Zones** heading on **Overview** switches every zone of the room at once, as the header toggle of a Home Assistant entities card does. It is on while any zone is on. Off pauses every zone; on switches every zone on, a zone you paused yourself included. Each zone still has its own switch in its details, and like them this one asks for a review first.
 
@@ -65,11 +65,11 @@ The level is worked out from the sensor's distance to the water; drawing it as a
 
 Unmapped inputs show **Not mapped**; invalid readings show **Unavailable**, **Check units** or **Out of range**. An unknown pump is not shown as off and an unknown tank is not drawn empty. When disconnected, the panel identifies retained readings as last received.
 
-## Irrigation plan → Today
+## Irrigation strategy → Today
 
 When no schedule owns the room, Today lets you edit the current targets using the steps below. An active schedule replaces those controls with its effective read-only targets and graph; fallback manual inputs are hidden. If the required schedule snapshot is missing or stale, those targets remain unavailable rather than being replaced by manual values.
 
-1. Select a room, open **Irrigation plan → Today**, then select a zone. Choose **Room settings** for shared timing/configuration.
+1. Select a room, open **Irrigation strategy → Today**, then select a zone. Choose **Room settings** for shared timing/configuration.
 2. Use the phase selector to keep the relevant controls beside the whole-day VWC/EC preview. On a narrow screen, expand the preview when needed.
 3. Edit a numeric field or a supported graph handle. Both edit the same local draft and respect the HA field's limits and step. The saved reference remains visible for comparison.
 4. Check the setting's name, unit and draft line. Its **?** says what the setting does, what it accepts (range and step) and its key. The zone's **Steering mode** picks which EC and P3 dryback targets the controller uses, and only those show; **Show targets for both steering modes** shows the other mode's too.
@@ -79,37 +79,37 @@ Pot size, plant count and drippers are the room's hardware, set in **Settings �
 
 Room changes can be previewed against a selected zone. A zone-specific value takes precedence over a room fallback where the controller supports it. Missing or invalid inputs remain missing/invalid instead of becoming an invented curve.
 
-When a schedule owns the room, use **Irrigation plan → Schedule** to inspect its dated targets and state. Use the normal disarm/handoff workflow and wait for draft status before returning to editable manual targets in Today. Export or deliberately discard drafts before leaving; a navigation warning is not an automatic backup.
+When a schedule owns the room, use **Irrigation strategy → Schedule** to inspect its dated targets and state. Use the normal disarm/handoff workflow and wait for draft status before returning to editable manual targets in Today. Export or deliberately discard drafts before leaving; a navigation warning is not an automatic backup.
 
-## Irrigation plan → Schedule
+## Irrigation strategy → Schedule
 
 The planner schedules user-defined profiles by zone and grow day. The balance slider interpolates between the profile's explicit vegetative and generative endpoints; it does not select a built-in agronomic prescription. Equal endpoints intentionally produce equal targets at every slider position. Pot/dripper sizing affects water estimates, not the suitability of the endpoint values.
 
-1. Open **Irrigation plan → Schedule → Endpoint profiles**. Inspect both endpoints and select the correct **Zone limits**. Duplicate a profile when you need an independent copy. A shared profile affects all schedule blocks referring to it.
+1. Open **Irrigation strategy → Schedule → Endpoint profiles**. Inspect both endpoints and select the correct **Zone limits**. Duplicate a profile when you need an independent copy. A shared profile affects all schedule blocks referring to it.
 2. Open **Schedule & curve**. Select a zone and set **Zone grow start date**. Each zone can have its own start date.
 3. Select a day or week in the overview. Assign its **Endpoint profile** and **Steering balance**. Days 1-366 are supported. Range edits preserve surrounding assignments by splitting existing blocks.
 4. Inspect **Zone schedule blocks** for coverage. Fill missing days and resolve overlap, parameter or zone-assignment errors.
 5. Inspect the selected day's curve. Graph handles edit the selected profile as described on screen, which can affect its other schedule references.
-6. Choose **Review & save** to validate and persist the draft in HA. **Validate preview** checks an unchanged stored draft. **Export** downloads a portable plan; **Reload stored plan** retrieves the stored revision once local edits are saved or discarded.
-7. If you intend the controller to use the plan, review **Arm plan** separately. The controller must report support. Activation occurs at the eligible local lights-on boundary; arming does not enable the engine or pump.
+6. Choose **Review & save** to validate and persist the draft in HA. **Validate preview** checks an unchanged stored draft. **Export** downloads a portable strategy; **Reload stored strategy** retrieves the stored revision once local edits are saved or discarded.
+7. If you intend the controller to use the strategy, review **Arm strategy** separately. The controller must report support. Activation occurs at the eligible local lights-on boundary; arming does not enable the engine or pump.
 
-An active/armed plan cannot be edited as a draft. **Disarm plan** requests the normal boundary handoff back to manual targets; wait for **draft** status before editing. The UI reports unsupported controllers, stale required snapshots and unfinished handoffs instead of claiming activation succeeded.
+An active/armed strategy cannot be edited as a draft. **Disarm strategy** requests the normal boundary handoff back to manual targets; wait for **draft** status before editing. The UI reports unsupported controllers, stale required snapshots and unfinished handoffs instead of claiming activation succeeded.
 
-Saving, arming and disarming a plan need a Home Assistant administrator login. Any other login can open the plan and its previews, and is refused when it tries to change them.
+Saving, arming and disarming a strategy need a Home Assistant administrator login. Any other login can open the strategy and its previews, and is refused when it tries to change them.
 
-After adding or archiving zones in setup, use **Update zones from setup** in a draft plan. It preserves existing active-zone schedules, removes archived assignments, and initializes new zones from their current settings. Export the previous plan first if you need those removed assignments.
+After adding or archiving zones in setup, use **Update zones from setup** in a draft strategy. It preserves existing active-zone schedules, removes archived assignments, and initializes new zones from their current settings. Export the previous strategy first if you need those removed assignments.
 
-### Recipe library
+### Strategy library
 
-A library item is a reusable copy, separate from the HA plan currently controlling the room.
+A library item is a reusable copy, separate from the strategy currently controlling the room.
 
-- **Save current as recipe** creates a named browser copy with optional notes/source URL.
-- **Import recipe file** accepts the supported plan export format, validates it and lets you name the library copy.
-- **Preview recipe** shows its zones, retained current start dates, schedule spans and inspectable profiles. **Load into local draft** requires the exact current active-zone IDs and preserves current start dates. Replacing unsaved planner work requires explicit acknowledgement.
-- Loading is unavailable while active, armed, busy or disconnected. It does not save or arm the plan.
-- **Export recipe** downloads a copy. **Remove recipe** asks for confirmation and removes only the browser copy.
+- **Save current as a strategy** creates a named browser copy with optional notes/source URL.
+- **Import strategy file** accepts the supported strategy export format, validates it and lets you name the library copy.
+- **Preview strategy** shows its zones, retained current start dates, schedule spans and inspectable profiles. **Load into local draft** requires the exact current active-zone IDs and preserves current start dates. Replacing unsaved planner work requires explicit acknowledgement.
+- Loading is unavailable while active, armed, busy or disconnected. It does not save or arm the strategy.
+- **Export strategy** downloads a copy. **Remove strategy** asks for confirmation and removes only the browser copy.
 
-Libraries are isolated by site, browser and room. They are not a shared HA database. Limits are 20 recipes per room, 500 KB per plan and 2 MB per library. Export important copies before clearing browser data or moving to another browser. Corrupt data is retained with a recovery-download action; storage denial, quota and stale-tab conflicts are reported rather than silently overwritten. See [Recipe library](RECIPE_LIBRARY.md).
+Libraries are isolated by site, browser and room. They are not a shared HA database. Limits are 20 strategies per room, 500 KB per strategy and 2 MB per library. Export important copies before clearing browser data or moving to another browser. Corrupt data is retained with a recovery-download action; storage denial, quota and stale-tab conflicts are reported rather than silently overwritten. See [Strategy library](RECIPE_LIBRARY.md).
 
 ## Understand the graphs and water figures
 
@@ -118,7 +118,7 @@ Libraries are isolated by site, browser and room. They are not a shared HA datab
 | Today/Schedule VWC-EC curve   | Configured targets, phase references and supported timing, with local draft changes where applicable.                    | Exact future shot times, uptake, runoff or EC accumulation.                                 |
 | Insights → Zone history       | Retained HA Recorder measurements on separate VWC and EC axes.                                                           | Measurements from periods Recorder did not retain.                                          |
 | Water today                   | The controller's recorded estimate from its configured flow and elapsed shot runtime, including accounted partial shots. | Independent meter readings, uniform distribution, plant uptake or external irrigation.      |
-| Water use estimate            | Water used so far plus the last 7 full grow-days' average for every grow-day left in the grow plan.                      | A forecast of plant uptake, or a total for a grow whose plan length is unknown.             |
+| Water use estimate            | Water used so far plus the last 7 full grow-days' average for every grow-day left in the irrigation strategy.                      | A forecast of plant uptake, or a total for a grow whose strategy's length is unknown.             |
 | Average mL per plant          | Zone estimated water divided by configured plant count.                                                                  | A measurement from each emitter.                                                            |
 | Total substrate capacity      | Substrate volume per plant multiplied by plant count.                                                                    | Water delivered or water retained.                                                          |
 | Shot calculator (Water)       | A conditional calculation from supplied settings, showing requested versus effective runtime and caps.                   | A guaranteed daily total; feedback-dependent maintenance/emergency shot counts are unknown. |
@@ -133,7 +133,7 @@ Historical estimates are not retroactively corrected when flow settings change. 
 2. In **Run records**, choose **Add run**, enter the actual run name/start date and optional end date, then **Save run record**. This saves metadata and a timestamped reference configuration; it does not arm irrigation.
 3. Select the current and, optionally, previous run. Previous readings align by grow age and stop at the same elapsed progress as the current run.
 4. Select **Day**, **Week · 7 days**, **Calendar month**, **Run to date**, or **Custom dates**. Check the calendar timezone and requested-through time. Use **Refresh history** to advance the window.
-5. Choose a **Target reference**: **Current configured daily plan**, **Saved run daily reference**, or **Current phase reference**. Read its capture/source note before comparing it with recorded measurements.
+5. Choose a **Target reference**: **Current configured daily targets**, **Saved run daily reference**, or **Current phase reference**. Read its capture/source note before comparing it with recorded measurements.
 6. Inspect coverage and missing-data notices. **Export metadata** backs up run definitions and reference snapshots, not Recorder readings. Archive/restore controls retain the registered run's identity.
 
 Saving, archiving and importing run records need a Home Assistant administrator login; any login can view them.
@@ -152,7 +152,7 @@ An HA administrator uses **Settings → Rooms & hardware**. Pair devices and exp
 6. Stop affected engines (the notice at the top of the page has the room's watering switch) and verify the implicated irrigation equipment is OFF. **Review configuration** shows the changes and blockers; **Save configuration** persists the setup after backend validation.
 7. Wait for controller acknowledgement of the saved setup revision. A saved configuration and an adopted configuration are different states. Then verify **Overview** and **Insights → Zone**, where **Probe coverage** shows whether every zone's probes give a current reading, before restoring the prior scheduling state.
 
-Zone and room removal archives stable IDs. **Restore zone** or **Restore room** reactivates the same identity after review; archived slots are not silently reused for different hardware. Adding/archiving a zone may require updating a draft grow plan's assignments.
+Zone and room removal archives stable IDs. **Restore zone** or **Restore room** reactivates the same identity after review; archived slots are not silently reused for different hardware. Adding/archiving a zone may require updating a draft irrigation strategy's assignments.
 
 Every saved change is recorded in Home Assistant's **Activity** (the logbook), on the room's device page too: who saved it and what changed, for example *Growroom 2 setup saved (revision 2): renamed from "Crop Steering System"*. A change Home Assistant refuses is not saved, so it is not recorded; the review says why it was refused.
 
@@ -160,7 +160,7 @@ Every saved change is recorded in Home Assistant's **Activity** (the logbook), o
 
 At the bottom of **Settings → Rooms & hardware**, **Tests** checks that a room's hardware works. Each test asks the controller app, which runs it at its next pass, within a minute, through the same safety checks as everything it does; **Insights → Activity** says how it went. A test runs on the saved configuration, in the room chosen under **Room** in the menu, so save or discard any change first.
 
-- **Test shot** waters one zone for 10 seconds: the pump, the mainline and the zone's valve, in the order a shot opens them. The dialog says about how much it gives. It is held, and the log says why, while watering is switched off, the zone is off or on manual override, a refill is running, the reservoir is at its minimum or the zone's daily water limit is spent; a held grow plan does not hold it. Its water counts toward the zone's day, but it is not one of the day's shots (the ramp does not move on for it), and Auto setpoints learns nothing from it.
+- **Test shot** waters one zone for 10 seconds: the pump, the mainline and the zone's valve, in the order a shot opens them. The dialog says about how much it gives. It is held, and the log says why, while watering is switched off, the zone is off or on manual override, a refill is running, the reservoir is at its minimum or the zone's daily water limit is spent; a held irrigation strategy does not hold it. Its water counts toward the zone's day, but it is not one of the day's shots (the ramp does not move on for it), and Auto setpoints learns nothing from it.
 - **Test refill** refills and mixes the reservoir now, as an automatic refill does (see below). The controller refuses one that could overflow the reservoir; the dialog says so first. If you have checked that the reservoir has room for the fill (the reading may be off, or you know how far it really is from full), tick **Run anyway**: that refill then starts without the check. Every other check still applies, and a level sensor that reads nothing is not overridden: half-way through the fill a refill checks that the reservoir is filling, and one it cannot read would stop there.
 
 ## Mix nutrient batches (Reservoir)
@@ -224,7 +224,7 @@ For an existing timed zone hold, Home Assistant exposes the `crop_steering.set_m
 | Setup is saved but adoption is pending         | Inspect heartbeat/setup blockers; keep affected engines off until the controller acknowledges the revision.                                                      |
 | Slider appears to do nothing                   | Inspect both selected endpoint columns. Equal endpoints are deliberately equal at every balance.                                                                 |
 | Today is read-only                             | Inspect the schedule or connection state. Active schedules show effective read-only targets; use Schedule and the normal boundary handoff before manual editing. |
-| Cannot load a recipe                           | Check active-zone IDs, current limits, plan state, connection and explicit replacement acknowledgement.                                                          |
+| Cannot load a saved strategy                   | Check active-zone IDs, current limits, strategy state, connection and explicit replacement acknowledgement.                                                          |
 | Comparison is blank                            | Check selected run/zone, recorded sensor IDs, dates, Recorder retention and coverage notices. Registering metadata cannot recreate readings.                     |
 | A pause was confirmed but equipment remains on | Pause affects scheduling. Inspect the active shot and use the site's established physical shutdown procedure if necessary.                                       |
 

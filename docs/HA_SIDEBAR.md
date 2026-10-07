@@ -8,7 +8,7 @@ Leaving Crop Steering restores the prior kiosk state. This does not change Home 
 
 Opening the native panel hides the Home Assistant sidebar, and the **Home Assistant** button brings it back. This was checked on a real installation; companion apps and third-party kiosk extensions may behave differently.
 
-Crop Steering's menu (Overview, Irrigation plan, Insights, Feed, Settings and Help, with tabs across the top where an entry holds more than one page) moves around the workspace only; it does not replace the Home Assistant menu button. Each page has its own address, so a bookmark opens it; an address the dashboard does not know opens **Overview**.
+Crop Steering's menu (Overview, Irrigation strategy, Insights, Feed, Settings and Help, with tabs across the top where an entry holds more than one page) moves around the workspace only; it does not replace the Home Assistant menu button. Each page has its own address, so a bookmark opens it; an address the dashboard does not know opens **Overview**.
 
 ## Implementation references
 

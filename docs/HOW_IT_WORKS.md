@@ -3,7 +3,7 @@
 This page explains, in plain words, how Crop Steering decides when to water and how much, so you
 can tell why a zone did what it did without reading any code. It is about the reasoning; the
 [User guide](USER_GUIDE.md) is about using the dashboard, and every setting's **?** on
-**Irrigation plan → Today** says what that one setting does.
+**Irrigation strategy → Today** says what that one setting does.
 
 Where the [Athena Handbook](https://athenaag.com) gives guidance, its page number is given beside it.
 
@@ -32,7 +32,7 @@ Where the [Athena Handbook](https://athenaag.com) gives guidance, its page numbe
 
 ## The grow day in four phases
 
-![The daily plan graph: a zone's targets for each phase, the recorded day and a projected one, with the four phases along the bottom](../img/plan-graph.png)
+![Today's targets graph: a zone's targets for each phase, the recorded day and a projected one, with the four phases along the bottom](../img/plan-graph.png)
 
 | Phase                  | What happens                                                                 | What ends it                                                                                                                    |
 | ---------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -119,10 +119,10 @@ it is planned only as deep as it allows.
 
 ## Auto setpoints
 
-![Irrigation plan → Today: the Auto setpoints line shows what each zone has learned and tonight's plan](../img/manual-setpoints.png)
+![Irrigation strategy → Today: the Auto setpoints line shows what each zone has learned and tonight's plan](../img/manual-setpoints.png)
 
 Auto setpoints is optional, one switch per room (**Auto setpoints on** or **Turn auto off…** on the
-Irrigation plan). It never fires a shot itself: the engine still waters by the rules above. It keeps
+Irrigation strategy). It never fires a shot itself: the engine still waters by the rules above. It keeps
 three settings attainable for each zone, from how that zone has actually behaved: the **Peak VWC
 target**, **Full saturation** and the **maintenance trigger**. After a ramp that has stopped climbing,
 it may also raise the zone's **P1 EC target**, just enough for the ramp to hand over to P2 and never
@@ -166,7 +166,7 @@ When tonight's dryback is out of reach, the zone's Auto line says so, for exampl
 unreachable at this zone's uptake: about 30% tonight, with maintenance shots until 19:00"_. It keeps
 learning: a night slower than it expected brings the next day's stop earlier, a little at a time.
 
-An armed grow plan owns its room's targets. While one is in control, Auto setpoints stands back.
+An armed irrigation strategy owns its room's targets. While one is in control, Auto setpoints stands back.
 
 ## Vegetative and generative
 
@@ -266,8 +266,8 @@ person, **Auto setpoints**, or an automation by name (_Auto setpoints raised Mai
 
 ![The Reservoir: a batch's steps, with the doses inside Fill and mix](../img/reservoir.png)
 
-A room with a reservoir mapped mixes its own nutrient batches: by itself with **Automatic batches**
-on, or when you press **Mix a Batch Now**. A batch refills the reservoir with fresh water; from
+A room with a reservoir mapped mixes its own nutrient batches: by itself with **Automatic refills**
+on, or when you ask for one with **Refill by hand…**. A batch refills the reservoir with fresh water; from
 half-way through the fill, the pump and the recirculation line run, and the doses go in one doser at a
 time, in the recipe's order. Then the batch recirculates to mix. The room's shots wait meanwhile.
 Each recipe can also give its **Feed EC**, what it mixes to: the controller waters with that feed,
@@ -276,7 +276,7 @@ substrate's EC down.
 
 With the reservoir's level set up, a refill is planned before the room's next round of shots would
 take it under its minimum, so no shot takes it under; if a refill cannot happen, watering waits.
-Without automatic batches, a reminder says when to refill it by hand.
+Without automatic refills, a reminder says when to refill it by hand.
 
 ## Common questions
 
