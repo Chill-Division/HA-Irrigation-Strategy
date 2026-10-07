@@ -21,7 +21,7 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
-## Unreleased
+## 1.0.1 - 2026-10-08
 
 - Unified naming of Irrigation Strategy and Feed Recipes.
 - Feed EC now set per-recipe to allow for steering at lower EC rootzones, defaults to 3.0EC where not set.

@@ -1,4 +1,6 @@
-# Unreleased
+# 1.0.1
+
+Pair with integration 1.0.1.
 
 - Unified naming of Irrigation Strategy and Feed Recipes.
 - Feed EC now set per-recipe to allow for steering at lower EC rootzones, defaults to 3.0EC where not set.
