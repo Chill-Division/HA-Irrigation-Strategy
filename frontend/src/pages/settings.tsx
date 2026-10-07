@@ -112,8 +112,8 @@ export function Settings({
             <div className="settings-label">
               <h2>Sample workspace</h2>
               <p>
-                Synthetic sensor readings, example plans and historical runs let you explore the
-                interface.
+                Synthetic sensor readings, example strategies and historical runs let you explore
+                the interface.
               </p>
             </div>
             <div>
@@ -121,7 +121,7 @@ export function Settings({
                 Reset demo session…
               </Button>
               <p className="small muted mt-3">
-                Restore the sample rooms and runs. Saved recipes stay in this browser.
+                Restore the sample rooms and runs. Saved strategies stay in this browser.
               </p>
             </div>
           </section>
@@ -341,7 +341,7 @@ export function Settings({
               <DialogTitle>Reset demo session?</DialogTitle>
               <DialogDescription>
                 Reload the example rooms, sensor readings, run records and planner drafts. Unsaved
-                demo work and changes to demo runs or room settings will be lost. Saved recipe
+                demo work and changes to demo runs or room settings will be lost. Saved strategy
                 libraries and live connection data will be kept.
               </DialogDescription>
             </DialogHeader>

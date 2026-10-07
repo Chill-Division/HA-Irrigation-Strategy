@@ -100,23 +100,23 @@ function sourceUrl(value: unknown) {
   return url.href;
 }
 export function importRecipePlan(raw: string): GrowPlan {
-  if (bytes(raw) > MAX_PLAN_BYTES) throw new Error("Plan file is too large (maximum 500 KB).");
+  if (bytes(raw) > MAX_PLAN_BYTES) throw new Error("Strategy file is too large (maximum 500 KB).");
   let plan: GrowPlan;
   try {
     plan = parsePlanImport(raw);
   } catch {
-    throw new Error("Choose a valid version 1 Crop Steering plan export.");
+    throw new Error("Choose a valid version 1 Crop Steering strategy export.");
   }
   if (plan.profiles.length > 64)
-    throw new Error("A recipe can contain at most 64 endpoint profiles.");
+    throw new Error("A saved strategy can contain at most 64 endpoint profiles.");
   if (!plan.profiles.length || !plan.zones.length)
-    throw new Error("A recipe needs endpoint profiles and zone schedules.");
+    throw new Error("A saved strategy needs endpoint profiles and zone schedules.");
   const ids = new Set<string>(),
     zoneIds = new Set<number>();
   const profiles = plan.profiles.map((profile) => {
     const id = profileId(profile.id),
       name = text(profile.name, "Profile name", 100);
-    if (ids.has(id)) throw new Error("Recipe profile IDs must be unique.");
+    if (ids.has(id)) throw new Error("Strategy profile IDs must be unique.");
     ids.add(id);
     const endpoints = {} as Pick<typeof profile, "vegetative" | "generative">;
     for (const side of ["vegetative", "generative"] as const) {
@@ -137,11 +137,11 @@ export function importRecipePlan(raw: string): GrowPlan {
     }
     const a = Object.keys(endpoints.vegetative).sort().join(),
       b = Object.keys(endpoints.generative).sort().join();
-    if (!a || a !== b) throw new Error("Both recipe endpoints need matching parameters.");
+    if (!a || a !== b) throw new Error("Both strategy endpoints need matching parameters.");
     if (!REQUIRED_PARAMETERS.every((key) => key in endpoints.vegetative))
-      throw new Error("Recipe endpoints must include all required steering parameters.");
+      throw new Error("Strategy endpoints must include all required steering parameters.");
     if (Object.keys(endpoints.vegetative).some((key) => !ALLOWED_PARAMETERS.has(key)))
-      throw new Error("Recipe endpoints contain unsupported steering parameters.");
+      throw new Error("Strategy endpoints contain unsupported steering parameters.");
     validateRelationships(endpoints.vegetative);
     validateRelationships(endpoints.generative);
     return { id, name, ...endpoints };
@@ -153,7 +153,7 @@ export function importRecipePlan(raw: string): GrowPlan {
       zoneIds.has(zone.zone_id) ||
       !validDate(zone.start_date)
     )
-      throw new Error("Recipe zones need unique IDs and valid saved dates.");
+      throw new Error("Strategy zones need unique IDs and valid saved dates.");
     zoneIds.add(zone.zone_id);
     return {
       zone_id: zone.zone_id,
@@ -196,16 +196,16 @@ export function importRecipePlan(raw: string): GrowPlan {
     ]),
   );
   const errors = planErrors(result, structuralCatalog);
-  if (errors.length) throw new Error(`Invalid recipe structure: ${errors.slice(0, 4).join(" ")}`);
+  if (errors.length) throw new Error(`Invalid strategy structure: ${errors.slice(0, 4).join(" ")}`);
   return result;
 }
 function normalizeRecipe(value: unknown): Recipe {
-  if (!value || typeof value !== "object") throw new Error("Invalid stored recipe.");
+  if (!value || typeof value !== "object") throw new Error("Invalid stored strategy.");
   const record = value as Recipe;
-  const id = text(record.id, "Recipe ID", 80);
-  if (!/^[a-zA-Z0-9_-]+$/.test(id)) throw new Error("Invalid recipe ID.");
+  const id = text(record.id, "Strategy ID", 80);
+  if (!/^[a-zA-Z0-9_-]+$/.test(id)) throw new Error("Invalid strategy ID.");
   if (typeof record.createdAt !== "string" || !Number.isFinite(Date.parse(record.createdAt)))
-    throw new Error("Invalid recipe timestamp.");
+    throw new Error("Invalid strategy timestamp.");
   return {
     id,
     name: text(record.name, "Recipe name", 80),
@@ -217,7 +217,7 @@ function normalizeRecipe(value: unknown): Recipe {
 }
 function decode(raw: string | null, scope: RecipeScope): Recipe[] {
   if (raw === null) return [];
-  if (bytes(raw) > MAX_LIBRARY_BYTES) throw new Error("Stored recipe library exceeds 2 MB.");
+  if (bytes(raw) > MAX_LIBRARY_BYTES) throw new Error("Stored strategy library exceeds 2 MB.");
   const document = JSON.parse(raw);
   if (
     !document ||
@@ -227,13 +227,13 @@ function decode(raw: string | null, scope: RecipeScope): Recipe[] {
     !Array.isArray(document.recipes) ||
     document.recipes.length > MAX_RECIPES
   )
-    throw new Error("Invalid room-scoped recipe library.");
+    throw new Error("Invalid room-scoped strategy library.");
   const recipes = document.recipes.map(normalizeRecipe) as Recipe[];
   if (
     new Set(recipes.map((recipe) => recipe.id)).size !== recipes.length ||
     new Set(recipes.map((recipe) => recipe.name.toLowerCase())).size !== recipes.length
   )
-    throw new Error("Stored recipe names and IDs must be unique.");
+    throw new Error("Stored strategy names and IDs must be unique.");
   return recipes;
 }
 export function readLibrary(storage: RecipeStorage, scope: RecipeScope): LibrarySnapshot {
@@ -248,7 +248,7 @@ export function readLibrary(storage: RecipeStorage, scope: RecipeScope): Library
       key,
       raw,
       recipes: [],
-      error: `Recipe storage could not be read. Existing data has not been changed. ${message(error)}`,
+      error: `Strategy library storage could not be read. Existing data has not been changed. ${message(error)}`,
     };
   }
 }
@@ -289,7 +289,7 @@ export function initializeDemoLibrary(
       id,
       name,
       notes:
-        "Synthetic interface example using the existing demo endpoints. Not a cultivation recommendation or a source-guide recipe. Loading changes only the demo draft.",
+        "Synthetic interface example using the existing demo endpoints. Not a cultivation recommendation or a source-guide strategy. Loading changes only the demo draft.",
       sourceUrl: "",
       createdAt: new Date(now).toISOString(),
       plan: copy,
@@ -306,7 +306,7 @@ function persist(
   if (prior.error) throw new Error(prior.error);
   if (recipes.length > MAX_RECIPES)
     throw new Error(
-      `The library limit is ${MAX_RECIPES} recipes. Remove one before adding another.`,
+      `The library limit is ${MAX_RECIPES} strategies. Remove one before adding another.`,
     );
   const raw = JSON.stringify({
     schema_version: 1,
@@ -316,7 +316,7 @@ function persist(
   });
   if (bytes(raw) > MAX_LIBRARY_BYTES)
     throw new Error(
-      "Recipe library storage is limited to 2 MB. Export or remove an old recipe first.",
+      "Strategy library storage is limited to 2 MB. Export or remove an old strategy first.",
     );
   decode(raw, prior.scope);
   try {
@@ -326,7 +326,7 @@ function persist(
       );
     storage.setItem(prior.key, raw);
   } catch (error) {
-    throw new Error(`Recipe storage was not updated: ${message(error)}`);
+    throw new Error(`Strategy library storage was not updated: ${message(error)}`);
   }
   return {
     scope: { ...prior.scope },
@@ -343,7 +343,7 @@ export function saveRecipe(
 ): LibrarySnapshot {
   const name = text(value.name, "Recipe name", 80);
   if (prior.recipes.some((recipe) => recipe.name.toLowerCase() === name.toLowerCase()))
-    throw new Error("That recipe name already exists. Choose a different name.");
+    throw new Error("That strategy name already exists. Choose a different name.");
   const recipe = normalizeRecipe({
     id: createUuid(),
     name,
@@ -360,14 +360,14 @@ export function removeRecipe(
   id: string,
 ): LibrarySnapshot {
   if (!prior.recipes.some((recipe) => recipe.id === id))
-    throw new Error("Recipe is no longer in this library. Reload it first.");
+    throw new Error("That strategy is no longer in this library. Reload it first.");
   return persist(
     storage,
     prior,
     prior.recipes.filter((recipe) => recipe.id !== id),
   );
 }
-/** A plan file's name, from the names of what it holds: "crop-steering-plan-gr2-chill1.json". Long
+/** A strategy file's name, from the names of what it holds: "crop-steering-strategy-gr2-chill1.json". Long
  * lists of names are cut short at a word. */
 export function planFileName(...names: string[]): string {
   const words = [...new Set(names)]
@@ -380,7 +380,7 @@ export function planFileName(...names: string[]): string {
     .filter(Boolean)
     .join("-");
   const cut = words.length > 100 ? words.slice(0, words.lastIndexOf("-", 100)) : words;
-  return `crop-steering-plan${cut ? `-${cut}` : ""}.json`;
+  return `crop-steering-strategy${cut ? `-${cut}` : ""}.json`;
 }
 export function exportRecipe(recipe: Recipe, roomName: string): string {
   return JSON.stringify(
@@ -411,7 +411,7 @@ export function prepareRecipeDraft(
     sorted(current.zones.map((z) => z.zone_id)) !== sorted(activeZoneIds)
   )
     throw new Error(
-      "Recipe and current plan must contain exactly the room's active zone IDs. Update zone assignments first.",
+      "The saved strategy and the current one must contain exactly the room's active zone IDs. Update zone assignments first.",
     );
   candidate.zones = candidate.zones.map((zone) => ({
     ...zone,

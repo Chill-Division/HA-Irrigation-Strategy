@@ -98,7 +98,7 @@ async function noOverflow() {
   await fitsWidth(page);
 }
 async function planViewsShareRow() {
-  const views = page.getByRole("navigation", { name: "Irrigation plan views" });
+  const views = page.getByRole("navigation", { name: "Irrigation strategy views" });
   const [today, schedule] = await Promise.all([
     views.getByRole("button", { name: "Today", exact: true }).boundingBox(),
     views.getByRole("button", { name: "Schedule", exact: true }).boundingBox(),
@@ -1497,11 +1497,11 @@ try {
     await page.evaluate(() => document.documentElement.classList.remove("dark"));
   });
   await check(
-    "one Irrigation plan entry exposes Today and Schedule with working history",
+    "one Irrigation strategy entry exposes Today and Schedule with working history",
     async () => {
       await go("overview");
       const primary = page.getByRole("navigation", { name: "Main navigation" });
-      const plan = primary.getByRole("button", { name: "Irrigation plan", exact: true });
+      const plan = primary.getByRole("button", { name: "Irrigation strategy", exact: true });
       assert.equal(await plan.count(), 1);
       assert.equal(
         await primary.getByRole("button", { name: "Manual setpoints", exact: true }).count(),
@@ -1513,7 +1513,7 @@ try {
       );
       await plan.click();
       await expectVisible(page.getByRole("heading", { name: "Today’s targets", exact: true }));
-      const views = page.getByRole("navigation", { name: "Irrigation plan views" });
+      const views = page.getByRole("navigation", { name: "Irrigation strategy views" });
       const today = views.getByRole("button", { name: "Today", exact: true });
       const schedule = views.getByRole("button", { name: "Schedule", exact: true });
       assert.equal(await today.getAttribute("aria-current"), "page");
@@ -1631,7 +1631,7 @@ try {
         /[\d,.]+ L\n.+ · grow-day \d+/,
         `Zone ${index + 1} since start: ${since}`,
       );
-      assert.match(estimate, /≈ [\d,]+ L\n.*last 7 days’ average.*\n84-day plan/);
+      assert.match(estimate, /≈ [\d,]+ L\n.*last 7 days’ average.*\n84-day strategy/);
     }
     // Today is the live counter, shared across the zone's plants; the demo's saved draft plan
     // dates the grow and says so.
@@ -1639,7 +1639,7 @@ try {
       (await rows.first().locator("td").allInnerTexts())[1],
       /^5\.3 L\n[^\n]+\n147 mL per plant, 36 plants$/,
     );
-    await expectVisible(panel.getByText(/^Grow start: .+ saved grow plan \(a draft, not armed\)/));
+    await expectVisible(panel.getByText(/^Grow start: .+ saved strategy \(a draft, not armed\)/));
     const chart = panel.getByRole("img", {
       name: /^Litres per grow week for Zone 1, Zone 2, Zone 3/,
     });
@@ -1746,7 +1746,7 @@ try {
     await axe("mobile navigation");
     const mobileMenu = page.getByRole("dialog");
     assert.equal(
-      await mobileMenu.getByRole("button", { name: "Irrigation plan", exact: true }).count(),
+      await mobileMenu.getByRole("button", { name: "Irrigation strategy", exact: true }).count(),
       1,
     );
     assert.equal(
@@ -1757,9 +1757,9 @@ try {
       await mobileMenu.getByRole("button", { name: "Grow plan", exact: true }).count(),
       0,
     );
-    await mobileMenu.getByRole("button", { name: "Irrigation plan", exact: true }).click();
+    await mobileMenu.getByRole("button", { name: "Irrigation strategy", exact: true }).click();
     await expectVisible(page.getByRole("heading", { name: "Today’s targets", exact: true }));
-    const views = page.getByRole("navigation", { name: "Irrigation plan views" });
+    const views = page.getByRole("navigation", { name: "Irrigation strategy views" });
     await views.getByRole("button", { name: "Schedule", exact: true }).click();
     await expectVisible(page.getByRole("heading", { name: "Scheduled targets", exact: true }));
     await noOverflow();

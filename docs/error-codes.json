@@ -226,7 +226,7 @@
       "causes": [
         "The engine switch is off. On a new install this is expected: the reminder is that nothing will be watered until it is on.",
         "Auto irrigation or the zone is switched off, or manual override is on.",
-        "A hold: a setup change waiting (CS-201), plumbing that disagrees (CS-202), a hardware fault (CS-301), or an external hold (dosing, a fill, a flush). A grow plan's hold (CS-606) does not stop this safety shot."
+        "A hold: a setup change waiting (CS-201), plumbing that disagrees (CS-202), a hardware fault (CS-301), or an external hold (dosing, a fill, a flush). An irrigation strategy's hold (CS-606) does not stop this safety shot."
       ],
       "fixes": [
         "Read 'Blocked by' in the notification and deal with that.",
@@ -584,27 +584,27 @@
     },
     {
       "code": "CS-606",
-      "title": "Grow strategy plan is holding irrigation",
+      "title": "Irrigation strategy is holding its zones",
       "source": "repairs",
       "severity": "critical",
-      "meaning": "The room's grow plan is holding the steering of the zones it manages: the plan is in error, the controller cannot use it, or a zone the plan runs is not scheduled today. The card gives the reason.",
+      "meaning": "The room's irrigation strategy is holding the steering of the zones it manages: the strategy is in error, the controller cannot use it, or a zone the strategy runs is not scheduled today. The card gives the reason.",
       "watering": "Those zones get only the overnight emergency and watchdog shots, and a zone with a dead probe its timed schedule, until the hold clears. Routine steering waits.",
       "causes": [
-        "The plan went into error, for example because its zones no longer match the room.",
-        "The controller reports that it cannot use the plan.",
-        "A zone the plan runs is not scheduled today."
+        "The strategy went into error, for example because its zones no longer match the room.",
+        "The controller reports that it cannot use the strategy.",
+        "A zone the strategy runs is not scheduled today."
       ],
       "fixes": [
-        "Open Irrigation plan → Schedule in the Crop Steering sidebar and read the reason.",
-        "If it stays in error, fix the cause, then disarm the plan and arm it again."
+        "Open Irrigation strategy → Schedule in the Crop Steering sidebar and read the reason.",
+        "If it stays in error, fix the cause, then disarm the strategy and arm it again."
       ]
     },
     {
       "code": "CS-607",
-      "title": "Grow strategy plan has not moved on to today",
+      "title": "Irrigation strategy has not moved on to today",
       "source": "repairs",
       "severity": "warning",
-      "meaning": "At lights-on the plan could not apply the new day. It keeps its last valid targets (a plan waiting to start stays armed) and tries again every minute.",
+      "meaning": "At lights-on the strategy could not apply the new day. It keeps its last valid targets (a strategy waiting to start stays armed) and tries again every minute.",
       "watering": "Carries on: the controller keeps steering on the last valid targets.",
       "causes": [
         "The controller was not reporting at lights-on.",

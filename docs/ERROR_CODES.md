@@ -63,8 +63,8 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 | [CS-603](#cs-603) | Zone with no moisture sensor | Warning | Repairs card |
 | [CS-604](#cs-604) | Zone sensor unavailable | Warning | Repairs card |
 | [CS-605](#cs-605) | Settings not where the controller looks for them | Warning | Repairs card |
-| [CS-606](#cs-606) | Grow strategy plan is holding irrigation | Critical | Repairs card |
-| [CS-607](#cs-607) | Grow strategy plan has not moved on to today | Warning | Repairs card |
+| [CS-606](#cs-606) | Irrigation strategy is holding its zones | Critical | Repairs card |
+| [CS-607](#cs-607) | Irrigation strategy has not moved on to today | Warning | Repairs card |
 | [CS-608](#cs-608) | Stock tanks running low | Warning | Repairs card |
 | [CS-701](#cs-701) | Nutrient batch stopped part-way | Warning | Notification |
 | [CS-702](#cs-702) | The reservoir did not fill | Warning | Notification |
@@ -309,7 +309,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 - The engine switch is off. On a new install this is expected: the reminder is that nothing will be watered until it is on.
 - Auto irrigation or the zone is switched off, or manual override is on.
-- A hold: a setup change waiting (CS-201), plumbing that disagrees (CS-202), a hardware fault (CS-301), or an external hold (dosing, a fill, a flush). A grow plan's hold (CS-606) does not stop this safety shot.
+- A hold: a setup change waiting (CS-201), plumbing that disagrees (CS-202), a hardware fault (CS-301), or an external hold (dosing, a fill, a flush). An irrigation strategy's hold (CS-606) does not stop this safety shot.
 
 **Suggested fixes**
 
@@ -759,32 +759,32 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 <a id="cs-606"></a>
 
-### CS-606: Grow strategy plan is holding irrigation
+### CS-606: Irrigation strategy is holding its zones
 
 *Critical · Repairs card*
 
-**What it means.** The room's grow plan is holding the steering of the zones it manages: the plan is in error, the controller cannot use it, or a zone the plan runs is not scheduled today. The card gives the reason.
+**What it means.** The room's irrigation strategy is holding the steering of the zones it manages: the strategy is in error, the controller cannot use it, or a zone the strategy runs is not scheduled today. The card gives the reason.
 
 **Watering meanwhile.** Those zones get only the overnight emergency and watchdog shots, and a zone with a dead probe its timed schedule, until the hold clears. Routine steering waits.
 
 **Likely causes**
 
-- The plan went into error, for example because its zones no longer match the room.
-- The controller reports that it cannot use the plan.
-- A zone the plan runs is not scheduled today.
+- The strategy went into error, for example because its zones no longer match the room.
+- The controller reports that it cannot use the strategy.
+- A zone the strategy runs is not scheduled today.
 
 **Suggested fixes**
 
-- Open Irrigation plan → Schedule in the Crop Steering sidebar and read the reason.
-- If it stays in error, fix the cause, then disarm the plan and arm it again.
+- Open Irrigation strategy → Schedule in the Crop Steering sidebar and read the reason.
+- If it stays in error, fix the cause, then disarm the strategy and arm it again.
 
 <a id="cs-607"></a>
 
-### CS-607: Grow strategy plan has not moved on to today
+### CS-607: Irrigation strategy has not moved on to today
 
 *Warning · Repairs card*
 
-**What it means.** At lights-on the plan could not apply the new day. It keeps its last valid targets (a plan waiting to start stays armed) and tries again every minute.
+**What it means.** At lights-on the strategy could not apply the new day. It keeps its last valid targets (a strategy waiting to start stays armed) and tries again every minute.
 
 **Watering meanwhile.** Carries on: the controller keeps steering on the last valid targets.
 

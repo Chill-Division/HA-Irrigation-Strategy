@@ -261,7 +261,7 @@ export function PlanningCurve({
     <section className="panel planning-curve" aria-labelledby={`${id}-title`}>
       <div className="panel-heading">
         <div>
-          <h2 id={`${id}-title`}>Daily VWC & EC plan</h2>
+          <h2 id={`${id}-title`}>Daily VWC & EC targets</h2>
           <p>
             {description ??
               (onChange
@@ -957,13 +957,13 @@ export function PlanningCurve({
               ))}
           </div>
           <p>
-            Edits update this local plan. Controller settings still require review before
+            Edits update this local draft. Controller settings still require review before
             application.
           </p>
         </details>
       )}
       <details className="planning-assumptions">
-        <summary>How to read this plan</summary>
+        <summary>How to read this chart</summary>
         <ul>
           {plan.notes.map((note) => (
             <li key={note}>{note}</li>

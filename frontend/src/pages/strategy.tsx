@@ -715,7 +715,7 @@ export function Strategy({
                 selectedPhase={/^P[0-3]$/.test(phase) ? (phase as PlanningPhaseId) : undefined}
                 description={
                   preview.readOnly
-                    ? "Today’s active scheduled targets. Open Schedule to edit the dated plan."
+                    ? "Today’s active scheduled targets. Open Schedule to edit the dated strategy."
                     : "Drag a target or adjust the controls beside this graph. Nothing is written until you review and apply."
                 }
                 onChange={

@@ -67,7 +67,7 @@ export function PlanCellContext({
     fixed = rows.filter((r) => r.vegetative === r.generative);
   const unit = (c: number) => (granularity === "week" ? "Week " : "Day ") + (c + 1);
   const shown = (b: number | null, isMixed: boolean) =>
-    b !== null ? b + "%" : isMixed ? "mixed" : "no plan";
+    b !== null ? b + "%" : isMixed ? "mixed" : "no strategy";
   const side = (c: number) => {
     if (c < 0 || c >= columns) return null;
     const range = columnRange(granularity, c),
@@ -102,11 +102,11 @@ export function PlanCellContext({
         </h3>
         <p className="muted small">
           {typed !== null
-            ? `Preview at ${typed}%${now !== null ? `, now ${now}%` : mixed ? ", now mixed" : saved === null ? ", no plan yet" : ""}. Enter applies it to the draft, Esc cancels.`
+            ? `Preview at ${typed}%${now !== null ? `, now ${now}%` : mixed ? ", now mixed" : saved === null ? ", no strategy yet" : ""}. Enter applies it to the draft, Esc cancels.`
             : mixed
               ? `Mixed balance. One entry sets all ${end - start + 1} days.`
               : saved === null
-                ? "No plan covers these days. Type a balance to add one."
+                ? "No strategy covers these days. Type a balance to add one."
                 : `${saved}% generative.`}{" "}
           {profile ? `Endpoints: ${profile.name}.` : ""}
           {readOnly ? " Read only." : ""}

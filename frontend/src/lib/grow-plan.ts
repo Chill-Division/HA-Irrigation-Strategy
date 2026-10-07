@@ -7,7 +7,7 @@ import type {
 } from "./operator-types";
 import { DRYBACK_UNIT, settingWords } from "./setting-words";
 
-// The Schedule names and explains each target in the same words as the Irrigation plan.
+// The Schedule names and explains each target in the same words as Today.
 const planKeys = [
   "dryback_target",
   "ec_target_p0",
@@ -194,7 +194,7 @@ export function planErrors(
 ): string[] {
   const errors: string[] = [];
   if (plan.schema_version !== 1 || !Array.isArray(plan.profiles) || !Array.isArray(plan.zones))
-    return ["Unsupported plan format."];
+    return ["Unsupported strategy format."];
   if (!plan.profiles.length) errors.push("Add at least one endpoint profile.");
   const expectedZones = Object.keys(catalog)
     .map(Number)
@@ -206,7 +206,7 @@ export function planErrors(
   if (profiles.size !== plan.profiles.length) errors.push("Profile IDs must be unique.");
   const zoneIds = new Set<number>();
   for (const zone of plan.zones) {
-    if (zoneIds.has(zone.zone_id)) errors.push("A zone can have only one plan.");
+    if (zoneIds.has(zone.zone_id)) errors.push("A zone can have only one strategy.");
     zoneIds.add(zone.zone_id);
     if (!validDate(zone.start_date))
       errors.push("Zone " + zone.zone_id + ": choose a valid grow start date.");
@@ -255,7 +255,7 @@ export function planErrors(
   return [...new Set(errors)];
 }
 export function parsePlanImport(text: string): GrowPlan {
-  if (text.length > 500000) throw new Error("Plan file is too large.");
+  if (text.length > 500000) throw new Error("Strategy file is too large.");
   const parsed = JSON.parse(text);
   const plan = parsed.plan || parsed;
   if (
@@ -265,7 +265,7 @@ export function parsePlanImport(text: string): GrowPlan {
     plan.profiles.length > 100 ||
     plan.zones.length > 24
   )
-    throw new Error("Choose a version 1 Crop Steering plan.");
+    throw new Error("Choose a version 1 Crop Steering strategy file.");
   for (const p of plan.profiles)
     if (
       !p ||

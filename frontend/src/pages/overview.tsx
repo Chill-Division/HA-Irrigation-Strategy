@@ -41,7 +41,7 @@ export function Overview({
             <RoomPower controller={controller} />
             <WateringPower controller={controller} />
             <Button variant="outline" onClick={() => navigate("grow-plan")}>
-              Irrigation plan <ArrowUpRight size={16} />
+              Irrigation strategy <ArrowUpRight size={16} />
             </Button>
           </div>
         }

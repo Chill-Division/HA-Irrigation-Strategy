@@ -94,7 +94,7 @@ export function RecipeLibrary({
       );
       setError("");
     } catch (e) {
-      setError(`Recipe storage is unavailable. ${errorText(e)}`);
+      setError(`Strategy library storage is unavailable. ${errorText(e)}`);
       setLibrary(null);
     }
   }
@@ -107,7 +107,7 @@ export function RecipeLibrary({
     const changed = (event: StorageEvent) => {
       if (event.key === key || event.key === null)
         setError(
-          "The recipe library changed in another tab. Reload it before saving or removing recipes.",
+          "The strategy library changed in another tab. Reload it before saving or removing strategies.",
         );
     };
     window.addEventListener("storage", changed);
@@ -134,7 +134,8 @@ export function RecipeLibrary({
     setError("");
     setReading(true);
     try {
-      if (file.size > MAX_PLAN_BYTES) throw new Error("Plan file is too large (maximum 500 KB).");
+      if (file.size > MAX_PLAN_BYTES)
+        throw new Error("Strategy file is too large (maximum 500 KB).");
       const candidate = importRecipePlan(await file.text());
       if (generation !== readGeneration.current || scopeRef.current !== startedKey) return;
       openSave(candidate, true);
@@ -175,7 +176,7 @@ export function RecipeLibrary({
       );
       setDialog(null);
       setError("");
-      setNotice("Recipe saved in this browser for this room. Home Assistant was not changed.");
+      setNotice("Strategy saved in this browser for this room. Home Assistant was not changed.");
     } catch (e) {
       setError(errorText(e));
     }
@@ -188,7 +189,7 @@ export function RecipeLibrary({
       onLoad(prepared);
       setDialog(null);
       setError("");
-      setNotice("Recipe loaded into the local draft. Review and save in the planner when ready.");
+      setNotice("Strategy loaded into the local draft. Review and save it when ready.");
     } catch (e) {
       setError(errorText(e));
     }
@@ -199,7 +200,7 @@ export function RecipeLibrary({
       setLibrary(removeRecipe(window.localStorage, available, dialog.recipe.id));
       setDialog(null);
       setError("");
-      setNotice("Recipe removed from this browser library.");
+      setNotice("Strategy removed from this browser library.");
     } catch (e) {
       setError(errorText(e));
     }
@@ -210,15 +211,15 @@ export function RecipeLibrary({
       <details className="panel recipe-library" data-recipe-library>
         <summary>
           <BookOpen size={18} />
-          <strong>Recipe library</strong>
+          <strong>Strategy library</strong>
           <span>{available?.recipes.length ?? 0} saved</span>
         </summary>
         <div className="recipe-library-body">
           <p className="muted small">
-            Your own reusable plans for {roomName}. Stored only in this browser
+            Your own reusable strategies for {roomName}. Stored only in this browser
             {demo ? " · demo library" : ""}; export copies to keep a backup.{" "}
             {demo
-              ? "Demo examples are synthetic interface demonstrations, not cultivation recommendations. Your saved demo recipes are preserved."
+              ? "Demo examples are synthetic interface demonstrations, not cultivation recommendations. Your saved demo strategies are preserved."
               : "The library starts empty."}
           </p>
           <div className="recipe-library-actions">
@@ -229,7 +230,7 @@ export function RecipeLibrary({
               disabled={blocked || reading}
             >
               <Plus size={15} />
-              Save current as recipe
+              Save current as a strategy
             </Button>
             <Button
               variant="outline"
@@ -238,7 +239,7 @@ export function RecipeLibrary({
               disabled={blocked || reading}
             >
               <Upload size={15} />
-              {reading ? "Reading file…" : "Import recipe file"}
+              {reading ? "Reading file…" : "Import strategy file"}
             </Button>
             <Button variant="ghost" size="sm" onClick={reload}>
               <RefreshCw size={15} />
@@ -258,7 +259,7 @@ export function RecipeLibrary({
             className="sr-only"
             type="file"
             accept="application/json,.json"
-            aria-label="Import recipe file"
+            aria-label="Import strategy file"
             ref={fileRef}
             onChange={(event) => void importFile(event.target.files?.[0])}
           />
@@ -274,7 +275,7 @@ export function RecipeLibrary({
           )}
           {!blocked && !available.recipes.length && (
             <p className="recipe-empty">
-              No saved recipes yet. Save a plan you have configured or import your own plan export.
+              No saved strategies yet. Save the one you have configured, or import your own export.
             </p>
           )}
           {!!available?.recipes.length && (
@@ -298,7 +299,7 @@ export function RecipeLibrary({
                         setError("");
                       }}
                     >
-                      Preview recipe<span className="sr-only"> {recipe.name}</span>
+                      Preview strategy<span className="sr-only"> {recipe.name}</span>
                     </Button>
                     <Button
                       size="sm"
@@ -306,7 +307,7 @@ export function RecipeLibrary({
                       onClick={() =>
                         download(exportRecipe(recipe, roomName), planFileName(recipe.name))
                       }
-                      aria-label={`Export recipe ${recipe.name}`}
+                      aria-label={`Export strategy ${recipe.name}`}
                     >
                       <Download size={16} />
                     </Button>
@@ -318,7 +319,7 @@ export function RecipeLibrary({
                         setDialog({ kind: "remove", recipe });
                         setError("");
                       }}
-                      aria-label={`Remove recipe ${recipe.name}`}
+                      aria-label={`Remove strategy ${recipe.name}`}
                     >
                       <Trash2 size={16} />
                     </Button>
@@ -328,7 +329,7 @@ export function RecipeLibrary({
             </ul>
           )}
           <p className="muted small">
-            Up to {MAX_RECIPES} recipes per room. Loading changes a local draft; it does not
+            Up to {MAX_RECIPES} strategies per room. Loading changes a local draft; it does not
             activate irrigation.
           </p>
         </div>
@@ -346,23 +347,23 @@ export function RecipeLibrary({
           <DialogHeader>
             <DialogTitle>
               {dialog?.kind === "save"
-                ? "Save recipe"
+                ? "Save strategy"
                 : dialog?.kind === "remove"
-                  ? "Remove saved recipe?"
-                  : "Preview recipe"}
+                  ? "Remove saved strategy?"
+                  : "Preview strategy"}
             </DialogTitle>
             <DialogDescription>
               {dialog?.kind === "remove"
-                ? "This removes the browser copy. Your current plan and Home Assistant settings stay unchanged."
+                ? "This removes the browser copy. Your current strategy and Home Assistant settings stay unchanged."
                 : dialog?.kind === "save"
-                  ? "Save your named plan in this room's browser library."
-                  : "Inspect the recipe before loading it into a local draft. Current zone start dates will be kept."}
+                  ? "Save it under a name in this room's browser library."
+                  : "Inspect the strategy before loading it into a local draft. Current zone start dates will be kept."}
             </DialogDescription>
           </DialogHeader>
           {dialog?.kind === "save" && (
             <div className="recipe-form">
               <div>
-                <Label htmlFor="recipe-name">Recipe name</Label>
+                <Label htmlFor="recipe-name">Strategy name</Label>
                 <Input
                   id="recipe-name"
                   value={name}
@@ -395,7 +396,7 @@ export function RecipeLibrary({
               <p className="muted small">
                 {dialog.plan.zones.length} zone schedules · {dialog.plan.profiles.length} endpoint
                 profiles
-                {dialog.imported ? " · imported user plan" : " · copy of the current local plan"}.
+                {dialog.imported ? " · imported" : " · copy of the current local draft"}.
               </p>
             </div>
           )}
@@ -412,7 +413,7 @@ export function RecipeLibrary({
                 className="table-scroll"
                 tabIndex={0}
                 role="region"
-                aria-label="Recipe zone schedules"
+                aria-label="Strategy zone schedules"
               >
                 <table className="data-table">
                   <thead>
@@ -442,14 +443,14 @@ export function RecipeLibrary({
               </div>
               <details>
                 <summary>Inspect saved profiles and schedules</summary>
-                <pre tabIndex={0} role="region" aria-label="Saved recipe JSON">
+                <pre tabIndex={0} role="region" aria-label="Saved strategy JSON">
                   {JSON.stringify(dialog.recipe.plan, null, 2)}
                 </pre>
               </details>
               {!canLoad && (
                 <p className="workspace-message">
-                  Loading is unavailable while the plan is active, armed, busy or disconnected.
-                  Exporting a recipe remains available.
+                  Loading is unavailable while the strategy is active, armed, busy or disconnected.
+                  Exporting a saved strategy remains available.
                 </p>
               )}
               {dirty && (
@@ -459,7 +460,7 @@ export function RecipeLibrary({
                     checked={replace}
                     onChange={(event) => setReplace(event.target.checked)}
                   />
-                  Replace the current unsaved planner draft with this recipe.
+                  Replace the current unsaved draft with this strategy.
                 </label>
               )}
             </div>
@@ -499,7 +500,7 @@ export function RecipeLibrary({
             )}
             {dialog?.kind === "remove" && (
               <Button variant="destructive" onClick={deleteRecipe} disabled={blocked}>
-                Remove recipe
+                Remove strategy
               </Button>
             )}
           </DialogFooter>

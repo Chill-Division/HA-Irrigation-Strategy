@@ -33,7 +33,7 @@ export function tourSteps(reservoir: boolean): TourStep[] {
     {
       id: "plan",
       page: "strategy",
-      title: "Irrigation plan",
+      title: "Irrigation strategy",
       text: "Where you steer. **Today** sets each zone's targets for the four phases, from the morning dryback to the overnight one. **Schedule** moves them through the grow, more vegetative or more generative, week by week.",
       target: [".section-tabs button", ".page-heading h1"],
     },

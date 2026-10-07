@@ -61,7 +61,7 @@ const sections = [
   { id: "overview", label: "Overview", icon: House, tabs: [{ id: "overview", label: "Overview" }] },
   {
     id: "plan",
-    label: "Irrigation plan",
+    label: "Irrigation strategy",
     icon: CalendarRange,
     tabs: [
       { id: "strategy", label: "Today" },

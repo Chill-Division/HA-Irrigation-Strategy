@@ -778,11 +778,11 @@ export function WaterUse({
   );
 }
 
-/** "P2 base VWC threshold" → "Threshold", keeping a grow plan's "Plan · " prefix. */
+/** "P2 base VWC threshold" → "Threshold", keeping an irrigation strategy's "Strategy · " prefix. */
 const shortTarget = (label: string) => {
-  const plan = label.startsWith("Plan · ");
+  const plan = label.startsWith("Strategy · ");
   const kind = /threshold/i.test(label) ? "threshold" : /floor/i.test(label) ? "floor" : "target";
-  return plan ? `Plan · ${kind}` : kind[0].toUpperCase() + kind.slice(1);
+  return plan ? `Strategy · ${kind}` : kind[0].toUpperCase() + kind.slice(1);
 };
 
 /** Moisture with a bar to 100 % and a marker at the phase's target; `target` names it below. */

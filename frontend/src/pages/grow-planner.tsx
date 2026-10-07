@@ -103,7 +103,7 @@ export function GrowPlanner({
     try {
       const value = await controller.operator<StrategyDocument>("strategy_get");
       if (!value.plan || !value.catalog)
-        throw new Error("Update the integration to use grow plans.");
+        throw new Error("Update the integration to use irrigation strategies.");
       setDocument(value);
       setPlan(structuredClone(value.plan));
       const first = value.plan.zones.find((z) => z.zone_id === zoneId) || value.plan.zones[0];
@@ -241,7 +241,7 @@ export function GrowPlanner({
   // Focusing a grid cell selects it, so a typed balance edits the same block as the slider.
   function applyBalance(bias: number) {
     // The plan can turn read only while a value is typed (disconnected, busy or armed elsewhere).
-    if (disabled) setRejected(`${bias}% was not applied: the plan cannot be edited right now.`);
+    if (disabled) setRejected(`${bias}% was not applied: the strategy cannot be edited right now.`);
     else if (
       zonePlan &&
       (rangeBlock(zonePlan, firstDay, lastDay).mixed || currentBlock?.bias !== bias)
@@ -345,8 +345,8 @@ export function GrowPlanner({
         review === "save"
           ? "Draft saved to Home Assistant. It is not active."
           : review === "activate"
-            ? "Plan armed for the next lights-on boundary."
-            : "Plan disarm requested; active targets remain until the next boundary.",
+            ? "Strategy armed for the next lights-on boundary."
+            : "Strategy disarm requested; active targets remain until the next boundary.",
       );
     } catch (e) {
       setError(errorText(e));
@@ -387,7 +387,7 @@ export function GrowPlanner({
         throw new Error("The file contains zones not present in this room. Map the room first.");
       setPlan(value);
       setNotice(
-        "Plan imported as a local draft. Check endpoints and zone assignments before saving.",
+        "Strategy imported as a local draft. Check endpoints and zone assignments before saving.",
       );
     } catch (e) {
       setError(errorText(e));
@@ -439,7 +439,7 @@ export function GrowPlanner({
         type="file"
         accept="application/json,.json"
         className="sr-only"
-        aria-label="Import grow plan"
+        aria-label="Import strategy"
         onChange={(e) => void importPlan(e.target.files?.[0])}
       />
       {error && (
@@ -448,7 +448,7 @@ export function GrowPlanner({
           {dirty && (
             <p>
               Your local draft is retained. Export it before discarding changes and reloading the
-              stored plan.
+              stored strategy.
             </p>
           )}
         </div>
@@ -461,8 +461,8 @@ export function GrowPlanner({
       {!plan || !document ? (
         <section className="panel workspace-card">
           <Empty
-            title={busy ? "Loading grow plan" : "Grow planner needs the updated integration"}
-            detail="Install the current Crop Steering integration and controller to store and run zone plans. You can explore the complete workflow in demo mode."
+            title={busy ? "Loading the strategy" : "Schedule needs the updated integration"}
+            detail="Install the current Crop Steering integration and controller to store and run irrigation strategies. You can explore the complete workflow in demo mode."
             action={
               <div className="workspace-actions">
                 <Button onClick={() => void load()} disabled={busy}>
@@ -492,26 +492,26 @@ export function GrowPlanner({
             onLoad={(next) => {
               if (disabled || controller.room.strategy.engaged)
                 throw new Error(
-                  "The grow plan cannot accept a recipe while active, armed, busy or disconnected.",
+                  "The strategy cannot load a saved one while it is active, armed, busy or disconnected.",
                 );
               setPlan(next);
               setPreview(null);
               setError("");
               setNotice(
-                "Recipe loaded into the local draft. Current zone start dates are retained. Review and save before arming.",
+                "Saved strategy loaded into the local draft. Current zone start dates are retained. Review and save before arming.",
               );
             }}
           />
           <section className="panel workspace-card plan-toolbar">
             <div>
-              <span className="eyebrow">Plan status</span>
+              <span className="eyebrow">Strategy status</span>
               <strong className="plan-state">
                 {document.status}
                 {dirty ? " · unsaved changes" : ""}
               </strong>
               <p className="muted small">
                 Revision {document.revision} ·{" "}
-                {controller.demo ? "Isolated sample plan" : "Stored in Home Assistant"}
+                {controller.demo ? "Isolated sample strategy" : "Stored in Home Assistant"}
               </p>
             </div>
             <div className="workspace-actions">
@@ -526,7 +526,7 @@ export function GrowPlanner({
                 }
               >
                 <RefreshCw size={16} />
-                Reload stored plan
+                Reload stored strategy
               </Button>
               <Button
                 variant="outline"
@@ -555,7 +555,7 @@ export function GrowPlanner({
                   onClick={() => setReview("activate")}
                 >
                   <Play size={16} />
-                  Arm plan
+                  Arm strategy
                 </Button>
               ) : (
                 <Button
@@ -564,7 +564,7 @@ export function GrowPlanner({
                   onClick={() => setReview("disarm")}
                 >
                   <Pause size={16} />
-                  Disarm plan
+                  Disarm strategy
                 </Button>
               )}
             </div>
@@ -572,8 +572,8 @@ export function GrowPlanner({
           {zoneMismatch && (
             <div className="workspace-message">
               <p>
-                Setup's active zones differ from this stored plan. Export first if you need a copy.
-                Updating creates a local draft, preserves existing active schedules, removes
+                Setup's active zones differ from this stored strategy. Export first if you need a
+                copy. Updating creates a local draft, preserves existing active schedules, removes
                 archived assignments and starts new zones from their current values at both
                 endpoints.
               </p>
@@ -587,14 +587,14 @@ export function GrowPlanner({
           )}
           {!document.capabilities.controller_supported && (
             <div className="workspace-message">
-              Controller update required before activation. Plans can still be drafted and
+              Controller update required before activation. Strategies can still be drafted and
               previewed.
             </div>
           )}
           {!editable && (
             <div className="workspace-message">
-              This plan is {document.status}. Disarm it before editing. Active targets change only
-              at the next lights-on boundary.
+              This strategy is {document.status}. Disarm it before editing. Active targets change
+              only at the next lights-on boundary.
             </div>
           )}
           {!!errors.length && (
@@ -609,7 +609,7 @@ export function GrowPlanner({
               </ul>
             </details>
           )}
-          <div className="workspace-tabs" role="tablist" aria-label="Grow planner view">
+          <div className="workspace-tabs" role="tablist" aria-label="Schedule view">
             <button
               role="tab"
               aria-selected={tab === "calendar"}
@@ -734,7 +734,7 @@ export function GrowPlanner({
                                   onKeyDown={(e) => cellKey(e, row, i)}
                                   onBlur={leaveCell}
                                 />
-                                <small>{b ? "G" : "No plan"}</small>
+                                <small>{b ? "G" : "None"}</small>
                               </label>
                             );
                           })}
@@ -1091,17 +1091,17 @@ export function GrowPlanner({
           <DialogHeader>
             <DialogTitle>
               {review === "save"
-                ? "Review grow plan"
+                ? "Review strategy"
                 : review === "activate"
-                  ? "Arm this grow plan?"
-                  : "Disarm this grow plan?"}
+                  ? "Arm this strategy?"
+                  : "Disarm this strategy?"}
             </DialogTitle>
             <DialogDescription>
               {controller.room.room.name} only.{" "}
               {review === "save"
                 ? "Saving stores a draft and does not change active irrigation."
                 : review === "activate"
-                  ? "The validated plan will become eligible at the next local lights-on boundary. It never enables pumps or the engine."
+                  ? "The validated strategy will become eligible at the next local lights-on boundary. It never enables pumps or the engine."
                   : "Active targets remain until the next lights-on boundary, then the controller returns to legacy setpoints."}
             </DialogDescription>
           </DialogHeader>

@@ -62,11 +62,11 @@ describe("auto setpoint status", () => {
     const frozen = parseAutoSetpoints(
       entity("frozen", {
         hold_days: "2",
-        frozen_reason: "an armed grow plan owns this room's targets",
+        frozen_reason: "an armed irrigation strategy owns this room's targets",
       }),
     )!;
     expect(frozen.holdDays).toBe(2);
-    expect(frozen.frozenReason).toBe("an armed grow plan owns this room's targets");
+    expect(frozen.frozenReason).toBe("an armed irrigation strategy owns this room's targets");
     const missing = parseAutoSetpoints(entity("tracking"))!;
     expect(missing.holdDays).toBeNull();
     expect(missing.frozenReason).toBeNull();
