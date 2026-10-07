@@ -693,30 +693,32 @@ function RecipeCard({
             onValue={(ml) => onChange({ ...recipe, strength: ml / fill })}
           />
         </div>
-        {inUse && (
-          <Pill tone="on" dot>
-            In use
-          </Pill>
-        )}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label={`Export ${label}`}
-          title="Export to a recipe file"
-          onClick={() => download(exportRecipe(recipe), exportName(recipe))}
-        >
-          <Download size={16} />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label={`Remove ${label}`}
-          onClick={onRemove}
-        >
-          <Trash2 size={16} />
-        </Button>
+        <div className="res-recipe-actions">
+          {inUse && (
+            <Pill tone="on" dot>
+              In use
+            </Pill>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={`Export ${label}`}
+            title="Export to a recipe file"
+            onClick={() => download(exportRecipe(recipe), exportName(recipe))}
+          >
+            <Download size={16} />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={`Remove ${label}`}
+            onClick={onRemove}
+          >
+            <Trash2 size={16} />
+          </Button>
+        </div>
       </div>
       <p id={`${id}-part-help`} className="muted small res-part-help">
         {Number.isFinite(part) && fill > 0
