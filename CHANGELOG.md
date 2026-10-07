@@ -11,35 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- **How it works, in plain words.** A new guide explains how the controller decides when to water
-  and how much: the four phases, dryback, the rescue level, Auto setpoints, substrate EC, holds and
-  the grow-day chart, with the Athena Handbook's page references and answers to common questions.
-- **The public repository's README and docs between releases.** A change to the README, the docs,
-  the pictures, the scripts or the tests can now go to the public repository without a new version.
-  A change to the integration or the controller app still waits for a release.
-- **The guides match 1.0.** The user guide, the install and troubleshooting guides, the entity
-  reference and the app's documentation no longer describe features that are gone (the catch-test
-  calculator, the tank temperature and fill-level mappings, the minimum daily volume, the feed gate)
-  or ask anyone to update to a version from before 1.0. The entity reference now says what the
-  controller does with each setting, and where it narrows the range a setting accepts.
-- **Alerts and help say what the controller does now.** The error codes' explanations, a Repairs
-  card and two notifications no longer mention the minimum daily volume, and the root-zone EC hold
-  says what can lift it. The stock tanks alert says each refill takes what its doser gave, and the
-  controller app's kill-switch option says that a room made by the setup wizard has its own
-  watering switch.
-- **Shot length sensors read true.** Home Assistant's P1, P2 and P3 shot duration sensors now give
-  the seconds the controller really runs each shot for. They used to time it through one dripper,
-  so with two drippers per plant they read double, and they ignored a zone sized on its own.
-- **A feed recipe can give its EC.** Under each recipe's doses on Feed → Reservoir, Feed EC is what
-  the recipe mixes to, measured once mixed. The controller only floods a salty root zone with a feed
-  weaker than it, and now takes the recipe in use's EC as that feed's: a 1.6 mS/cm feed dilutes a
-  2.6 mS/cm root zone. Without one, as before, it counts the feed as 3.0 mS/cm. Recipe files carry it.
-- **One word for each side.** What steers the watering is the irrigation strategy: the menu's
-  Irrigation plan is now Irrigation strategy (Today and Schedule), its saved copies are kept in the
-  Strategy library, and you arm or disarm a strategy. A recipe is always a feed recipe. Home
-  Assistant's Repairs cards, error codes, services and the strategy stage select say the same.
-- **A feed recipe's bin stays on its row.** On a recipe in use, the remove button no longer drops
-  onto a line of its own.
+- **Unified naming of Irrigation Strategy and Feed Recipes.**
+- **Feed EC now set per-recipe** to allow for steering at lower EC rootzones, defaults to 3.0EC
+  where not set.
+- Bug fixes and improvements.
 
 ### 🔧 Technical notes
 

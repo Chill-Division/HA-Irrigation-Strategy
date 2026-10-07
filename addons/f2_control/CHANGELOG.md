@@ -1,8 +1,8 @@
 # Unreleased
 
-- **Wording:** Auto setpoints, frozen, says an armed irrigation strategy owns the room's targets. **The dashboard the app serves:** Irrigation plan is now Irrigation strategy, its saved copies are kept in the Strategy library, and a recipe is always a feed recipe.
-- **Feed EC:** a flush or diluting shot now waters with the feed recipe in use's Feed EC, from the integration's feed plan: a root zone saltier than that feed gets one. Without one it counts the feed as 3.0 mS/cm, as before. The root-zone EC hold (CS-206) says so. **The dashboard the app serves** has the Feed EC on each recipe.
-- **Notifications:** the root-zone EC hold (CS-206) says what can lift it, and the setting-range warning (CS-401) no longer mentions the minimum daily volume. **Configuration:** the kill-switch option says that a room made by the setup wizard has its own watering switch, and the zone-count option that the zones come from the room's setup. **The dashboard the app serves:** the same corrections in its help and error codes. No change to how the controller waters.
+- Unified naming of Irrigation Strategy and Feed Recipes.
+- Feed EC now set per-recipe to allow for steering at lower EC rootzones, defaults to 3.0EC where not set.
+- Bug fixes and improvements.
 
 # 1.0.0
 
