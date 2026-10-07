@@ -124,8 +124,10 @@ it is planned only as deep as it allows.
 Auto setpoints is optional, one switch per room (**Auto setpoints on** or **Turn auto off…** on the
 Irrigation plan). It never fires a shot itself: the engine still waters by the rules above. It keeps
 three settings attainable for each zone, from how that zone has actually behaved: the **Peak VWC
-target**, **Full saturation** and the **maintenance trigger**. It never touches the rescue level, the
-dryback target or any timing.
+target**, **Full saturation** and the **maintenance trigger**. After a ramp that has stopped climbing,
+it may also raise the zone's **P1 EC target**, just enough for the ramp to hand over to P2 and never
+above the zone's P2 EC target: once moisture has stopped rising, more water at the top only runs
+off. It never touches the rescue level, the dryback target or any timing.
 
 ### What it learns
 
@@ -188,7 +190,8 @@ When a zone's probe reads EC, EC shapes the watering:
   shot size"; "Increase Substrate EC: Decrease shot size" (p. 38).
 - **P1 waits for EC.** The ramp hands over only once EC is within 15% of the P1 target.
 - **Diluting shots.** In P2, EC more than 20% over target fires a larger shot to bring it down,
-  when the feed is weaker than the substrate and there is room for the water.
+  when the feed is weaker than the substrate and there is room for the water. The controller has no
+  feed EC reading: it counts the feed as 3.0 mS/cm, so it dilutes only a substrate above that.
 - **Never locked out.** At the **Maximum substrate EC**, a flush fires in any phase, when the water can
   dilute it. In P0, the only shot is a flush when EC is over 2.5 times the P0 target.
 - **EC stacking** (a room switch) nudges the maintenance trigger by up to a point every half hour: down
