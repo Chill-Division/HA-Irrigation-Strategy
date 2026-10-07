@@ -63,7 +63,7 @@ def _utc(value):
 
 class _Hold(ValueError):
     """A fault only the operator can clear: the plan goes to error and the controller holds the
-    steering of the zones it manages (never their emergency, watchdog or minimum-daily shots).
+    steering of the zones it manages (never their emergency or watchdog shots).
     """
 
 
