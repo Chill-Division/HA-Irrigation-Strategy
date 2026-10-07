@@ -551,7 +551,7 @@ class StrategyManager:
         active = self.document["active"]
         enabled = bool(active["zones"]) or status in ("active", "disarming", "error")
         attributes = {
-            "friendly_name": "Grow strategy plan",
+            "friendly_name": "Irrigation strategy",
             "room_id": self.room_id,
             "snapshot_version": 1,
             "revision": self.document["revision"],

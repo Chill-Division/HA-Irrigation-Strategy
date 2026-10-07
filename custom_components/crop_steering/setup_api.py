@@ -163,7 +163,7 @@ def _plan_blocker(hass, entry, proposed):
     if not archiving and wanted in (current, planned):
         return None
     return (
-        f"The grow strategy plan is {status}: disarm it (Irrigation plan > Schedule) and "
+        f"The irrigation strategy is {status}: disarm it (Irrigation strategy > Schedule) and "
         "wait for it to return to draft before changing this room's zones or archiving it"
     )
 
