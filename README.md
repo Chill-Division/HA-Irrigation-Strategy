@@ -61,6 +61,7 @@ Crop Steering comes in two parts, and watering needs both: the **integration** k
 
 ## Documentation
 
+- [How it works](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/HOW_IT_WORKS.md): why a zone waters when it does, in plain words
 - [User guide](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/USER_GUIDE.md) and [planning a grow](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/GROW_PLANS.md)
 - [Error codes](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/ERROR_CODES.md) and [troubleshooting](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/troubleshooting.md)
 - [Entity reference](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/ENTITIES.md)

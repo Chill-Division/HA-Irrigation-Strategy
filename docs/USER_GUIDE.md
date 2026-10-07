@@ -4,6 +4,8 @@ Use **Overview** to check a room and **Irrigation plan** for **Today** and **Sch
 
 The menu has six entries; where one holds more than one page, tabs across the top choose it.
 
+Why a zone did what it did, in plain words: [How it works](HOW_IT_WORKS.md).
+
 | Menu            | What it holds                                     |
 | --------------- | ------------------------------------------------- |
 | Overview        | The room now, with its room and watering switches |
