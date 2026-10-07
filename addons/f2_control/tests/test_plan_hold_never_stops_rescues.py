@@ -2,9 +2,9 @@
 
 While a room's plan is held (the integration publishes an error, the snapshot is stale, or it is missing
 after a restart), the controller used to hold every shot on every zone the plan manages, for as long as
-the hold lasted: a missed lights-on boundary held a room all day. Now the P3 emergency, the lights-on
-watchdog and the minimum-daily floor still fire (and a blind zone's safety schedule, and its copy of a
-sibling's rescue); every other gate still applies to them.
+the hold lasted: a missed lights-on boundary held a room all day. Now the P3 emergency and the lights-on
+watchdog still fire (and a blind zone's safety schedule, and its copy of a sibling's rescue); every
+other gate still applies to them.
 """
 
 from datetime import date, datetime, timedelta, timezone

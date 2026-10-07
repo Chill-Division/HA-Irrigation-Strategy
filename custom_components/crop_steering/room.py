@@ -99,7 +99,7 @@ def build_engine_config(
     """PURE. The room descriptor the f2-control add-on reads from
     ``sensor.crop_steering_<prefix>engine_config`` to DISCOVER and drive an additional room
     (the add-on can't read the config entry directly). Maps each zone's valve switch, the
-    shared pump/mainline, the per-room kill switch, and the optional source-water probes.
+    shared pump/mainline, the per-room kill switch and, when mapped, the reservoir and its dosers.
 
     The default room (prefix "") publishes ``input_boolean.f2_control_enabled`` as its
     kill switch (the add-on's ``enable_flag`` option overrides it; the engine's heartbeat

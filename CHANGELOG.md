@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   calculator, the tank temperature and fill-level mappings, the minimum daily volume, the feed gate)
   or ask anyone to update to a version from before 1.0. The entity reference now says what the
   controller does with each setting, and where it narrows the range a setting accepts.
+- **Alerts and help say what the controller does now.** The error codes' explanations, a Repairs
+  card and two notifications no longer mention the minimum daily volume, or ask you to check the
+  feed EC, which the controller doesn't read: it counts the feed as 3.0 mS/cm. The stock tanks
+  alert says each refill takes what its doser gave, and the controller app's kill-switch option
+  says that a room made by the setup wizard has its own watering switch.
 
 ### 🔧 Technical notes
 
@@ -41,6 +46,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rows for `maximum_ec`, `field_capacity`, EC stacking, the steering selects, the display-only EC
   sensors, `app_status`, `ai_heartbeat`, the safety sensors and the manual override.
   `docs/RELEASING.md` says the 2.x numbers can be used again.
+- Text only, no change to watering: `docs/error-codes.json` (CS-206, CS-401, CS-601, CS-606,
+  CS-608) and `docs/ERROR_CODES.md` from it; the CS-206 and CS-401 notifications in
+  `controller.py`; the CS-606 Repairs card (`strings.json`, `translations/en.json`); the Maximum EC
+  help and the Reservoir's not-reported note on the dashboard; comments and docstrings in the
+  engine (both copies), the controller, `health.py`, `strategy.py` and `room.py`; the app's
+  `num_zones` and `enable_flag` option texts (`addons/f2_control/translations/en.yaml`); and the
+  `whats_new_seen` example version in `services.yaml`.
 
 ## [1.0.0] - 2026-10-05
 

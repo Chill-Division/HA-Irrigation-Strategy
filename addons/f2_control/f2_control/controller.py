@@ -298,10 +298,10 @@ def _on_since_shot(history, started):
 
 # The shots a plan hold never stops, by decide()'s Reason.kind. A plan decides how a zone is steered, not
 # whether a starving zone gets water: while the plan is held, stale or missing, routine steering waits
-# (decide() is asked for the rescues alone: ZoneSnapshot.steering_held), but the P3 emergency, the
-# lights-on watchdog and the minimum-daily floor still fire, and so do a blind zone's safety schedule and
-# its copy of a sibling's rescue, and a test shot a person asked for (its zone's Test Shot button). Every
-# other gate (kill switch, faults, zone switches, source water, the daily budget) still applies to them.
+# (decide() is asked for the rescues alone: ZoneSnapshot.steering_held), but the P3 emergency and the
+# lights-on watchdog still fire, and so do a blind zone's safety schedule and its copy of a sibling's
+# rescue, and a test shot a person asked for (its zone's Test Shot button). Every other gate (kill
+# switch, faults, zone switches, the daily budget) still applies to them.
 PLAN_HOLD_EXEMPT = frozenset({"p3_emergency", "watchdog", "blind_fallback", "blind_copy_rescue", "test_shot"})
 
 # A room's choice of how Water today reads, select.crop_steering_<prefix>water_today_view. The integration
@@ -1846,8 +1846,8 @@ class Controller:
                 "A setting is outside what the engine accepts, so the engine uses the nearest "
                 "allowed value instead. The setting itself accepts a wider range than the engine "
                 "does. Set it inside the range shown to clear this; where the detail compares two "
-                "settings (a minimum above its maximum), change either one. The minimum daily volume "
-                f"is worked out from mL per plant and plant count.\n\nDetail: {w}",
+                "settings (a minimum above its maximum), change either one."
+                f"\n\nDetail: {w}",
                 room=room,
                 zone=zone,
             )
@@ -4150,11 +4150,11 @@ class Controller:
                     "CS-206",
                     "root-zone EC too high, not watering",
                     "Root-zone EC is above this zone's maximum, and a flush can't bring it down "
-                    "right now (the feed is no weaker than the root zone, or the cube is already "
-                    "saturated), so the controller holds the zone: no shot runs, the overnight "
-                    "emergency shot and the no-water-for-hours safety shot included. The hold lifts "
-                    "by itself once a flush could help; if the plants may dry out first, check the "
-                    "feed EC and the EC probe now."
+                    "right now (the cube is already saturated, or the root zone is no saltier than "
+                    "the 3.0 mS/cm the controller counts the feed as), so the controller holds the "
+                    "zone: no shot runs, the overnight emergency shot and the no-water-for-hours "
+                    "safety shot included. The hold lifts by itself once a flush could help; if the "
+                    "plants may dry out first, check the EC probe now."
                     f"\n\nDetail ({st['phase']}): {reason}",
                     room=room,
                     zone=zone,

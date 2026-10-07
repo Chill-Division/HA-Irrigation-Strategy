@@ -179,7 +179,7 @@ def test_a_revision_that_is_not_a_plain_integer_never_counts_as_behind():
 
 # ---------------------------------------------------------------- the grow-strategy plan
 # Every hold of a room's plan is a Repairs card: while it lasts the controller waters the zones the plan
-# manages only with emergency, watchdog and minimum-daily shots. It used to be visible only on the
+# manages only with emergency and watchdog shots. It used to be visible only on the
 # plan's own sensor.
 PLAN = "sensor.crop_steering_strategy_plan"
 BEAT = "sensor.crop_steering_ai_heartbeat"

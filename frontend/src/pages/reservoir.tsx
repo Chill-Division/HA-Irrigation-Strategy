@@ -478,8 +478,8 @@ function BatchPanel({
       </div>
       {!status && mapped && (
         <p className="workspace-message res-note">
-          The controller app has not reported on this reservoir yet. It does once it runs a version
-          with nutrient batches and sees the reservoir mapped here.
+          The controller app has not reported on this reservoir yet. It does once it is running and
+          has picked up the reservoir mapped here.
         </p>
       )}
       {autoId && (

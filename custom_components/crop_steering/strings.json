@@ -754,7 +754,7 @@
     },
     "strategy_hold": {
       "title": "Crop Steering: grow strategy plan is holding irrigation (CS-606)",
-      "description": "The room's grow strategy plan is holding the steering of the zones it manages: {reason}. Until it clears, the controller waters those zones only with emergency, watchdog and minimum-daily shots. See the plan in the Crop Steering panel under Irrigation plan → Schedule. If it stays in error, fix the cause, then disarm the plan and arm it again.\n\nCode CS-606. What it means and what to do: Crop Steering → Help → Error codes."
+      "description": "The room's grow strategy plan is holding the steering of the zones it manages: {reason}. Until it clears, the controller waters those zones only with emergency and watchdog shots, and a zone with a dead probe on its timed schedule. See the plan in the Crop Steering panel under Irrigation plan → Schedule. If it stays in error, fix the cause, then disarm the plan and arm it again.\n\nCode CS-606. What it means and what to do: Crop Steering → Help → Error codes."
     },
     "strategy_degraded": {
       "title": "Crop Steering: grow strategy plan has not moved on to today (CS-607)",

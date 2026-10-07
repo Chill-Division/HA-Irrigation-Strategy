@@ -109,8 +109,8 @@ def _kill_switch(hass: HomeAssistant, prefix: str) -> str:
 
 def _strategy_hold(plan, heartbeat):
     """Why the room's grow-strategy plan is holding the steering of its zones -> (reason,
-    severity), or (None, None). The controller then waters those zones only with emergency,
-    watchdog and minimum-daily shots. `heartbeat` is None when the controller is offline (that
+    severity), or (None, None). The controller then waters those zones only with emergency
+    and watchdog shots. `heartbeat` is None when the controller is offline (that
     has its own issue)."""
     attrs = (getattr(plan, "attributes", {}) or {}) if plan is not None else {}
     if plan is not None and plan.state == "error":
