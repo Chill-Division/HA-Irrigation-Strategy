@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   feed EC, which the controller doesn't read: it counts the feed as 3.0 mS/cm. The stock tanks
   alert says each refill takes what its doser gave, and the controller app's kill-switch option
   says that a room made by the setup wizard has its own watering switch.
+- **Shot length sensors read true.** Home Assistant's P1, P2 and P3 shot duration sensors now give
+  the seconds the controller really runs each shot for. They used to time it through one dripper,
+  so with two drippers per plant they read double, and they ignored a zone sized on its own.
 
 ### 🔧 Technical notes
 
@@ -53,6 +56,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   engine (both copies), the controller, `health.py`, `strategy.py` and `room.py`; the app's
   `num_zones` and `enable_flag` option texts (`addons/f2_control/translations/en.yaml`); and the
   `whats_new_seen` example version in `services.yaml`.
+- Integration: `sensor.crop_steering_<prefix>p1/p2/p3_shot_duration_seconds` time the configured
+  shot in each active zone from the zone's own `substrate_volume`, `drippers_per_plant` and
+  `dripper_flow_rate` (the room's where the zone has none), then whole seconds, at least
+  `MIN_SHOT_S` and at most `max_shot_duration`, as `_act_zone` does. The state is the longest
+  zone's, attribute `zones` each zone's, and unknown when no zone's sizing gives a flow (it used to
+  read 0). `ShotCalculator.calculate_shot_duration` takes `drippers_per_plant`;
+  `capped_shot_seconds` is new. `tests_ha/test_shot_duration_sensors.py` holds the real sensors
+  against the real controller's arithmetic.
 
 ## [1.0.0] - 2026-10-05
 

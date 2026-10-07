@@ -65,6 +65,12 @@ def sensor(states, prefix=""):
             as_local=lambda value: value.replace(tzinfo=timezone.utc),
         ),
     }
+    # The module's own constants the extracted methods read.
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(
+            getattr(target, "id", "") == "SHOT_SIZE_KEYS" for target in node.targets
+        ):
+            namespace["SHOT_SIZE_KEYS"] = ast.literal_eval(node.value)
     exec(compile(module, str(SOURCE), "exec"), namespace)
     instance = namespace["SensorMethods"]()
     instance.hass = SimpleNamespace(states=SimpleNamespace(get=states.get))
