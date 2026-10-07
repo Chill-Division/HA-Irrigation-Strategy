@@ -200,6 +200,9 @@ def test_a_recipe_that_doses_nothing_says_so():
             {"recipes": [{**FLOWER, "id": str(n), "name": str(n)} for n in range(13)]},
             "Up to 12 feed recipes",
         ),
+        ({"recipes": [{**FLOWER, "ec": 12}]}, "Flower's feed EC must be a number"),
+        ({"recipes": [{**FLOWER, "ec": 0.05}]}, "from 0.1 to 10"),
+        ({"recipes": [{**FLOWER, "ec": "2.8"}]}, "Flower's feed EC must be a number"),
     ],
 )
 def test_a_setting_or_recipe_that_does_not_make_sense_is_refused(changes, reason):
@@ -363,6 +366,33 @@ def test_the_refill_reminder_reaches_the_controllers_plan_and_an_older_room_gets
     assert store.error is None
     assert (store.data["remind_pct"], store.data["min_pct"]) == (20.0, 25)
     assert feed.plan(store.data, MAPPED)["remind_pct"] == 20.0
+
+
+def test_the_recipe_in_uses_feed_ec_reaches_the_controllers_plan():
+    """What a recipe mixes to: the controller's feed EC for its flush and dilution tests."""
+    veg = {**FLOWER, "id": "veg", "name": "Veg", "ec": 1.6}
+    doc = settings(recipes=[{**FLOWER, "ec": 2.8}, veg])
+    assert [recipe["ec"] for recipe in doc["recipes"]] == [2.8, 1.6]
+    assert feed.plan(doc, MAPPED)["feed_ec"] == 2.8
+    assert feed.plan(feed.clean({**doc, "stage": "veg"}), MAPPED)["feed_ec"] == 1.6
+    # No stage, no feed EC; even with no doser mapped, the recipe in use still gives its own.
+    assert feed.plan(feed.clean({**doc, "stage": None}), MAPPED)["feed_ec"] is None
+    assert feed.plan(doc, {})["feed_ec"] == 2.8
+
+
+@pytest.mark.parametrize("given", [None, "", 0])
+def test_a_recipe_without_a_feed_ec_gives_none(given):
+    doc = settings(recipes=[{**FLOWER, "ec": given}])
+    assert doc["recipes"][0]["ec"] is None
+    assert feed.plan(doc, MAPPED)["feed_ec"] is None
+
+
+def test_a_recipe_saved_before_recipes_had_a_feed_ec_loads_without_one():
+    stored = {"revision": 3, "batch_l": 145, "recipes": [FLOWER], "stage": "flower"}
+    assert "ec" not in FLOWER
+    store = rig(stored)
+    assert store.error is None and store.data["recipes"][0]["ec"] is None
+    assert feed.plan(store.data, MAPPED)["feed_ec"] is None
 
 
 def test_a_stored_document_loads_as_it_was_saved():
