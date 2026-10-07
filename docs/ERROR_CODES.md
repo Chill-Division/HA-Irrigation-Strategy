@@ -278,21 +278,20 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 *Warning · Notification*
 
-**What it means.** Root-zone EC is above the zone's maximum, and a flush can't bring it down right now: the feed is no weaker than what is in the root zone, or the cube is already saturated.
+**What it means.** Root-zone EC is above the zone's maximum, and a flush can't bring it down right now: the cube is already saturated, or the root zone is no saltier than the feed, which the controller counts as 3.0 mS/cm (it has no feed EC reading).
 
-**Watering meanwhile.** The zone is held: no shot runs, the overnight emergency shot, the no-water-for-hours safety shot and the minimum daily volume included, and the urgent CS-207 is not raised for it. The hold lifts by itself once a flush could help (a weaker feed, or the cube drying back).
+**Watering meanwhile.** The zone is held: no shot runs, the overnight emergency shot and the no-water-for-hours safety shot included, and the urgent CS-207 is not raised for it. The hold lifts by itself once a flush could help (the cube drying back) or EC falls under the maximum.
 
 **Likely causes**
 
-- The feed EC is as high as, or higher than, the root zone.
 - The cube is at field capacity, so more water would only run off.
+- The zone's Full saturation setting is lower than the cube really reaches, so the controller takes it as saturated.
 - The EC probe reads high (calibration, or a probe that has dried out).
 
 **Suggested fixes**
 
-- Check the feed EC in the tank with a hand-held meter, and bring it down if it is high.
 - Check the EC probe against a hand-held meter.
-- Check the zone's maximum EC setting is what you intend.
+- Check the zone's Maximum EC and Full saturation settings are what you intend.
 
 <a id="cs-207"></a>
 
@@ -550,7 +549,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 **Suggested fixes**
 
 - Set it inside the range shown. The notification then stops.
-- Where two settings are compared, change either one. The minimum daily volume is worked out from mL per plant and plant count.
+- Where two settings are compared, change either one.
 
 <a id="cs-402"></a>
 
@@ -676,7 +675,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **Suggested fixes**
 
-- On a room made by the wizard, do NOT create the helper. The room's own switch is Engine Enabled. The card came from a controller app started before setup; integration 2.19.2 and newer don't raise it for such a room. Update the integration; the card clears once the controller has picked the room up.
+- On a room made by the wizard, do NOT create the helper. The room's own switch is Engine Enabled. The card came from a controller app started before setup, and clears once the controller has picked the room up.
 - Only on a room really gated by input_boolean.f2_control_enabled: create it under Settings → Devices & services → Helpers → Toggle, and leave it OFF until you are ready to water.
 
 <a id="cs-602"></a>
@@ -764,7 +763,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **What it means.** The room's grow plan is holding the steering of the zones it manages: the plan is in error, the controller cannot use it, or a zone the plan runs is not scheduled today. The card gives the reason.
 
-**Watering meanwhile.** Those zones get only the overnight emergency, watchdog and minimum-daily shots, and a zone with a dead probe its timed schedule, until the hold clears. Routine steering waits.
+**Watering meanwhile.** Those zones get only the overnight emergency and watchdog shots, and a zone with a dead probe its timed schedule, until the hold clears. Routine steering waits.
 
 **Likely causes**
 
@@ -804,7 +803,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 *Warning · Repairs card*
 
-**What it means.** One or more of the room's stock tanks is at or below its low mark. Each batch tank the room makes takes its dose from every stock tank.
+**What it means.** One or more of the room's stock tanks is at or below its low mark. Each refill of the room's reservoir takes from a stock tank what its doser gave, as the feed recipe in use says.
 
 **Watering meanwhile.** Carries on. Batches made from an empty stock tank will be short of that nutrient.
 

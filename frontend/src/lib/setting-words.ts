@@ -155,7 +155,7 @@ const WORDS: Record<string, SettingWords> = {
   maximum_ec: {
     label: "Maximum substrate EC",
     short: "Maximum EC",
-    help: "At this substrate EC a flush fires in any phase (in P2, from 1 mS/cm below it), when the feed is weaker than the substrate (with no feed EC sensor, the feed counts as 3.0 mS/cm). If the feed isn't weaker, or moisture is within 2 points of full saturation, the zone gets no shots at all, rescue and watchdog included, until its EC falls below this.",
+    help: "At this substrate EC a flush fires in any phase (in P2, from 1 mS/cm below it), when the feed is weaker than the substrate (the controller reads no feed EC and counts the feed as 3.0 mS/cm). If the feed isn't weaker, or moisture is within 2 points of full saturation, the zone gets no shots at all, rescue and watchdog included, until its EC falls below this.",
   },
   watchdog_hours: {
     label: "Watchdog interval",
