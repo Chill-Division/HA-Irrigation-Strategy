@@ -2,10 +2,11 @@ configuration:
   num_zones:
     name: Number of zones (fallback)
     description: >-
-      Normally AUTO-DETECTED from the integration's sensor.crop_steering_vwc_zone_N. This
-      value is only used if Home Assistant isn't reachable at startup. Add more probes per
-      zone in the Crop Steering UI - the engine reads each zone's FUSED
-      sensor.crop_steering_vwc_zone_N / ec_zone_N (an average of every probe you map).
+      Normally leave this: the zones come from the room's setup in the Crop Steering UI.
+      This value is only used if Home Assistant isn't reachable at startup. Map more probes
+      per zone in the Crop Steering UI - the engine reads each zone's combined
+      sensor.crop_steering_vwc_zone_N / ec_zone_N (their average unless you choose another
+      way to combine them).
   lights_on_hour:
     name: Lights-on hour (fallback)
     description: >-
@@ -21,10 +22,12 @@ configuration:
   enable_flag:
     name: Kill-switch entity
     description: >-
-      The master safety switch. While this input_boolean is OFF the engine reads
-      sensors and makes decisions but NEVER opens a valve (the safe default).
-      Turn it ON to go live. Leave as input_boolean.f2_control_enabled unless you
-      named your helper something else.
+      Normally leave this as input_boolean.f2_control_enabled. Every room made by the
+      setup wizard has its own watering switch (Engine Enabled, switched from the
+      Crop Steering Overview), and the controller uses that while no such helper exists.
+      Only a room from before the wizard is gated by an input_boolean helper: name
+      yours here if it is called something else. While the switch is OFF the engine
+      reads sensors and makes decisions but NEVER opens a valve.
   notify_service:
     name: Notification service
     description: >-
