@@ -311,7 +311,7 @@
 }
 .res-recipe-head {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) auto;
   align-items: end;
   gap: 14px;
 }
@@ -322,8 +322,15 @@
   display: grid;
   gap: 6px;
 }
-.res-recipe-head > .pill {
-  margin-bottom: 10px;
+/* "In use", export and remove: one group at the end of the row, so none of them wraps alone. */
+.res-recipe-head > .res-recipe-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+}
+.res-recipe-actions > .pill {
+  margin-right: 4px;
 }
 .res-recipe-table input {
   min-width: 90px;
@@ -435,10 +442,14 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .res-recipe-head {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
-  .res-recipe-head > div:first-child {
+  .res-recipe-head > div:first-child,
+  .res-recipe-head > .res-recipe-actions {
     grid-column: 1 / -1;
+  }
+  .res-recipe-head > .res-recipe-actions {
+    justify-content: flex-end;
   }
 }
 /* The feed schedule: a strip of weeks, each its recipe, coloured by recipe (clear of red, amber and

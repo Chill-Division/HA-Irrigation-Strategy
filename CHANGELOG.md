@@ -38,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Irrigation plan is now Irrigation strategy (Today and Schedule), its saved copies are kept in the
   Strategy library, and you arm or disarm a strategy. A recipe is always a feed recipe. Home
   Assistant's Repairs cards, error codes, services and the strategy stage select say the same.
+- **A feed recipe's bin stays on its row.** On a recipe in use, the remove button no longer drops
+  onto a line of its own.
 
 ### 🔧 Technical notes
 
@@ -90,6 +92,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the export format (`crop-steering-plan`) stay; exported files are now named
   `crop-steering-strategy-….json`. The controller's Auto setpoints frozen reason names an armed
   irrigation strategy. The browser checks and unit tests follow the new labels.
+- Dashboard: a feed recipe card's "In use" pill, export and remove buttons are one group
+  (`.res-recipe-actions`), the header grid's last column; on a phone they take a row of their own.
 
 ## [1.0.0] - 2026-10-05
 
