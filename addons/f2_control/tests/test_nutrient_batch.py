@@ -1005,3 +1005,41 @@ def test_in_a_pass_a_shot_due_waits_for_the_reservoir_and_the_next_round_is_plan
     assert label.startswith("Blocked: reservoir too low: the reservoir reads 4%, under its 5% minimum")
     assert _alerts(fake, "CS-704")
     assert room._next_round_l == pytest.approx(5 * 1.28)  # a P2 maintenance shot of 128 L of substrate
+
+
+# ----------------------------------------------------------------- the feed recipe's feed EC
+def test_the_feed_plan_carries_the_feed_ec_of_the_recipe_in_use():
+    assert controller.feed_plan({**FLOWER, "feed_ec": 1.6})["feed_ec"] == 1.6
+    # Not given, not a number, or outside what a recipe accepts (0.1 to 10 mS/cm): none.
+    for given in (None, "", "soon", 0, 0.05, 11, float("nan")):
+        assert controller.feed_plan({**FLOWER, "feed_ec": given})["feed_ec"] is None
+    assert controller.feed_plan(FLOWER)["feed_ec"] is None  # an integration from before has none
+
+
+def test_a_zone_flushes_and_dilutes_with_the_feed_its_recipe_mixes_to():
+    """The engine floods a salty substrate only with a feed weaker than it. A 1.6 mS/cm feed dilutes a
+    2.6 substrate; counted as 3.0, as it was before recipes gave their EC, the same feed did not."""
+    import dataclasses
+
+    from crop_steering_engine import decide
+
+    c, fake, room = _room(plan={**ROOMY, "feed_ec": 1.6}, pct=60.0)
+    fake.set_state("sensor.crop_steering_vwc_zone_1", "55", {"unit_of_measurement": "%"},
+                   last_updated=_Clock.now(timezone.utc).isoformat())
+    _tick(c, room)  # first in every pass: it reads the room's feed plan
+    snap, p = c._snapshot(room, 1, _Clock.now(), True, False)
+    assert snap.feed_ec == 1.6
+    # P2, a settled substrate EC of 2.6 against a P2 target of 2.0: 30% over, so a diluting shot is due.
+    snap = dataclasses.replace(snap, phase="P2", ec=2.6, ec_settled=2.6, minutes_since_shot=120.0)
+    p = dataclasses.replace(p, ec_target_p2=2.0, p2_threshold=50.0, field_capacity=70.0)
+    assert decide(snap, p)[4].kind == "p2_dilute"
+    assert decide(dataclasses.replace(snap, feed_ec=3.0), p)[4].kind != "p2_dilute"
+
+
+def test_a_recipe_without_a_feed_ec_leaves_the_feed_counted_as_3():
+    c, fake, room = _room(plan=ROOMY, pct=60.0)
+    fake.set_state("sensor.crop_steering_vwc_zone_1", "55", {"unit_of_measurement": "%"},
+                   last_updated=_Clock.now(timezone.utc).isoformat())
+    _tick(c, room)
+    snap, _p = c._snapshot(room, 1, _Clock.now(), True, False)
+    assert snap.feed_ec == ZoneSnapshot.__dataclass_fields__["feed_ec"].default == 3.0
