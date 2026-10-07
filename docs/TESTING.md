@@ -117,8 +117,8 @@ Moving a leg:
   `config.yaml` as the app's, on install and on every update. Change the leg, both of those, the
   README badge and `INSTALL.md` together; `tests/test_requirements_stated.py` fails when one is
   left behind. Nothing older than 2026.5.0 is supported: the sidebar panel calls
-  `frontend.async_panel_exists`, which Home Assistant added in 2026.5.0. Through 2.28.0 the minimum
-  was 2024.10.0, which took a Python 3.12 leg and pins on `josepy` and `pycares`; none are needed
+  `frontend.async_panel_exists`, which Home Assistant added in 2026.5.0. The minimum was once
+  2024.10.0, which took a Python 3.12 leg and pins on `josepy` and `pycares`; none are needed
   from 2026.5.0.
 
 ### hassfest, without Docker
@@ -168,17 +168,17 @@ node frontend/scripts/verify-tank-status.mjs
 node frontend/scripts/verify-ha-shell.mjs
 ```
 
-The browser scripts start loopback servers. Demo workflows reject API/external traffic; mocked-HA workflows intercept all API calls. The checks cover all eleven pages, desktop/mobile navigation, accessibility, drafts, partial failures, readback, room identity, stale probes, and the entry page keeping room, demo and route. Screenshots and JSON results are written to `output/playwright/`. This frontend job also runs in GitHub CI. The Python packaging tests verify that the HA and add-on artifacts match, and that each folder holds only the dashboard and its entry page.
+The browser scripts start loopback servers. Demo workflows reject API/external traffic; mocked-HA workflows intercept all API calls. The checks cover every page, desktop/mobile navigation, accessibility, drafts, partial failures, readback, room identity, stale probes, and the entry page keeping room, demo and route. Screenshots and JSON results are written to `output/playwright/`. This frontend job also runs in GitHub CI. The Python packaging tests verify that the HA and add-on artifacts match, and that each folder holds only the dashboard and its entry page.
 
 The workspace suite also covers day/week scheduling, reactive VWC/EC previews, profile editing, setup lifecycle, strict response-bearing service contracts, invalid/expired snapshots and draft preservation. Integration tests use a minimal HA fixture, not a running HA instance. HACS/hassfest and an actual Supervisor image build run in CI, not in the local browser harness.
 
 ## What it tests
 
-### 1. Pure decision core: `crop-steering-engine/tests/test_core.py`
+### 1. Pure decision core: `crop-steering-engine/tests/`
 The `decide()` function with no HA and no I/O: phase transitions (P0→P1→P2→P3), the
-anti-lockout high-EC flush, the sensor-independent minimum-daily-water floor, EC steering,
-and `validate_params()` clamping. This is the bug class that has actually bitten the grow,
-testable offline.
+anti-lockout high-EC flush, the P3 dryback hold and rescue, the watchdog and the daily water
+budget, a held plan, EC steering, and `validate_params()` clamping. This is the bug class that
+has actually bitten the grow, testable offline.
 
 ### 2. Integration calculation helpers: `tests/test_calculations.py`
 The pure helpers in `custom_components/crop_steering/calculations.py` (no hardware needed;
@@ -193,10 +193,9 @@ fields fall back to fresh defaults, never an error, never a wipe. Plus a save→
 round-trip.
 
 ### 4. Version consistency: `tests/test_version_consistency.py`
-The integration version must match across `manifest.json`, the latest released `CHANGELOG.md`
-heading, and the README badge, so a release can't ship a stale number. (The f2-control
-add-on has its own version line in `addons/f2_control/config.yaml`; boxes build the add-on
-from this repository, so there is no second copy to keep in step.)
+The integration and the controller carry one version number. It must match across
+`manifest.json`, the latest released `CHANGELOG.md` heading, the README badge, the controller
+app's `config.yaml` and the app's own changelog, so a release can't ship a stale number.
 
 ### 5. Lint / format / YAML: ruff, black (scoped to `custom_components/` + `tests/`), yamllint
 Plus, on GitHub only: **hassfest** and **HACS validation** of the integration.
@@ -219,7 +218,8 @@ Run `node frontend/scripts/verify-recipe-library.mjs` after building to check na
 
 The automated suite can't drive real hardware. Before trusting a change on the grow:
 
-- [ ] **Dry run.** With the kill switch `input_boolean.f2_control_enabled` **OFF**, start the
+- [ ] **Dry run.** With the room's watering switched **off** (its *Engine Enabled* switch, or
+      `input_boolean.f2_control_enabled` on a room from before the setup wizard), start the
       add-on and watch a photoperiod in the log: it decides but **no valve opens**.
 - [ ] **Shot length is real.** Verify a fired shot's duration from the live pump history
       (`switch.<pump>` `/api/history/period`), not from "deployed": a file copy proves
@@ -228,8 +228,9 @@ The automated suite can't drive real hardware. Before trusting a change on the g
       and daily counters carry over).
 - [ ] **Upgrade in place.** After a version **Update / Rebuild**, the engine resumes from the
       existing `state.json` with no re-setup and no wiped counters.
-- [ ] **Feed-gate hold.** Out-of-range feed pH/EC (or a tank fill/dose) blocks watering and
-      alerts: that is correct behavior, not a bug.
+- [ ] **Holds are deliberate.** A refill in progress, the reservoir at its minimum, a hold
+      entity that reads on or a zone's spent daily water holds watering and says why: that is
+      correct behavior, not a bug.
 
 ## Tests are not a release
 
