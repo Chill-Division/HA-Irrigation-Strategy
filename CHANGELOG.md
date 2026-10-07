@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The public repository's README and docs between releases.** A change to the README, the docs,
   the pictures, the scripts or the tests can now go to the public repository without a new version.
   A change to the integration or the controller app still waits for a release.
+- **Alerts and help say what the controller does now.** The error codes' explanations, a Repairs
+  card and two notifications no longer mention the minimum daily volume, or ask you to check the
+  feed EC, which the controller doesn't read: it counts the feed as 3.0 mS/cm. The stock tanks
+  alert says each refill takes what its doser gave, and the controller app's kill-switch option
+  says that a room made by the setup wizard has its own watering switch.
 
 ### 🔧 Technical notes
 
@@ -24,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   number. `docs/RELEASING.md` (Commits that ship nothing) and CLAUDE.md say when to use it.
   The app's changelog, documentation and pictures and the controller's tests go too
   (`SHOWN_ONLY`): the Supervisor only shows them, and none is built into the image.
+- Text only, no change to watering: `docs/error-codes.json` (CS-206, CS-401, CS-601, CS-606,
+  CS-608) and `docs/ERROR_CODES.md` from it; the CS-206 and CS-401 notifications in
+  `controller.py`; the CS-606 Repairs card (`strings.json`, `translations/en.json`); the Maximum EC
+  help and the Reservoir's not-reported note on the dashboard; comments and docstrings in the
+  engine (both copies), the controller, `health.py`, `strategy.py` and `room.py`; the app's
+  `num_zones` and `enable_flag` option texts (`addons/f2_control/translations/en.yaml`); and the
+  `whats_new_seen` example version in `services.yaml`.
 
 ## [1.0.0] - 2026-10-05
 
