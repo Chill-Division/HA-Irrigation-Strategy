@@ -245,6 +245,73 @@ async def test_the_reservoirs_distances_and_minimum_reach_the_real_controller_as
     assert (status["level_pct"], status["min_pct"], status["due"]) == (0.5, 5.0, True)
 
 
+async def test_the_recipe_in_uses_feed_ec_is_the_real_controllers_feed_ec(
+    hass, hass_admin_user, controller_for
+):
+    """Saved through the real feed_save, a recipe's feed EC (what it mixes to) is on the feed plan
+    sensor for the stage in use, and the real controller hands it to the engine as the feed's EC for
+    its flush and dilution tests. A recipe without one leaves the engine's 3.0 mS/cm."""
+    hass.states.async_set(
+        "sensor.res_distance", "400", {"unit_of_measurement": "mm"}
+    )
+    for entity in list(RESERVOIR.values())[1:]:
+        hass.states.async_set(entity, "off")
+    await _install(hass)
+    room = await _room(hass, hass_admin_user)
+    await _service(
+        hass, hass_admin_user, "setup_save", _payload(room, hardware=RESERVOIR)
+    )
+    await hass.async_block_till_done()
+    doc = await _service(hass, hass_admin_user, "feed_get", {"room_id": "room:"})
+    with pytest.raises(HomeAssistantError, match="feed EC must be a number from 0.1 to 10"):
+        await _service(
+            hass,
+            hass_admin_user,
+            "feed_save",
+            {
+                "room_id": "room:",
+                "expected_revision": doc["revision"],
+                "document": {"recipes": [{**FLOWER, "ec": 25}]},
+            },
+        )
+    vege = {**FLOWER, "id": "vege", "name": "Vege"}  # no feed EC given
+    doc = await _service(
+        hass,
+        hass_admin_user,
+        "feed_save",
+        {
+            "room_id": "room:",
+            "expected_revision": doc["revision"],
+            "document": {
+                "full_mm": 125,
+                "empty_mm": 850,
+                "recipes": [{**FLOWER, "ec": 1.6}, vege],
+                "stage": "flower",
+            },
+        },
+    )
+    assert [recipe["ec"] for recipe in doc["recipes"]] == [1.6, None]
+    assert hass.states.get(PLAN).attributes["feed_ec"] == 1.6
+
+    hass.states.async_set("sensor.crop_steering_vwc_zone_1", "55", {"unit_of_measurement": "%"})
+    c, _fake, _clock = controller_for({})
+    controller_room = c.rooms[0]
+    c._batch_tick(controller_room, datetime.now())
+    snap, _params = c._snapshot(controller_room, 1, datetime.now(), True, False)
+    assert snap.feed_ec == 1.6
+
+    await hass.services.async_call(
+        "select", "select_option", {"entity_id": STAGE, "option": "Vege"}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert hass.states.get(PLAN).attributes["feed_ec"] is None
+    c, _fake, _clock = controller_for({})
+    controller_room = c.rooms[0]
+    c._batch_tick(controller_room, datetime.now())
+    snap, _params = c._snapshot(controller_room, 1, datetime.now(), True, False)
+    assert snap.feed_ec == 3.0
+
+
 async def test_the_refill_reminder_reaches_the_real_controller_which_says_it_once(
     hass, hass_admin_user, controller_for
 ):

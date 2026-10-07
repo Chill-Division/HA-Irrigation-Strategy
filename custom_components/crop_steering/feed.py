@@ -23,6 +23,11 @@ part in 145 L is 725 mL Core, 1208 mL Bloom, 242 mL Balance and 121 mL Cleanse.
 Each recipe has its own dosing order: a stage can use a doser the others leave out (Fade in place of
 Core). A recipe saved before it had one takes the room's order, which this module kept until then.
 
+Each recipe may also give its feed EC: what it mixes to, in mS/cm, as measured once mixed. The
+controller takes the recipe in use's as the feed's EC when it judges whether a flush or a diluting
+shot would bring the substrate's EC down; a recipe without one (and a room without a reservoir)
+leaves it counting the feed as 3.0 mS/cm.
+
 The stage in use: a feed schedule gives each week of the grow a recipe (Week 1 Vege, Weeks 2-6 Bloom,
 Weeks 7-8 Fade), from the day its first week starts; after its last week, that week's recipe carries on.
 A stage picked by hand while it runs holds until the schedule's next week starts. Without a schedule,
@@ -86,6 +91,7 @@ DEFAULTS = {
 FLOW = (1.0, 10000.0)  # mL/min
 STRENGTH = (0.0, 20.0)  # mL per litre per part
 PARTS = (0.0, 100.0)
+FEED_EC = (0.1, 10.0)  # mS/cm, what a recipe mixes to; none = not given
 # A whole recipe's mL per litre. Nutrient lines run at 5-20; a strength typed ten times too big is
 # refused rather than dosed.
 MAX_ML_PER_L = 60.0
@@ -221,11 +227,18 @@ def clean(payload, old: dict | None = None) -> dict:
                 "is refused as a likely typo in its strength or parts"
             )
         order = raw.get("order")
+        # What it mixes to. None (or left empty, 0) = not given; a recipe saved before has none.
+        feed_ec = raw.get("ec")
         doc["recipes"].append(
             {
                 "id": recipe_id,
                 "name": name,
                 "strength": strength,
+                "ec": (
+                    None
+                    if feed_ec in (None, "", 0)
+                    else _number(feed_ec, *FEED_EC, False, f"{name}'s feed EC")
+                ),
                 "doses": clean_doses,
                 # One saved before recipes had their own order takes the room's.
                 "order": (
@@ -356,7 +369,8 @@ def plan(doc: dict, mapped: dict[int, str], today: date | None = None) -> dict:
     the stage in use, each doser's nutrient, mL (whole) and seconds for that stage. `today` (the day
     in Home Assistant's time zone) picks the stage in use; `week`, `weeks`, `schedule_start`,
     `held_until` and `source` ("schedule", "held" or "hand") say how. `problem` says why no batch
-    can run, or is None. `mapped` is the room's doser switches by number (Rooms & hardware).
+    can run, or is None. `feed_ec` is the stage's feed EC, or None. `mapped` is the room's doser
+    switches by number (Rooms & hardware).
     """
     today = today or date.today()
     stage = recipe(doc, in_use(doc, today))
@@ -393,6 +407,7 @@ def plan(doc: dict, mapped: dict[int, str], today: date | None = None) -> dict:
     return {
         "stage": stage["name"] if stage else None,
         "stage_id": stage["id"] if stage else None,
+        "feed_ec": stage.get("ec") if stage else None,
         **{key: doc[key] for key in SETTINGS},
         "doses": doses,
         "problem": problem,

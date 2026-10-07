@@ -1,5 +1,12 @@
 import { createUuid } from "./uuid";
-import { MAX_ML_PER_L, NAME_LEN, doserOrder, type FeedDraft, type FeedRecipe } from "./feed";
+import {
+  FEED_EC,
+  MAX_ML_PER_L,
+  NAME_LEN,
+  doserOrder,
+  type FeedDraft,
+  type FeedRecipe,
+} from "./feed";
 
 /** A feed recipe by nutrient rather than by doser, as a nutrient chart gives it: a template, or a
  * recipe file from another room. Adding one puts each nutrient on the doser that already carries it
@@ -13,6 +20,8 @@ export interface PortableRecipe {
   partMl?: number;
   /** In dosing order. */
   doses: { nutrient: string; parts: number }[];
+  /** What it mixes to, mS/cm, when its file gives it. */
+  ec?: number;
 }
 export interface RecipeTemplate extends PortableRecipe {
   id: string;
@@ -200,6 +209,7 @@ export function placeRecipe(source: PortableRecipe, draft: FeedDraft, mapped: nu
       }),
     ),
     order: doserOrder(ordered, mapped),
+    ec: source.ec ?? null,
   };
   return { recipe, placed, unplaced };
 }
@@ -247,6 +257,7 @@ export function exportRecipe(recipe: FeedRecipe): string {
       recipe: {
         name: recipe.name,
         strength: recipe.strength,
+        ...(recipe.ec != null ? { ec: recipe.ec } : {}),
         doses: dosers.flatMap((doser) => {
           const dose = recipe.doses[String(doser)];
           return dose && dose.parts > 0 && dose.label.trim()
@@ -281,7 +292,7 @@ export function importRecipe(raw: string): PortableRecipe {
   const f = file as { format?: unknown; version?: unknown; recipe?: unknown };
   if (f?.format !== FILE_FORMAT || f.version !== 1 || typeof f.recipe !== "object" || !f.recipe)
     throw new Error("That file isn't a Crop Steering feed recipe.");
-  const r = f.recipe as { name?: unknown; strength?: unknown; doses?: unknown };
+  const r = f.recipe as { name?: unknown; strength?: unknown; doses?: unknown; ec?: unknown };
   const name = typeof r.name === "string" ? r.name.trim().replace(/\s+/g, " ") : "";
   if (!name || name.length > NAME_LEN)
     throw new Error(`The recipe needs a name of up to ${NAME_LEN} characters.`);
@@ -307,5 +318,9 @@ export function importRecipe(raw: string): PortableRecipe {
     throw new Error(
       `${name} comes to ${perLitre.toFixed(1)} mL per litre; more than ${MAX_ML_PER_L} is refused as a likely typo.`,
     );
-  return { name, strength, doses };
+  // A file from before recipes gave their feed EC has none.
+  if (r.ec === undefined || r.ec === null) return { name, strength, doses };
+  if (typeof r.ec !== "number" || !(r.ec >= FEED_EC[0] && r.ec <= FEED_EC[1]))
+    throw new Error(`${name}: its feed EC must be from ${FEED_EC[0]} to ${FEED_EC[1]} mS/cm.`);
+  return { name, strength, doses, ec: r.ec };
 }

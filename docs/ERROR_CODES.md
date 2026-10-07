@@ -278,20 +278,22 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 *Warning · Notification*
 
-**What it means.** Root-zone EC is above the zone's maximum, and a flush can't bring it down right now: the cube is already saturated, or the root zone is no saltier than the feed, which the controller counts as 3.0 mS/cm (it has no feed EC reading).
+**What it means.** Root-zone EC is above the zone's maximum, and a flush can't bring it down right now: the cube is already saturated, or the root zone is no saltier than the feed: the Feed EC of the feed recipe in use (Feed → Reservoir), or 3.0 mS/cm without one.
 
-**Watering meanwhile.** The zone is held: no shot runs, the overnight emergency shot and the no-water-for-hours safety shot included, and the urgent CS-207 is not raised for it. The hold lifts by itself once a flush could help (the cube drying back) or EC falls under the maximum.
+**Watering meanwhile.** The zone is held: no shot runs, the overnight emergency shot and the no-water-for-hours safety shot included, and the urgent CS-207 is not raised for it. The hold lifts by itself once a flush could help (the cube drying back, or a weaker feed) or EC falls under the maximum.
 
 **Likely causes**
 
 - The cube is at field capacity, so more water would only run off.
 - The zone's Full saturation setting is lower than the cube really reaches, so the controller takes it as saturated.
+- The feed recipe in use gives a Feed EC as high as the root zone's: watering with that feed can't bring EC down.
 - The EC probe reads high (calibration, or a probe that has dried out).
 
 **Suggested fixes**
 
 - Check the EC probe against a hand-held meter.
 - Check the zone's Maximum EC and Full saturation settings are what you intend.
+- Check the feed recipe's Feed EC (Feed → Reservoir) against a hand-held meter in the mixed feed.
 
 <a id="cs-207"></a>
 

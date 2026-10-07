@@ -80,6 +80,10 @@ describe("feed plan", () => {
       [2, "Balance", 242, 24.2],
       [1, "Cleanse", 121, 12.1],
     ]);
+    expect(plan.feed_ec).toBeNull();
+    const mixed = flower();
+    mixed.recipes[0].ec = 2.8;
+    expect(planOf(mixed, [1, 2, 3, 4]).feed_ec).toBe(2.8); // as feed.py plan() publishes it
   });
 
   it("doses whole mL: 3 and 5 parts of 240 mL are 720 and 1,200, not 719.9 and 1,199.9", () => {
@@ -226,6 +230,19 @@ describe("feed checks", () => {
     const unnamed = flower();
     unnamed.recipes[0].doses["4"].label = " ";
     expect(draftErrors(unnamed)).toContain("Flower: doser 4 has parts but no nutrient.");
+    // A feed EC is optional: none, or one from 0.1 to 10 mS/cm, as feed.py takes it.
+    for (const ec of [null, undefined, 0.1, 2.8, 10]) {
+      const given = flower();
+      given.recipes[0].ec = ec;
+      expect(draftErrors(given)).toEqual([]);
+    }
+    for (const ec of [0.05, 12, Number.NaN]) {
+      const wrong = flower();
+      wrong.recipes[0].ec = ec;
+      expect(draftErrors(wrong)).toContain(
+        "Flower: the feed EC must be from 0.1 to 10 mS/cm, or left empty.",
+      );
+    }
   });
 
   it("starts a new recipe with the bottles the last one had, no parts, and its own id", () => {
@@ -234,6 +251,7 @@ describe("feed checks", () => {
     expect(recipe.id).toMatch(/^[a-f0-9]{12}$/);
     expect(recipe.doses["3"]).toEqual({ label: "Bloom", parts: 0 });
     expect(recipe.order).toEqual([4, 3, 2, 1]); // and the order they dose in
+    expect(recipe.ec).toBeNull(); // measured once it is mixed
   });
 
   it("sends names and nutrients as the integration keeps them", () => {

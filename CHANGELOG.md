@@ -23,13 +23,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or ask anyone to update to a version from before 1.0. The entity reference now says what the
   controller does with each setting, and where it narrows the range a setting accepts.
 - **Alerts and help say what the controller does now.** The error codes' explanations, a Repairs
-  card and two notifications no longer mention the minimum daily volume, or ask you to check the
-  feed EC, which the controller doesn't read: it counts the feed as 3.0 mS/cm. The stock tanks
-  alert says each refill takes what its doser gave, and the controller app's kill-switch option
-  says that a room made by the setup wizard has its own watering switch.
+  card and two notifications no longer mention the minimum daily volume, and the root-zone EC hold
+  says what can lift it. The stock tanks alert says each refill takes what its doser gave, and the
+  controller app's kill-switch option says that a room made by the setup wizard has its own
+  watering switch.
 - **Shot length sensors read true.** Home Assistant's P1, P2 and P3 shot duration sensors now give
   the seconds the controller really runs each shot for. They used to time it through one dripper,
   so with two drippers per plant they read double, and they ignored a zone sized on its own.
+- **A feed recipe can give its EC.** Under each recipe's doses on Feed → Reservoir, Feed EC is what
+  the recipe mixes to, measured once mixed. The controller only floods a salty root zone with a feed
+  weaker than it, and now takes the recipe in use's EC as that feed's: a 1.6 mS/cm feed dilutes a
+  2.6 mS/cm root zone. Without one, as before, it counts the feed as 3.0 mS/cm. Recipe files carry it.
 
 ### 🔧 Technical notes
 
@@ -64,6 +68,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   read 0). `ShotCalculator.calculate_shot_duration` takes `drippers_per_plant`;
   `capped_shot_seconds` is new. `tests_ha/test_shot_duration_sensors.py` holds the real sensors
   against the real controller's arithmetic.
+- Feed EC: `feed.clean` keeps a recipe's optional `ec` (mS/cm, 0.1 to 10; none, empty or 0 is
+  none; a stored recipe without it loads with none) and `feed.plan` publishes the stage in use's
+  as `feed_ec` on `sensor.crop_steering_<prefix>feed_plan`. The controller's `feed_plan()` reads it
+  (anything not a number from 0.1 to 10 is none) and `_snapshot` passes it as
+  `ZoneSnapshot.feed_ec`, which every flush and dilution test in `decide()` compares pore EC with;
+  without it the engine's default stays 3.0. The dashboard's recipe card has the field, recipe
+  files carry `ec` (a file without it imports with none), and CS-206 says where the feed's EC comes
+  from. `tests_ha/test_feed_batches.py` takes a recipe's EC from the real `feed_save` to the real
+  controller's snapshot.
 
 ## [1.0.0] - 2026-10-05
 

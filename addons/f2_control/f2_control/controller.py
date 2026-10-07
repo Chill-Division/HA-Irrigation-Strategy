@@ -577,8 +577,19 @@ def feed_plan(attrs):
         return None
     if not all(math.isfinite(value) and value >= 0 for value in plan.values()):
         return None
-    plan.update(stage=attrs.get("stage"), problem=attrs.get("problem"), doses=doses)
+    plan.update(stage=attrs.get("stage"), problem=attrs.get("problem"), doses=doses,
+                feed_ec=_recipe_feed_ec(attrs.get("feed_ec")))
     return plan
+
+
+def _recipe_feed_ec(value):
+    """The feed recipe in use's feed EC, mS/cm, or None: not given, from an integration from before
+    recipes had one, or not a number from 0.1 to 10 (the most a recipe accepts)."""
+    try:
+        ec = float(value)
+    except (TypeError, ValueError):
+        return None
+    return ec if math.isfinite(ec) and 0.1 <= ec <= 10.0 else None
 
 
 def level_mm(reading):
@@ -1878,6 +1889,9 @@ class Controller:
                 rate = max(0.0, (v0 - vwc) / dt_h)
         ec_settled = self._settled_ec(st, ec, now)
         new_grow_day = self._new_grow_day(room, st, now, lights_on)
+        # What a flush or a diluting shot waters with: the feed recipe in use's feed EC; without one,
+        # the engine's own 3.0 mS/cm.
+        feed_ec = self._feed_ec(room)
         snap = ZoneSnapshot(
             vwc=vwc,
             ec=ec,
@@ -1905,8 +1919,17 @@ class Controller:
             ec_settled=ec_settled,
             # a held plan holds the steering; decide() then fires only the rescues (PLAN_HOLD_EXEMPT)
             steering_held=bool(strategy_block(getattr(room, "strategy_snapshot", None), zone)),
+            **({"feed_ec": feed_ec} if feed_ec is not None else {}),
         )
         return snap, self._params(room, zone, ec_known=ec is not None)
+
+    @staticmethod
+    def _feed_ec(room):
+        """The feed's EC for this room's dilution tests: the Feed EC of the feed recipe in use, as the
+        room's feed plan gave it this pass (_reservoir_reading), or None. A room without a reservoir
+        has no feed recipe, so none."""
+        reading = getattr(room, "_res", None) or {}
+        return (reading.get("plan") or {}).get("feed_ec")
 
     def _settled_ec(self, st, ec, now):
         """The pore EC the engine's EC rules act on (ZoneSnapshot.ec_settled).
@@ -4151,10 +4174,11 @@ class Controller:
                     "root-zone EC too high, not watering",
                     "Root-zone EC is above this zone's maximum, and a flush can't bring it down "
                     "right now (the cube is already saturated, or the root zone is no saltier than "
-                    "the 3.0 mS/cm the controller counts the feed as), so the controller holds the "
-                    "zone: no shot runs, the overnight emergency shot and the no-water-for-hours "
-                    "safety shot included. The hold lifts by itself once a flush could help; if the "
-                    "plants may dry out first, check the EC probe now."
+                    "the feed: the Feed EC of the feed recipe in use, or 3.0 mS/cm without one), so "
+                    "the controller holds the zone: no shot runs, the overnight emergency shot and "
+                    "the no-water-for-hours safety shot included. The hold lifts by itself once a "
+                    "flush could help; if the plants may dry out first, check the EC probe and the "
+                    "recipe's Feed EC now."
                     f"\n\nDetail ({st['phase']}): {reason}",
                     room=room,
                     zone=zone,

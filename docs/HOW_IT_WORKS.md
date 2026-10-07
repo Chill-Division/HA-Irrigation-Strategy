@@ -190,8 +190,9 @@ When a zone's probe reads EC, EC shapes the watering:
   shot size"; "Increase Substrate EC: Decrease shot size" (p. 38).
 - **P1 waits for EC.** The ramp hands over only once EC is within 15% of the P1 target.
 - **Diluting shots.** In P2, EC more than 20% over target fires a larger shot to bring it down,
-  when the feed is weaker than the substrate and there is room for the water. The controller has no
-  feed EC reading: it counts the feed as 3.0 mS/cm, so it dilutes only a substrate above that.
+  when the feed is weaker than the substrate and there is room for the water. The feed's EC is the
+  **Feed EC** of the feed recipe in use (Feed → Reservoir); without one, the controller counts the
+  feed as 3.0 mS/cm, and so dilutes only a substrate above that.
 - **Never locked out.** At the **Maximum substrate EC**, a flush fires in any phase, when the water can
   dilute it. In P0, the only shot is a flush when EC is over 2.5 times the P0 target.
 - **EC stacking** (a room switch) nudges the maintenance trigger by up to a point every half hour: down
@@ -269,6 +270,9 @@ A room with a reservoir mapped mixes its own nutrient batches: by itself with **
 on, or when you press **Mix a Batch Now**. A batch refills the reservoir with fresh water; from
 half-way through the fill, the pump and the recirculation line run, and the doses go in one doser at a
 time, in the recipe's order. Then the batch recirculates to mix. The room's shots wait meanwhile.
+Each recipe can also give its **Feed EC**, what it mixes to: the controller waters with that feed,
+so it uses the recipe in use's to judge whether a flush or a diluting shot would bring the
+substrate's EC down.
 
 With the reservoir's level set up, a refill is planned before the room's next round of shots would
 take it under its minimum, so no shot takes it under; if a refill cannot happen, watering waits.

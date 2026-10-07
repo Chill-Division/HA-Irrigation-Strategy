@@ -21,6 +21,10 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
+## Unreleased
+
+- Give each feed recipe the EC it mixes to, and the controller waters a salty root zone knowing what your feed will do to it.
+
 ## 1.0.0 - 2026-10-05
 
 - This is version 1.0, the first release for everyone.

@@ -220,6 +220,17 @@ describe("recipe files", () => {
     const { recipe } = placeRecipe(importRecipe(file), gr2(), DOSERS);
     expect(parts(recipe)).toEqual(parts(vege));
     expect(recipe.name).toBe("Vege 2");
+    // No feed EC given, none carried: a file from before recipes had one reads the same.
+    expect(recipe.ec).toBeNull();
+  });
+
+  it("carry the feed EC a recipe mixes to, when it gives one", () => {
+    const vege = { ...gr2().recipes[1], ec: 1.6 };
+    const file = exportRecipe(vege);
+    expect(JSON.parse(file).recipe.ec).toBe(1.6);
+    const { recipe } = placeRecipe(importRecipe(file), gr2(), DOSERS);
+    expect(recipe.ec).toBe(1.6);
+    expect(draftErrors({ ...gr2(), recipes: [...gr2().recipes, recipe] })).toEqual([]);
   });
 
   it.each([
@@ -258,6 +269,14 @@ describe("recipe files", () => {
         },
       }),
       "Front Row Si is in it twice",
+    ],
+    [
+      JSON.stringify({
+        format: "crop-steering-feed-recipe",
+        version: 1,
+        recipe: { name: "X", strength: 1, ec: 25, doses: [{ nutrient: "A", parts: 1 }] },
+      }),
+      "feed EC must be from 0.1 to 10 mS/cm",
     ],
   ])("refuses a file that isn't a recipe it can add: %s", (raw, why) => {
     expect(() => importRecipe(raw)).toThrow(why);
