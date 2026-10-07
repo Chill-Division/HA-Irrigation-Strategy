@@ -108,15 +108,15 @@ class ZoneSnapshot:
     hours_to_lights_on: float
     hours_to_lights_off: float
     uptime_min: float
-    feed_ec: float = 3.0          # source-water (tank) EC — for the anti-lockout dilutive-flush test
+    feed_ec: float = 3.0          # the feed's EC, for the dilutive-flush tests; the controller reads none
     new_grow_day: bool = False    # wall-clock fallback: True when in the lights-on window AND the daily
     #                               budget has NOT yet been reset for THIS grow-day (photoperiod).
     ec_settled: float | None = None  # pore EC read >= EC_SETTLE_MIN after the last shot (or the last such
     #                                  reading, held while shots come closer together). When given, EVERY
     #                                  EC rule uses it instead of `ec`; None = fall back to `ec` as before.
     steering_held: bool = False   # the caller holds routine steering (a grow-strategy plan that is held,
-    #                               stale or missing): only the water-safety rules fire, the P3 emergency,
-    #                               the watchdog and the minimum-daily floor. Phases still move.
+    #                               stale or missing): only the water-safety rules fire, the P3 emergency
+    #                               and the watchdog. Phases still move.
 
 
 def p0_dryback(p: ZoneParams) -> float:
@@ -153,7 +153,7 @@ def decide(s: ZoneSnapshot, p: ZoneParams):
 
     Mirrors the distilled algorithm: phase transition -> EC steering (P2) ->
     irrigation decision -> the cap/EC safety subset. Gate checks that need live HA
-    (dosing interlock, source-water, zone-enable) are applied in the IO shell.
+    (holds, refills, zone-enable) are applied in the IO shell.
 
     `reason` is a Reason: the same text as always, plus `.kind` (the rule that produced it) and
     `.cap_exempt` (whether this shot may exceed the daily budget; see CAP_EXEMPT).
@@ -190,7 +190,7 @@ def decide(s: ZoneSnapshot, p: ZoneParams):
         p1_ceiling = min(p.p1_target, p.field_capacity)
         # P1 is the ramp AS CONFIGURED and ends only when the ramp is complete: target reached (with the
         # minimum shots in) or the maximum shots delivered. There is deliberately NO time-based exit - a
-        # zone gate-blocked before or during the ramp (feed pH/EC, dosing hold) waits in P1 and resumes;
+        # zone gate-blocked before or during the ramp (a refill, a hold) waits in P1 and resumes;
         # phases always run in order. Lights-off -> P3 (above) is the only other way out.
         min_in = s.shot_count >= p.p1_min_shots
         if s.vwc >= p1_ceiling and ec_known and ec <= p.ec_target_p1 * 1.15 and min_in:
