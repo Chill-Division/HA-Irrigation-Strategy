@@ -342,7 +342,7 @@ export function Comparison({
       ? "Saved run daily reference"
       : reference === "phase"
         ? "Current phase reference"
-        : "Current configured daily plan";
+        : "Current configured daily targets";
   const warnings = [
     ...(loaded?.current.warnings || []),
     ...(loaded?.previous?.warnings || []),
@@ -515,7 +515,7 @@ export function Comparison({
                 value={reference}
                 onChange={(event) => setReference(event.target.value)}
               >
-                <option value="current">Current configured daily plan</option>
+                <option value="current">Current configured daily targets</option>
                 <option value="saved" disabled={!currentRun}>
                   Saved run daily reference
                 </option>

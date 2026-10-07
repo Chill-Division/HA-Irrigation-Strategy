@@ -294,21 +294,23 @@ describe("user-authored recipe library", () => {
 
 describe("plan file names", () => {
   it("name a file for what it holds: the room and its profiles, or the recipe", () => {
-    expect(planFileName("GR2", "Chill1")).toBe("crop-steering-plan-gr2-chill1.json");
-    expect(planFileName("Chill1")).toBe("crop-steering-plan-chill1.json");
+    expect(planFileName("GR2", "Chill1")).toBe("crop-steering-strategy-gr2-chill1.json");
+    expect(planFileName("Chill1")).toBe("crop-steering-strategy-chill1.json");
     // A profile shared by several zones, or a name of no letters, is named once or not at all.
     expect(planFileName("Flower 2", "Bulk (gen)", "Bulk (gen)", "--")).toBe(
-      "crop-steering-plan-flower-2-bulk-gen.json",
+      "crop-steering-strategy-flower-2-bulk-gen.json",
     );
-    expect(planFileName()).toBe("crop-steering-plan.json");
+    expect(planFileName()).toBe("crop-steering-strategy.json");
   });
   it("cut a long list of names short at a word", () => {
     const name = planFileName(
       "Flower 2",
       ...Array.from({ length: 9 }, (_, i) => `Zone ${i + 1} demo endpoints`),
     );
-    expect(name.startsWith("crop-steering-plan-flower-2-zone-1-demo-endpoints-zone-2")).toBe(true);
-    expect(name.length).toBeLessThanOrEqual("crop-steering-plan-.json".length + 100);
+    expect(name.startsWith("crop-steering-strategy-flower-2-zone-1-demo-endpoints-zone-2")).toBe(
+      true,
+    );
+    expect(name.length).toBeLessThanOrEqual("crop-steering-strategy-.json".length + 100);
     expect(name).toMatch(/[a-z0-9]\.json$/);
   });
 });

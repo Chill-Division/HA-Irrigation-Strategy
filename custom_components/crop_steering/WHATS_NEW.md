@@ -24,6 +24,8 @@ version being released.
 ## Unreleased
 
 - Give each feed recipe the EC it mixes to, and the controller waters a salty root zone knowing what your feed will do to it.
+- Irrigation plan is now Irrigation strategy, and its saved copies are strategies: a recipe is always a feed recipe.
+- Bug fixes and improvements.
 
 ## 1.0.0 - 2026-10-05
 

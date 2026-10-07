@@ -92,14 +92,14 @@ try {
     async () => {
       const initial = await downloadPlan(page.getByRole("button", { name: "Export", exact: true }));
       // Named for the room and its profiles.
-      assert.match(downloaded, /^crop-steering-plan-flower-2-zone-1-demo-endpoints-.+\.json$/);
+      assert.match(downloaded, /^crop-steering-strategy-flower-2-zone-1-demo-endpoints-.+\.json$/);
       await openLibrary();
       assert.equal(await library().locator(".recipe-list li").count(), 2);
       await page
-        .getByRole("button", { name: "Preview recipe Demo • steady schedule", exact: true })
+        .getByRole("button", { name: "Preview strategy Demo • steady schedule", exact: true })
         .waitFor();
       await page
-        .getByRole("button", { name: "Preview recipe Demo • week-by-week changes", exact: true })
+        .getByRole("button", { name: "Preview strategy Demo • week-by-week changes", exact: true })
         .waitFor();
       assert.equal(
         await page.evaluate(() =>
@@ -107,8 +107,8 @@ try {
         ),
         null,
       );
-      await page.getByRole("button", { name: "Save current as recipe", exact: true }).click();
-      await page.getByLabel("Recipe name", { exact: true }).fill("My saved plan");
+      await page.getByRole("button", { name: "Save current as a strategy", exact: true }).click();
+      await page.getByLabel("Strategy name", { exact: true }).fill("My saved plan");
       await page
         .getByLabel("Notes (optional)", { exact: true })
         .fill("User-authored example for the browser demo.");
@@ -116,16 +116,16 @@ try {
       await page.getByRole("dialog").waitFor({ state: "hidden" });
       assert.equal(await library().locator(".recipe-list li").count(), 3);
       const saved = await downloadPlan(
-        page.getByRole("button", { name: "Export recipe My saved plan", exact: true }),
+        page.getByRole("button", { name: "Export strategy My saved plan", exact: true }),
       );
-      assert.equal(downloaded, "crop-steering-plan-my-saved-plan.json");
+      assert.equal(downloaded, "crop-steering-strategy-my-saved-plan.json");
       assert.deepEqual(saved.plan, initial.plan);
       await page.locator("#zone-start-date").fill("2026-08-01");
-      await page.getByRole("button", { name: "Preview recipe My saved plan", exact: true }).click();
+      await page.getByRole("button", { name: "Preview strategy My saved plan", exact: true }).click();
       const load = page.getByRole("button", { name: "Load into local draft", exact: true });
       assert.equal(await load.isDisabled(), true);
       await page
-        .getByLabel("Replace the current unsaved planner draft with this recipe.", { exact: true })
+        .getByLabel("Replace the current unsaved draft with this strategy.", { exact: true })
         .check();
       await load.click();
       await page.getByRole("dialog").waitFor({ state: "hidden" });
@@ -153,7 +153,7 @@ try {
   );
   await check("Library isolates rooms and confirms removal; imports remain local", async () => {
     const exported = await downloadPlan(
-      page.getByRole("button", { name: "Export recipe My saved plan", exact: true }),
+      page.getByRole("button", { name: "Export strategy My saved plan", exact: true }),
     );
     await page.locator("#desktop-room").selectOption("room:f1_");
     await library().waitFor();
@@ -162,31 +162,31 @@ try {
     await page.locator("#desktop-room").selectOption("room:");
     await library().waitFor();
     await openLibrary();
-    await page.getByRole("button", { name: "Remove recipe My saved plan", exact: true }).click();
+    await page.getByRole("button", { name: "Remove strategy My saved plan", exact: true }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Cancel", exact: true }).click();
     assert.equal(await library().locator(".recipe-list li").count(), 3);
-    await page.getByRole("button", { name: "Remove recipe My saved plan", exact: true }).click();
+    await page.getByRole("button", { name: "Remove strategy My saved plan", exact: true }).click();
     await page
       .getByRole("dialog")
-      .getByRole("button", { name: "Remove recipe", exact: true })
+      .getByRole("button", { name: "Remove strategy", exact: true })
       .click();
     assert.equal(await library().locator(".recipe-list li").count(), 2);
     assert.equal(
-      await page.getByRole("button", { name: "Preview recipe My saved plan", exact: true }).count(),
+      await page.getByRole("button", { name: "Preview strategy My saved plan", exact: true }).count(),
       0,
     );
-    await page.locator('input[type="file"][aria-label="Import recipe file"]').setInputFiles({
+    await page.locator('input[type="file"][aria-label="Import strategy file"]').setInputFiles({
       name: "own-plan.json",
       mimeType: "application/json",
       buffer: Buffer.from(JSON.stringify(exported)),
     });
-    await page.getByLabel("Recipe name", { exact: true }).fill("Imported copy");
+    await page.getByLabel("Strategy name", { exact: true }).fill("Imported copy");
     await page.getByRole("button", { name: "Save to library", exact: true }).click();
     await page.getByRole("dialog").waitFor({ state: "hidden" });
     await page.setViewportSize({ width: 390, height: 844 });
     await fitsWidth(page);
     await axe("recipe library mobile");
-    await page.getByRole("button", { name: "Preview recipe Imported copy", exact: true }).click();
+    await page.getByRole("button", { name: "Preview strategy Imported copy", exact: true }).click();
     await axe("recipe preview mobile");
     await page.getByRole("button", { name: "Keep current draft", exact: true }).click();
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -285,7 +285,7 @@ try {
     await page.getByRole("button", { name: "Reload library", exact: true }).click();
     await library().getByRole("alert").waitFor();
     assert.equal(
-      await page.getByRole("button", { name: "Save current as recipe", exact: true }).isDisabled(),
+      await page.getByRole("button", { name: "Save current as a strategy", exact: true }).isDisabled(),
       true,
     );
     assert.equal(await page.evaluate((key) => localStorage.getItem(key), key), "{broken");

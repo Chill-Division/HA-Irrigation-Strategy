@@ -34,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the recipe mixes to, measured once mixed. The controller only floods a salty root zone with a feed
   weaker than it, and now takes the recipe in use's EC as that feed's: a 1.6 mS/cm feed dilutes a
   2.6 mS/cm root zone. Without one, as before, it counts the feed as 3.0 mS/cm. Recipe files carry it.
+- **One word for each side.** What steers the watering is the irrigation strategy: the menu's
+  Irrigation plan is now Irrigation strategy (Today and Schedule), its saved copies are kept in the
+  Strategy library, and you arm or disarm a strategy. A recipe is always a feed recipe. Home
+  Assistant's Repairs cards, error codes, services and the strategy stage select say the same.
 
 ### 🔧 Technical notes
 
@@ -77,6 +81,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   files carry `ec` (a file without it imports with none), and CS-206 says where the feed's EC comes
   from. `tests_ha/test_feed_batches.py` takes a recipe's EC from the real `feed_save` to the real
   controller's snapshot.
+- Wording: "irrigation strategy" (or "strategy") replaces "grow plan", "plan" and the irrigation
+  "recipe" in the dashboard, the integration's Repairs cards (CS-606, CS-607), `services.yaml`,
+  `setup_api`'s zone-change refusal, `strategy_model`'s zone check, the strategy sensor's friendly
+  name (Irrigation strategy), `select.crop_steering_<prefix>recipe_stage`'s name (Strategy Stage),
+  `docs/error-codes.json` and the docs. Nothing a box or an automation reads moves: entity ids,
+  service ids and fields, the `#/strategy` and `#/grow-plan` addresses, the library's storage key
+  and the export format (`crop-steering-plan`) stay; exported files are now named
+  `crop-steering-strategy-….json`. The controller's Auto setpoints frozen reason names an armed
+  irrigation strategy. The browser checks and unit tests follow the new labels.
 
 ## [1.0.0] - 2026-10-05
 

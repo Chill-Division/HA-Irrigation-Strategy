@@ -18,6 +18,6 @@
 
 Edit source in frontend/src and run the build; do not hand-edit generated dashboards. The integration's folder holds `dashboard.html`; the app's also holds the `index.html` that opens it for the app's sidebar entry. The browser checks load the app's copy. Runtime entity IDs, room prefixes and the f2_control app slug remain stable; friendly names can change without breaking references.
 
-The integration owns plan/configuration storage and per-room run metadata. Run records retain dates, stable zone/sensor IDs and timestamped reference targets; sensor readings stay in HA Recorder, with bounded authenticated history retrieval. Comparison and runtime calculators do not call actuator services.
+The integration owns strategy/configuration storage and per-room run metadata. Run records retain dates, stable zone/sensor IDs and timestamped reference targets; sensor readings stay in HA Recorder, with bounded authenticated history retrieval. Comparison and runtime calculators do not call actuator services.
 
  The controller reads one atomic, versioned strategy snapshot, validates freshness and runs the pure decision core before its hardware IO sequence. Configuration revision and controller acknowledgement are distinct so the UI cannot mistake a saved mapping for a running configuration.

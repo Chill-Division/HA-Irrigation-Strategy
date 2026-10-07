@@ -233,7 +233,7 @@ describe("notices", () => {
     expect(view(states).alerts.map((alert) => [alert.severity, alert.title])).toEqual([
       ["critical", "Controller not running"],
       ["warning", "Zone 2: sensor data unavailable"],
-      ["info", "Grow plan controls this room"],
+      ["info", "The irrigation strategy controls this room"],
     ]);
   });
   it("never drops a critical notice from the short list", () => {
@@ -405,9 +405,9 @@ describe("room status line", () => {
       /^Hardware fault: Valve 2 did not close\. Switch watering off, fix the stuck hardware/,
     ],
     [
-      "the grow plan is held",
+      "the irrigation strategy is held",
       [entity(HEARTBEAT, "healthy", { strategy_error: "Strategy snapshot is stale" })],
-      /^Grow plan hold: Strategy snapshot is stale\./,
+      /^Irrigation strategy hold: Strategy snapshot is stale\./,
     ],
     [
       "a fail-closed gate holds",

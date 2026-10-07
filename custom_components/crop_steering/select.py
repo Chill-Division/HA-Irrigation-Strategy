@@ -51,7 +51,7 @@ SELECT_DESCRIPTIONS = [
     # Named-stage recipe: picking a stage applies its setpoints to the zones.
     SelectEntityDescription(
         key="recipe_stage",
-        name="Recipe Stage",
+        name="Strategy Stage",
         icon="mdi:format-list-bulleted-type",
         options=RECIPE_STAGES,
     ),

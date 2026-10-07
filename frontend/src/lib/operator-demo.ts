@@ -250,7 +250,7 @@ export class OperatorDemo {
           zone_flow_lps: zoneFlow,
           shots,
         },
-        errors: block ? [] : ["No plan block on this date."],
+        errors: block ? [] : ["No strategy block on this date."],
       };
     });
     return { ...clone(doc), plan: clone(plan), preview: { date, zones } };
@@ -313,9 +313,9 @@ export class OperatorDemo {
           String(data.date || localDate()),
         );
       if (action === "strategy_save") {
-        if (doc.status !== "draft") throw new Error("Disarm the active plan before editing.");
+        if (doc.status !== "draft") throw new Error("Disarm the active strategy before editing.");
         if (data.expected_revision !== doc.revision)
-          throw new Error("Plan changed. Reload before saving.");
+          throw new Error("Strategy changed. Reload before saving.");
         const plan = data.plan as GrowPlan,
           errors = planErrors(plan, doc.catalog);
         if (errors.length) throw new Error(errors.join(" "));
@@ -325,8 +325,8 @@ export class OperatorDemo {
         result = doc;
       }
       if (action === "strategy_activate") {
-        if (doc.status !== "draft") throw new Error("Disarm the plan before arming it again.");
-        if (data.expected_revision !== doc.revision) throw new Error("Plan revision changed.");
+        if (doc.status !== "draft") throw new Error("Disarm the strategy before arming it again.");
+        if (data.expected_revision !== doc.revision) throw new Error("Strategy revision changed.");
         const errors = planErrors(doc.plan, doc.catalog);
         if (errors.length) throw new Error(errors.join(" "));
         doc.status = "armed";

@@ -1,7 +1,7 @@
 apply_recipe:
-  name: Apply recipe stage
+  name: Apply strategy stage
   description: >-
-    Write a named-stage recipe's setpoints into the per-zone number entities the
+    Write a named strategy stage's setpoints into the per-zone number entities the
     engine reads (VWC targets, dryback, EC targets, EC ceiling, P2 shot size).
     Operator-initiated; values are clamped by each number's min/max and the kill
     switch still gates actuation. Omit the stage to re-apply the active one.
@@ -10,7 +10,7 @@ apply_recipe:
   fields:
     stage:
       name: Stage
-      description: Recipe stage to apply. Defaults to the active stage.
+      description: Strategy stage to apply. Defaults to the active stage.
       required: false
       selector:
         select:
@@ -22,16 +22,15 @@ apply_recipe:
             - "Custom"
 
 save_recipe:
-  name: Save recipe table
+  name: Save strategy stages
   description: >-
-    Replace the stored recipe table (stage -> setpoints) for every room. Used by
-    the dashboard recipe editor; does not change any live setpoint until a stage
-    is applied. Needs a Home Assistant administrator when a signed-in user calls
+    Replace the stored strategy stages (stage -> setpoints) for every room. Does
+    not change any live setpoint until a stage is applied. Needs a Home Assistant administrator when a signed-in user calls
     it, directly or through a script they start; automations are unaffected.
   fields:
     recipe:
-      name: Recipe
-      description: The full recipe object (version, active_stage, stages).
+      name: Strategy stages
+      description: The full stages object (version, active_stage, stages).
       required: true
       selector:
         object:
@@ -149,7 +148,7 @@ setup_remove:
         text:
 
 strategy_get:
-  name: Read grow strategy
+  name: Read irrigation strategy
   description: Return the room's durable draft, active snapshot, and readable parameter bounds.
   fields:
     room_id:
@@ -160,7 +159,7 @@ strategy_get:
         text:
 
 strategy_save:
-  name: Save grow strategy draft
+  name: Save irrigation strategy draft
   description: Validate and save grower-defined endpoints and daily or weekly zone assignments. Does not activate watering. Needs a Home Assistant administrator when a signed-in user calls it, directly or through a script they start; automations are unaffected.
   fields:
     room_id:
@@ -175,13 +174,13 @@ strategy_save:
           min: 0
           mode: box
     plan:
-      description: Version 1 plan with profiles and per-zone schedules.
+      description: Version 1 strategy with profiles and per-zone schedules.
       required: true
       selector:
         object:
 
 strategy_preview:
-  name: Preview grow strategy
+  name: Preview irrigation strategy
   description: Interpolate explicit endpoints and calculate hydraulic shot volumes and durations without writes.
   fields:
     room_id:
@@ -199,7 +198,7 @@ strategy_preview:
         text:
 
 strategy_activate:
-  name: Arm grow strategy
+  name: Arm irrigation strategy
   description: Arm a saved draft for the next local lights-on boundary. Requires a compatible controller and readable configuration; never enables hardware. Needs a Home Assistant administrator when a signed-in user calls it, directly or through a script they start; automations are unaffected.
   fields:
     room_id:
@@ -214,8 +213,8 @@ strategy_activate:
           mode: box
 
 strategy_disarm:
-  name: Disarm grow strategy
-  description: Cancel an unstarted plan or return an active plan to legacy setpoints at the next lights-on boundary. Use the engine control to stop irrigation eligibility. Needs a Home Assistant administrator when a signed-in user calls it, directly or through a script they start; automations are unaffected.
+  name: Disarm irrigation strategy
+  description: Cancel an unstarted strategy or return an active one to the manual setpoints at the next lights-on boundary. Use the engine control to stop irrigation eligibility. Needs a Home Assistant administrator when a signed-in user calls it, directly or through a script they start; automations are unaffected.
   fields:
     room_id:
       required: true
@@ -384,7 +383,7 @@ feed_mix:
         boolean:
 test_shot:
   name: Test a zone's watering
-  description: Ask the controller app for a 10-second test shot in one zone, as the zone's Test Shot button does, to check that watering works. It passes every check a shot passes except a held grow plan's, and its water counts toward the day's. Needs a Home Assistant administrator when a signed-in user calls it, directly or through a script they start; automations are unaffected.
+  description: Ask the controller app for a 10-second test shot in one zone, as the zone's Test Shot button does, to check that watering works. It passes every check a shot passes except a held irrigation strategy's, and its water counts toward the day's. Needs a Home Assistant administrator when a signed-in user calls it, directly or through a script they start; automations are unaffected.
   fields:
     room_id:
       required: true

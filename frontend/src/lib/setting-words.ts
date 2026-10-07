@@ -1,6 +1,6 @@
 /**
  * What each irrigation setting is called and what it does, for every page that shows one: the
- * Irrigation plan, the Schedule, the planning curve and the sensor charts. One table, so a
+ * Irrigation strategy, the Schedule, the planning curve and the sensor charts. One table, so a
  * setting never has two names.
  *
  * Names follow the Athena Handbook (Metric, V20) where it has a term for the thing. Every help
@@ -53,7 +53,7 @@ export const DETAIL_HEADINGS: ReadonlyArray<readonly [keyof SettingDetail, strin
   ["athena", "Athena Handbook"],
 ];
 
-/** The phase groups, in order; the Irrigation plan files the EC targets under them too. */
+/** The phase groups, in order; Today files the EC targets under them too. */
 export const PHASE_GROUPS = [
   "P0 · Additional dryback",
   "P1 · Ramp-up",

@@ -147,7 +147,7 @@ def normalize_plan(plan, zone_ids, catalog):
         raise ValueError("Provide 1..64 endpoint profiles")
     if not isinstance(zones, list) or not zones or len(zones) != len(zone_ids):
         raise ValueError(
-            "Plan must assign every active room zone; reconcile the draft with room setup"
+            "The strategy must assign every active room zone; reconcile the draft with room setup"
         )
     normalized_profiles, by_id = [], {}
     for profile in profiles:

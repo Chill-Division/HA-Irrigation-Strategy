@@ -271,7 +271,7 @@ export function RoomTests({
               <DialogDescription>
                 {plan
                   ? `The fresh water runs for ${duration(plan.fill_s)}, with the pump and recirculation from half-way; then the dosers run one after another, and it recirculates for ${duration(plan.mix_s)}. Watering in every room waits until it finishes.`
-                  : "Reading the room's feed plan…"}
+                  : "Reading the room's feed recipe…"}
               </DialogDescription>
             </DialogHeader>
             {plan && (

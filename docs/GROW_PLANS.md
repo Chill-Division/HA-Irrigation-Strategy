@@ -2,7 +2,7 @@
 
 ## What the two modes actually do
 
-The controller reads each zone's steering mode and uses that mode's P3 dryback target and P0/P1/P2 EC targets. Switching vegetative/generative selects those targets; it does not automatically create a complete recipe or calculate suitable targets from your pot size.
+The controller reads each zone's steering mode and uses that mode's P3 dryback target and P0/P1/P2 EC targets. Switching vegetative/generative selects those targets; it does not automatically create a complete strategy or calculate suitable targets from your pot size.
 
 The grow planner defines two explicit endpoints in each profile. The slider blends every configured parameter between them: 0 is the vegetative endpoint, 100 the generative endpoint, and 50 is halfway, rounded to each actual HA parameter's step. Profiles can differ in VWC targets, dryback, EC targets, shot sizes and other supported settings. These are operator-defined endpoints, not universal crop prescriptions. Existing installations seed endpoints from their current values, so identical endpoints intentionally produce no change until edited.
 
@@ -10,17 +10,17 @@ A more vegetative irrigation approach generally keeps water more available; gene
 
 ## Build a grow
 
-1. Select the room, then **Irrigation plan → Schedule**. Set each zone's grow start date.
+1. Select the room, then **Irrigation strategy → Schedule**. Set each zone's grow start date.
 2. Open **Endpoint profiles**. Review both endpoint columns; duplicate a profile when a zone needs different bounds. A shared profile affects every schedule block referencing it.
 3. In **Schedule & curve**, select a zone row and week. Set its profile and steering slider. Switch to **Days** for exceptions. Editing a range splits existing blocks and preserves surrounding days.
 4. Review the combined planning curve and hydraulic estimates below. The same selected date, zone and interpolated parameters drive both the curve and preview.
 5. Choose **Review & save**. Resolve validation issues, inspect the per-zone preview and save the draft. Export JSON for a portable backup or another draft.
-6. After adding or archiving zones in setup, use **Update zones from setup** in the draft planner. This keeps existing active-zone schedules, removes archived assignments and seeds new zones from current settings. Export the old draft first if you need those assignments. Review and save the reconciled draft. Setup refuses to add or archive zones, or to archive the room, while its plan is armed or running: disarm it first.
-7. **Arm plan** after the controller reports support. Activation happens at the next local lights-on after arming, by the room's lights-on hour at that time. Active plans must be disarmed before editing. Disarm transfers control back to manual setpoints at the next lights-on.
+6. After adding or archiving zones in setup, use **Update zones from setup** in the draft planner. This keeps existing active-zone schedules, removes archived assignments and seeds new zones from current settings. Export the old draft first if you need those assignments. Review and save the reconciled draft. Setup refuses to add or archive zones, or to archive the room, while its strategy is armed or running: disarm it first.
+7. **Arm strategy** after the controller reports support. Activation happens at the next local lights-on after arming, by the room's lights-on hour at that time. An active strategy must be disarmed before editing. Disarm transfers control back to manual setpoints at the next lights-on.
 
-Each new day is applied at lights-on. If it cannot be applied then (Home Assistant restarting, the controller's heartbeat or a probe a few minutes late), the plan keeps the previous day's targets and applies the day at the first minute it can; Settings → Repairs shows *has not moved on to today* with the reason meanwhile.
+Each new day is applied at lights-on. If it cannot be applied then (Home Assistant restarting, the controller's heartbeat or a probe a few minutes late), the strategy keeps the previous day's targets and applies the day at the first minute it can; Settings → Repairs shows *has not moved on to today* with the reason meanwhile.
 
-The calendar supports grow days 1-366 per zone, distinct start dates and complete contiguous schedule ranges. Missing/finished/invalid schedules are visible and hold managed zones rather than inventing targets. A hold stops the plan's steering, never the zone's water safety: the P3 emergency shot, the lights-on watchdog and a dead probe's timed schedule still water a held zone, and Repairs shows *holding irrigation* with the reason. Each room stores its plan in HA persistent storage with optimistic revision checks. Restart recovery uses the stored plan and controller latch.
+The calendar supports grow days 1-366 per zone, distinct start dates and complete contiguous schedule ranges. Missing/finished/invalid schedules are visible and hold managed zones rather than inventing targets. A hold stops the strategy's steering, never the zone's water safety: the P3 emergency shot, the lights-on watchdog and a dead probe's timed schedule still water a held zone, and Repairs shows *holding irrigation* with the reason. Each room stores its strategy in HA persistent storage with optimistic revision checks. Restart recovery uses the stored strategy and controller latch.
 
 ## Read the combined graph
 
@@ -37,7 +37,7 @@ This is a projection from setpoints and a dry-down rate. It does not predict upt
 
 ## See changes while editing manual setpoints
 
-Open **Irrigation plan → Today** and select a zone. The daily graph stays beside the phase controls on a wide screen. The saved reference and draft are shown separately: changing the P3 emergency floor moves its line immediately, while the saved line remains for comparison. Changing a mode uses that mode's dryback and EC values. A shared room value is used only when the controller has no zone-specific value.
+Open **Irrigation strategy → Today** and select a zone. The daily graph stays beside the phase controls on a wide screen. The saved reference and draft are shown separately: changing the P3 emergency floor moves its line immediately, while the saved line remains for comparison. Changing a mode uses that mode's dryback and EC values. A shared room value is used only when the controller has no zone-specific value.
 
 Graph edits and form edits share one draft. Invalid fields remain visibly invalid; they do not become zero or silently fall back to a different room. Review and apply still controls when values reach Home Assistant. When a schedule owns the room, Today shows its effective targets read-only and hides manual fallback inputs. Use Schedule to edit dated targets.
 
@@ -45,7 +45,7 @@ Graph edits and form edits share one draft. Invalid fields remain visibly invali
 
 Use **Compare runs** for recorded VWC/EC history over a day, week, month, a run so far, or a selected date range. Register each run's name and start/end dates. The run record preserves zone identity, mapped sensors and a timestamped reference configuration. Previous runs align by elapsed grow age so a partial current run is not compared with a complete previous run.
 
-Targets are reference lines, not a claim that those values were used historically. Adding an older run today captures today's reference configuration unless an existing saved reference is available. Historical readings remain limited by Home Assistant Recorder retention. Missing periods stay missing. This view does not change irrigation, arm a plan or fabricate earlier data.
+Targets are reference lines, not a claim that those values were used historically. Adding an older run today captures today's reference configuration unless an existing saved reference is available. Historical readings remain limited by Home Assistant Recorder retention. Missing periods stay missing. This view does not change irrigation, arm a strategy or fabricate earlier data.
 
 ## Pot and dripper sizing
 
@@ -67,6 +67,6 @@ The P1 maximum-shot budget is conditional. P2 maintenance and P3 hold and emerge
 
 ## Current boundaries
 
-For reusable copies of your own schedules, use **Recipe library**. It stores named plans in the current browser and room, supports export/import and loads only into the local draft while retaining current zone start dates. See the [library guide and reference sources](RECIPE_LIBRARY.md).
+For reusable copies of your own schedules, use **Strategy library**. It stores named strategies in the current browser and room, supports export/import and loads only into the local draft while retaining current zone start dates. See the [library guide and reference sources](RECIPE_LIBRARY.md).
 
-Plans steer irrigation targets, not environmental equipment. Nutrient dosing follows its own feed schedule, on **Feed → Reservoir**.
+Strategies steer irrigation targets, not environmental equipment. Nutrient dosing follows its own feed schedule, on **Feed → Reservoir**.

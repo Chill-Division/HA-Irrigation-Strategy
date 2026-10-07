@@ -158,7 +158,7 @@ describe("active plan presentation and lifecycle", () => {
         entityId: "number.crop_steering_zone_1_p1_target_vwc",
         value: 60,
       }),
-    ).toMatch(/active grow plan/);
+    ).toMatch(/active irrigation strategy/);
   });
   it("never presents old manual targets as active after expiry or wrong room identity", () => {
     for (const bad of ["expired", "wrong-room"]) {

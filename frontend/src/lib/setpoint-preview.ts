@@ -214,7 +214,7 @@ export function buildSetpointPreview(
     );
   if (readOnly && !active)
     issues.push(
-      "The active plan has no valid targets for this zone. Manual fallback values are not shown as active targets.",
+      "The active strategy has no valid targets for this zone. Manual fallback values are not shown as active targets.",
     );
   return {
     saved,

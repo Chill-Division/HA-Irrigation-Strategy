@@ -1,6 +1,6 @@
 # Crop Steering Controller
 
-This companion app runs the P0–P3 irrigation decision loop and sequences mapped pump/valve entities. Install the Crop Steering integration first; it owns room configuration, sensor mapping and grow-plan storage.
+This companion app runs the P0–P3 irrigation decision loop and sequences mapped pump/valve entities. Install the Crop Steering integration first; it owns room configuration, sensor mapping and strategy storage.
 
 ## Install and configure
 
@@ -8,15 +8,15 @@ Follow the [installation guide](https://github.com/Chill-Division/HA-Irrigation-
 
 Use **Settings → Rooms & hardware** for mapping and per-zone sizing. Keep engines off while commissioning. Fresh installations create engine controls; existing mapped enable flags are preserved. The legacy default-room helper may still be input_boolean.f2_control_enabled. The room descriptor/heartbeat identifies the actual flag; do not create a second one blindly.
 
-## Plans and operation
+## Strategies and operation
 
-**Irrigation plan → Schedule** supports per-zone day/week schedules and explicit vegetative/generative profiles. Saving is draft-only; arming makes a plan eligible at the next local lights-on boundary. It does not enable the engine. Active plans supply atomic versioned targets. Missing or expired required plans hold the plan's steering, including after restart; rescue and watchdog shots still water.
+**Irrigation strategy → Schedule** supports per-zone day/week schedules and explicit vegetative/generative profiles. Saving is draft-only; arming makes a strategy eligible at the next local lights-on boundary. It does not enable the engine. Active strategies supply atomic versioned targets. Missing or expired required strategies hold their steering, including after restart; rescue and watchdog shots still water.
 
 The controller retains interlock holds, duration/daily-volume caps and hardware state readback. Shared-hardware faults latch until implicated engines and hardware are off. State readback is not proof of physical delivery; verify sensors and actual flow on site.
 
 ## Visible targets and water
 
-**Irrigation plan → Today** shows saved and draft targets beside the selected phase, on a graph that also draws the zone's recorded VWC and pore EC and the projected day. Compare runs overlays retained readings with daily target illustrations or earlier runs aligned by grow age. Stored references are timestamped; Recorder retention determines the available historical data.
+**Irrigation strategy → Today** shows saved and draft targets beside the selected phase, on a graph that also draws the zone's recorded VWC and pore EC and the projected day. Compare runs overlays retained readings with daily target illustrations or earlier runs aligned by grow age. Stored references are timestamped; Recorder retention determines the available historical data.
 
 Water cards distinguish total substrate capacity from all-plant zone litres and average mL per plant. The runtime calculator includes whole-second timing, the minimum shot and duration cap. Phase estimates also disclose engine parameter limits. Water delivered is counted from the flow configured when each shot ran and its elapsed runtime, partial aborts included.
 
@@ -34,6 +34,6 @@ The app's **Log** tab has a line a minute for every zone, each dated and named a
 
 ## Updating
 
-Update the integration and this app together. Use **Update** or **Rebuild** to include new Python code; restarting an old image does not rebuild it. Preserve persistent data and export plans before upgrades. See the installation guide for rollback instructions.
+Update the integration and this app together. Use **Update** or **Rebuild** to include new Python code; restarting an old image does not rebuild it. Preserve persistent data and export strategies before upgrades. See the installation guide for rollback instructions.
 
 The display name is Crop Steering Controller. The existing f2_control slug remains stable for upgrade compatibility. The app and the integration carry one version number: run the same release of both. The dashboard sidebar shows both, as reported by the running parts. Local browser/unit checks do not constitute a live HA installation test.

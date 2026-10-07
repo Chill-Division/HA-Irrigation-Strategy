@@ -19,7 +19,7 @@ export interface AutoSetpointStatus {
   updated: string | null;
   /** Days the learned peak is held before the supervisor probes one point higher; 0 = probing. */
   holdDays: number | null;
-  /** Why the supervisor is frozen, e.g. an armed grow plan owns the targets. */
+  /** Why the supervisor is frozen, e.g. an armed irrigation strategy owns the targets. */
   frozenReason: string | null;
   /** Today's plan cannot reach the P3 dryback target: what the zone gets instead, and until when
    * its maintenance shots run. */

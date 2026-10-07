@@ -390,7 +390,7 @@ try {
       );
       await page
         .getByRole("navigation", { name: "Main navigation" })
-        .getByRole("button", { name: "Irrigation plan", exact: true })
+        .getByRole("button", { name: "Irrigation strategy", exact: true })
         .click();
       assert.equal(await field("p1_target_vwc").isDisabled(), true);
       assert.equal(await page.locator(".demo-banner").count(), 0);

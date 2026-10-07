@@ -22,11 +22,11 @@ Captured in October 2026 from the compiled application with isolated demo data, 
 
 ![Nutrient stock tanks with their levels, low marks and batches left](../img/stock-tanks.png)
 
-## Irrigation plan: Schedule and combined VWC/EC curve
+## Irrigation strategy: Schedule and combined VWC/EC curve
 
 ![Zone planning and steering controls](../img/grow-plan.png)
 
-## Irrigation plan: Today, with the recorded zone and the projected day
+## Irrigation strategy: Today, with the recorded zone and the projected day
 
 ![Targets, recorded VWC/EC and the projected P0-P3 day on one graph](../img/plan-graph.png)
 
@@ -34,7 +34,7 @@ Captured in October 2026 from the compiled application with isolated demo data, 
 
 ![24 h / 72 h / 7 d probe history with setpoint lines, peaks and troughs](../img/sensor-history.png)
 
-## Irrigation plan: Today beside the plan graph
+## Irrigation strategy: Today beside its graph
 
 ![Saved and draft targets with the review bar](../img/manual-setpoints.png)
 
@@ -46,9 +46,9 @@ Captured in October 2026 from the compiled application with isolated demo data, 
 
 ![Compare VWC and EC over the same grow age](../img/run-comparison.png)
 
-## User-authored recipe library
+## User-authored strategy library
 
-![Save and reuse your own plans as local drafts](../img/recipe-library.png)
+![Save and reuse your own strategies as local drafts](../img/recipe-library.png)
 
 ## Settings: Rooms & hardware
 
@@ -56,7 +56,7 @@ Captured in October 2026 from the compiled application with isolated demo data, 
 
 ## On a phone
 
-| The Overview | Feed: Reservoir | Irrigation plan: Today |
+| The Overview | Feed: Reservoir | Irrigation strategy: Today |
 | --- | --- | --- |
 | ![The Overview on a phone](../img/mobile-overview.png) | ![The Reservoir on a phone: a batch's steps, the doses inside Fill and mix](../img/mobile-reservoir.png) | ![Today's targets on a phone](../img/mobile-plan.png) |
 

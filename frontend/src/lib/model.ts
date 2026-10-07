@@ -520,7 +520,7 @@ export function buildRoom(states: States, room: Room): RoomView {
       return {
         ...fallback,
         entityId: strategyEntity?.entity_id || null,
-        label: "Plan · " + fallback.label,
+        label: "Strategy · " + fallback.label,
         value: typeof value === "number" && Number.isFinite(value) ? value : null,
       };
     };
@@ -707,10 +707,12 @@ export function buildRoom(states: States, room: Room): RoomView {
     alerts.unshift({
       id: room.id + "-strategy",
       severity: strategyValid ? "info" : "critical",
-      title: strategyValid ? "Grow plan controls this room" : "Grow plan snapshot unavailable",
+      title: strategyValid
+        ? "The irrigation strategy controls this room"
+        : "Irrigation strategy snapshot unavailable",
       detail: strategyValid
-        ? "Displayed VWC and EC references come from the active plan. Manual setpoints are retained for use after the plan is disarmed."
-        : "The controller requires a valid plan snapshot. Targets are unavailable until plan status is restored; do not treat legacy number values as active targets.",
+        ? "Displayed VWC and EC references come from the active strategy. Manual setpoints are retained for use after the strategy is disarmed."
+        : "The controller requires a valid strategy snapshot. Targets are unavailable until the strategy's status is restored; do not treat legacy number values as active targets.",
     });
   const shot = config && beat.health === "stale" ? shotRunning(states, room, now) : null;
   if (shot)
@@ -944,7 +946,7 @@ export function roomStatus(states: States, room: Room, now = Date.now()): RoomSt
     return say(
       "stopped",
       "Not watering",
-      `Grow plan hold: ${plan}. Re-activate or disarm the plan in Irrigation plan.`,
+      `Irrigation strategy hold: ${plan}. Re-activate or disarm it in Irrigation strategy → Schedule.`,
     );
   const decision = resolve(states, room, "sensor", "current_decision");
   const entries = (key: string) => {
@@ -994,7 +996,7 @@ export function validateChange(room: RoomView, states: States, change: Change): 
       ? null
       : "Choose Average, Median, Lowest or Highest.";
   if (room.strategy.engaged && /^(number|select)[.]/.test(change.entityId))
-    return "An active grow plan owns these targets. Disarm the plan before editing manual setpoints.";
+    return "An active irrigation strategy owns these targets. Disarm it before editing manual setpoints.";
   const hardware = discoverRooms(states).flatMap((r) => {
     const attributes = descriptor(states, r)?.attributes || {};
     return [

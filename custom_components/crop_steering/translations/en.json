@@ -753,12 +753,12 @@
       "description": "The moisture sensor for zone(s) {zones} reads unavailable — the probe(s) may be offline or misnamed. Check it in Developer Tools → States and your zone mapping.\n\nCode CS-604. What it means and what to do: Crop Steering → Help → Error codes."
     },
     "strategy_hold": {
-      "title": "Crop Steering: grow strategy plan is holding irrigation (CS-606)",
-      "description": "The room's grow strategy plan is holding the steering of the zones it manages: {reason}. Until it clears, the controller waters those zones only with emergency and watchdog shots, and a zone with a dead probe on its timed schedule. See the plan in the Crop Steering panel under Irrigation plan → Schedule. If it stays in error, fix the cause, then disarm the plan and arm it again.\n\nCode CS-606. What it means and what to do: Crop Steering → Help → Error codes."
+      "title": "Crop Steering: irrigation strategy is holding its zones (CS-606)",
+      "description": "The room's irrigation strategy is holding the steering of the zones it manages: {reason}. Until it clears, the controller waters those zones only with emergency and watchdog shots, and a zone with a dead probe on its timed schedule. See it in the Crop Steering panel under Irrigation strategy → Schedule. If it stays in error, fix the cause, then disarm the strategy and arm it again.\n\nCode CS-606. What it means and what to do: Crop Steering → Help → Error codes."
     },
     "strategy_degraded": {
-      "title": "Crop Steering: grow strategy plan has not moved on to today (CS-607)",
-      "description": "The room's grow strategy plan could not apply the current day at lights-on: {reason}. It keeps its last valid targets (a plan waiting to start stays armed) and tries again every minute, and the controller keeps steering. This clears itself once the cause is fixed, usually a stale controller heartbeat or probe.\n\nCode CS-607. What it means and what to do: Crop Steering → Help → Error codes."
+      "title": "Crop Steering: irrigation strategy has not moved on to today (CS-607)",
+      "description": "The room's irrigation strategy could not apply the current day at lights-on: {reason}. It keeps its last valid targets (a strategy waiting to start stays armed) and tries again every minute, and the controller keeps steering. This clears itself once the cause is fixed, usually a stale controller heartbeat or probe.\n\nCode CS-607. What it means and what to do: Crop Steering → Help → Error codes."
     },
     "entities_moved": {
       "title": "Crop Steering: {count} setting(s) are not where the controller looks for them (CS-605)",

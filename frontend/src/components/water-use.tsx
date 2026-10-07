@@ -82,9 +82,9 @@ function Hint({ label, children }: { label: string; children: ReactNode }) {
 function startText(start: GrowStart, today: string) {
   const day = dates(start.date, start.date, today);
   return start.source === "plan"
-    ? `${day}, from the armed grow plan`
+    ? `${day}, from the armed irrigation strategy`
     : start.source === "draft"
-      ? `${day}, from the saved grow plan (a draft, not armed)`
+      ? `${day}, from the saved strategy (a draft, not armed)`
       : start.source === "inferred"
         ? `${day}, inferred: the first day with water after ${start.afterDry} days without any`
         : `on or before ${day}, when the records begin`;
@@ -314,7 +314,7 @@ function WaterUseBody({
                   Estimated total
                   <Hint label="How the estimate is made">
                     Used so far plus the last 7 full grow-days’ average for every grow-day left in
-                    the grow plan. Without a plan length: that average for 7 days, per week.
+                    the irrigation strategy. Without its length: that average for 7 days, per week.
                   </Hint>
                 </span>
               </th>
@@ -365,8 +365,8 @@ function WaterUseBody({
                         notes: [
                           `At the last 7 days’ average, ${number(use.average.perDay, 1)} L/day`,
                           use.estimate
-                            ? `${use.estimate.planDays}-day plan, ${use.estimate.daysLeft} grow-days left`
-                            : "The plan length is missing",
+                            ? `${use.estimate.planDays}-day strategy, ${use.estimate.daysLeft} grow-days left`
+                            : "The strategy's length is missing",
                         ],
                       }
                     : { value: "Not yet", notes: ["Needs one full recorded grow-day"] })}
@@ -386,9 +386,9 @@ function WaterUseBody({
                     (row) => `${row.zone.name} ${row.start ? startText(row.start, today) : "none"}`,
                   )
                   .join("; ")}.`
-              : "No grow start: no zone has had water recently and no grow plan is armed."}{" "}
+              : "No grow start: no zone has had water recently and no irrigation strategy is armed."}{" "}
           {rows.some((row) => !row.start || ["inferred", "records"].includes(row.start.source))
-            ? "To count from the grow’s real start, save it as a grow plan’s start date on the Irrigation plan page; the plan does not need arming."
+            ? "To count from the grow’s real start, save it as the strategy’s start date on Irrigation strategy → Schedule; it does not need arming."
             : ""}
         </p>
         <p>

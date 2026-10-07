@@ -1,10 +1,10 @@
-# Reusable plan library
+# Strategy library
 
-The library stores copies of plans you author. Live room libraries start empty and do not contain publisher-endorsed or guide-derived numerical recipes.
+The library stores copies of the irrigation strategies you author. Live room libraries start empty and do not contain publisher-endorsed or guide-derived numbers.
 
-Open **Irrigation plan → Schedule → Recipe library** to save a named copy of the current plan, inspect stored copies, or load one into the local draft. Loading a recipe retains the current zone start dates and requires compatible zone assignments. Existing unsaved work requires an explicit replacement review. Active plans remain protected by the normal draft/arm workflow.
+Open **Irrigation strategy → Schedule → Strategy library** to save a named copy of the current strategy, inspect stored copies, or load one into the local draft. Loading one retains the current zone start dates and requires compatible zone assignments. Existing unsaved work requires an explicit replacement review. Active strategies remain protected by the normal draft/arm workflow.
 
-Library storage belongs to this browser and this site, separated by room. It is not an HA backup or shared multi-user database. Export important plans using the existing JSON export; use Import to bring an exported plan into the reviewed workflow. Clearing browser storage can remove local library entries. An unavailable or malformed library must be recovered explicitly rather than silently overwritten.
+Library storage belongs to this browser and this site, separated by room. It is not an HA backup or shared multi-user database. Export important strategies using the existing JSON export; use Import to bring an exported strategy into the reviewed workflow. Clearing browser storage can remove local library entries. An unavailable or malformed library must be recovered explicitly rather than silently overwritten.
 
 Loading or saving a local library item never calls an irrigation service. The normal **Review & save** action persists the draft in HA, and arming remains a separate action. Inspect the graph, assignments, dates and parameter validation before using a loaded draft.
 
@@ -18,4 +18,4 @@ These links identify the requested publications. They do not establish endorseme
 | CCI Black Book / *Crop Steering Super System E-Book* | [Official CCI publisher](https://ccibook.com/pages/crop-steering-super-system-e-book) | The free e-book offer is distinct from the physical Black Book and its download form requests contact details. No form was submitted; no ungated publisher PDF or numbered edition was verified. |
 | *@DANKEMSHUNTER Feed Program* | [Indexed Athena publisher asset](https://store.athenaag.com/SSP%20Applications/NetSuite%20Inc.%20-%20SCS/SuiteCommerce%20Standard/athena/assets/Dankemshunter%20Feed%20Program.pdf) | The original publisher URL was identified, but a fresh request returned HTTP403. Current direct access and edition remain unverified. |
 
-The application does not infer undocumented settings from a publication name. Its validator checks supported fields, bounds and plan structure; that is software validation, not agronomic validation.
+The application does not infer undocumented settings from a publication name. Its validator checks supported fields, bounds and strategy structure; that is software validation, not agronomic validation.
