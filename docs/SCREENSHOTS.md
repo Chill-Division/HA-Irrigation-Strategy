@@ -8,7 +8,7 @@ Captured in October 2026 from the compiled application with isolated demo data, 
 
 ## Tank and pump
 
-![The tank's level and temperature, its level over the last 24 hours, the pump, and the controller's refills](../img/tank-status.png)
+![The tank's level, its level over the last 24 hours, the pump, and the controller's refills](../img/tank-status.png)
 
 ## Insights: water use per zone
 

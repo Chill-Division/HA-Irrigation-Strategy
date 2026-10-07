@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The public repository's README and docs between releases.** A change to the README, the docs,
   the pictures, the scripts or the tests can now go to the public repository without a new version.
   A change to the integration or the controller app still waits for a release.
+- **The guides match 1.0.** The user guide, the install and troubleshooting guides, the entity
+  reference and the app's documentation no longer describe features that are gone (the catch-test
+  calculator, the tank temperature and fill-level mappings, the minimum daily volume, the feed gate)
+  or ask anyone to update to a version from before 1.0. The entity reference now says what the
+  controller does with each setting, and where it narrows the range a setting accepts.
 
 ### 🔧 Technical notes
 
@@ -30,6 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   number. `docs/RELEASING.md` (Commits that ship nothing) and CLAUDE.md say when to use it.
   The app's changelog, documentation and pictures and the controller's tests go too
   (`SHOWN_ONLY`): the Supervisor only shows them, and none is built into the image.
+- Docs: stale references removed across `docs/`, `CONTRIBUTING.md`, the engine's README and the
+  app's `DOCS.md`, each checked against the code. `docs/ENTITIES.md` gains the room prefix, an
+  Engine ranges table (the `validate_params` bounds narrower than the entities') and corrected
+  rows for `maximum_ec`, `field_capacity`, EC stacking, the steering selects, the display-only EC
+  sensors, `app_status`, `ai_heartbeat`, the safety sensors and the manual override.
+  `docs/RELEASING.md` says the 2.x numbers can be used again.
 
 ## [1.0.0] - 2026-10-05
 

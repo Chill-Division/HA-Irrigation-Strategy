@@ -8,7 +8,7 @@ Leaving Crop Steering restores the prior kiosk state. This does not change Home 
 
 Opening the native panel hides the Home Assistant sidebar, and the **Home Assistant** button brings it back. This was checked on a real installation; companion apps and third-party kiosk extensions may behave differently.
 
-The workspace combines the former Manual setpoints and Grow plan entries into **Irrigation plan → Today / Schedule**. Those are Crop Steering's own navigation views; they do not replace the Home Assistant menu button. Existing `#/strategy` and `#/grow-plan` bookmarks remain valid. This navigation was verified in the native HA panel on 2.16.1. **Insights**, **Feed** and **Settings** group their pages as tabs the same way; bookmarks to the retired Zones and Sensors pages open **Overview**.
+Crop Steering's menu (Overview, Irrigation plan, Insights, Feed, Settings and Help, with tabs across the top where an entry holds more than one page) moves around the workspace only; it does not replace the Home Assistant menu button. Each page has its own address, so a bookmark opens it; an address the dashboard does not know opens **Overview**.
 
 ## Implementation references
 

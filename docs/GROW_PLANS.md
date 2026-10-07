@@ -2,7 +2,7 @@
 
 ## What the two modes actually do
 
-The legacy controller reads mode-specific morning dryback and P0/P1/P2 EC references. Switching vegetative/generative selects those references; it does not automatically create a complete recipe or calculate suitable targets from your pot size.
+The controller reads each zone's steering mode and uses that mode's P3 dryback target and P0/P1/P2 EC targets. Switching vegetative/generative selects those targets; it does not automatically create a complete recipe or calculate suitable targets from your pot size.
 
 The grow planner defines two explicit endpoints in each profile. The slider blends every configured parameter between them: 0 is the vegetative endpoint, 100 the generative endpoint, and 50 is halfway, rounded to each actual HA parameter's step. Profiles can differ in VWC targets, dryback, EC targets, shot sizes and other supported settings. These are operator-defined endpoints, not universal crop prescriptions. Existing installations seed endpoints from their current values, so identical endpoints intentionally produce no change until edited.
 
@@ -20,7 +20,7 @@ A more vegetative irrigation approach generally keeps water more available; gene
 
 Each new day is applied at lights-on. If it cannot be applied then (Home Assistant restarting, the controller's heartbeat or a probe a few minutes late), the plan keeps the previous day's targets and applies the day at the first minute it can; Settings → Repairs shows *has not moved on to today* with the reason meanwhile.
 
-The calendar supports grow days 1-366 per zone, distinct start dates and complete contiguous schedule ranges. Missing/finished/invalid schedules are visible and hold managed zones rather than inventing targets. A hold stops the plan's steering, never the zone's water safety: the overnight emergency shot, the lights-on watchdog and the minimum daily volume still water a held zone, and Repairs shows *holding irrigation* with the reason. Each room stores its plan in HA persistent storage with optimistic revision checks. Restart recovery uses the stored plan and controller latch.
+The calendar supports grow days 1-366 per zone, distinct start dates and complete contiguous schedule ranges. Missing/finished/invalid schedules are visible and hold managed zones rather than inventing targets. A hold stops the plan's steering, never the zone's water safety: the P3 emergency shot, the lights-on watchdog and a dead probe's timed schedule still water a held zone, and Repairs shows *holding irrigation* with the reason. Each room stores its plan in HA persistent storage with optimistic revision checks. Restart recovery uses the stored plan and controller latch.
 
 ## Read the combined graph
 
@@ -61,12 +61,12 @@ Effective zone water (L) = water per plant (mL) × plants ÷ 1000.
 
 For 42 plants with one 4 L/hour dripper each, 120 seconds is about **133 mL/plant and 5.6 L/zone**. A 60-second duration limit gives about **67 mL/plant and 2.8 L/zone**. The UI shows the requested and effective run time separately. Daily recorded water uses controller estimates; average per plant assumes equal distribution. These values do not measure crop uptake, runoff or unequal emitters.
 
-The P1 maximum-shot budget is conditional. P2 maintenance and P3 hold and emergency shots depend on sensor feedback, so a guaranteed whole-day total cannot be inferred from target values alone. Historical controller totals are preserved; new shot accounting uses effective duration after caps and minimum timing.
+The P1 maximum-shot budget is conditional. P2 maintenance and P3 hold and emergency shots depend on sensor feedback, so a guaranteed whole-day total cannot be inferred from target values alone. Shot accounting uses the effective duration, after caps and minimum timing.
 
-**Insights → Zone** shows probe coverage and freshness, **Insights → Water** a shot calculator, and each zone in **Settings → Rooms & hardware** a catch-test calculator for dripper flow. These tools expose assumptions instead of claiming to tune a crop automatically.
+**Insights → Zone** shows probe coverage and freshness, and **Insights → Water** a shot calculator. These tools expose assumptions instead of claiming to tune a crop automatically.
 
 ## Current boundaries
 
 For reusable copies of your own schedules, use **Recipe library**. It stores named plans in the current browser and room, supports export/import and loads only into the local draft while retaining current zone start dates. See the [library guide and reference sources](RECIPE_LIBRARY.md).
 
-Plans steer irrigation targets, not tank dosing or environmental equipment. Closed-loop crop-response learning, measured flow reconciliation and automatic recipe optimisation remain future work.
+Plans steer irrigation targets, not environmental equipment. Nutrient dosing follows its own feed schedule, on **Feed → Reservoir**.

@@ -114,7 +114,8 @@ changelog, documentation and pictures (`CHANGELOG.md`, `DOCS.md`, `icon.png`, `l
 controller's tests go: the Supervisor only shows those, and none of them is built into the image.
 
 A version that goes wrong here is never made public. Fix it, merge the fix, and release the next
-number here. **A version number is never reused for different code.**
+number here. **A version number is never reused for different code**, apart from the 2.x
+numbers 1.0.0 started again from (Versions, below).
 
 ## Versions
 
@@ -123,12 +124,12 @@ number here. **A version number is never reused for different code.**
   controller's `config.yaml`, the README badge and both changelogs on it.
 - Numbers only go up. A patch number for fixes, the minor number for anything new.
 - Once, they started again: 1.0.0, the first release for everyone, followed 2.37.1
-  (`release.py 1.0.0 --start-again`). The 2.x numbers up to 2.37.1 are used, so the major number
-  after 1 is 3. `--start-again` refuses a number that is not lower, or that the changelog already
-  has. It leaves What's new with only the releases numbered up to the new one, since the dashboard
-  orders them by number; the changelogs keep everything. HACS offers a box no number lower than
-  the one it has, so a box on 2.37 gets 1.0.0 by Redownload in HACS; the Supervisor offers the
-  controller app at any new number.
+  (`release.py 1.0.0 --start-again`). The releases and tags numbered before it were deleted and
+  both changelogs start at 1.0.0, so 2.x numbers can be used again. `--start-again` refuses a
+  number that is not lower, or that the changelog already has. It leaves What's new with only the
+  releases numbered up to the new one, since the dashboard orders them by number. HACS offers a
+  box no number lower than the one it has, so a box on 2.37 gets 1.0.0 by Redownload in HACS; the
+  Supervisor offers the controller app at any new number.
 
 ## Rolling back a room
 
