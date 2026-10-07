@@ -11,9 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **How it works, in plain words.** A new guide explains how the controller decides when to water
+  and how much: the four phases, dryback, the rescue level, Auto setpoints, substrate EC, holds and
+  the grow-day chart, with the Athena Handbook's page references and answers to common questions.
 - **The public repository's README and docs between releases.** A change to the README, the docs,
   the pictures, the scripts or the tests can now go to the public repository without a new version.
   A change to the integration or the controller app still waits for a release.
+- **The guides match 1.0.** The user guide, the install and troubleshooting guides, the entity
+  reference and the app's documentation no longer describe features that are gone (the catch-test
+  calculator, the tank temperature and fill-level mappings, the minimum daily volume, the feed gate)
+  or ask anyone to update to a version from before 1.0. The entity reference now says what the
+  controller does with each setting, and where it narrows the range a setting accepts.
 - **Alerts and help say what the controller does now.** The error codes' explanations, a Repairs
   card and two notifications no longer mention the minimum daily volume, or ask you to check the
   feed EC, which the controller doesn't read: it counts the feed as 3.0 mS/cm. The stock tanks
@@ -22,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Technical notes
 
+- Docs: `docs/HOW_IT_WORKS.md`, linked first in the README's Documentation and from the user guide.
+  Every rule in it is the one the engine, the controller or Auto setpoints applies, and its pictures
+  are the README's own screenshots.
 - Release: `scripts/release.py --sync` fast-forwards the public `main` to `main` here once Validate
   has passed on it, with no version, tag or release. `sync_refusal` refuses when the commits since
   touch `custom_components/` or `addons/f2_control/`: the Supervisor builds the app from the public
@@ -29,6 +40,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   number. `docs/RELEASING.md` (Commits that ship nothing) and CLAUDE.md say when to use it.
   The app's changelog, documentation and pictures and the controller's tests go too
   (`SHOWN_ONLY`): the Supervisor only shows them, and none is built into the image.
+- Docs: stale references removed across `docs/`, `CONTRIBUTING.md`, the engine's README and the
+  app's `DOCS.md`, each checked against the code. `docs/ENTITIES.md` gains the room prefix, an
+  Engine ranges table (the `validate_params` bounds narrower than the entities') and corrected
+  rows for `maximum_ec`, `field_capacity`, EC stacking, the steering selects, the display-only EC
+  sensors, `app_status`, `ai_heartbeat`, the safety sensors and the manual override.
+  `docs/RELEASING.md` says the 2.x numbers can be used again.
 - Text only, no change to watering: `docs/error-codes.json` (CS-206, CS-401, CS-601, CS-606,
   CS-608) and `docs/ERROR_CODES.md` from it; the CS-206 and CS-401 notifications in
   `controller.py`; the CS-606 Repairs card (`strings.json`, `translations/en.json`); the Maximum EC

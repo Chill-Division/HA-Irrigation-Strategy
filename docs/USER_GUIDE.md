@@ -4,6 +4,8 @@ Use **Overview** to check a room and **Irrigation plan** for **Today** and **Sch
 
 The menu has six entries; where one holds more than one page, tabs across the top choose it.
 
+Why a zone did what it did, in plain words: [How it works](HOW_IT_WORKS.md).
+
 | Menu            | What it holds                                     |
 | --------------- | ------------------------------------------------- |
 | Overview        | The room now, with its room and watering switches |
@@ -12,8 +14,6 @@ The menu has six entries; where one holds more than one page, tabs across the to
 | Feed            | Reservoir (once one is mapped), Stock tanks       |
 | Settings        | General, Rooms & hardware                         |
 | Help            | Terms & phases, error codes, What's new, the tour |
-
-Existing `#/strategy` and `#/grow-plan` bookmarks open **Irrigation plan → Today** and **Schedule**; bookmarks to the retired Zones and Sensors pages open **Overview**.
 
 New installation? Start with [Install, upgrade and rollback](INSTALL.md). The first time anyone opens the dashboard on a new installation, a short tour walks through it: the Overview, the Irrigation plan, Feed, Settings' Rooms & hardware and its test shot, and how to switch the room and its watering on. It starts by itself once; **Help → Take the tour** starts it again at any time.
 
@@ -49,7 +49,7 @@ New installation? Start with [Install, upgrade and rollback](INSTALL.md). The fi
 
 The switch beside the **Zones** heading on **Overview** switches every zone of the room at once, as the header toggle of a Home Assistant entities card does. It is on while any zone is on. Off pauses every zone; on switches every zone on, a zone you paused yourself included. Each zone still has its own switch in its details, and like them this one asks for a review first.
 
-To move a zone to another phase, open it from **Overview** and pick one under **Phase**. After the review, the controller moves it within a minute and carries on from there: lights-off still moves it to P3 and lights-on to P0. Today's water and shot counts stay.
+To move a zone to another phase, open it from **Overview** and pick one under **Phase**. After the review, the controller moves it within a minute and carries on from there: lights-off still moves it to P3 and lights-on to P0. Today's water stays, and so does the shot count, except that a move to P1 starts the ramp again from its first shot.
 
 **Switch watering off…** in the Overview's heading switches the room's engine switch ("Engine Enabled" in Home Assistant on a room made by the setup wizard), and like zone scheduling it asks for a review first. With watering off the controller opens no valve in the room and a shot already running stops within a few seconds; it keeps reading the probes and following the phases. A new room starts with watering off. When a room is not watering, the status line at the top of every page says which switch stopped it and links to the Overview when this is the one. Beside it, **Switch room off…** stands a room down when nothing is growing in it: no irrigation and no alerts until it is switched back on, with a banner on every page saying so. Pausing a zone stops a shot already running in it within a few seconds too, and a paused zone gets no water at all, not even a rescue shot. Neither is an emergency stop: use the installation's established physical shutdown procedure for an emergency.
 
@@ -61,9 +61,9 @@ How full the tank is comes from the reservoir's level sensor (**Feed → Reservo
 
 **Refill** and **Last refill** are the controller's own record of the refills it runs for the room's reservoir (**Feed → Reservoir**), so there is nothing to map for them: what its refill is doing now (not running, filling, dosing, mixing) and when the last one ended, marked *stopped* if it stopped part-way. A room without a reservoir has neither row; they read **Unavailable** until the controller app has reported for the room.
 
-A percentage source may itself be an estimate; drawing it as a tank does not turn it into a measured level. Tank readings and switch reports do not prove dose completion, water quality suitability or physical delivery.
+The level is worked out from the sensor's distance to the water; drawing it as a tank does not make it a measured volume. Tank readings and switch reports do not prove dose completion, water quality suitability or physical delivery.
 
-Unmapped inputs show **Not mapped** (an unmapped tank temperature is left out); invalid readings show **Unavailable**, **Check units** or **Out of range**. An unknown pump is not shown as off and an unknown tank is not drawn empty. When disconnected, the panel identifies retained readings as last received.
+Unmapped inputs show **Not mapped**; invalid readings show **Unavailable**, **Check units** or **Out of range**. An unknown pump is not shown as off and an unknown tank is not drawn empty. When disconnected, the panel identifies retained readings as last received.
 
 ## Irrigation plan → Today
 
@@ -72,7 +72,7 @@ When no schedule owns the room, Today lets you edit the current targets using th
 1. Select a room, open **Irrigation plan → Today**, then select a zone. Choose **Room settings** for shared timing/configuration.
 2. Use the phase selector to keep the relevant controls beside the whole-day VWC/EC preview. On a narrow screen, expand the preview when needed.
 3. Edit a numeric field or a supported graph handle. Both edit the same local draft and respect the HA field's limits and step. The saved reference remains visible for comparison.
-4. Check the parameter's name, unit, selected legacy mode and draft line. Its **?** says what the setting does, what it accepts (range and step) and its key. **Show targets for both steering modes** exposes the other mode's stored references when available.
+4. Check the setting's name, unit and draft line. Its **?** says what the setting does, what it accepts (range and step) and its key. The zone's **Steering mode** picks which EC and P3 dryback targets the controller uses, and only those show; **Show targets for both steering modes** shows the other mode's too.
 5. Select **Review changes**, inspect every before/after value, then confirm application. Only this application step sends the reviewed values to HA. Readback errors and unapplied values remain visible; do not assume a partially failed batch succeeded.
 
 Pot size, plant count and drippers are the room's hardware, set in **Settings → Rooms & hardware**, not here. What a shot of a given length delivers is on **Insights → Water**.
@@ -109,7 +109,7 @@ A library item is a reusable copy, separate from the HA plan currently controlli
 - Loading is unavailable while active, armed, busy or disconnected. It does not save or arm the plan.
 - **Export recipe** downloads a copy. **Remove recipe** asks for confirmation and removes only the browser copy.
 
-Libraries are isolated by site, browser, room and demo/live mode. They are not a shared HA database. Limits are 20 recipes per room, 500 KB per plan and 2 MB per library. Export important copies before clearing browser data or moving to another browser. Corrupt data is retained with a recovery-download action; storage denial, quota and stale-tab conflicts are reported rather than silently overwritten. See [Recipe library](RECIPE_LIBRARY.md).
+Libraries are isolated by site, browser and room. They are not a shared HA database. Limits are 20 recipes per room, 500 KB per plan and 2 MB per library. Export important copies before clearing browser data or moving to another browser. Corrupt data is retained with a recovery-download action; storage denial, quota and stale-tab conflicts are reported rather than silently overwritten. See [Recipe library](RECIPE_LIBRARY.md).
 
 ## Understand the graphs and water figures
 
@@ -148,7 +148,7 @@ An HA administrator uses **Settings → Rooms & hardware**. Pair devices and exp
 2. Map **Room pump** and **Mainline valve**, then each active zone's valve. Search by friendly name or exact entity ID; inspect the displayed value/unit before selecting.
 3. Select one or more VWC and EC probes per zone. **Clear mapping** removes the selected mapping; **Done** closes the picker. Several probes in a zone become one moisture and one EC reading: their average until you choose otherwise in the zone's details, under **Probes** (average, median, lowest or highest, for moisture and EC apart; each choice shows what the zone would read with it now). The Overview's VWC and EC tiles are named for it: **Lowest VWC** in a room of one zone that reads its lowest probe, **Average lowest VWC** when several zones all do. Automatic outlier rejection is not provided.
 4. Enter plant count, substrate litres **per plant**, drippers **per plant**, and flow in litres/hour **per dripper**. Review existing values instead of replacing them with generic defaults.
-5. Map optional room equipment and tank displays as separate roles. Explicitly map shared equipment only where appropriate; never reuse a zone valve accidentally.
+5. Map the optional room equipment, and the **Reservoir & dosers** if the controller app mixes the room's feed (see [Mix nutrient batches](#mix-nutrient-batches-reservoir)). Explicitly map shared equipment only where appropriate; never reuse a zone valve accidentally.
 6. Stop affected engines (the notice at the top of the page has the room's watering switch) and verify the implicated irrigation equipment is OFF. **Review configuration** shows the changes and blockers; **Save configuration** persists the setup after backend validation.
 7. Wait for controller acknowledgement of the saved setup revision. A saved configuration and an adopted configuration are different states. Then verify **Overview** and **Insights → Zone**, where **Probe coverage** shows whether every zone's probes give a current reading, before restoring the prior scheduling state.
 
@@ -199,27 +199,27 @@ A refill runs: fresh water for its fill time; half-way through, once the level s
 
 The native HA sidebar normally uses your existing HA session. In a standalone tab, **Settings → General → Home Assistant connection** takes an explicit URL and a long-lived access token instead; the token is kept for that tab session and is never put in the URL. Inside Home Assistant the section is not shown: the session is the connection. A hosted HTTPS page may be unable to access a local HTTP HA server because of browser origin/security rules; use the native sidebar for the normal installation.
 
-Inside a compatible same-origin HA shell, the workspace temporarily collapses HA's sidebar. Use **Home Assistant** at the bottom of the workspace navigation, or the house button labelled **Open Home Assistant menu** in the top bar, to reopen HA's menu. Leaving the workspace restores the prior temporary state; it does not change the saved HA sidebar preference. Standalone and unsupported embeddings keep normal navigation. The hide-and-reopen behavior was verified in the actual HA panel on 2.16.0; see [Home Assistant sidebar](HA_SIDEBAR.md) for compatibility limits.
+Inside a compatible same-origin HA shell, the workspace temporarily collapses HA's sidebar. Use **Home Assistant** at the bottom of the workspace navigation, or the house button labelled **Open Home Assistant menu** in the top bar, to reopen HA's menu. Leaving the workspace restores the prior temporary state; it does not change the saved HA sidebar preference. Standalone and unsupported embeddings keep normal navigation. See [Home Assistant sidebar](HA_SIDEBAR.md) for compatibility limits.
 
-The dashboard is **Light** unless you choose otherwise in **Settings → Appearance**: **Home Assistant** inherits the HA theme when embedded on the same origin, or the device's appearance in standalone mode, and **Dark** is always dark. The choice is kept in each browser. Cross-origin embedding cannot read the host theme.
+The dashboard is **Light** unless you choose otherwise in **Settings → General → Appearance**: **Home Assistant** inherits the HA theme when embedded on the same origin, or the device's appearance in standalone mode, and **Dark** is always dark. The choice is kept in each browser. Cross-origin embedding cannot read the host theme.
 
-**Settings → Appearance → Water today, shown as** switches every Water today (the Overview's totals and zone table, a zone's details and the Schedule's zone panel) between each zone's total, the default, and **per plant**: the zone's water today and its daily limit divided by its plant count from Rooms & hardware, as if every plant got the same. A zone without a plant count stays in litres and says *zone total*. Water use over the grow stays in litres per zone. The choice is the room's, kept in Home Assistant (`select.crop_steering_<prefix>water_today_view`): everyone who opens the room sees water that way, and the controller's vitals notification follows it.
+**Settings → General → Appearance → Water today, shown as** switches every Water today (the Overview's totals and zone table, a zone's details and the Schedule's zone panel) between each zone's total, the default, and **per plant**: the zone's water today and its daily limit divided by its plant count from Rooms & hardware, as if every plant got the same. A zone without a plant count stays in litres and says *zone total*. Water use over the grow stays in litres per zone. The choice is the room's, kept in Home Assistant (`select.crop_steering_<prefix>water_today_view`): everyone who opens the room sees water that way, and the controller's vitals notification follows it.
 
-**Settings → Notifications → Include room predictions in informational notifications** puts, under each zone of the controller's vitals notification, what the controller will do next, as the zone's Next: line on the dashboard says it. It is on until you switch it off, and it is the room's (`switch.crop_steering_<prefix>notify_predictions`).
+**Settings → General → Notifications → Include room predictions in informational notifications** puts, under each zone of the controller's vitals notification, what the controller will do next, as the zone's Next: line on the dashboard says it. It is on until you switch it off, and it is the room's (`switch.crop_steering_<prefix>notify_predictions`).
 
 After an update, the first person to open the dashboard sees **What's new**: the main changes of every release this installation had not yet shown, in a few plain lines each, with a link to the full release notes. It shows once for everyone, never on a new installation, and **Help → What's new** opens the latest releases again at any time.
 
 **Insights → Zone** shows one zone's readings against its targets and their history, and under **Probe coverage** whether each zone's probes give the controller a current reading and how old the last one is. **Insights → Activity** lists available controller/state records and supports CSV export; it is not an immutable audit of every physical shot. **Help** explains the terms and phases and lists every error code.
 
-For an existing timed zone hold, Home Assistant exposes the `crop_steering.set_manual_override` action. The action refuses a signed-in user who is not an administrator (automations can still call it); the switch itself follows Home Assistant's own user permissions. Its timeout defaults to 60 minutes and accepts 1-1440 minutes; specify the intended zone and room slug (omit the room for the legacy default room). Clearing the hold is distinct from enabling zone/room scheduling. Turning its switch on directly creates an indefinite hold. See the action's fields in HA and the [entity reference](ENTITIES.md).
+For an existing timed zone hold, Home Assistant exposes the `crop_steering.set_manual_override` action. The action refuses a signed-in user who is not an administrator (automations can still call it); the switch itself follows Home Assistant's own user permissions. Its timeout defaults to 60 minutes and accepts 1-1440 minutes; specify the intended zone and room slug (omit the room for the default room, the first one set up). Clearing the hold is distinct from enabling zone/room scheduling. Turning its switch on directly creates an indefinite hold. See the action's fields in HA and the [entity reference](ENTITIES.md).
 
 ## When something does not look right
 
 | Symptom                                        | Next step                                                                                                                                                        |
 | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | No rooms or missing workspace services         | Verify the integration loaded, the controller version matches, and the current HA account can access the entities/services. Refresh after upgrading.             |
-| Tank **Not mapped**                            | Set that exact optional display mapping. A similarly named feed or ambient probe is not an implicit fallback.                                                    |
-| Last irrigation/fill is missing                | Check the event-producing source and its dated timestamp format. A state update time cannot substitute for the event.                                            |
+| Tank **Not mapped** or **Not set up**          | **Not mapped**: map the reservoir's level sensor in **Settings → Rooms & hardware → Reservoir & dosers**. **Not set up**: set its distances when full and when empty on **Feed → Reservoir**. |
+| Last irrigation or Last refill is missing      | Both are the controller's own records: a zone has no Last irrigation until the controller has watered it, and a room no Last refill until it has refilled its reservoir. A sensor's update time never stands in for either. |
 | A reading shows **Check units**                | Inspect the actual HA unit and choose/repair the appropriate entity. Do not relabel an unrelated quantity to pass validation.                                    |
 | Setup is saved but adoption is pending         | Inspect heartbeat/setup blockers; keep affected engines off until the controller acknowledges the revision.                                                      |
 | Slider appears to do nothing                   | Inspect both selected endpoint columns. Equal endpoints are deliberately equal at every balance.                                                                 |

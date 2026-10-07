@@ -19,19 +19,19 @@ Install the integration and controller together. HACS, the integration's setup a
 - An HA administrator account for Settings → Rooms & hardware and its configuration services.
 - Existing HA entities for the actual pump and zone valves, fresh VWC/EC probes and any configured interlocks. This integration maps entities; it does not provision sensor firmware or pair devices.
 
-Install the integration and the controller app at the same version: from 2.21.0 both carry one version number, and each release names the pair in the [changelog](../CHANGELOG.md). The public demo uses isolated synthetic data; its sample plans and records are not installation settings.
+Install the integration and the controller app at the same version: both carry one version number and are released together, as the [changelog](../CHANGELOG.md) shows.
 
 ## Guided installation
 
 1. [Open this repository in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=Chill-Division&repository=HA-Irrigation-Strategy&category=integration). Download the integration and restart HA. If HACS is absent, install HACS first or use the manual path below.
-2. [Start the Crop Steering config flow](https://my.home-assistant.io/redirect/config_flow_start/?domain=crop_steering). Select manual setup for a new installation. Enter a room name and initial zone count. Existing environment-import installations remain supported.
+2. [Start the Crop Steering config flow](https://my.home-assistant.io/redirect/config_flow_start/?domain=crop_steering). Name the room and say how many zones it has, then map each zone's valve and probes, and give the room's plumbing, lights hours and pot and dripper sizes. Later, **Settings → Rooms & hardware** (step 5) changes the mapping and sizes, and **Irrigation plan → Today** the lights hours.
 3. [Add the app repository](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FChill-Division%2FHA-Irrigation-Strategy). In **Settings → Apps**, install **Crop Steering Controller**. Keep the affected engine enable flags OFF, review the app options, then start the app so it can publish its heartbeat and discover configuration. From then on it starts with the host (**Start on boot** is on unless you turn it off); turn on **Watchdog** as well, so Supervisor restarts it if it stops. Supervisor supplies the internal HA token; do not paste a token into a repository file.
 4. Open **Crop Steering** in the HA sidebar. The integration serves its bundled dashboard automatically; no manual dashboard YAML or custom Lovelace card installation is required. The controller's ingress can also serve the same dashboard. In supported HA shells, use the workspace's **Home Assistant** or house button to reopen the temporarily collapsed HA sidebar; see [sidebar behavior](HA_SIDEBAR.md).
 5. In **Settings → Rooms & hardware**, select or add a room. Name its zones. Search HA entities by friendly name or ID and check their units/current states while mapping valves, VWC probes, EC probes and room equipment. Multiple probes can be selected per zone. Every zone needs its valve. Under **Shared room hardware**, say how the room is plumbed: a tent with one smart plug or solenoid is *Zone valves only* and maps that switch as the zone's valve and nothing else; a room where water only flows while a pump runs is *A pump, then zone valves* and must have the pump chosen. The switches have to match the answer, and the controller holds a room whose switches stop matching rather than watering it with no pump.
-6. Enter substrate litres **per plant**, plant count, drippers per plant and each dripper's L/hour. Catch-test actual output using **Insights → Calibration**. The calculator proposes a value; it does not write it automatically.
+6. Enter substrate litres **per plant**, plant count, drippers per plant and each dripper's L/hour.
 7. Choose **Review configuration**, then **Save configuration**. Setup validates entity domains, moisture/EC units, duplicate valve assignments, revision conflicts and readable OFF states of the affected engine/equipment. A saved configuration and controller acknowledgement are shown separately; wait for **Mapping acknowledged** instead of assuming a save has already reached the controller.
 
-Steps 2 and 3 can be done in either order. A controller started before any room exists waits, invents no zones, and picks the room up by itself within a minute of setup finishing; no restart is needed. On earlier versions that order produced errors for zones that did not exist and a Repairs card asking for a kill-switch helper: **do not create that helper**, update instead.
+Steps 2 and 3 can be done in either order. A controller started before any room exists waits, invents no zones, and picks the room up by itself within a minute of setup finishing; no restart is needed.
 
 See the [step-by-step mapping workflow](USER_GUIDE.md#set-up-rooms-zones-and-sensors) for field meanings, revision conflicts and controller adoption.
 
@@ -41,7 +41,7 @@ Room and zone removal means archive. Archived IDs remain reserved, so restoring 
 
 With engines still off, confirm each room loads in the sidebar, the selected room has a current controller heartbeat, mappings show **Mapping acknowledged**, and **Settings → Rooms & hardware** shows the intended entities with their current readings and units. Open **Irrigation plan → Today** and verify the existing values. An upgrade should retain each room's current values, zone identities and plant/dripper sizing.
 
-Open **Overview** and a zone detail panel. A missing optional tank mapping may remain **Not mapped**; a missing required control sensor or controller acknowledgement needs resolution before commissioning. **Last irrigation** is an event record and may legitimately be absent on a new installation. Do not generate a physical shot just to fill that display.
+Open **Overview** and a zone detail panel. A room without a reservoir level sensor shows its tank as **Not mapped**; a missing required control sensor or controller acknowledgement needs resolution before commissioning. **Last irrigation** is an event record and may legitimately be absent on a new installation. Do not generate a physical shot just to fill that display.
 
 ## Before enabling irrigation
 
@@ -61,7 +61,7 @@ Update an existing controller in place from this repository. A controller instal
 
 1. Back up HA, the controller's persistent data and existing setpoints. Export grow plans if available. Record which engines are enabled.
 2. Turn the affected engines off and wait for the pump, mainline and valves to be OFF. Stop the existing controller while replacing software.
-3. Refresh your existing app repository and update that controller in place to the release's version. After updating from 0.13.x, turn the engine kill switch off and on once so the controller can accept and save the current setup; later restarts resume by themselves. A restart alone does not rebuild an old image. Do not install a second copy. The controller starts with the host unless its **Start on boot** was turned off, so a host restart during the upgrade starts it; with the engines off (step 2) it waters nothing.
+3. Refresh your existing app repository and update that controller in place to the release's version. A restart alone does not rebuild an old image. Do not install a second copy. The controller starts with the host unless its **Start on boot** was turned off, so a host restart during the upgrade starts it; with the engines off (step 2) it waters nothing.
 4. Download the same version of the integration through HACS and restart HA. Confirm every Crop Steering room finishes loading.
 5. Start the controller with engines still off. Verify its version, fresh heartbeat, both room descriptors, sensor readings, setup acknowledgement and grow-plan capability. Compare current setpoints and pot/dripper sizing with the backup.
 6. Restore the engines' previous enabled states after these checks. An upgrade does not require arming a recipe or replacing existing values with defaults.
@@ -82,11 +82,11 @@ Crop Steering started at `JakeTheRabbit/HA-Irrigation-Strategy`, and its control
 
 The existing app slug `f2_control` and entity IDs are deliberately stable. A room set up from a `crop_steering.env` file keeps working without the file. After upgrade, verify the room descriptor and controller heartbeat, setup acknowledgement and plan capability before enabling control.
 
-## Optional tank display mappings
+## The tank on the Overview
 
-In **Settings → Rooms & hardware → Shared room hardware**, map tank fill level to a percentage sensor and tank temperature to a temperature sensor. Shared tanks can be explicitly mapped to more than one room. The [tank mapping table](USER_GUIDE.md#tank-and-pump-display) lists the exact labels and configuration keys. The tank card's **Refill** and **Last refill** need no mapping: they are the controller's own record of the refills it runs for a room's reservoir (**Feed → Reservoir**).
+The Overview's tank is the room's reservoir. Its level comes from the level sensor mapped under **Settings → Rooms & hardware → Reservoir & dosers**, with the distances when full and when empty set on **Feed → Reservoir**; until then it reads **Not mapped** or **Not set up**. The room pump is mapped under **Shared room hardware**, or from **Map sensors** on the tank. **Refill** and **Last refill** need no mapping: they are the controller's own record of the refills it runs for the room's reservoir. See [Tank and pump display](USER_GUIDE.md#tank-and-pump-display).
 
-Save setup with the affected engines and irrigation equipment off, then verify the readings in **Overview** before restoring the previous engine state. Missing mappings remain labelled; an unavailable pump is never displayed as off. Existing controllers must be updated to publish irrigation timestamps with a timezone offset.
+Save setup with the affected engines and irrigation equipment off, then verify the readings in **Overview** before restoring the previous engine state. Missing mappings remain labelled; an unavailable pump is never displayed as off.
 
 ## Restore a prior version
 
@@ -94,6 +94,6 @@ Turn affected engines off and confirm physical equipment is off. Restore the pri
 
 ## If the sidebar or setup is missing
 
-Restart HA after installing the integration. Check integration logs and that `custom_components/crop_steering/www/dashboard.html` exists. Missing workspace services mean the integration is older than the dashboard. Unsupported activation means the controller has not published the new capability heartbeat. Refresh the page after upgrading both components.
+Restart HA after installing the integration. Check integration logs and that `custom_components/crop_steering/www/dashboard.html` exists. Missing workspace services mean Home Assistant is still running the integration it loaded before an update: restart it. A plan that cannot activate for lack of controller support means the controller app is not running or has not reported yet. Refresh the page after upgrading both components.
 
 The installation links follow the official [Home Assistant app repository format](https://developers.home-assistant.io/docs/apps/repository/) and [configuration flow mechanism](https://developers.home-assistant.io/docs/config_entries_config_flow_handler/). Home Assistant's [frontend theme configuration](https://www.home-assistant.io/integrations/frontend/) supplies inherited theme colors.
