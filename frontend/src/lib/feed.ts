@@ -19,7 +19,12 @@ export interface FeedRecipe {
   doses: Record<string, FeedDose>;
   /** The order its dosers dose in; any other doser follows, by number (feed.py recipe_order). */
   order: number[];
+  /** What it mixes to, mS/cm, as measured once mixed; null (or missing, from before) when not given.
+   * The controller takes the recipe in use's as the feed's EC (feed.py FEED_EC). */
+  ec?: number | null;
 }
+/** A feed EC a recipe accepts, mS/cm (feed.py FEED_EC). */
+export const FEED_EC: [number, number] = [0.1, 10];
 export interface PlannedDose {
   doser: number;
   label: string;
@@ -44,6 +49,8 @@ export interface FeedSettings {
 export interface FeedPlan extends FeedSettings {
   stage: string | null;
   stage_id: string | null;
+  /** The stage's feed EC, mS/cm, or null when its recipe gives none. */
+  feed_ec?: number | null;
   doses: PlannedDose[];
   /** Why no batch can run, or null. */
   problem: string | null;
@@ -303,6 +310,7 @@ export function planOf(draft: FeedDraft, mapped: number[], today = localDay()): 
   return {
     stage: stage?.name ?? null,
     stage_id: stage?.id ?? null,
+    feed_ec: stage?.ec ?? null,
     ...Object.fromEntries(Object.keys(SETTINGS).map((k) => [k, draft[k as keyof FeedSettings]])),
     doses,
     problem,
@@ -348,6 +356,10 @@ export function draftErrors(draft: FeedDraft, maxRecipes = 12): string[] {
     names.add(name.toLowerCase());
     if (!inRange(recipe.strength, 0, 20))
       errors.push(`${label}: the strength must be from 0 to 20 mL per litre per part.`);
+    if (recipe.ec != null && !inRange(recipe.ec, ...FEED_EC))
+      errors.push(
+        `${label}: the feed EC must be from ${FEED_EC[0]} to ${FEED_EC[1]} mS/cm, or left empty.`,
+      );
     for (const [n, dose] of Object.entries(recipe.doses)) {
       if (!inRange(dose.parts, 0, 100))
         errors.push(`${label}: doser ${n}'s parts must be from 0 to 100.`);
@@ -388,6 +400,8 @@ export function newRecipe(draft: FeedDraft, mapped: number[], name = ""): FeedRe
       mapped.map((n) => [String(n), { label: last?.doses[String(n)]?.label ?? "", parts: 0 }]),
     ),
     order: [...(last?.order ?? draft.order)],
+    // Each recipe mixes to its own EC: measured once it is mixed, so none yet.
+    ec: null,
   };
 }
 

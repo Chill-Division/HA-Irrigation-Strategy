@@ -328,6 +328,25 @@
 .res-recipe-table input {
   min-width: 90px;
 }
+/* A recipe's feed EC, under its doses: the field, then what it is for, beside it or under it. */
+.res-recipe-ec {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+.res-recipe-ec > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.res-recipe-ec input {
+  width: 96px;
+}
+.res-recipe-ec p {
+  flex: 1 1 280px;
+  margin: 0;
+}
 .res-recipe-table input[type="number"] {
   min-width: 64px;
   max-width: 96px;

@@ -15,8 +15,8 @@ const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 const DOSERS = [1, 2, 3, 4, 5, 6];
 
 /** A demo room's feed: Flower at 3 Core : 5 Bloom : 1 Balance : 0.5 Cleanse, 1 mL per litre per
- * part, in 150 L refills (11 min 30 s of fresh water), so Bloom is 750 mL: 75 s at 600 mL/min.
- * The reservoir's level sensor reads 125 mm to the water full and 850 mm empty. */
+ * part, in 150 L refills (11 min 30 s of fresh water), so Bloom is 750 mL: 75 s at 600 mL/min. It
+ * mixes to 3.2 mS/cm. The reservoir's level sensor reads 125 mm to the water full and 850 mm empty. */
 export function sampleFeed(): FeedDraft {
   return {
     fill_s: 690,
@@ -41,6 +41,7 @@ export function sampleFeed(): FeedDraft {
           "4": { label: "Cleanse", parts: 0.5 },
         },
         order: [1, 2, 3, 4],
+        ec: 3.2,
       },
     ],
     stage: "flower",

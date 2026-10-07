@@ -36,6 +36,7 @@ import {
   draftErrors,
   draftOf,
   duration,
+  FEED_EC,
   flowOf,
   heldUntil,
   inUse,
@@ -854,6 +855,26 @@ function RecipeCard({
         {number(draft.batch_l, 1)} L batch · dosed in the order above: drag a row by its handle, or
         use its arrows
       </p>
+      <div className="res-recipe-ec">
+        <div>
+          <Label htmlFor={`${id}-ec`}>Feed EC (mS/cm)</Label>
+          <RoundedInput
+            id={`${id}-ec`}
+            min={FEED_EC[0]}
+            max={FEED_EC[1]}
+            step={0.1}
+            value={recipe.ec ?? NaN}
+            digits={2}
+            placeholder="Not given"
+            aria-describedby={`${id}-ec-help`}
+            onValue={(ec) => onChange({ ...recipe, ec: Number.isNaN(ec) ? null : ec })}
+          />
+        </div>
+        <p id={`${id}-ec-help`} className="muted small">
+          What it mixes to: measure it once mixed. The controller flushes or dilutes only a
+          substrate saltier than its feed, and without this counts the feed as 3.0 mS/cm.
+        </p>
+      </div>
       <p className="sr-only" aria-live="polite">
         {said}
       </p>
