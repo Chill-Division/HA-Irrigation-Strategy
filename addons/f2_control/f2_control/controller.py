@@ -2033,7 +2033,7 @@ class Controller:
         shown = enabled and not planned
         state, attrs = auto_setpoints.status(learn, enabled, note if shown else None, stop if shown else None)
         if enabled and planned:
-            state, attrs["frozen_reason"] = "frozen", "an armed grow plan owns this room's targets"
+            state, attrs["frozen_reason"] = "frozen", "an armed irrigation strategy owns this room's targets"
         attrs.update(
             updated=now.isoformat(), engine="crop-steering-controller", friendly_name=f"Zone {zone} auto setpoints",
             managed=[f"number.crop_steering_{room.prefix}zone_{zone}_{s}" for s in auto_setpoints.MANAGED],
