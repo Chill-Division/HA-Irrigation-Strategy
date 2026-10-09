@@ -154,7 +154,7 @@ An HA administrator uses **Settings → Rooms & hardware**. Pair devices and exp
 
 Zone and room removal archives stable IDs. **Restore zone** or **Restore room** reactivates the same identity after review; archived slots are not silently reused for different hardware. Adding/archiving a zone may require updating a draft irrigation strategy's assignments.
 
-Every saved change is recorded in Home Assistant's **Activity** (the logbook), on the room's device page too: who saved it and what changed, for example *Growroom 2 setup saved (revision 2): renamed from "PHASE Steering"*. A change Home Assistant refuses is not saved, so it is not recorded; the review says why it was refused.
+Every saved change is recorded in Home Assistant's **Activity** (the logbook), on the room's device page too: who saved it and what changed, for example *Growroom 2 setup saved (revision 2): renamed from "PHASE Control"*. A change Home Assistant refuses is not saved, so it is not recorded; the review says why it was refused.
 
 ### Tests
 

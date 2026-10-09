@@ -1,17 +1,17 @@
-# PHASE Steering for Home Assistant
+# PHASE Control for Home Assistant
 
 ![Release](https://img.shields.io/badge/Release-1.0.2-blue)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.5+-41BDF5)
 ![HACS](https://img.shields.io/badge/HACS-Custom-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-**PHASE** stands for **Precision Hydration And Steering Engine**. It was called Crop Steering until 1.0.2.
+**PHASE** stands for **Precision Hydration And Steering Engine**. It was called Crop Steering before 1.0.2, and PHASE Steering in 1.0.2.
 
-PHASE Steering waters a grow room automatically. Every minute it reads each zone's moisture and EC probes, decides whether the zone needs a shot and how big, and runs your pump and valves to deliver it, through the four-phase day that crop-steering growers use. It runs inside [Home Assistant](https://www.home-assistant.io/) with the probes, pumps and valves you already have, on your own hardware: no cloud account, no subscription.
+PHASE Control waters a grow room automatically. Every minute it reads each zone's moisture and EC probes, decides whether the zone needs a shot and how big, and runs your pump and valves to deliver it, through the four-phase day that crop-steering growers use. It runs inside [Home Assistant](https://www.home-assistant.io/) with the probes, pumps and valves you already have, on your own hardware: no cloud account, no subscription.
 
 **Deterministic, sensor-driven crop steering.** No AI makes any decision. Every shot comes from a published rule and your setpoints: the same readings, settings and day so far always give the same decision, and the dashboard shows the numbers behind each one. Nothing guesses, nothing makes up a reading, and nothing apologises after the fact.
 
-![The Overview: today's grow day for every zone, and the zones](https://raw.githubusercontent.com/Chill-Division/PHASE-Steering/main/img/operator-dashboard.png)
+![The Overview: today's grow day for every zone, and the zones](https://raw.githubusercontent.com/Chill-Division/PHASE-Control/main/img/operator-dashboard.png)
 
 > **Safety first.** This switches real pumps and valves, unattended, on living plants. Set each room up with watering switched off, check every probe and switch it uses, and do a catch test (measure what the drippers actually deliver) before you let it water. It does not replace physical safety devices: use valves that close when power is lost, and a float switch or timer that can stop a pump on its own.
 
@@ -30,13 +30,13 @@ PHASE Steering waters a grow room automatically. Every minute it reads each zone
 
 | Today's targets on the zone's own readings | A strategy for the whole grow | Water use per zone |
 | --- | --- | --- |
-| ![Today's targets on the zone's recorded moisture and EC, with the projected day](https://raw.githubusercontent.com/Chill-Division/PHASE-Steering/main/img/plan-graph.png) | ![A zone's strategy for its days: its steering between vegetative and generative, and the day's moisture and EC targets](https://raw.githubusercontent.com/Chill-Division/PHASE-Steering/main/img/grow-plan.png) | ![Today, this week, this grow and an estimate for the whole grow, with litres per grow week](https://raw.githubusercontent.com/Chill-Division/PHASE-Steering/main/img/water-use.png) |
+| ![Today's targets on the zone's recorded moisture and EC, with the projected day](https://raw.githubusercontent.com/Chill-Division/PHASE-Control/main/img/plan-graph.png) | ![A zone's strategy for its days: its steering between vegetative and generative, and the day's moisture and EC targets](https://raw.githubusercontent.com/Chill-Division/PHASE-Control/main/img/grow-plan.png) | ![Today, this week, this grow and an estimate for the whole grow, with litres per grow week](https://raw.githubusercontent.com/Chill-Division/PHASE-Control/main/img/water-use.png) |
 
 | On a phone: the Overview | Today's targets |
 | --- | --- |
-| ![The Overview on a phone](https://raw.githubusercontent.com/Chill-Division/PHASE-Steering/main/img/mobile-overview.png) | ![Today's targets on a phone](https://raw.githubusercontent.com/Chill-Division/PHASE-Steering/main/img/mobile-plan.png) |
+| ![The Overview on a phone](https://raw.githubusercontent.com/Chill-Division/PHASE-Control/main/img/mobile-overview.png) | ![Today's targets on a phone](https://raw.githubusercontent.com/Chill-Division/PHASE-Control/main/img/mobile-plan.png) |
 
-More in the [screenshots](https://github.com/Chill-Division/PHASE-Steering/blob/main/docs/SCREENSHOTS.md).
+More in the [screenshots](https://github.com/Chill-Division/PHASE-Control/blob/main/docs/SCREENSHOTS.md).
 
 ## What you need
 
@@ -49,34 +49,34 @@ More in the [screenshots](https://github.com/Chill-Division/PHASE-Steering/blob/
 
 ## Install
 
-PHASE Steering comes in two parts, and watering needs both: the **integration** keeps your rooms, settings and strategies and adds the PHASE Steering page to the sidebar, but never switches anything; the **controller app** reads the probes and runs the pump and valves.
+PHASE Control comes in two parts, and watering needs both: the **integration** keeps your rooms, settings and strategies and adds the PHASE Control page to the sidebar, but never switches anything; the **controller app** reads the probes and runs the pump and valves.
 
 1. **Download the integration with HACS**, then restart Home Assistant.
-   [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Chill-Division&repository=PHASE-Steering&category=integration)
-2. **Add PHASE Steering** and name your first room.
-   [![Open your Home Assistant instance and start setting up PHASE Steering.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=crop_steering)
-3. **Add the controller app's repository**, then install and start **PHASE Steering Controller**.
-   [![Open your Home Assistant instance and add this app repository.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FChill-Division%2FPHASE-Steering)
-4. **Open PHASE Steering in the sidebar.** Map your valves, pump and probes in **Settings, Rooms & hardware**, check the readings on the **Overview**, and keep watering switched off until everything reads correctly.
+   [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Chill-Division&repository=PHASE-Control&category=integration)
+2. **Add PHASE Control** and name your first room.
+   [![Open your Home Assistant instance and start setting up PHASE Control.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=crop_steering)
+3. **Add the controller app's repository**, then install and start **PHASE Controller**.
+   [![Open your Home Assistant instance and add this app repository.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FChill-Division%2FPHASE-Control)
+4. **Open PHASE Control in the sidebar.** Map your valves, pump and probes in **Settings, Rooms & hardware**, check the readings on the **Overview**, and keep watering switched off until everything reads correctly.
 
-**Updating:** both parts carry one version number; update them together. Update the integration in HACS and restart Home Assistant, then press **Update** on the controller app (restarting it alone keeps the old version). Updates keep your rooms, settings, strategies and history. The [install guide](https://github.com/Chill-Division/PHASE-Steering/blob/main/docs/INSTALL.md) covers manual installs, upgrades and rolling back.
+**Updating:** both parts carry one version number; update them together. Update the integration in HACS and restart Home Assistant, then press **Update** on the controller app (restarting it alone keeps the old version). Updates keep your rooms, settings, strategies and history. The [install guide](https://github.com/Chill-Division/PHASE-Control/blob/main/docs/INSTALL.md) covers manual installs, upgrades and rolling back.
 
 ## Documentation
 
-- [How it works](https://github.com/Chill-Division/PHASE-Steering/blob/main/docs/HOW_IT_WORKS.md): why a zone waters when it does, in plain words
-- [User guide](https://github.com/Chill-Division/PHASE-Steering/blob/main/docs/USER_GUIDE.md) and [planning a grow](https://github.com/Chill-Division/PHASE-Steering/blob/main/docs/GROW_PLANS.md)
-- [Error codes](https://github.com/Chill-Division/PHASE-Steering/blob/main/docs/ERROR_CODES.md) and [troubleshooting](https://github.com/Chill-Division/PHASE-Steering/blob/main/docs/troubleshooting.md)
-- [Entity reference](https://github.com/Chill-Division/PHASE-Steering/blob/main/docs/ENTITIES.md)
-- For developers: [how it fits together](https://github.com/Chill-Division/PHASE-Steering/blob/main/docs/SYSTEM_OVERVIEW.md), [testing](https://github.com/Chill-Division/PHASE-Steering/blob/main/docs/TESTING.md), [releasing](https://github.com/Chill-Division/PHASE-Steering/blob/main/docs/RELEASING.md) and [contributing](https://github.com/Chill-Division/PHASE-Steering/blob/main/CONTRIBUTING.md)
+- [How it works](https://github.com/Chill-Division/PHASE-Control/blob/main/docs/HOW_IT_WORKS.md): why a zone waters when it does, in plain words
+- [User guide](https://github.com/Chill-Division/PHASE-Control/blob/main/docs/USER_GUIDE.md) and [planning a grow](https://github.com/Chill-Division/PHASE-Control/blob/main/docs/GROW_PLANS.md)
+- [Error codes](https://github.com/Chill-Division/PHASE-Control/blob/main/docs/ERROR_CODES.md) and [troubleshooting](https://github.com/Chill-Division/PHASE-Control/blob/main/docs/troubleshooting.md)
+- [Entity reference](https://github.com/Chill-Division/PHASE-Control/blob/main/docs/ENTITIES.md)
+- For developers: [how it fits together](https://github.com/Chill-Division/PHASE-Control/blob/main/docs/SYSTEM_OVERVIEW.md), [testing](https://github.com/Chill-Division/PHASE-Control/blob/main/docs/TESTING.md), [releasing](https://github.com/Chill-Division/PHASE-Control/blob/main/docs/RELEASING.md) and [contributing](https://github.com/Chill-Division/PHASE-Control/blob/main/CONTRIBUTING.md)
 
 ## Support
 
-Report a problem or ask a question in [GitHub issues](https://github.com/Chill-Division/PHASE-Steering/issues). Include the error code if there is one, both version numbers (shown in the PHASE Steering sidebar), and what the controller app's log says.
+Report a problem or ask a question in [GitHub issues](https://github.com/Chill-Division/PHASE-Control/issues). Include the error code if there is one, both version numbers (shown in the PHASE Control sidebar), and what the controller app's log says.
 
 ## Credits
 
-PHASE Steering began as [JakeTheRabbit's HA-Irrigation-Strategy](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy), and this project carries it on.
+PHASE Control began as [JakeTheRabbit's HA-Irrigation-Strategy](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy), and this project carries it on.
 
 ## License
 
-[MIT](https://github.com/Chill-Division/PHASE-Steering/blob/main/LICENSE), © 2026 JakeTheRabbit and Chill Division. The dashboard ships the licences of the open-source libraries it is built from, in `THIRD_PARTY_LICENSES.txt` beside it.
+[MIT](https://github.com/Chill-Division/PHASE-Control/blob/main/LICENSE), © 2026 JakeTheRabbit and Chill Division. The dashboard ships the licences of the open-source libraries it is built from, in `THIRD_PARTY_LICENSES.txt` beside it.
