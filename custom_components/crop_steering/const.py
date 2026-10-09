@@ -1,6 +1,11 @@
-"""Constants for the Crop Steering System integration."""
+"""Constants for the PHASE Steering integration."""
 
 DOMAIN = "crop_steering"
+
+# The product's name wherever Home Assistant shows it: the sidebar, the room's device, the zones'
+# entity names and the setup wizard's default name. PHASE: Precision Hydration And Steering Engine.
+# Nothing is found by it: the domain, every entity id and the controller app's slug stay as they were.
+PRODUCT_NAME = "PHASE Steering"
 
 # Where a Repairs card's "Learn more" link goes: every card carries a CS code, explained there.
 REPAIRS_DOCS_URL = "https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/ERROR_CODES.md"

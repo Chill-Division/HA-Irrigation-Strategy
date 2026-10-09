@@ -9,7 +9,7 @@ import math
 
 from . import units
 from .admin import async_require_admin
-from .const import DOMAIN, MAX_ZONES
+from .const import DOMAIN, MAX_ZONES, PRODUCT_NAME
 from .plumbing import (
     LABELS as PLUMBING_LABELS,
     PLUMBING_LAYOUTS,
@@ -235,7 +235,7 @@ def prepare_setup(hass, payload, old=None, entry_id=None):
     old = old or {}
     result = deepcopy(old)
     result["room_name"] = _name(
-        payload.get("room_name", old.get("room_name", old.get("name", "Crop Steering")))
+        payload.get("room_name", old.get("room_name", old.get("name", PRODUCT_NAME)))
     )
     result["name"] = result["room_name"]
     active = payload.get("active", old.get("active", True))
@@ -428,7 +428,7 @@ def configuration_payload(data):
             }
         )
     return {
-        "room_name": data.get("room_name", data.get("name", "Crop Steering")),
+        "room_name": data.get("room_name", data.get("name", PRODUCT_NAME)),
         "active": data.get("active", True),
         "zones": rows,
         "hardware": {

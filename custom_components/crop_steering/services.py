@@ -1,4 +1,4 @@
-"""Crop Steering Services."""
+"""PHASE Steering services."""
 
 from __future__ import annotations
 

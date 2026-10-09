@@ -1,4 +1,4 @@
-"""Config flow for Crop Steering System integration."""
+"""Config flow for the PHASE Steering integration."""
 
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ from .const import (
     MAX_ZONES,
     DEFAULT_NUM_ZONES,
     MOISTURE_RANGES,
+    PRODUCT_NAME,
 )
 from .plumbing import PLUMBING_LAYOUTS, infer as infer_plumbing
 from .room import slugify_room
@@ -223,7 +224,7 @@ def _build_parameters(data: dict) -> dict:
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required("name", default="Crop Steering System"): str,
+        vol.Required("name", default=PRODUCT_NAME): str,
     }
 )
 
@@ -251,7 +252,7 @@ def _retry_form(flow, step_id, schema, user_input, info, error):
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Crop Steering System."""
+    """Handle a config flow for PHASE Steering."""
 
     VERSION = 1
 
@@ -334,7 +335,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
         self._data.update(user_input)
         self._data["room_prefix"] = ""
-        self._data["room_name"] = user_input.get("name", "Crop Steering")
+        self._data["room_name"] = user_input.get("name", PRODUCT_NAME)
 
         return await self.async_step_manual_zones()
 
@@ -410,7 +411,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         try:  # a valve that is ON or a probe in the wrong unit is reported here, not three screens later
             self._check(
                 {
-                    "room_name": self._data.get("room_name", "Crop Steering"),
+                    "room_name": self._data.get("room_name", PRODUCT_NAME),
                     "room_prefix": self._data.get("room_prefix", ""),
                     "enable_flag": f"switch.crop_steering_{self._data.get('room_prefix', '')}engine_enabled",
                     "zones": zones,
@@ -442,8 +443,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data = {
             "installation_mode": "manual",
             "config_method": "manual",
-            "name": self._data.get("name", "Crop Steering System"),
-            "room_name": self._data.get("room_name", "Crop Steering"),
+            "name": self._data.get("name", PRODUCT_NAME),
+            "room_name": self._data.get("room_name", PRODUCT_NAME),
             "room_prefix": self._data.get("room_prefix", ""),
             "room_slug": self._data.get("room_slug", "default"),
             CONF_NUM_ZONES: int(self._data.get(CONF_NUM_ZONES, DEFAULT_NUM_ZONES)),
@@ -522,7 +523,7 @@ def _number_range(key: str) -> vol.Range:
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    """Handle options flow for Crop Steering System."""
+    """Handle options flow for PHASE Steering."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""

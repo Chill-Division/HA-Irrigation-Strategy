@@ -1,1 +1,1 @@
-"""Tests for Crop Steering System."""
+"""Tests for PHASE Steering."""

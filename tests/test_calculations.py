@@ -1,4 +1,4 @@
-"""Unit tests for Crop Steering System calculations."""
+"""Unit tests for PHASE Steering calculations."""
 
 import pytest
 from custom_components.crop_steering.calculations import (

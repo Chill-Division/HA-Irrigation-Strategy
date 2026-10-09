@@ -1,4 +1,4 @@
-"""A real Home Assistant shows every Crop Steering Repairs card with its error code.
+"""A real Home Assistant shows every PHASE Steering Repairs card with its error code.
 
 The lean check (tests/test_error_codes.py) reads the two JSON files; this is what Home Assistant
 itself loads for the card: the translation it resolves for the issue the integration raised.
@@ -54,4 +54,4 @@ async def test_the_card_a_fresh_install_raises_shows_its_code(hass):
     issue = ir.async_get(hass).async_get_issue(DOMAIN, "engine_offline")
     assert issue is not None
     cards = await _issue_strings(hass)
-    assert cards[issue.translation_key]["title"] == "Crop Steering: engine not running (CS-602)"
+    assert cards[issue.translation_key]["title"] == "PHASE Steering: engine not running (CS-602)"

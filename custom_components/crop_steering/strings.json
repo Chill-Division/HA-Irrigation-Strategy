@@ -2,8 +2,8 @@
   "config": {
     "step": {
       "user": {
-        "title": "Crop Steering — set up",
-        "description": "Name this installation, then pick its zones and devices with searchable dropdowns.\n\nRunning: **Crop Steering {version}**. {restart_notice}",
+        "title": "PHASE Steering — set up",
+        "description": "Name this installation, then pick its zones and devices with searchable dropdowns.\n\nRunning: **PHASE Steering {version}**. {restart_notice}",
         "data": {
           "name": "System name"
         },
@@ -13,7 +13,7 @@
       },
       "room": {
         "title": "Add a room",
-        "description": "{info}\n\nRunning: **Crop Steering {version}**.",
+        "description": "{info}\n\nRunning: **PHASE Steering {version}**.",
         "data": {
           "room_name": "Room name"
         },
@@ -364,17 +364,17 @@
       "setup_invalid": "Not saved yet: {error}"
     },
     "abort": {
-      "already_configured": "Crop Steering is already configured.",
+      "already_configured": "PHASE Steering is already configured.",
       "setup_invalid": "Setup could not be saved: {error}",
       "reserved_room_name": "Default is reserved for the original room. Choose another room name.",
-      "restart_required": "Home Assistant is still running Crop Steering {running}, but {installed} is installed. HACS replaces the files; Home Assistant goes on running the old code until it restarts. Restart Home Assistant, then add Crop Steering again. Nothing was set up."
+      "restart_required": "Home Assistant is still running PHASE Steering {running}, but {installed} is installed. HACS replaces the files; Home Assistant goes on running the old code until it restarts. Restart Home Assistant, then add PHASE Steering again. Nothing was set up."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Crop Steering — options",
-        "description": "Reconfigure the system without reinstalling.\n\nRunning: **Crop Steering {version}**. {restart_notice}",
+        "title": "PHASE Steering — options",
+        "description": "Reconfigure the system without reinstalling.\n\nRunning: **PHASE Steering {version}**. {restart_notice}",
         "menu_options": {
           "edit_zones": "Edit zones & hardware (add/remove sensors)",
           "edit_parameters": "Edit irrigation parameters"
@@ -737,36 +737,36 @@
   },
   "issues": {
     "kill_switch_missing": {
-      "title": "Crop Steering: kill switch helper missing (CS-601)",
-      "description": "The engine is gated by the helper `input_boolean.f2_control_enabled`, but it doesn't exist, so the Crop Steering Controller app can't run. Create it: Settings → Devices & Services → Helpers → Create Helper → Toggle, named so the entity is input_boolean.f2_control_enabled. Leave it OFF until you're ready to irrigate.\n\nCode CS-601. What it means and what to do: Crop Steering → Help → Error codes."
+      "title": "PHASE Steering: kill switch helper missing (CS-601)",
+      "description": "The engine is gated by the helper `input_boolean.f2_control_enabled`, but it doesn't exist, so the PHASE Steering Controller app can't run. Create it: Settings → Devices & Services → Helpers → Create Helper → Toggle, named so the entity is input_boolean.f2_control_enabled. Leave it OFF until you're ready to irrigate.\n\nCode CS-601. What it means and what to do: PHASE Steering → Help → Error codes."
     },
     "engine_offline": {
-      "title": "Crop Steering: engine not running (CS-602)",
-      "description": "No fresh heartbeat from the add-on (sensor.crop_steering_ai_heartbeat is missing or stale). The integration creates the entities, but the Crop Steering Controller app is what actually steers. Install/start it and check its log. If you only use manual control, you can ignore this.\n\nCode CS-602. What it means and what to do: Crop Steering → Help → Error codes."
+      "title": "PHASE Steering: engine not running (CS-602)",
+      "description": "No fresh heartbeat from the add-on (sensor.crop_steering_ai_heartbeat is missing or stale). The integration creates the entities, but the PHASE Steering Controller app is what actually steers. Install/start it and check its log. If you only use manual control, you can ignore this.\n\nCode CS-602. What it means and what to do: PHASE Steering → Help → Error codes."
     },
     "zone_no_sensor": {
-      "title": "Crop Steering: zone with no moisture sensor (CS-603)",
-      "description": "Zone(s) {zones} have no VWC sensor mapped, so they can't be steered. Add a probe in Settings → Devices & Services → Crop Steering → Configure → Edit zones & hardware.\n\nCode CS-603. What it means and what to do: Crop Steering → Help → Error codes."
+      "title": "PHASE Steering: zone with no moisture sensor (CS-603)",
+      "description": "Zone(s) {zones} have no VWC sensor mapped, so they can't be steered. Add a probe in Settings → Devices & Services → PHASE Steering → Configure → Edit zones & hardware.\n\nCode CS-603. What it means and what to do: PHASE Steering → Help → Error codes."
     },
     "fused_sensor_unavailable": {
-      "title": "Crop Steering: zone sensor unavailable (CS-604)",
-      "description": "The moisture sensor for zone(s) {zones} reads unavailable — the probe(s) may be offline or misnamed. Check it in Developer Tools → States and your zone mapping.\n\nCode CS-604. What it means and what to do: Crop Steering → Help → Error codes."
+      "title": "PHASE Steering: zone sensor unavailable (CS-604)",
+      "description": "The moisture sensor for zone(s) {zones} reads unavailable — the probe(s) may be offline or misnamed. Check it in Developer Tools → States and your zone mapping.\n\nCode CS-604. What it means and what to do: PHASE Steering → Help → Error codes."
     },
     "strategy_hold": {
-      "title": "Crop Steering: irrigation strategy is holding its zones (CS-606)",
-      "description": "The room's irrigation strategy is holding the steering of the zones it manages: {reason}. Until it clears, the controller waters those zones only with emergency and watchdog shots, and a zone with a dead probe on its timed schedule. See it in the Crop Steering panel under Irrigation strategy → Schedule. If it stays in error, fix the cause, then disarm the strategy and arm it again.\n\nCode CS-606. What it means and what to do: Crop Steering → Help → Error codes."
+      "title": "PHASE Steering: irrigation strategy is holding its zones (CS-606)",
+      "description": "The room's irrigation strategy is holding the steering of the zones it manages: {reason}. Until it clears, the controller waters those zones only with emergency and watchdog shots, and a zone with a dead probe on its timed schedule. See it in the PHASE Steering panel under Irrigation strategy → Schedule. If it stays in error, fix the cause, then disarm the strategy and arm it again.\n\nCode CS-606. What it means and what to do: PHASE Steering → Help → Error codes."
     },
     "strategy_degraded": {
-      "title": "Crop Steering: irrigation strategy has not moved on to today (CS-607)",
-      "description": "The room's irrigation strategy could not apply the current day at lights-on: {reason}. It keeps its last valid targets (a strategy waiting to start stays armed) and tries again every minute, and the controller keeps steering. This clears itself once the cause is fixed, usually a stale controller heartbeat or probe.\n\nCode CS-607. What it means and what to do: Crop Steering → Help → Error codes."
+      "title": "PHASE Steering: irrigation strategy has not moved on to today (CS-607)",
+      "description": "The room's irrigation strategy could not apply the current day at lights-on: {reason}. It keeps its last valid targets (a strategy waiting to start stays armed) and tries again every minute, and the controller keeps steering. This clears itself once the cause is fixed, usually a stale controller heartbeat or probe.\n\nCode CS-607. What it means and what to do: PHASE Steering → Help → Error codes."
     },
     "entities_moved": {
-      "title": "Crop Steering: {count} setting(s) are not where the controller looks for them (CS-605)",
-      "description": "The controller finds each setting by its exact entity id, and these are somewhere else, so it is running on its built-in defaults for them (daily water cap and plant count included):\n\n{entities}\n\nKeep the engine off until this is fixed. If you changed an entity id yourself, change it back: Settings → Devices & services → Entities → the entity → the cog → Entity ID. If nearly every entity is listed, the room was created while Home Assistant was still running an older version of this integration: delete the Crop Steering entry, restart Home Assistant, and add it again. Nothing is renamed for you, because an id you chose on purpose is yours to keep.\n\nCode CS-605. What it means and what to do: Crop Steering → Help → Error codes."
+      "title": "PHASE Steering: {count} setting(s) are not where the controller looks for them (CS-605)",
+      "description": "The controller finds each setting by its exact entity id, and these are somewhere else, so it is running on its built-in defaults for them (daily water cap and plant count included):\n\n{entities}\n\nKeep the engine off until this is fixed. If you changed an entity id yourself, change it back: Settings → Devices & services → Entities → the entity → the cog → Entity ID. If nearly every entity is listed, the room was created while Home Assistant was still running an older version of this integration: delete the PHASE Steering entry, restart Home Assistant, and add it again. Nothing is renamed for you, because an id you chose on purpose is yours to keep.\n\nCode CS-605. What it means and what to do: PHASE Steering → Help → Error codes."
     },
     "stock_low": {
-      "title": "Crop Steering: {count} stock tank(s) running low (CS-608)",
-      "description": "These stock tanks are at or below their low mark:\n\n{tanks}\n\nRefill them, then open Crop Steering → Feed → Stock tanks and press Refilled, or set the level you read off the tank. Each batch tank the room makes takes its dose from every stock tank; this card clears itself once every tank is above its low mark.\n\nCode CS-608. What it means and what to do: Crop Steering → Help → Error codes."
+      "title": "PHASE Steering: {count} stock tank(s) running low (CS-608)",
+      "description": "These stock tanks are at or below their low mark:\n\n{tanks}\n\nRefill them, then open PHASE Steering → Feed → Stock tanks and press Refilled, or set the level you read off the tank. Each batch tank the room makes takes its dose from every stock tank; this card clears itself once every tank is above its low mark.\n\nCode CS-608. What it means and what to do: PHASE Steering → Help → Error codes."
     }
   },
   "selector": {
