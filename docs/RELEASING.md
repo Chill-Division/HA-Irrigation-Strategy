@@ -12,8 +12,8 @@ python scripts/release.py 2.26.0 --public   # later, the same commit for everyon
 
 | Repository | Who installs from it | What moves its `main` |
 | --- | --- | --- |
-| `ChillingSilence/HA-Irrigation-Strategy` (this one) | The maintainer's own rooms. They are the test. | Merged pull requests, and `release.py <version>`'s commit |
-| `Chill-Division/HA-Irrigation-Strategy` | Everyone else | `release.py <version> --public`, which fast-forwards it to a version already released here, and `release.py --sync`, for commits that ship nothing |
+| `ChillingSilence/PHASE-Steering` (this one) | The maintainer's own rooms. They are the test. | Merged pull requests, and `release.py <version>`'s commit |
+| `Chill-Division/PHASE-Steering` | Everyone else | `release.py <version> --public`, which fast-forwards it to a version already released here, and `release.py --sync`, for commits that ship nothing |
 
 Every pull request is merged into `main` ([CONTRIBUTING.md](../CONTRIBUTING.md)), and releases are
 made from it. The public repository takes no pull requests and no commits of its own: everything on
@@ -33,6 +33,12 @@ What follows from that (checked against the Supervisor source):
 - **The repository address is the controller's identity.** The same controller installed from the
   other repository is a different app with an empty `/data`: phase, counters, water history and
   learned peaks start again. Moving a box is a migration ([INSTALL.md](INSTALL.md)), not an edit.
+- **Both repositories were called `HA-Irrigation-Strategy` until October 2026**, when they were
+  renamed `PHASE-Steering` with the app. GitHub sends the old addresses on to the new ones, for
+  git, HACS and the web, so a box added under an old one keeps it and keeps updating. From the
+  public repository, its controller is `f50c47e4_f2_control`; one added at the new address is
+  `f99c52b1_f2_control`. Never create a repository under an old name: it would take the address
+  from every such box.
 - **Between releases, `main` also carries what was merged since the last one.** Only a release
   changes the number, so no box is offered anything new before then. But a controller built in
   the meantime (a fresh install, a Rebuild, or an update to the last release taken late) builds
@@ -142,7 +148,7 @@ numbers 1.0.0 started again from (Versions, below).
 
 ## Setting up the public repository (once)
 
-Create `Chill-Division/HA-Irrigation-Strategy` empty (no README, licence or `.gitignore`), or as a fork
+Create `Chill-Division/PHASE-Steering` empty (no README, licence or `.gitignore`), or as a fork
 of this one, and allow GitHub Actions on it, so its releases get their packaged archives. The first
 `--public` creates its `main`. Pointing the links in the code at it (What's new, `manifest.json`, the
 app store's `repository.yaml` and `config.yaml`, the README) is a pull request of its own.
