@@ -21,7 +21,7 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
-## Unreleased
+## 1.1.0 - 2026-10-10
 
 - Export your room’s targets from Today and import them into another room, or send them to someone.
 - The Schedule page now explains how a schedule and Today’s targets take turns, and which one is in charge.

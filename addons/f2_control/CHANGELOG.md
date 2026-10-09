@@ -1,4 +1,6 @@
-# Unreleased
+# 1.1.0
+
+Pair with integration 1.1.0.
 
 - Export your room’s targets from Today and import them into another room, or send them to someone.
 - The Schedule page now explains how a schedule and Today’s targets take turns, and which one is in charge.
