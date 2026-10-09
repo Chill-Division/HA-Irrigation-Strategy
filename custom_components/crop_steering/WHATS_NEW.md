@@ -25,6 +25,7 @@ version being released.
 
 - When a pump or valve doesn’t switch off, the alert now names it and says what it read.
 - The Schedule page now explains how a schedule and Today’s targets take turns, and which one is in charge.
+- Export your room’s targets from Today and import them into another room, or send them to someone.
 
 ## 1.0.3 - 2026-10-09
 

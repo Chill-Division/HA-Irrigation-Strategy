@@ -2,6 +2,7 @@
 
 - A hardware fault (CS-301) names the pump or valve that didn’t switch off, and what it read. No change to when the controller stops or how it waters.
 - The dashboard explains how a schedule and Today’s targets take turns.
+- The dashboard can export and import Today’s targets.
 
 # 1.0.3
 

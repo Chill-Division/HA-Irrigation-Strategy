@@ -77,6 +77,8 @@ When no schedule owns the room, Today lets you edit the current targets using th
 
 Pot size, plant count and drippers are the room's hardware, set in **Settings → Rooms & hardware**, not here. What a shot of a given length delivers is on **Insights → Water**.
 
+**Export** saves the room's targets to a file, to keep or to send to someone: the room settings and each zone's, both steering modes' values and each steering mode, but not the pot size, plants or drippers. **Import** loads such a file, from this room or another, into the draft, zone by zone number. A value a setting can't take exactly is rounded to its step, one outside its limits is skipped, and the room's own lights hours, pump and main-line timings and longest shot stay as this room has them; the note above the draft says which. Nothing changes until you review and apply. Import waits while a draft is open, and neither button works while a schedule runs: the room follows the schedule then, so export that from **Schedule**.
+
 Room changes can be previewed against a selected zone. A zone-specific value takes precedence over a room fallback where the controller supports it. Missing or invalid inputs remain missing/invalid instead of becoming an invented curve.
 
 When a schedule owns the room, use **Irrigation strategy → Schedule** to inspect its dated targets and state. Today says when a schedule is armed or running. Disarm it on Schedule; Today's targets run again from the next lights-on, and you can edit them once it shows **Not armed**. See [the schedule and Today](GROW_PLANS.md#the-schedule-and-today). Export or deliberately discard drafts before leaving; a navigation warning is not an automatic backup.
