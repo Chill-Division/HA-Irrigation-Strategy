@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   zone reads "Blocked: hardware fault (CS-301)" instead of its phase, such as "Optimal".
 - **The Schedule page explains how it works with Today.** It shows how a schedule and Today's targets
   take turns and which one is in charge, and Today says when a schedule is armed or running.
+- **Export and import Today's targets.** Save a room's targets to a file, both steering modes at
+  once, to load into another room or send to someone; nothing changes until the draft is reviewed.
 
 ### 🔧 Technical notes
 
@@ -57,6 +59,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   schedule's status. The demo publishes its schedule's status as
   `sensor.crop_steering_<prefix>strategy_plan`, as the integration does. Nothing changes in how the
   integration or the controller runs a schedule.
+- Dashboard: `lib/targets-file.ts`, format `phase-control-targets` version 1. It holds the room's
+  settings and each zone's by setting key and zone number, so a file fits a room with another
+  prefix, and each steering mode. Pot size, plants and drippers are never written; lights hours,
+  the pump and main-line timings and the room's longest shot are written but never loaded. A value
+  off a setting's step is rounded to the nearest it takes and one outside its limits is skipped,
+  both said. Import only fills Today's draft and waits while one is open; neither button works
+  while a schedule is engaged. Tests: `targets-file.test.ts` and the dashboard browser check.
 
 ## [1.0.3] - 2026-10-09
 
