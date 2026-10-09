@@ -9,6 +9,28 @@ and code-level detail for developers and AI agents working on the repo.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- **The project's address is now github.com/Chill-Division/PHASE-Steering.** The old address
+  keeps working, so a Home Assistant that already has it needs no change: leave it as it is.
+
+### 🔧 Technical notes
+
+- Both repositories were renamed on 2026-10-09: `Chill-Division/HA-Irrigation-Strategy` to
+  `Chill-Division/PHASE-Steering`, and `ChillingSilence/HA-Irrigation-Strategy` to
+  `ChillingSilence/PHASE-Steering`. GitHub redirects the old addresses for the web, its API and
+  git. HACS records a rename itself (`renamed_repositories` in its source), and the Supervisor's
+  `git ls-remote` and `git fetch` follow the redirect (checked on the old public address).
+- The Supervisor names the app after the address it was added from. A box on the old address keeps
+  `f50c47e4_f2_control` and its `/data`; one added at the new address gets `f99c52b1_f2_control`.
+  Swapping one address for the other is a move ([INSTALL.md](docs/INSTALL.md)), not an update, and
+  the app's documentation and the install guide say to leave the old one.
+- Links: `manifest.json` (documentation, issue tracker), the Repairs cards' Learn more
+  (`const.REPAIRS_DOCS_URL`), What's new's release notes, the app's `config.yaml`, `repository.yaml`
+  and DOCS.md, the README's links, badges and pictures, the docs, and `release.py`'s `PUBLIC`.
+  `tests/test_repository_links.py` keeps every link on the new name.
+- No repository may ever take an old name: it would take the address from every box still on it.
+
 ## [1.0.2] - 2026-10-09
 
 Integration and controller **1.0.2**.
