@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildRoom, discoverRooms, roomIsActive, validateChange } from "./model";
+import {
+  buildRoom,
+  discoverRooms,
+  hardwareFaultWords,
+  roomIsActive,
+  validateChange,
+} from "./model";
 import { applyChanges } from "./client";
 import { createDemo, demoHistory } from "./demo";
 import { ControllerStore } from "./use-controller";
@@ -87,6 +93,39 @@ describe("room on/off status", () => {
     const active = room(states, "room:f1_");
     expect(active.zones[0].status).toBe("Fault: valve blocked");
     expect(active.alerts.length).toBeGreaterThan(0);
+  });
+  it("says a hardware fault once, with its code and the switch it names", () => {
+    const fault =
+      "hardware fault (CS-301): zone 1 shot end: Pump (switch.pump) still read ON 6 s after it was switched off";
+    const states = fixture([
+      entity("sensor.crop_steering_zone_1_status", `Blocked: ${fault}`),
+      entity("sensor.crop_steering_ai_heartbeat", "online", { hardware_fault: fault }),
+    ]);
+    const about = room(states).alerts.filter((alert) =>
+      /hardware fault|CS-301/i.test(`${alert.title} ${alert.detail}`),
+    );
+    // The zone's own status says it too: one notice, not a second "needs attention".
+    expect(about.map((alert) => alert.id)).toEqual(["room:-hardware-fault"]);
+    expect(about[0].title).toMatch(/\(CS-301\)$/);
+    // Nothing waters while it holds the room: no zone reads its phase ("Optimal").
+    expect(room(states).zones.map((zone) => zone.status)).toEqual([
+      "Blocked: hardware fault (CS-301)",
+    ]);
+    expect(about[0].detail).toMatch(
+      /^Zone 1 shot end: Pump \(switch\.pump\) still read ON 6 s after it was switched off\. Switch watering off/,
+    );
+  });
+  it("reads an older controller's fault without its room name or its own instructions", () => {
+    expect(
+      hardwareFaultWords(
+        "hardware fault in default: zone 1 valve/pump/mainline close not confirmed; turn OFF switch.crop_steering_engine_enabled and engines sharing this hardware, verify all hardware OFF, then re-arm",
+      ),
+    ).toBe("Zone 1 valve/pump/mainline close not confirmed");
+    expect(
+      hardwareFaultWords(
+        "hardware fault in Veg (CS-301), which shares this hardware: zone 2 shot end: switch.pump read unavailable",
+      ),
+    ).toMatch(/^Hardware fault in Veg \(CS-301\), which shares this hardware: zone 2/);
   });
   it("still reports stuck hardware in an off room", () => {
     const states = fixture([

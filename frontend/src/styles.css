@@ -209,6 +209,9 @@ input[type="number"] {
   place-items: center;
   border-radius: 10px;
 }
+.error-code-text {
+  white-space: nowrap; /* "CS-301" never breaks at its hyphen */
+}
 .brand-name {
   font-weight: 500;
 }

@@ -402,7 +402,7 @@ describe("room status line", () => {
     [
       "hardware is stuck",
       [entity(HEARTBEAT, "healthy", { hardware_fault: "Valve 2 did not close" })],
-      /^Hardware fault: Valve 2 did not close\. Switch watering off, fix the stuck hardware/,
+      /^Hardware fault \(CS-301\): Valve 2 did not close\. Switch watering off and check it/,
     ],
     [
       "the irrigation strategy is held",

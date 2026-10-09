@@ -552,6 +552,22 @@ export function PhasePill({ phase }: { phase: string }) {
   );
 }
 
+/** A status with each error code kept on one line: a narrow column breaks text at a hyphen, and
+ * "CS-" over "301" reads as two things. */
+function keepCodes(text: string) {
+  return text
+    .split(/(CS-\d{3})/)
+    .map((part, index) =>
+      /^CS-\d{3}$/.test(part) ? (
+        <span key={index} className="error-code-text">
+          {part}
+        </span>
+      ) : (
+        part
+      ),
+    );
+}
+
 export function ZoneOperatingState({
   zone,
   showScheduling = true,
@@ -562,7 +578,7 @@ export function ZoneOperatingState({
   return (
     <div className="zone-operating-state" data-stale={zone.stale || undefined}>
       <span className="zone-controller-status" data-zone-status={zone.id}>
-        {zone.status === "Unavailable" ? "Controller status unavailable" : zone.status}
+        {zone.status === "Unavailable" ? "Controller status unavailable" : keepCodes(zone.status)}
       </span>
       <div className="zone-state-flags">
         <span

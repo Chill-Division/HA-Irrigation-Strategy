@@ -413,6 +413,21 @@ export function shotRunning(states: States, room: Room, now: number): string | n
   return null;
 }
 
+/** The controller's hardware fault (CS-301) in its own words, without the label the dashboard gives
+ * it: "zone 1 shot end: Pump (switch.pump) still read ON 6 s after it was switched off". An older
+ * controller said "hardware fault in default: …; turn OFF … then re-arm": its internal room name
+ * and its own instructions go, the dashboard gives its own. A fault from another room that shares
+ * this hardware keeps its "hardware fault in <room> (CS-301), which shares this hardware: …". */
+export function hardwareFaultWords(fault: string): string {
+  const words = fault
+    .trim()
+    .replace(/^hardware fault \(CS-301\): /i, "")
+    .replace(/^hardware fault in \S+: /i, "")
+    .replace(/; turn OFF .* then re-arm$/i, "")
+    .trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 export function buildRoom(states: States, room: Room): RoomView {
   const config = descriptor(states, room);
   const entities = roomEntities(states, room);
@@ -446,6 +461,10 @@ export function buildRoom(states: States, room: Room): RoomView {
     ];
   });
   const heartbeat = resolve(states, room, "sensor", "ai_heartbeat");
+  // A hardware fault (CS-301) holds every zone of the room: none waters until it is cleared.
+  const roomFault =
+    typeof heartbeat?.attributes.hardware_fault === "string" &&
+    heartbeat.attributes.hardware_fault.trim() !== "";
   const maxAgeS =
     [heartbeat?.attributes.max_sensor_age_s, config?.attributes.max_sensor_age_s].find(
       (value): value is number => typeof value === "number" && Number.isFinite(value) && value > 0,
@@ -609,9 +628,11 @@ export function buildRoom(states: States, room: Room): RoomView {
       // Overnight dryback is intended: the fixed threshold's "needs water" never applies in P3.
       status: !roomActive
         ? "Room off"
-        : phase?.state === "P3" && label === "Dry - Needs Water"
-          ? RESTING.P3
-          : label,
+        : roomFault
+          ? "Blocked: hardware fault (CS-301)"
+          : phase?.state === "P3" && label === "Dry - Needs Water"
+            ? RESTING.P3
+            : label,
       stale: roomActive && !live,
       fields: settings.filter((s) => s.zoneId === id),
       sensors: entities.filter(
@@ -649,7 +670,8 @@ export function buildRoom(states: States, room: Room): RoomView {
     const choices = zones.map((zone) => zone.probes[key]);
     return aggregate(key, readingTile(reading, choices), unit, true);
   };
-  // Zones with the identical problem share one notice instead of one each.
+  // Zones with the identical problem share one notice instead of one each. A hardware fault is the
+  // room's: its own notice below says it once, not again for each zone it blocks.
   const problems = new Map<string, { kind: "sensors" | "status"; detail: string; zones: Zone[] }>();
   for (const zone of zones) {
     const problem =
@@ -669,7 +691,8 @@ export function buildRoom(states: States, room: Room): RoomView {
                 .join(" ") +
               " Check probes and update times before relying on automatic irrigation.",
           }
-        : /fault|blocked|unsafe|error/i.test(zone.status)
+        : /fault|blocked|unsafe|error/i.test(zone.status) &&
+            !(roomFault && /hardware fault/i.test(zone.status))
           ? { kind: "status" as const, detail: zone.status }
           : null;
     if (!problem) continue;
@@ -700,8 +723,8 @@ export function buildRoom(states: States, room: Room): RoomView {
     alerts.unshift({
       id: `${room.id}-hardware-fault`,
       severity: "critical",
-      title: "Hardware fault — irrigation inhibited",
-      detail: `${heartbeat.attributes.hardware_fault}. Switch watering off, physically resolve the stuck hardware, verify all recorded devices are off, then switch watering back on.`,
+      title: "Watering stopped: a pump or valve didn’t switch off (CS-301)",
+      detail: `${hardwareFaultWords(heartbeat.attributes.hardware_fault)}. Switch watering off and check it at the device and in Home Assistant: once every pump and valve reads off, the hold clears within a minute. Then switch watering back on.`,
     });
   if (strategyEngaged)
     alerts.unshift({
@@ -862,7 +885,7 @@ export function roomStatus(states: States, room: Room, now = Date.now()): RoomSt
     return say(
       "stopped",
       "Not watering",
-      `Hardware fault: ${fault}. Switch watering off, fix the stuck hardware and check it is off, then switch watering back on.`,
+      `Hardware fault (CS-301): ${hardwareFaultWords(fault)}. Switch watering off and check it; the hold clears once every pump and valve reads off.`,
     );
   if (!roomIsActive(states, room))
     return say("off", "Room off", "Nothing growing: no irrigation, no alerts.");
