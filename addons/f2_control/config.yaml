@@ -7,7 +7,7 @@ description: >-
   sequences the pump and valves with valve-close read-back, and is gated by a hard
   kill switch. Configure once in the PHASE Steering UI; the operator dashboards are
   served right in the sidebar.
-url: https://github.com/Chill-Division/HA-Irrigation-Strategy
+url: https://github.com/Chill-Division/PHASE-Steering
 arch:
   - amd64
   - aarch64
