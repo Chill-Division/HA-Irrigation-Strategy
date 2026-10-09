@@ -286,12 +286,10 @@ def test_it_releases_only_a_commit_validate_has_passed():
 
 def test_the_public_repository_is_reached_the_way_origin_is():
     assert (
-        release.slug_of("git@github.com:Me/HA-Irrigation-Strategy.git")
-        == "Me/HA-Irrigation-Strategy"
+        release.slug_of("git@github.com:Me/PHASE-Steering.git") == "Me/PHASE-Steering"
     )
     assert (
-        release.slug_of("https://github.com/Me/HA-Irrigation-Strategy")
-        == "Me/HA-Irrigation-Strategy"
+        release.slug_of("https://github.com/Me/PHASE-Steering") == "Me/PHASE-Steering"
     )
     assert (
         release.public_url("git@github.com:Me/x.git")

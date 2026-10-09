@@ -135,7 +135,7 @@ the shot. Lives in the f2-control add-on (`addons/f2_control/`).
   `python scripts/release.py X.Y.Z` releases it when Validate has passed on it. The script dates the Unreleased notes, sets the one version number
   (`manifest.json`, `const.py`, the app's `config.yaml`, the README badge), commits, tags, pushes
   and publishes the GitHub release on this repository, whose rooms are the test.
-  `--public` then fast-forwards `Chill-Division/HA-Irrigation-Strategy`'s `main` to that same
+  `--public` then fast-forwards `Chill-Division/PHASE-Steering`'s `main` to that same
   tagged commit and publishes the release there, for everyone else. Between releases, `--sync` takes
   merged commits that ship nothing (README, docs, pictures, scripts, tests) to that `main` with no
   release; anything under `custom_components/` or `addons/f2_control/` waits for one, apart from
