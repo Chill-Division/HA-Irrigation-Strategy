@@ -345,7 +345,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 *Critical · Notification*
 
-**What it means.** A pump or valve did not confirm it had switched OFF: after a shot, after a shot was cancelled before its water started (CS-302, CS-303, CS-304), after a shot something else cut short (CS-307), or while an interrupted shot was being closed (CS-308). It may still be running. The controller latches a hold on that hardware, remembered across restarts.
+**What it means.** A pump or valve did not confirm it had switched OFF: after a shot, after a shot was cancelled before its water started (CS-302, CS-303, CS-304), after a shot something else cut short (CS-307), or while an interrupted shot was being closed (CS-308). It may still be running. The notification, the room's alert on the Overview and the zone's status name the switch and what it read: still ON, unavailable or unknown, or that Home Assistant returned an error when it was switched off. The controller latches a hold on that hardware, remembered across restarts.
 
 **Watering meanwhile.** Stopped on that hardware, in every room that shares it, until the hold is cleared.
 
@@ -354,12 +354,13 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 - The switch's device went offline in the middle of a shot.
 - A relay or valve is stuck on.
 - The switch reports its state late, or not at all.
+- Home Assistant was restarting or unreachable when the controller switched it off.
 
 **Suggested fixes**
 
-- Check the pump and valves now, and switch them off by hand if they are running.
-- Turn off the engine switch of this room and of every room sharing the hardware.
-- The hold clears once all of them read OFF; then turn the engine back on.
+- Check the switch it names, and the plumbing, now. Switch it off by hand if water is running.
+- Switch watering off in this room and in every room that shares the hardware.
+- The hold clears within a minute once every pump and valve reads OFF; then switch watering back on.
 - If the notification says the fault could not be saved, do not restart the controller until it is repaired.
 - The notification is said once per fault, not every 30 minutes, and dismissing it does not clear the hold: check the hardware even if the card is gone.
 

@@ -43,10 +43,14 @@ class FakeHA:
 
     def ha_call(self, domain, service, **data):
         self.calls.append((domain, service, data))
-        # emulate a switch actually toggling, so valve read-back sees the new state
+        # emulate a switch actually toggling, so valve read-back sees the new state; as in Home
+        # Assistant, its attributes (its friendly name) stay
         if domain == "switch" and "entity_id" in data:
+            previous = self.states.get(data["entity_id"])
             self.set_state(
-                data["entity_id"], "on" if service == "turn_on" else "off"
+                data["entity_id"],
+                "on" if service == "turn_on" else "off",
+                previous[1] if previous else None,
             )
         return True
 
