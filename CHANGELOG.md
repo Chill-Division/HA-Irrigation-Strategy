@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **No more `via_device` warnings in Home Assistant's log.** From Home Assistant 2026.9 it warned that
   the way the zones are put under their room stops working in 2027.8; they now use the way it asks.
+- **A hardware fault says which switch.** When a pump or valve doesn't switch off after a shot, the
+  Overview and Home Assistant's notification now name it and say what it read (still on, or
+  unavailable), with its code, CS-301, in one card instead of three. While it holds the room, every
+  zone reads "Blocked: hardware fault (CS-301)" instead of its phase, such as "Optimal".
 
 ### 🔧 Technical notes
 
@@ -23,6 +27,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (2026.5 on); a zone an older version linked is left as it is. Proven in
   `tests_ha/test_zone_devices_under_the_room.py` on a fresh install and a seeded old one (2026.5 and
   2026.9), where the old code logged the warning.
+- Controller: `_close_failures` and `_switch_off_failures` keep each switch that did not read OFF
+  after a close and how (`CLOSE_FAILURES`: Home Assistant refused, still ON, unavailable, unknown,
+  unreadable, or OFF only after the read-back gave up). The hardware fault keeps them (`switches`,
+  saved in `/data/state.json`; a fault saved before has none, and still loads and holds). The CS-301
+  notification leads with them, and `_hardware_fault_block`, the heartbeat's `hardware_fault` and the
+  zone's status, reads "hardware fault (CS-301): zone 1 shot end: Pump (switch.pump) still read ON
+  6 s after it was switched off", without the internal room name, an entity id to switch or "re-arm".
+  The hold, what clears it and the 6 s read-back are as before. Each zone's status
+  (`zone_N_status_app`) says "Blocked: hardware fault (CS-301)" for as long as the fault holds the
+  room (`_hardware_fault_short`), not only in a pass where the zone wanted water: it used to read its
+  phase ("Optimal" in P2) the rest of the time.
+- Dashboard: the room's card is "Watering stopped: a pump or valve didn't switch off (CS-301)" with
+  the controller's words (`hardwareFaultWords`, which also tidies an older controller's), and a zone
+  blocked by it raises no second card. Every zone of a held room reads "Blocked: hardware fault
+  (CS-301)", whatever its phase, and a code in a zone's status never breaks at its hyphen. The
+  CS-301 entry in the error codes says the alert names the switch.
+- Tests: `addons/f2_control/tests/test_hardware_fault_names.py`,
+  `tests_ha/test_hardware_fault_names_the_switch.py` (2026.5 and 2026.9) and `room-status.test.ts`.
+  The controller tests' fake Home Assistant keeps a switch's attributes when it switches, as Home
+  Assistant does.
 
 ## [1.0.3] - 2026-10-09
 
