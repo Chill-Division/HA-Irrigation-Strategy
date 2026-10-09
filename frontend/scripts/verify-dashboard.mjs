@@ -1565,6 +1565,52 @@ try {
     await page.getByRole("dialog").waitFor({ state: "hidden" });
     assert.equal(await current.innerText(), "Not armed");
   });
+  await check("Today's targets go to a file and come back as a draft", async () => {
+    await go("strategy");
+    await expectVisible(page.getByRole("heading", { name: "Today’s targets", exact: true }));
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Export", exact: true }).click(),
+    ]);
+    assert.match(
+      download.suggestedFilename(),
+      /^phase-control-targets-[a-z0-9-]+-\d{4}-\d{2}-\d{2}\.json$/,
+    );
+    const file = JSON.parse(await readFile(await download.path(), "utf8"));
+    assert.equal(file.format, "phase-control-targets");
+    assert.ok(file.zones["1"].settings.p1_target_vwc > 0);
+    assert.equal(file.zones["1"].settings.plant_count, undefined, "the hardware stays out");
+    // A tester's copy: one target lower, and their own lights hours.
+    file.zones["1"].settings.p1_target_vwc -= 2;
+    file.room_settings.lights_on_hour = (file.room_settings.lights_on_hour + 1) % 24;
+    await page.getByLabel("Import targets").setInputFiles({
+      name: "targets.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(file)),
+    });
+    const loaded = page.locator(".targets-loaded");
+    await expectVisible(loaded.getByText(/^Loaded 1 change from /));
+    await expectVisible(loaded.getByText(/^Left as this room has them: Lights on\.$/));
+    const bar = page.locator(".draft-bar");
+    await expectVisible(bar.getByText("1 unsaved change", { exact: true }));
+    // A draft waits to be reviewed or discarded before another file goes in.
+    assert.equal(await page.getByRole("button", { name: "Import", exact: true }).isDisabled(), true);
+    await page.getByRole("button", { name: /^Review 1 change/ }).click();
+    await expectVisible(page.getByRole("dialog").getByText(/Peak VWC target/));
+    await page.getByRole("button", { name: "Back to editing", exact: true }).click();
+    await axe("Today, a targets file loaded into the draft");
+    await bar.getByRole("button", { name: "Discard draft", exact: true }).click();
+    await page.getByLabel("Import targets").setInputFiles({
+      name: "not-targets.json",
+      mimeType: "application/json",
+      buffer: Buffer.from("{}"),
+    });
+    await expectVisible(page.getByText("That file isn’t a PHASE Control targets file."));
+    assert.equal(await bar.count(), 0, "a file that isn't one loads nothing");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await noOverflow();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+  });
   await check("keyboard skip retains page and browser history works", async () => {
     await go("water");
     await page.getByRole("link", { name: "Skip to content" }).focus();

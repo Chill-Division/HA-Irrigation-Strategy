@@ -1,5 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Check, SlidersHorizontal, TriangleAlert } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowRight,
+  Check,
+  Download,
+  SlidersHorizontal,
+  TriangleAlert,
+  Upload,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +24,15 @@ import { AutoBadge, AutoSetpointsControl, AutoZoneChip } from "@/components/room
 import { SettingHelp } from "@/components/setting-help";
 import { managedBy } from "@/lib/auto-setpoints";
 import { TODAY_IDLE, scheduleStatus, todayMeaning } from "@/lib/schedule-words";
+import { localDate } from "@/lib/grow-plan";
+import {
+  exportTargets,
+  loadTargets,
+  readTargets,
+  targetsFileName,
+  type LoadedTargets,
+} from "@/lib/targets-file";
+import { errorText } from "@/lib/utils";
 import { levelWarning } from "@/lib/level-order";
 import {
   fieldHint,
@@ -33,6 +49,15 @@ import {
   settingWords,
 } from "@/lib/setting-words";
 import "./setpoint-preview.css";
+
+function download(text: string, name: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 function fieldGroup(setting: Setting) {
   const ecPhase = setting.entityId.match(/_ec_target_(?:veg|gen)_p([012])$/);
@@ -70,6 +95,10 @@ export function Strategy({
   const [showInactive, setShowInactive] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [roomPreviewZone, setRoomPreviewZone] = useState(controller.room.zones[0]?.id);
+  // What the last targets file loaded into the draft, or why it could not be read.
+  const [loaded, setLoaded] = useState<{ from: string; result: LoadedTargets } | null>(null);
+  const [fileError, setFileError] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (selectedZone !== undefined) setZoneId(String(selectedZone));
   }, [selectedZone]);
@@ -213,6 +242,32 @@ export function Strategy({
       return next;
     });
   }
+  function exportFile() {
+    download(
+      exportTargets(controller.room, new Date().toISOString()),
+      targetsFileName(controller.room.room.name, localDate()),
+    );
+  }
+  async function importFile(file: File | undefined) {
+    if (fileRef.current) fileRef.current.value = "";
+    if (!file) return;
+    setLoaded(null);
+    setFileError("");
+    try {
+      const targets = readTargets(await file.text());
+      const result = loadTargets(targets, controller.room);
+      const exported = Date.parse(targets.exported_at);
+      const when = Number.isFinite(exported)
+        ? `, exported ${new Date(exported).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}`
+        : "";
+      setSaved(false);
+      setDrafts(result.drafts);
+      setLoaded({ from: `${targets.room || "another room"}’s targets${when}`, result });
+    } catch (e) {
+      setFileError(errorText(e));
+    }
+  }
+  const drafted = Object.keys(drafts).length;
   return (
     <>
       <Heading
@@ -221,6 +276,30 @@ export function Strategy({
         action={
           <div className="heading-actions">
             <AutoSetpointsControl controller={controller} />
+            <Button
+              variant="outline"
+              onClick={exportFile}
+              disabled={planEngaged || !allSettings.length}
+              title={
+                planEngaged
+                  ? "While a schedule runs the room follows it: export the schedule instead"
+                  : "Save these targets to a file, both steering modes, for another room or a tester"
+              }
+            >
+              <Download size={16} /> Export
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => fileRef.current?.click()}
+              disabled={!canEdit || drafted > 0}
+              title={
+                drafted
+                  ? "Review or discard your draft first"
+                  : "Load a targets file into the draft, to review before anything changes"
+              }
+            >
+              <Upload size={16} /> Import
+            </Button>
             <Button
               disabled={
                 !items.length ||
@@ -257,6 +336,44 @@ export function Strategy({
           <span>
             <i>3</i>Apply & verify
           </span>
+        </div>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/json,.json"
+        className="sr-only"
+        aria-label="Import targets"
+        onChange={(e) => void importFile(e.target.files?.[0])}
+      />
+      {fileError && (
+        <div className="workspace-message error" role="alert">
+          {fileError}
+        </div>
+      )}
+      {loaded && (
+        <div className="workspace-message targets-loaded" role="status">
+          <p>
+            <strong>
+              {Object.keys(loaded.result.drafts).length
+                ? `Loaded ${Object.keys(loaded.result.drafts).length} ${
+                    Object.keys(loaded.result.drafts).length === 1 ? "change" : "changes"
+                  } from ${loaded.from}.`
+                : `Nothing to change: ${loaded.from} match this room’s.`}
+            </strong>{" "}
+            {Object.keys(loaded.result.drafts).length > 0 &&
+              "They’re in your draft: nothing changes until you review and apply them."}
+          </p>
+          {loaded.result.left.length > 0 && (
+            <p>Left as this room has them: {loaded.result.left.join(", ")}.</p>
+          )}
+          {loaded.result.rounded.length > 0 && (
+            <p>Rounded to this room’s steps: {loaded.result.rounded.join("; ")}.</p>
+          )}
+          {loaded.result.skipped.length > 0 && <p>Skipped: {loaded.result.skipped.join("; ")}.</p>}
+          {loaded.result.missingZones.length > 0 && (
+            <p>Not in this room: {loaded.result.missingZones.join(", ")}.</p>
+          )}
         </div>
       )}
       <div className="strategy-layout setpoint-workspace">
@@ -784,6 +901,7 @@ export function Strategy({
             onClick={() => {
               setDrafts({});
               setSaved(false);
+              setLoaded(null);
             }}
           >
             Discard draft
@@ -810,7 +928,10 @@ export function Strategy({
           setDrafts((current) =>
             Object.fromEntries(Object.entries(current).filter(([id]) => !applied.includes(id))),
           );
-          if (applied.length) setSaved(true);
+          if (applied.length) {
+            setSaved(true);
+            setLoaded(null);
+          }
         }}
       />
     </>
