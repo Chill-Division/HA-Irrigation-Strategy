@@ -1,8 +1,9 @@
 # Unreleased
 
-- A hardware fault (CS-301) names the pump or valve that didn’t switch off, and what it read. No change to when the controller stops or how it waters.
-- The dashboard explains how a schedule and Today’s targets take turns.
-- The dashboard can export and import Today’s targets.
+- Export your room’s targets from Today and import them into another room, or send them to someone.
+- The Schedule page now explains how a schedule and Today’s targets take turns, and which one is in charge.
+- When a pump or valve doesn’t switch off, the alert names it and says what it read, and its zones show as blocked.
+- Bug fixes and improvements.
 
 # 1.0.3
 
