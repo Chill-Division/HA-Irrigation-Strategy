@@ -462,7 +462,7 @@ export function GrowPlanner({
         <section className="panel workspace-card">
           <Empty
             title={busy ? "Loading the strategy" : "Schedule needs the updated integration"}
-            detail="Install the current PHASE Steering integration and controller to store and run irrigation strategies. You can explore the complete workflow in demo mode."
+            detail="Install the current PHASE Control integration and controller to store and run irrigation strategies. You can explore the complete workflow in demo mode."
             action={
               <div className="workspace-actions">
                 <Button onClick={() => void load()} disabled={busy}>

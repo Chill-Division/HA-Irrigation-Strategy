@@ -1,7 +1,7 @@
-Third-party software in the PHASE Steering dashboard
+Third-party software in the PHASE Control dashboard
 
 The dashboard (dashboard.html) is built from these open-source packages, each used under its
-licence, which follows its name. PHASE Steering itself is under the MIT licence in LICENSE.
+licence, which follows its name. PHASE Control itself is under the MIT licence in LICENSE.
 
 ================================================================================
 @floating-ui/core 1.8.0 (MIT)

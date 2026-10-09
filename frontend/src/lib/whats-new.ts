@@ -29,7 +29,7 @@ export interface WhatsNewSelection {
 export const WINDOW_DAYS = 30;
 /** The most releases the window shows at once. */
 export const MOST = 5;
-export const RELEASES_URL = "https://github.com/Chill-Division/PHASE-Steering/releases";
+export const RELEASES_URL = "https://github.com/Chill-Division/PHASE-Control/releases";
 export const releaseUrl = (version: string) => `${RELEASES_URL}/tag/v${version}`;
 
 const VERSION = /^\d+\.\d+\.\d+$/;

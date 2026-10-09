@@ -16,6 +16,10 @@ import {
 import type { Controller } from "@/lib/types";
 const glossary = [
   [
+    "PHASE",
+    "Precision Hydration And Steering Engine. PHASE Control is what you work in: this dashboard and the settings Home Assistant keeps. PHASE Controller is the app that reads the probes and runs the pump and valves through each grow day's four phases, P0 to P3.",
+  ],
+  [
     "Water per zone and per plant",
     "Zone water is the total delivered estimate for all plants. Average per plant divides that total by plant count. Substrate litres describe the combined pot capacity; they are not water delivered. Runtime estimates multiply dripper flow by run time and respect the controller duration limit.",
   ],
@@ -127,7 +131,7 @@ function ErrorCodes() {
         <div>
           <h2 id="error-codes-title">Error codes</h2>
           <p>
-            Every PHASE Steering alert and Repairs card ends with a code such as CS-101 (the
+            Every PHASE Control alert and Repairs card ends with a code such as CS-101 (the
             controller's regular status summary has none). Look it up here for what it means, what
             happens to watering meanwhile, and what to do.
           </p>

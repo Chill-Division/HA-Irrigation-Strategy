@@ -439,7 +439,7 @@ function BatchPanel({
                   ? minimum > 0 && levelSet
                     ? `Off: refills start only by hand, and watering waits whenever a shot would take the reservoir under its ${number(minimum, 0)}% minimum.`
                     : "Off: refills start only by hand."
-                  : "Unavailable: update the PHASE Steering integration."}
+                  : "Unavailable: update the PHASE Control integration."}
             </p>
             {autoId && (
               <Button
