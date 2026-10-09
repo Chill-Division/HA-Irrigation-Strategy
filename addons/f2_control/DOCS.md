@@ -1,10 +1,10 @@
-# PHASE Steering Controller
+# PHASE Controller
 
-This companion app runs the P0–P3 irrigation decision loop and sequences mapped pump/valve entities. Install the PHASE Steering integration first; it owns room configuration, sensor mapping and strategy storage.
+PHASE stands for Precision Hydration And Steering Engine. This companion app runs the P0–P3 irrigation decision loop and sequences mapped pump/valve entities. Install the PHASE Control integration first; it owns room configuration, sensor mapping and strategy storage.
 
 ## Install and configure
 
-Follow the [installation guide](https://github.com/Chill-Division/PHASE-Steering/blob/main/docs/INSTALL.md). After installing this app, review Configuration, start it, and open the integration's **PHASE Steering** sidebar page. The ingress dashboard is also available. Both serve the same native workspace.
+Follow the [installation guide](https://github.com/Chill-Division/PHASE-Control/blob/main/docs/INSTALL.md). After installing this app, review Configuration, start it, and open the integration's **PHASE Control** sidebar page. The ingress dashboard is also available. Both serve the same native workspace.
 
 Use **Settings → Rooms & hardware** for mapping and per-zone sizing. Keep engines off while commissioning. Fresh installations create engine controls; existing mapped enable flags are preserved. The legacy default-room helper may still be input_boolean.f2_control_enabled. The room descriptor/heartbeat identifies the actual flag; do not create a second one blindly.
 
@@ -36,4 +36,4 @@ The app's **Log** tab has a line a minute for every zone, each dated and named a
 
 Update the integration and this app together. Use **Update** or **Rebuild** to include new Python code; restarting an old image does not rebuild it. Preserve persistent data and export strategies before upgrades. See the installation guide for rollback instructions.
 
-The display name is PHASE Steering Controller. The existing f2_control slug remains stable for upgrade compatibility. The repository was renamed from HA-Irrigation-Strategy to PHASE-Steering with the app, in October 2026. If you added it under the old name, leave it: GitHub sends the old address on to the new one, and removing it to add the new address would install a second, empty copy of this app. The app and the integration carry one version number: run the same release of both. The dashboard sidebar shows both, as reported by the running parts. Local browser/unit checks do not constitute a live HA installation test.
+The display name is PHASE Controller. The existing f2_control slug remains stable for upgrade compatibility. The repository was renamed from HA-Irrigation-Strategy to PHASE-Control with the app, in October 2026 (for a day it was PHASE-Steering). If you added it under an old name, leave it: GitHub sends the old address on to the new one, and removing it to add the new address would install a second, empty copy of this app. The app and the integration carry one version number: run the same release of both. The dashboard sidebar shows both, as reported by the running parts. Local browser/unit checks do not constitute a live HA installation test.

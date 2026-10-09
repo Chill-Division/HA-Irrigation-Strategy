@@ -1,3 +1,7 @@
+# Unreleased
+
+- PHASE Steering is now PHASE Control, and this app PHASE Controller. No change to how the controller waters.
+
 # 1.0.2
 
 Pair with integration 1.0.2.

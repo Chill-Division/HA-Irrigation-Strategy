@@ -23,7 +23,7 @@ pytestmark = pytest.mark.usefixtures("no_blind_grace")
 
 NOW = datetime(2026, 9, 21, 14, 0, 0)
 OPTIONS = {"num_zones": 3, "enable_flag": "input_boolean.f2_control_enabled"}
-FOOTER = "Code {}. What it means and what to do: PHASE Steering → Help → Error codes."
+FOOTER = "Code {}. What it means and what to do: PHASE Control → Help → Error codes."
 
 
 def _alerts(states, options=OPTIONS):
@@ -149,10 +149,10 @@ def test_the_room_is_called_what_the_operator_called_it():
 
 def test_one_unnamed_room_says_nothing_about_the_room():
     """UPGRADE IN PLACE and FRESH: an older integration publishes no room_name, the wizard's
-    default is "PHASE Steering" (before 1.0.2 "Crop Steering" or "Crop Steering System"), and
-    anything else may be rubbish. None of them is a name anybody chose, and "default" is never
-    shown for the only room."""
-    for name in (None, "", "  ", "PHASE Steering", "Crop Steering", "Crop Steering System", "default", 7):
+    default is "PHASE Control" ("PHASE Steering" in 1.0.2, "Crop Steering" or "Crop Steering
+    System" before), and anything else may be rubbish. None of them is a name anybody chose, and
+    "default" is never shown for the only room."""
+    for name in (None, "", "  ", "PHASE Control", "PHASE Steering", "Crop Steering", "Crop Steering System", "default", 7):
         states = _room(2)
         states["sensor.crop_steering_vwc_zone_2"] = ("unavailable", {})
         if name is None:
