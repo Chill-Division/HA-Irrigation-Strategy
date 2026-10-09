@@ -16,7 +16,13 @@ A more vegetative irrigation approach generally keeps water more available; gene
 4. Review the combined planning curve and hydraulic estimates below. The same selected date, zone and interpolated parameters drive both the curve and preview.
 5. Choose **Review & save**. Resolve validation issues, inspect the per-zone preview and save the draft. Export JSON for a portable backup or another draft.
 6. After adding or archiving zones in setup, use **Update zones from setup** in the draft planner. This keeps existing active-zone schedules, removes archived assignments and seeds new zones from current settings. Export the old draft first if you need those assignments. Review and save the reconciled draft. Setup refuses to add or archive zones, or to archive the room, while its strategy is armed or running: disarm it first.
-7. **Arm strategy** after the controller reports support. Activation happens at the next local lights-on after arming, by the room's lights-on hour at that time. An active strategy must be disarmed before editing. Disarm transfers control back to manual setpoints at the next lights-on.
+7. **Arm strategy** after the controller reports support. Activation happens at the next local lights-on after arming, by the room's lights-on hour at that time. An active strategy must be disarmed before editing. Disarming a running strategy hands its zones back to the targets set on **Today** at the next lights-on; one that has not started yet stops at once.
+
+### The schedule and Today
+
+Today's targets run the room until an armed schedule takes over, at the first lights-on after it is armed. While it runs, it wins: for every zone it manages, the controller uses the schedule's targets for the day and its steering balance instead of Today's targets and steering mode, Today shows them read-only, and Auto setpoints pauses. The schedule never changes Today's targets: they are kept as they are, and run again from the first lights-on after it is disarmed. Changes made on Today never reach the schedule either; a new schedule copies Today's targets once, when it is first made.
+
+A schedule sets the zones' moisture levels, shot sizes, dryback, rescue level, EC targets and daily limits. Lights hours, P0's additional dryback and the time between P2 shots stay as set on Today. The Schedule page shows these four states (Not armed, Armed, Running, Disarmed) with the current one marked.
 
 Each new day is applied at lights-on. If it cannot be applied then (Home Assistant restarting, the controller's heartbeat or a probe a few minutes late), the strategy keeps the previous day's targets and applies the day at the first minute it can; Settings → Repairs shows *has not moved on to today* with the reason meanwhile.
 

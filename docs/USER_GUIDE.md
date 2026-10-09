@@ -79,7 +79,7 @@ Pot size, plant count and drippers are the room's hardware, set in **Settings �
 
 Room changes can be previewed against a selected zone. A zone-specific value takes precedence over a room fallback where the controller supports it. Missing or invalid inputs remain missing/invalid instead of becoming an invented curve.
 
-When a schedule owns the room, use **Irrigation strategy → Schedule** to inspect its dated targets and state. Use the normal disarm/handoff workflow and wait for draft status before returning to editable manual targets in Today. Export or deliberately discard drafts before leaving; a navigation warning is not an automatic backup.
+When a schedule owns the room, use **Irrigation strategy → Schedule** to inspect its dated targets and state. Today says when a schedule is armed or running. Disarm it on Schedule; Today's targets run again from the next lights-on, and you can edit them once it shows **Not armed**. See [the schedule and Today](GROW_PLANS.md#the-schedule-and-today). Export or deliberately discard drafts before leaving; a navigation warning is not an automatic backup.
 
 ## Irrigation strategy → Schedule
 
