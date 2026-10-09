@@ -1,4 +1,4 @@
-"""The PHASE Steering integration."""
+"""The PHASE Control integration."""
 
 from __future__ import annotations
 
@@ -132,8 +132,8 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up PHASE Steering from a config entry."""
-    _LOGGER.info("Setting up PHASE Steering")
+    """Set up PHASE Control from a config entry."""
+    _LOGGER.info("Setting up PHASE Control")
 
     # Set up the integration data
     hass.data.setdefault(DOMAIN, {})
@@ -220,7 +220,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # entities pick up the new config without an HA restart.
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
-    _LOGGER.info("PHASE Steering setup complete")
+    _LOGGER.info("PHASE Control setup complete")
 
     return True
 

@@ -19,7 +19,7 @@ export function tourSteps(reservoir: boolean): TourStep[] {
     {
       id: "welcome",
       page: null,
-      title: "Welcome to PHASE Steering",
+      title: "Welcome to PHASE Control",
       text: "It waters this room by itself, from your probes and your setpoints. Here is where everything is, in five stops. Skip it at any time: **Help** starts it again.",
       target: [],
     },

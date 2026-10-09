@@ -52,7 +52,7 @@ async def test_fresh_install_a_zone_named_in_the_wizard_is_named_in_its_alert(
 async def test_fresh_install_a_room_left_at_the_wizards_name_is_not_named(
     hass, controller_for, monkeypatch
 ):
-    """The wizard offers PHASE Steering as the room's name. Left at that, nobody named the room,
+    """The wizard offers PHASE Control as the room's name. Left at that, nobody named the room,
     so the controller names the zone alone, as it does a room left at "Crop Steering System"."""
     monkeypatch.setitem(ZONES, "zone_1_name", "GT1")
     _seed(hass)
@@ -65,12 +65,12 @@ async def test_fresh_install_a_room_left_at_the_wizards_name_is_not_named(
     assert result["type"] is FlowResultType.CREATE_ENTRY, result
     await hass.async_block_till_done()
     descriptor = hass.states.get("sensor.crop_steering_engine_config")
-    assert descriptor.attributes["room_name"] == "PHASE Steering"
+    assert descriptor.attributes["room_name"] == "PHASE Control"
     c, fake, _clock = controller_for({"enable_flag": KILL})
     assert c.rooms[0].room_name == ""
     c.loop_once(NOW)  # a bare install: never watered, so the watchdog speaks
     assert any(text.startswith("GT1 (Z1): ") for text in _texts(fake)), _texts(fake)
-    assert not any("PHASE Steering ·" in text for text in _texts(fake)), _texts(fake)
+    assert not any("PHASE Control ·" in text for text in _texts(fake)), _texts(fake)
 
 
 async def test_upgrade_in_place_old_installs_get_their_names_or_the_number(

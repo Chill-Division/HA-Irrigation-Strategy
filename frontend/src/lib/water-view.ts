@@ -38,7 +38,7 @@ export function WaterViewProvider({
       view,
       available: entityId !== null,
       setView: async (next: WaterView) => {
-        if (!entityId) throw new Error("This needs the updated PHASE Steering integration.");
+        if (!entityId) throw new Error("This needs the updated PHASE Control integration.");
         const result = await write([{ entityId, value: WATER_VIEW_OPTIONS[next] }]);
         if (result.failed.length) throw new Error(result.failed[0].reason);
       },

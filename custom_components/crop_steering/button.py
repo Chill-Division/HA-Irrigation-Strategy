@@ -1,4 +1,4 @@
-"""Buttons for PHASE Steering: "Mix a Batch Now" for the room's reservoir, and a "Test Shot" for each
+"""Buttons for PHASE Control: "Mix a Batch Now" for the room's reservoir, and a "Test Shot" for each
 zone.
 
 Pressing one does nothing here. Home Assistant records when it was pressed as the button's state, and

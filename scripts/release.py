@@ -47,7 +47,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import release_notes  # noqa: E402
 
-PUBLIC = "Chill-Division/PHASE-Steering"
+PUBLIC = "Chill-Division/PHASE-Control"
 BRANCH = "main"
 WORKFLOW = "ci-validate.yml"
 FIXES = "Bug fixes and improvements."

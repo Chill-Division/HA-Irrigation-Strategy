@@ -1,4 +1,4 @@
-"""Config flow for the PHASE Steering integration."""
+"""Config flow for the PHASE Control integration."""
 
 from __future__ import annotations
 
@@ -252,7 +252,7 @@ def _retry_form(flow, step_id, schema, user_input, info, error):
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for PHASE Steering."""
+    """Handle a config flow for PHASE Control."""
 
     VERSION = 1
 
@@ -523,7 +523,7 @@ def _number_range(key: str) -> vol.Range:
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    """Handle options flow for PHASE Steering."""
+    """Handle options flow for PHASE Control."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""

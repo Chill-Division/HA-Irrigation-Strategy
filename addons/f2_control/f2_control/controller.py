@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""PHASE Steering Controller: the standalone crop-steering controller (a Home Assistant add-on).
+"""PHASE Controller: the standalone crop-steering controller (a Home Assistant add-on).
 
 The synchronous I/O shell: ONE sync process, plain REST polling of HA, no asyncio, no
 coroutine trap. Imports the pure crop-steering-engine for decisions; this file is
@@ -192,8 +192,9 @@ CONTROLLER_VERSION = read_controller_version()
 SHIPPED_LIGHTS = (10.0, 22.0)
 
 # The setup wizard's default room names, the old ones too: a room still called one was named by
-# nobody, so notifications leave it out (_room_name). PHASE Steering since 1.0.2.
-DEFAULT_ROOM_NAMES = ("default", "crop steering", "crop steering system", "phase steering")
+# nobody, so notifications leave it out (_room_name). PHASE Control since 1.0.3, PHASE Steering in
+# 1.0.2, Crop Steering (System) before.
+DEFAULT_ROOM_NAMES = ("default", "crop steering", "crop steering system", "phase steering", "phase control")
 
 # A zone with no usable moisture reading, by why: title and the advice that fits. The codes and
 # their full entries live in docs/error-codes.json with every other code.
@@ -667,7 +668,7 @@ def plumbing_hold(hw):
         if needed and not mapped:
             return (
                 f"setup says this room has a {label}, but no {label} switch is mapped - not watering "
-                f"without it; map the {label} in the PHASE Steering setup, or change the room's plumbing"
+                f"without it; map the {label} in the PHASE Control setup, or change the room's plumbing"
             )
         if mapped and not needed:
             return (
@@ -737,7 +738,7 @@ class Controller:
         # notifications still fire), never a fallback to the developer's phone.
         self.notify_service = (o.get("notify_service") or "").strip()
         self.notify_min = float(o.get("notify_min", 30))
-        self.instance_name = o.get("instance_name", "PHASE Steering")
+        self.instance_name = o.get("instance_name", "PHASE Control")
         # External operator holds (tank dosing / manual fill / flush). Facility-specific, so
         # they are an OPTION with an empty default — an install without them never holds on
         # them. Configure your own input_boolean/switch ids to enable.
@@ -779,7 +780,7 @@ class Controller:
 
         # ---- the DEFAULT room ----
         # Hardware (pump/mainline/valves) comes from the integration's published
-        # engine_config descriptor — the operator maps it once in the PHASE Steering UI.
+        # engine_config descriptor — the operator maps it once in the PHASE Control UI.
         # `hardware`/`zones` keys in options.json still win when present, but they are NOT
         # in the Supervisor schema (the UI rejects unknown keys) — they exist for the test
         # harness and hand-built dev setups only. There is NO facility-specific fallback:
@@ -822,15 +823,15 @@ class Controller:
         )
         if self._default_provisional and not default_room.zones:
             log(
-                "config: the PHASE Steering integration has not published a room yet, so there is "
+                "config: the PHASE Control integration has not published a room yet, so there is "
                 "nothing to drive. Add it in Home Assistant (Settings > Devices & services > Add "
-                "integration > PHASE Steering). This controller checks every loop and picks the room "
+                "integration > PHASE Control). This controller checks every loop and picks the room "
                 "up by itself: no restart needed."
             )
         elif not default_room.hw.get("valves"):
             log(
                 "config: default room has NO hardware mapped — holding safe. Map each zone's valve "
-                "(and the pump and mainline, if the room has them) in the PHASE Steering integration "
+                "(and the pump and mainline, if the room has them) in the PHASE Control integration "
                 "(or the add-on `hardware` option)."
             )
         self.rooms = [default_room]
@@ -2413,7 +2414,7 @@ class Controller:
         if plan is None:
             return (
                 f"its feed plan (sensor.crop_steering_{room.prefix}feed_plan) cannot be read: update the "
-                "PHASE Steering integration"
+                "PHASE Control integration"
             )
         if plan.get("problem"):
             return str(plan["problem"]).rstrip(".")
@@ -3012,7 +3013,7 @@ class Controller:
         if not hw["valves"].get(zone):
             return (
                 "no hardware mapped — set this zone's valve (and the pump and mainline, if the room "
-                "has them) in the PHASE Steering integration (or the add-on `hardware` option)"
+                "has them) in the PHASE Control integration (or the add-on `hardware` option)"
             )
         plumbing = plumbing_hold(hw)
         if plumbing:
@@ -3156,7 +3157,7 @@ class Controller:
                 f"its engine switch ({room.enable_flag}). Because {name} ({entity}) is off, the "
                 "controller switched watering off in its place, and does so again while it stays "
                 f"off. Switch {name} back on in Home Assistant, then switch watering on in PHASE "
-                "Steering → Overview.",
+                "Control → Overview.",
                 room=room,
             )
         return off
@@ -3173,7 +3174,7 @@ class Controller:
         log("ALERT", title, "-", " ".join(message.split()))
         message = (
             f"{message}\n\nCode {code}. What it means and what to do: "
-            "PHASE Steering → Help → Error codes."
+            "PHASE Control → Help → Error codes."
         )
         # The 30-minute quiet period starts only once Home Assistant HAS the notification: an alert
         # raised while it is unreachable (the moment a close fails, typically) is raised again on the
@@ -4942,7 +4943,7 @@ class Controller:
 
     def run(self):
         log(
-            f"PHASE Steering Controller {CONTROLLER_VERSION} starting | rooms",
+            f"PHASE Controller {CONTROLLER_VERSION} starting | rooms",
             ", ".join(r.slug for r in self.rooms),
             "| notify",
             self.notify_service or "(none)",

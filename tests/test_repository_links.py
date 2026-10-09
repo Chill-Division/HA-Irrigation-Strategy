@@ -1,8 +1,8 @@
-"""Every link to this project names its repository as it is now called: PHASE-Steering.
+"""Every link to this project names its repository as it is now called: PHASE-Control.
 
-Both repositories were HA-Irrigation-Strategy until October 2026. GitHub sends the old addresses on
-to the new ones, so an old link still works, but only for as long as no repository takes an old
-name. So what ships, the README and the docs link to the public repository by the name
+Both repositories were HA-Irrigation-Strategy until October 2026, then for a day PHASE-Steering.
+GitHub sends the old addresses on to the new ones, so an old link still works, but only for as
+long as no repository takes an old name. So what ships, the README and the docs link to the public repository by the name
 `scripts/release.py` publishes to. JakeTheRabbit's repository, where it began, keeps its own name,
 and the changelogs keep the links they had at the time.
 """
@@ -16,13 +16,14 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PUBLIC = "Chill-Division/PHASE-Steering"
-# A link to one of our repositories under its old name: on GitHub, in a raw picture, or in a My
+PUBLIC = "Chill-Division/PHASE-Control"
+# A link to one of our repositories under an old name: on GitHub, in a raw picture, or in a My
 # Home Assistant link's parameters.
+OLD = r"(?:HA-Irrigation-Strategy|PHASE-Steering)"
 OLD_LINK = re.compile(
-    r"(?:github\.com|githubusercontent\.com)/(?:Chill-Division|ChillingSilence)/HA-Irrigation-Strategy"
-    r"|repository=HA-Irrigation-Strategy"
-    r"|(?:Chill-Division|ChillingSilence)%2FHA-Irrigation-Strategy",
+    rf"(?:github\.com|githubusercontent\.com)/(?:Chill-Division|ChillingSilence)/{OLD}"
+    rf"|repository={OLD}"
+    rf"|(?:Chill-Division|ChillingSilence)%2F{OLD}",
     re.IGNORECASE,
 )
 HISTORY = {"CHANGELOG.md", "addons/f2_control/CHANGELOG.md"}

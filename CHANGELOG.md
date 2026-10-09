@@ -1,6 +1,7 @@
 # Changelog
 
-All notable changes to PHASE Steering (Crop Steering until 1.0.2) will be documented in this file.
+All notable changes to PHASE Control (Crop Steering before 1.0.2, PHASE Steering in 1.0.2) will be
+documented in this file.
 
 **Two views per release.** Each version leads with what changed and why it matters, written so
 anyone can follow it without knowing the internals, followed by **🔧 Technical notes**, the entity-
@@ -9,29 +10,41 @@ and code-level detail for developers and AI agents working on the repo.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.3] - 2026-10-09
+## [Unreleased]
 
-Integration and controller **1.0.3**.
-
-- **The project's address is now github.com/Chill-Division/PHASE-Steering.** The old address
-  keeps working, so a Home Assistant that already has it needs no change: leave it as it is.
+- **PHASE Steering is now PHASE Control**, and its app PHASE Controller: PHASE already stands for
+  Precision Hydration And Steering Engine, so the name no longer says steering twice. Help says
+  what PHASE stands for.
+- **The project's address is now github.com/Chill-Division/PHASE-Control.** The old addresses keep
+  working, so a Home Assistant that already has one needs no change: leave it as it is.
 
 ### 🔧 Technical notes
 
-- Both repositories were renamed on 2026-10-09: `Chill-Division/HA-Irrigation-Strategy` to
-  `Chill-Division/PHASE-Steering`, and `ChillingSilence/HA-Irrigation-Strategy` to
-  `ChillingSilence/PHASE-Steering`. GitHub redirects the old addresses for the web, its API and
-  git. HACS records a rename itself (`renamed_repositories` in its source), and the Supervisor's
-  `git ls-remote` and `git fetch` follow the redirect (checked on the old public address).
-- The Supervisor names the app after the address it was added from. A box on the old address keeps
-  `f50c47e4_f2_control` and its `/data`; one added at the new address gets `f99c52b1_f2_control`.
-  Swapping one address for the other is a move ([INSTALL.md](docs/INSTALL.md)), not an update, and
-  the app's documentation and the install guide say to leave the old one.
+- Names only. `const.PRODUCT_NAME` is PHASE Control: the sidebar entry, the room's device, the
+  zones' entity names, the setup wizard's default name, `manifest.json` and `hacs.json`. The app
+  is PHASE Controller, its panel and `repository.yaml` PHASE Control. The menu reads PHASE Control
+  over "Crop steering", and Help → Terms & phases opens with PHASE. The setup and Repairs texts,
+  the error codes, the alerts, the docs and the logos say the same. No entity id, the domain, the
+  `f2_control` slug, the app's options and `/data` or the file formats change. Home Assistant
+  renames the device and the entities' default names in place, from Crop Steering or from 1.0.2's
+  PHASE Steering, and keeps any name the operator gave (`tests_ha/test_product_name.py`).
+- The controller leaves a room still at the wizard's default name out of alerts, whichever release
+  set it up: `DEFAULT_ROOM_NAMES` adds "phase control" and keeps "phase steering".
+- Both repositories were renamed on 2026-10-09, from `HA-Irrigation-Strategy` to `PHASE-Steering`
+  and the same day to `PHASE-Control` (`Chill-Division/…` and `ChillingSilence/…`). GitHub redirects
+  every old address for the web, its API and git. HACS records a rename itself
+  (`renamed_repositories` in its source), and the Supervisor's `git ls-remote` and `git fetch`
+  follow the redirect. The Supervisor names the app after the address it was added from:
+  `f50c47e4_f2_control` (HA-Irrigation-Strategy), `f99c52b1_f2_control` (PHASE-Steering),
+  `4cddaccb_f2_control` (PHASE-Control). Swapping one address for another is a move
+  ([INSTALL.md](docs/INSTALL.md)), not an update. No repository may ever take an old name.
 - Links: `manifest.json` (documentation, issue tracker), the Repairs cards' Learn more
   (`const.REPAIRS_DOCS_URL`), What's new's release notes, the app's `config.yaml`, `repository.yaml`
   and DOCS.md, the README's links, badges and pictures, the docs, and `release.py`'s `PUBLIC`.
-  `tests/test_repository_links.py` keeps every link on the new name.
-- No repository may ever take an old name: it would take the address from every box still on it.
+  `tests/test_repository_links.py` keeps every link on the current name.
+- 1.0.3 was first released with only the links to PHASE-Steering. It was withdrawn the same day
+  and this release took its number ([RELEASING.md](docs/RELEASING.md), Versions). A box that took
+  that first 1.0.3 is offered nothing for this one: Redownload in HACS and Rebuild the app.
 
 ## [1.0.2] - 2026-10-09
 

@@ -1,4 +1,4 @@
-"""PHASE Steering sensors."""
+"""PHASE Control sensors."""
 
 from __future__ import annotations
 
@@ -209,7 +209,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up PHASE Steering sensors."""
+    """Set up PHASE Control sensors."""
     sensors = []
 
     # Get number of zones from config
@@ -381,7 +381,7 @@ class CropSteeringStockSensor(SensorEntity):
 
 
 class CropSteeringSensor(SensorEntity):
-    """PHASE Steering sensor."""
+    """PHASE Control sensor."""
 
     def __init__(
         self,

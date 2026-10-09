@@ -16,7 +16,7 @@ if (/url\(["']?https?:\/\//.test(html))
 // The page the app's sidebar entry opens (ingress serves index.html for "/"). It keeps the query and
 // the hash, and opens Overview when there is no hash.
 const entry =
-  '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PHASE Steering</title></head><body><p>Opening PHASE Steering…</p><noscript><a href="./dashboard.html">Open dashboard</a> · JavaScript is required.</noscript><script>\n' +
+  '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PHASE Control</title></head><body><p>Opening PHASE Control…</p><noscript><a href="./dashboard.html">Open dashboard</a> · JavaScript is required.</noscript><script>\n' +
   'location.replace("./dashboard.html"+location.search+(location.hash||"#/overview"));\n' +
   "</script></body></html>\n";
 // The licences of the packages the dashboard is built from travel with it (vite.config.ts).

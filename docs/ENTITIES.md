@@ -1,6 +1,6 @@
 # Entity Reference: Complete Schema
 
-Every entity PHASE Steering creates, what it does, its range/options, and
+Every entity PHASE Control creates, what it does, its range/options, and
 its default: what a new room's entity starts at. Where the setup wizard asks (plant count,
 pot size, drippers, lights hours), your answers replace the default. Per-zone entities
 scale with your zone count, `N` = 1…zones.
@@ -229,7 +229,7 @@ The controller also publishes `sensor.f2_control_vitals`: the time of its last v
 ## 6. Hardware (your own switches/sensors: mapped in Rooms & hardware, not created here)
 
 The pump, mainline solenoid, per-zone valve switches, and the raw VWC/EC sensors are **your**
-existing HA entities. Map them in the PHASE Steering sidebar under
+existing HA entities. Map them in the PHASE Control sidebar under
 **Settings → Rooms & hardware**: the controller drives what the room's setup maps, and with nothing mapped
 it holds every zone and says so. (The controller also reads a `hardware` map from its options
 file, for tests and hand-built development setups only: the app's Configuration tab doesn't

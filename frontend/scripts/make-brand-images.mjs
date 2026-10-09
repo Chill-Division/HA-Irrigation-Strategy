@@ -55,7 +55,7 @@ async function draw(file, height, wordmark = false) {
         const initials = document.createElement("b");
         initials.textContent = "PHASE";
         initials.style.cssText = "font-weight:800;letter-spacing:0.02em";
-        name.append(initials, " Steering");
+        name.append(initials, " Control");
         name.style.cssText = `font-size:${height * 0.44}px;font-weight:500;letter-spacing:-0.02em;color:var(--primary);white-space:nowrap`;
         stage.append(name);
       }

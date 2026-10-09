@@ -1,4 +1,4 @@
-"""PHASE Steering services."""
+"""PHASE Control services."""
 
 from __future__ import annotations
 

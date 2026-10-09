@@ -43,7 +43,7 @@ export function WhatsNewDialog({
       <DialogContent className="whats-new" data-whats-new>
         <DialogHeader>
           <DialogTitle>
-            <Sparkles size={18} aria-hidden="true" /> What’s new in PHASE Steering
+            <Sparkles size={18} aria-hidden="true" /> What’s new in PHASE Control
           </DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
@@ -147,7 +147,7 @@ export function WhatsNewButton({ controller }: { controller: Controller }) {
     setError(null);
     const doc = readWhatsNew(await controller.operator("whats_new_get").catch(() => null));
     if (doc?.releases.length) setSelection(recent(doc));
-    else setError("What’s new needs the updated PHASE Steering integration.");
+    else setError("What’s new needs the updated PHASE Control integration.");
   }
   return (
     <div className="whats-new-button">

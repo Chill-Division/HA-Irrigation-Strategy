@@ -195,7 +195,7 @@ export class HaClient {
     ];
     if (!allowed.includes(action)) throw new Error("Unsupported workspace action.");
     const outdated = new Error(
-      "This action needs the updated PHASE Steering integration. Open Setup for installation instructions.",
+      "This action needs the updated PHASE Control integration. Open Setup for installation instructions.",
     );
     // Inside Home Assistant, over its websocket, the way its own frontend calls a service: a
     // refusal comes back with the integration's reason. Over REST, Home Assistant answers every

@@ -1,4 +1,4 @@
-"""PHASE Steering switches."""
+"""PHASE Control switches."""
 
 from __future__ import annotations
 
@@ -106,7 +106,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up PHASE Steering switches."""
+    """Set up PHASE Control switches."""
     switches = []
 
     # Get number of zones from config
@@ -144,7 +144,7 @@ async def async_setup_entry(
 
 
 class CropSteeringSwitch(SwitchEntity, RestoreEntity):
-    """PHASE Steering switch with state restoration."""
+    """PHASE Control switch with state restoration."""
 
     def __init__(
         self,

@@ -1,4 +1,4 @@
-// The PHASE Steering dashboard as a Home Assistant panel (setup_panel.py). Home Assistant draws its
+// The PHASE Control dashboard as a Home Assistant panel (setup_panel.py). Home Assistant draws its
 // own title bar above an iframe panel and none above a custom panel, so this element holds the
 // dashboard in a frame the size of the panel. The dashboard finds Home Assistant through its frame as
 // it always has (frontend/src/lib/ha-shell.ts): it hides Home Assistant's sidebar while it is open,
@@ -17,7 +17,7 @@ class CropSteeringPanel extends HTMLElement {
     if (!this.isConnected || !this._url || this._frame) return;
     this.style.display = "block";
     const frame = document.createElement("iframe");
-    frame.title = "PHASE Steering";
+    frame.title = "PHASE Control";
     frame.src = this._url;
     frame.setAttribute("allow", "fullscreen");
     Object.assign(frame.style, {

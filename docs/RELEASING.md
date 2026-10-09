@@ -12,8 +12,8 @@ python scripts/release.py 2.26.0 --public   # later, the same commit for everyon
 
 | Repository | Who installs from it | What moves its `main` |
 | --- | --- | --- |
-| `ChillingSilence/PHASE-Steering` (this one) | The maintainer's own rooms. They are the test. | Merged pull requests, and `release.py <version>`'s commit |
-| `Chill-Division/PHASE-Steering` | Everyone else | `release.py <version> --public`, which fast-forwards it to a version already released here, and `release.py --sync`, for commits that ship nothing |
+| `ChillingSilence/PHASE-Control` (this one) | The maintainer's own rooms. They are the test. | Merged pull requests, and `release.py <version>`'s commit |
+| `Chill-Division/PHASE-Control` | Everyone else | `release.py <version> --public`, which fast-forwards it to a version already released here, and `release.py --sync`, for commits that ship nothing |
 
 Every pull request is merged into `main` ([CONTRIBUTING.md](../CONTRIBUTING.md)), and releases are
 made from it. The public repository takes no pull requests and no commits of its own: everything on
@@ -33,11 +33,12 @@ What follows from that (checked against the Supervisor source):
 - **The repository address is the controller's identity.** The same controller installed from the
   other repository is a different app with an empty `/data`: phase, counters, water history and
   learned peaks start again. Moving a box is a migration ([INSTALL.md](INSTALL.md)), not an edit.
-- **Both repositories were called `HA-Irrigation-Strategy` until October 2026**, when they were
-  renamed `PHASE-Steering` with the app. GitHub sends the old addresses on to the new ones, for
-  git, HACS and the web, so a box added under an old one keeps it and keeps updating. From the
-  public repository, its controller is `f50c47e4_f2_control`; one added at the new address is
-  `f99c52b1_f2_control`. Never create a repository under an old name: it would take the address
+- **Both repositories were called `HA-Irrigation-Strategy` until October 2026**, then for a day
+  `PHASE-Steering`, and are now `PHASE-Control`, with the app. GitHub sends the old addresses on to
+  the new ones, for git, HACS and the web, so a box added under an old one keeps it and keeps
+  updating. From the public repository its controller is `f50c47e4_f2_control` under
+  `HA-Irrigation-Strategy`, `f99c52b1_f2_control` under `PHASE-Steering` and `4cddaccb_f2_control`
+  under `PHASE-Control`. Never create a repository under an old name: it would take the address
   from every such box.
 - **Between releases, `main` also carries what was merged since the last one.** Only a release
   changes the number, so no box is offered anything new before then. But a controller built in
@@ -136,6 +137,10 @@ numbers 1.0.0 started again from (Versions, below).
   releases numbered up to the new one, since the dashboard orders them by number. HACS offers a
   box no number lower than the one it has, so a box on 2.37 gets 1.0.0 by Redownload in HACS; the
   Supervisor offers the controller app at any new number.
+- Once, a number was released twice: 1.0.3 went out with only the repository's new links, was
+  withdrawn the same day (its tags and GitHub releases deleted, `release: 1.0.3` reverted on
+  `main`), and was released again with the PHASE Control name. A box that took the first 1.0.3 is
+  offered nothing for the second, as both say 1.0.3: Redownload in HACS and Rebuild the app get it.
 
 ## Rolling back a room
 
@@ -148,7 +153,7 @@ numbers 1.0.0 started again from (Versions, below).
 
 ## Setting up the public repository (once)
 
-Create `Chill-Division/PHASE-Steering` empty (no README, licence or `.gitignore`), or as a fork
+Create `Chill-Division/PHASE-Control` empty (no README, licence or `.gitignore`), or as a fork
 of this one, and allow GitHub Actions on it, so its releases get their packaged archives. The first
 `--public` creates its `main`. Pointing the links in the code at it (What's new, `manifest.json`, the
 app store's `repository.yaml` and `config.yaml`, the README) is a pull request of its own.

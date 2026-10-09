@@ -1,13 +1,14 @@
-name: PHASE Steering Controller
-version: "1.0.3"
+name: PHASE Controller
+version: "1.0.2"
 slug: f2_control
 description: >-
-  Autonomous crop steering for Home Assistant. Runs the daily P0-P1-P2-P3 dryback
+  The controller of PHASE Control (Precision Hydration And Steering Engine):
+  autonomous crop steering for Home Assistant. Runs the daily P0-P1-P2-P3 dryback
   cycle per zone from your live VWC/EC probes (fusing multiple sensors per zone),
   sequences the pump and valves with valve-close read-back, and is gated by a hard
-  kill switch. Configure once in the PHASE Steering UI; the operator dashboards are
+  kill switch. Configure once in the PHASE Control UI; the operator dashboards are
   served right in the sidebar.
-url: https://github.com/Chill-Division/PHASE-Steering
+url: https://github.com/Chill-Division/PHASE-Control
 arch:
   - amd64
   - aarch64
@@ -21,7 +22,7 @@ host_network: false
 ingress: true
 ingress_port: 8420
 panel_icon: mdi:water-circle
-panel_title: PHASE Steering
+panel_title: PHASE Control
 options:
   num_zones: 3
   lights_on_hour: 10
@@ -29,7 +30,7 @@ options:
   enable_flag: input_boolean.f2_control_enabled
   notify_service: ""
   notify_min: 30
-  instance_name: PHASE Steering
+  instance_name: PHASE Control
   hold_entities: []
   substrate_l: 5
   flow_lps: 0.02

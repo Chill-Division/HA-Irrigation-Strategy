@@ -1,4 +1,4 @@
-"""PHASE Steering is set up from the UI only, and Home Assistant says so to anyone who tries YAML.
+"""PHASE Control is set up from the UI only, and Home Assistant says so to anyone who tries YAML.
 
 hassfest asks an integration that has `async_setup` to declare its CONFIG_SCHEMA. It had none: a
 `crop_steering:` block in configuration.yaml was ignored without a word. Declared config-entry-only,

@@ -265,7 +265,7 @@ export function parsePlanImport(text: string): GrowPlan {
     plan.profiles.length > 100 ||
     plan.zones.length > 24
   )
-    throw new Error("Choose a version 1 PHASE Steering strategy file.");
+    throw new Error("Choose a version 1 PHASE Control strategy file.");
   for (const p of plan.profiles)
     if (
       !p ||
