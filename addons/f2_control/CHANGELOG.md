@@ -1,4 +1,6 @@
-# Unreleased
+# 1.0.2
+
+Pair with integration 1.0.2.
 
 - Crop Steering is now PHASE Steering (Precision Hydration And Steering Engine), with a new icon. No change to how the controller waters.
 

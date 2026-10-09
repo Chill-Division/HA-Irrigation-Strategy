@@ -1,5 +1,5 @@
 name: PHASE Steering Controller
-version: "1.0.1"
+version: "1.0.2"
 slug: f2_control
 description: >-
   Autonomous crop steering for Home Assistant. Runs the daily P0-P1-P2-P3 dryback
