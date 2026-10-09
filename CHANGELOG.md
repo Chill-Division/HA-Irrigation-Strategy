@@ -12,16 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- **No more `via_device` warnings in Home Assistant's log.** From Home Assistant 2026.9 it warned that
-  the way the zones are put under their room stops working in 2027.8; they now use the way it asks.
-- **A hardware fault says which switch.** When a pump or valve doesn't switch off after a shot, the
-  Overview and Home Assistant's notification now name it and say what it read (still on, or
-  unavailable), with its code, CS-301, in one card instead of three. While it holds the room, every
-  zone reads "Blocked: hardware fault (CS-301)" instead of its phase, such as "Optimal".
-- **The Schedule page explains how it works with Today.** It shows how a schedule and Today's targets
-  take turns and which one is in charge, and Today says when a schedule is armed or running.
-- **Export and import Today's targets.** Save a room's targets to a file, both steering modes at
-  once, to load into another room or send to someone; nothing changes until the draft is reviewed.
+- Export your room's targets from Today and import them into another room, or send them to someone.
+- The Schedule page now explains how a schedule and Today's targets take turns, and which one is in charge.
+- When a pump or valve doesn't switch off, the alert names it and says what it read, and its zones show as blocked.
+- Bug fixes and improvements.
 
 ### 🔧 Technical notes
 
