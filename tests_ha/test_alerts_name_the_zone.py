@@ -7,8 +7,12 @@ two halves together: the descriptor a real Home Assistant publishes, read by the
 
 from datetime import datetime
 
+from homeassistant import config_entries
+from homeassistant.data_entry_flow import FlowResultType
+
+from custom_components.crop_steering.plumbing import infer
 from test_configure import _save_map
-from test_real_flow import ZONES
+from test_real_flow import ZONES, _seed
 from test_recreated_room_controller import _see
 from test_setup_entry import _install
 from test_upgrade_in_place import _upgrade
@@ -43,6 +47,30 @@ async def test_fresh_install_a_zone_named_in_the_wizard_is_named_in_its_alert(
     _see(hass, fake)
     c._rediscover(NOW)
     assert c.rooms[0].zone_names == {1: "Bench A"}
+
+
+async def test_fresh_install_a_room_left_at_the_wizards_name_is_not_named(
+    hass, controller_for, monkeypatch
+):
+    """The wizard offers PHASE Steering as the room's name. Left at that, nobody named the room,
+    so the controller names the zone alone, as it does a room left at "Crop Steering System"."""
+    monkeypatch.setitem(ZONES, "zone_1_name", "GT1")
+    _seed(hass)
+    flow = hass.config_entries.flow
+    result = await flow.async_init("crop_steering", context={"source": config_entries.SOURCE_USER})
+    result = await flow.async_configure(result["flow_id"], {})  # the name as offered
+    result = await flow.async_configure(result["flow_id"], {"num_zones": 1})
+    result = await flow.async_configure(result["flow_id"], dict(ZONES))
+    result = await flow.async_configure(result["flow_id"], {"plumbing": infer({})})
+    assert result["type"] is FlowResultType.CREATE_ENTRY, result
+    await hass.async_block_till_done()
+    descriptor = hass.states.get("sensor.crop_steering_engine_config")
+    assert descriptor.attributes["room_name"] == "PHASE Steering"
+    c, fake, _clock = controller_for({"enable_flag": KILL})
+    assert c.rooms[0].room_name == ""
+    c.loop_once(NOW)  # a bare install: never watered, so the watchdog speaks
+    assert any(text.startswith("GT1 (Z1): ") for text in _texts(fake)), _texts(fake)
+    assert not any("PHASE Steering ·" in text for text in _texts(fake)), _texts(fake)
 
 
 async def test_upgrade_in_place_old_installs_get_their_names_or_the_number(

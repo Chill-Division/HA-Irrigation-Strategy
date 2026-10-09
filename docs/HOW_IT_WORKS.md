@@ -1,6 +1,6 @@
-# How Crop Steering works
+# How PHASE Steering works
 
-This page explains, in plain words, how Crop Steering decides when to water and how much, so you
+This page explains, in plain words, how PHASE Steering decides when to water and how much, so you
 can tell why a zone did what it did without reading any code. It is about the reasoning; the
 [User guide](USER_GUIDE.md) is about using the dashboard, and every setting's **?** on
 **Irrigation strategy → Today** says what that one setting does.

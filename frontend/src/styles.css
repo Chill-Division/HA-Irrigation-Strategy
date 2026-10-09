@@ -209,8 +209,12 @@ input[type="number"] {
   place-items: center;
   border-radius: 10px;
 }
-.brand-glyph-halo {
-  stroke: var(--primary); /* the tile's own colour, around the seedling */
+.brand-name {
+  font-weight: 500;
+}
+.brand-name b {
+  font-weight: 800; /* PHASE, the initials, heavier than the word after them */
+  letter-spacing: 0.02em;
 }
 .brand small {
   display: block;

@@ -28,9 +28,10 @@ KILL = "switch.crop_steering_engine_enabled"
 DESCRIPTOR = "sensor.crop_steering_engine_config"
 
 
-async def _upgrade(hass, name, *, registry_ids=None, restored=None):
+async def _upgrade(hass, name, *, registry_ids=None, restored=None, prepare=None):
     """Start the new code on top of a seeded old install. `restored`: more saved number states,
-    entity id -> value, beside the fixture's operator-tuned ones."""
+    entity id -> value, beside the fixture's operator-tuned ones. `prepare(entry)`: anything else
+    the old install left in Home Assistant's registries, put there before the new code starts."""
     seed = fixture(name)
     for entity_id, (state, attributes) in seed["states"].items():
         hass.states.async_set(entity_id, state, attributes)
@@ -54,6 +55,8 @@ async def _upgrade(hass, name, *, registry_ids=None, restored=None):
             suggested_object_id=object_id,
             config_entry=entry,
         )
+    if prepare is not None:
+        prepare(entry)
     # A value is "30", or ["30", {attributes}] where the old version stored attributes with it:
     # 2.17 records the setup revision a zone-sizing number last adopted, which is how it tells
     # "the operator tuned this" from "setup was just changed" (sizing.prefer_setup_value).

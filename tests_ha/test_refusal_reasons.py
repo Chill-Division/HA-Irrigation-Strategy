@@ -92,6 +92,6 @@ async def test_every_family_of_room_services_says_why(call):
 
 
 async def test_a_service_this_integration_lacks_is_not_found(call):
-    """What the dashboard turns into "needs the updated Crop Steering integration"."""
+    """What the dashboard turns into "needs the updated PHASE Steering integration"."""
     answer = await call("no_such_service", {})
     assert answer["error"]["code"] == "not_found"

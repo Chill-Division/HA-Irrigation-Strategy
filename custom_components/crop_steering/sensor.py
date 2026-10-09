@@ -1,4 +1,4 @@
-"""Crop Steering System sensors."""
+"""PHASE Steering sensors."""
 
 from __future__ import annotations
 
@@ -36,6 +36,7 @@ from .const import (
     DEFAULT_EC_RATIO,
     DEFAULT_EC_FALLBACK,
     VWC_ADJUSTMENT_PERCENT,
+    PRODUCT_NAME,
     SOFTWARE_VERSION,
 )
 from .room import room_prefix, build_engine_config
@@ -208,7 +209,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Crop Steering sensors."""
+    """Set up PHASE Steering sensors."""
     sensors = []
 
     # Get number of zones from config
@@ -273,7 +274,7 @@ class CropSteeringEngineConfigSensor(SensorEntity):
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
             identifiers={(DOMAIN, self._entry.entry_id)},
-            name="Crop Steering System",
+            name=PRODUCT_NAME,
             manufacturer="Home Assistant Community",
             model="Professional Irrigation Controller",
             sw_version=SOFTWARE_VERSION,
@@ -317,7 +318,7 @@ class CropSteeringStockSensor(SensorEntity):
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
             identifiers={(DOMAIN, self._entry.entry_id)},
-            name="Crop Steering System",
+            name=PRODUCT_NAME,
             manufacturer="Home Assistant Community",
             model="Professional Irrigation Controller",
             sw_version=SOFTWARE_VERSION,
@@ -380,7 +381,7 @@ class CropSteeringStockSensor(SensorEntity):
 
 
 class CropSteeringSensor(SensorEntity):
-    """Crop Steering sensor."""
+    """PHASE Steering sensor."""
 
     def __init__(
         self,
@@ -422,7 +423,7 @@ class CropSteeringSensor(SensorEntity):
         """Return device information."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._entry.entry_id)},
-            name="Crop Steering System",
+            name=PRODUCT_NAME,
             manufacturer="Home Assistant Community",
             model="Professional Irrigation Controller",
             sw_version=SOFTWARE_VERSION,
@@ -980,7 +981,7 @@ class CropSteeringFeedPlanSensor(SensorEntity):
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
             identifiers={(DOMAIN, self._entry.entry_id)},
-            name="Crop Steering System",
+            name=PRODUCT_NAME,
             manufacturer="Home Assistant Community",
             model="Professional Irrigation Controller",
             sw_version=SOFTWARE_VERSION,

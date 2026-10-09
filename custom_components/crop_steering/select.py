@@ -1,4 +1,4 @@
-"""Crop Steering System select entities."""
+"""PHASE Steering select entities."""
 
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ from .const import (
     SET_PHASE_OPTIONS,
     WATER_TODAY_VIEWS,
     PROBE_METHODS,
+    PRODUCT_NAME,
 )
 from .room import restored_state_is_ours, room_prefix, zone_device_name
 from .recipe import get_manager
@@ -71,7 +72,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Crop Steering select entities."""
+    """Set up PHASE Steering select entities."""
     selects = []
 
     # Add main select entities
@@ -92,7 +93,7 @@ async def async_setup_entry(
                 entry,
                 SelectEntityDescription(
                     key=f"zone_{zone_num}_steering_mode",
-                    name=f"Crop Steering Zone {zone_num} Steering Mode",
+                    name=f"{PRODUCT_NAME} Zone {zone_num} Steering Mode",
                     options=["Vegetative", "Generative"],
                     icon="mdi:steering",
                 ),
@@ -142,7 +143,7 @@ async def async_setup_entry(
 
 
 class CropSteeringSelect(SelectEntity, RestoreEntity):
-    """Crop Steering select entity with state restoration."""
+    """PHASE Steering select entity with state restoration."""
 
     def __init__(
         self,
@@ -203,7 +204,7 @@ class CropSteeringSelect(SelectEntity, RestoreEntity):
             # Main device
             return DeviceInfo(
                 identifiers={(DOMAIN, self._entry.entry_id)},
-                name="Crop Steering",
+                name=PRODUCT_NAME,
                 manufacturer="Home Assistant Community",
                 model="Professional Irrigation Controller",
                 sw_version=SOFTWARE_VERSION,
@@ -299,7 +300,7 @@ class CropSteeringFeedStageSelect(SelectEntity):
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
             identifiers={(DOMAIN, self._entry.entry_id)},
-            name="Crop Steering",
+            name=PRODUCT_NAME,
             manufacturer="Home Assistant Community",
             model="Professional Irrigation Controller",
             sw_version=SOFTWARE_VERSION,

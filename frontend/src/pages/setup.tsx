@@ -233,7 +233,7 @@ export function Setup({
     try {
       const result = await controller.operator<SetupDocument>("setup_read");
       if (result.api_version !== 1 || !Array.isArray(result.rooms))
-        throw new Error("Update Crop Steering to use room management.");
+        throw new Error("Update PHASE Steering to use room management.");
       setData(result);
       const room =
         result.rooms.find((r) => r.entry_id === (selectId || draft?.entry_id)) ||

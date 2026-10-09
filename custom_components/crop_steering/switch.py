@@ -1,4 +1,4 @@
-"""Crop Steering System switches."""
+"""PHASE Steering switches."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, CONF_NUM_ZONES, SOFTWARE_VERSION
+from .const import DOMAIN, CONF_NUM_ZONES, PRODUCT_NAME, SOFTWARE_VERSION
 from .room import restored_state_is_ours, room_prefix
 
 _LOGGER = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Crop Steering switches."""
+    """Set up PHASE Steering switches."""
     switches = []
 
     # Get number of zones from config
@@ -144,7 +144,7 @@ async def async_setup_entry(
 
 
 class CropSteeringSwitch(SwitchEntity, RestoreEntity):
-    """Crop Steering switch with state restoration."""
+    """PHASE Steering switch with state restoration."""
 
     def __init__(
         self,
@@ -303,7 +303,7 @@ class CropSteeringSwitch(SwitchEntity, RestoreEntity):
         """Return device information."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._entry.entry_id)},
-            name="Crop Steering",
+            name=PRODUCT_NAME,
             manufacturer="Home Assistant Community",
             model="Professional Irrigation Controller",
             sw_version=SOFTWARE_VERSION,

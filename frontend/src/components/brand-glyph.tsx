@@ -1,22 +1,6 @@
-/** The seedling, drawn twice: once wide in the tile's colour (`.brand-glyph-halo`), so the tank's
- * lines stop short of it and it stands in front, then over that in the glyph's own colour. */
-const seedling = (
-  <>
-    <path d="M5 21.5c0-3 1.6-4.6 1.2-8.2" />
-    <path
-      d="M6.1 14.9C7.11 13.38 4.19 10.78 1.7 10.8C1.85 13.28 4.65 16.01 6.1 14.9Z"
-      fill="currentColor"
-    />
-    <path
-      d="M6.2 13.2C8.09 14.58 11.98 10.72 12.3 7.4C8.96 7.56 4.92 11.24 6.2 13.2Z"
-      fill="currentColor"
-    />
-  </>
-);
-
-/** The app's mark: a tank of water with a seedling in front of it, for the menu's blue tile
- * (`.brand-mark`). The integration's and the controller app's brand images are pictures of it
- * (`frontend/scripts/make-brand-images.mjs`). */
+/** The app's mark: the grow day's four phases, P0 to P3, as four arcs around a drop of water, for
+ * the menu's blue tile (`.brand-mark`). The integration's and the controller app's brand images
+ * are pictures of it (`frontend/scripts/make-brand-images.mjs`). */
 export function BrandGlyph({ size = 23 }: { size?: number }) {
   return (
     <svg
@@ -30,19 +14,15 @@ export function BrandGlyph({ size = 23 }: { size?: number }) {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <rect x="9.5" y="3" width="12" height="18" rx="2.5" />
-      <path d="M9.5 6.5h12" />
+      <path d="M13.1 3.07A9 9 0 0 1 20.93 10.9" />
+      <path d="M20.93 13.1A9 9 0 0 1 13.1 20.93" />
+      <path d="M10.9 20.93A9 9 0 0 1 3.07 13.1" />
+      <path d="M3.07 10.9A9 9 0 0 1 10.9 3.07" />
       <path
-        d="M9.5 11.5c1.6-1 2.4-1 4 0s2.4 1 4 0 2.4-1 4 0v7a2.5 2.5 0 0 1-2.5 2.5h-7a2.5 2.5 0 0 1-2.5-2.5z"
+        d="M12 6.8c0 0-3.7 4-3.7 6.6a3.7 3.7 0 0 0 7.4 0c0-2.6-3.7-6.6-3.7-6.6z"
         fill="currentColor"
         stroke="none"
-        opacity={0.45}
       />
-      <path d="M9.5 11.5c1.6-1 2.4-1 4 0s2.4 1 4 0 2.4-1 4 0" />
-      <g className="brand-glyph-halo" strokeWidth={4.5}>
-        {seedling}
-      </g>
-      {seedling}
     </svg>
   );
 }

@@ -1,4 +1,4 @@
-"""Crop Steering System number entities."""
+"""PHASE Steering number entities."""
 
 from __future__ import annotations
 
@@ -12,7 +12,13 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import DOMAIN, CONF_NUM_ZONES, MOISTURE_RANGES, SOFTWARE_VERSION
+from .const import (
+    DOMAIN,
+    CONF_NUM_ZONES,
+    MOISTURE_RANGES,
+    PRODUCT_NAME,
+    SOFTWARE_VERSION,
+)
 from .room import restored_state_is_ours, room_prefix, zone_device_name
 from .sizing import SIZING_KEYS, configured_sizing, prefer_setup_value
 
@@ -544,7 +550,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Crop Steering number entities."""
+    """Set up PHASE Steering number entities."""
     numbers = []
 
     # Build a seed map {entity_key: parsed_value} from the config entry's
@@ -575,7 +581,7 @@ async def async_setup_entry(
                 entry,
                 NumberEntityDescription(
                     key=f"zone_{zone_num}_plant_count",
-                    name=f"Crop Steering Zone {zone_num} Plant Count",
+                    name=f"{PRODUCT_NAME} Zone {zone_num} Plant Count",
                     icon="mdi:sprout",
                     native_min_value=1,
                     native_max_value=1000,
@@ -602,7 +608,7 @@ async def async_setup_entry(
                     entry,
                     NumberEntityDescription(
                         key=f"zone_{zone_num}_{sizing_key}",
-                        name=f"Crop Steering Zone {zone_num} {source.name}",
+                        name=f"{PRODUCT_NAME} Zone {zone_num} {source.name}",
                         icon=source.icon,
                         native_min_value=(
                             0.1
@@ -629,7 +635,7 @@ async def async_setup_entry(
                 entry,
                 NumberEntityDescription(
                     key=f"zone_{zone_num}_max_daily_volume",
-                    name=f"Crop Steering Zone {zone_num} Max Daily Volume",
+                    name=f"{PRODUCT_NAME} Zone {zone_num} Max Daily Volume",
                     icon="mdi:water-check",
                     native_min_value=0,
                     native_max_value=200,
@@ -650,7 +656,7 @@ async def async_setup_entry(
                     entry,
                     NumberEntityDescription(
                         key=f"zone_{zone_num}_{_key}",
-                        name=f"Crop Steering Zone {zone_num} {_g.name}",
+                        name=f"{PRODUCT_NAME} Zone {zone_num} {_g.name}",
                         icon=_g.icon,
                         native_min_value=_g.native_min_value,
                         native_max_value=_g.native_max_value,
@@ -668,7 +674,7 @@ async def async_setup_entry(
 
 
 class CropSteeringNumber(NumberEntity, RestoreEntity):
-    """Crop Steering number entity with state restoration."""
+    """PHASE Steering number entity with state restoration."""
 
     def __init__(
         self,
@@ -776,7 +782,7 @@ class CropSteeringNumber(NumberEntity, RestoreEntity):
             # Main device
             return DeviceInfo(
                 identifiers={(DOMAIN, self._entry.entry_id)},
-                name="Crop Steering",
+                name=PRODUCT_NAME,
                 manufacturer="Home Assistant Community",
                 model="Professional Irrigation Controller",
                 sw_version=SOFTWARE_VERSION,

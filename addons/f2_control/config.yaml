@@ -1,11 +1,11 @@
-name: Crop Steering Controller
+name: PHASE Steering Controller
 version: "1.0.1"
 slug: f2_control
 description: >-
   Autonomous crop steering for Home Assistant. Runs the daily P0-P1-P2-P3 dryback
   cycle per zone from your live VWC/EC probes (fusing multiple sensors per zone),
   sequences the pump and valves with valve-close read-back, and is gated by a hard
-  kill switch. Configure once in the Crop Steering UI; the operator dashboards are
+  kill switch. Configure once in the PHASE Steering UI; the operator dashboards are
   served right in the sidebar.
 url: https://github.com/Chill-Division/HA-Irrigation-Strategy
 arch:
@@ -20,8 +20,8 @@ hassio_api: false
 host_network: false
 ingress: true
 ingress_port: 8420
-panel_icon: mdi:sprout
-panel_title: Crop Steering
+panel_icon: mdi:water-circle
+panel_title: PHASE Steering
 options:
   num_zones: 3
   lights_on_hour: 10
@@ -29,7 +29,7 @@ options:
   enable_flag: input_boolean.f2_control_enabled
   notify_service: ""
   notify_min: 30
-  instance_name: Crop Steering
+  instance_name: PHASE Steering
   hold_entities: []
   substrate_l: 5
   flow_lps: 0.02

@@ -50,9 +50,13 @@ async function draw(file, height, wordmark = false) {
         tile.firstElementChild.setAttribute(side, String((height * 23) / 38));
       stage.append(tile);
       if (wordmark) {
+        // As the menu writes it: the initials, PHASE, heavier than the word after them.
         const name = document.createElement("span");
-        name.textContent = "Crop Steering";
-        name.style.cssText = `font-size:${height * 0.44}px;font-weight:600;letter-spacing:-0.02em;color:var(--primary);white-space:nowrap`;
+        const initials = document.createElement("b");
+        initials.textContent = "PHASE";
+        initials.style.cssText = "font-weight:800;letter-spacing:0.02em";
+        name.append(initials, " Steering");
+        name.style.cssText = `font-size:${height * 0.44}px;font-weight:500;letter-spacing:-0.02em;color:var(--primary);white-space:nowrap`;
         stage.append(name);
       }
       document.body.append(stage);

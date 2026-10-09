@@ -48,7 +48,7 @@ def test_an_off_one_switches_watering_off_in_its_place(entity, name):
     assert len(_engine_offs(fake)) == 1
     (note,) = _cs208(fake)
     assert note["title"] == f"{name} is off, so watering was switched off (CS-208)"
-    assert entity in note["message"] and "Crop Steering → Overview" in note["message"]
+    assert entity in note["message"] and "PHASE Steering → Overview" in note["message"]
     # Home Assistant may not read OFF yet this pass: the gate holds on the carried names meanwhile.
     room._retired_off = [name]
     fake.set_state(KILL, "on")

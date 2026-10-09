@@ -1,4 +1,4 @@
-"""Buttons for Crop Steering: "Mix a Batch Now" for the room's reservoir, and a "Test Shot" for each
+"""Buttons for PHASE Steering: "Mix a Batch Now" for the room's reservoir, and a "Test Shot" for each
 zone.
 
 Pressing one does nothing here. Home Assistant records when it was pressed as the button's state, and
@@ -18,7 +18,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_NUM_ZONES, DOMAIN, SOFTWARE_VERSION
+from .const import CONF_NUM_ZONES, DOMAIN, PRODUCT_NAME, SOFTWARE_VERSION
 from .room import room_prefix, zone_device_name
 
 _LOGGER = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ class CropSteeringMixBatchButton(ButtonEntity):
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
             identifiers={(DOMAIN, self._entry.entry_id)},
-            name="Crop Steering",
+            name=PRODUCT_NAME,
             manufacturer="Home Assistant Community",
             model="Professional Irrigation Controller",
             sw_version=SOFTWARE_VERSION,

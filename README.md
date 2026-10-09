@@ -1,11 +1,13 @@
-# Crop Steering for Home Assistant
+# PHASE Steering for Home Assistant
 
 ![Release](https://img.shields.io/badge/Release-1.0.1-blue)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.5+-41BDF5)
 ![HACS](https://img.shields.io/badge/HACS-Custom-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-Crop Steering waters a grow room automatically. Every minute it reads each zone's moisture and EC probes, decides whether the zone needs a shot and how big, and runs your pump and valves to deliver it, through the four-phase day that crop-steering growers use. It runs inside [Home Assistant](https://www.home-assistant.io/) with the probes, pumps and valves you already have, on your own hardware: no cloud account, no subscription.
+**PHASE** stands for **Precision Hydration And Steering Engine**. It was called Crop Steering until 1.0.2.
+
+PHASE Steering waters a grow room automatically. Every minute it reads each zone's moisture and EC probes, decides whether the zone needs a shot and how big, and runs your pump and valves to deliver it, through the four-phase day that crop-steering growers use. It runs inside [Home Assistant](https://www.home-assistant.io/) with the probes, pumps and valves you already have, on your own hardware: no cloud account, no subscription.
 
 **Deterministic, sensor-driven crop steering.** No AI makes any decision. Every shot comes from a published rule and your setpoints: the same readings, settings and day so far always give the same decision, and the dashboard shows the numbers behind each one. Nothing guesses, nothing makes up a reading, and nothing apologises after the fact.
 
@@ -47,15 +49,15 @@ More in the [screenshots](https://github.com/Chill-Division/HA-Irrigation-Strate
 
 ## Install
 
-Crop Steering comes in two parts, and watering needs both: the **integration** keeps your rooms, settings and strategies and adds the Crop Steering page to the sidebar, but never switches anything; the **controller app** reads the probes and runs the pump and valves.
+PHASE Steering comes in two parts, and watering needs both: the **integration** keeps your rooms, settings and strategies and adds the PHASE Steering page to the sidebar, but never switches anything; the **controller app** reads the probes and runs the pump and valves.
 
 1. **Download the integration with HACS**, then restart Home Assistant.
    [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Chill-Division&repository=HA-Irrigation-Strategy&category=integration)
-2. **Add Crop Steering** and name your first room.
-   [![Open your Home Assistant instance and start setting up Crop Steering.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=crop_steering)
-3. **Add the controller app's repository**, then install and start **Crop Steering Controller**.
+2. **Add PHASE Steering** and name your first room.
+   [![Open your Home Assistant instance and start setting up PHASE Steering.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=crop_steering)
+3. **Add the controller app's repository**, then install and start **PHASE Steering Controller**.
    [![Open your Home Assistant instance and add this app repository.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FChill-Division%2FHA-Irrigation-Strategy)
-4. **Open Crop Steering in the sidebar.** Map your valves, pump and probes in **Settings, Rooms & hardware**, check the readings on the **Overview**, and keep watering switched off until everything reads correctly.
+4. **Open PHASE Steering in the sidebar.** Map your valves, pump and probes in **Settings, Rooms & hardware**, check the readings on the **Overview**, and keep watering switched off until everything reads correctly.
 
 **Updating:** both parts carry one version number; update them together. Update the integration in HACS and restart Home Assistant, then press **Update** on the controller app (restarting it alone keeps the old version). Updates keep your rooms, settings, strategies and history. The [install guide](https://github.com/Chill-Division/HA-Irrigation-Strategy/blob/main/docs/INSTALL.md) covers manual installs, upgrades and rolling back.
 
@@ -69,11 +71,11 @@ Crop Steering comes in two parts, and watering needs both: the **integration** k
 
 ## Support
 
-Report a problem or ask a question in [GitHub issues](https://github.com/Chill-Division/HA-Irrigation-Strategy/issues). Include the error code if there is one, both version numbers (shown in the Crop Steering sidebar), and what the controller app's log says.
+Report a problem or ask a question in [GitHub issues](https://github.com/Chill-Division/HA-Irrigation-Strategy/issues). Include the error code if there is one, both version numbers (shown in the PHASE Steering sidebar), and what the controller app's log says.
 
 ## Credits
 
-Crop Steering began as [JakeTheRabbit's HA-Irrigation-Strategy](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy), and this project carries it on.
+PHASE Steering began as [JakeTheRabbit's HA-Irrigation-Strategy](https://github.com/JakeTheRabbit/HA-Irrigation-Strategy), and this project carries it on.
 
 ## License
 
