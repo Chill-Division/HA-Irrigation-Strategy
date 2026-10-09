@@ -10,6 +10,20 @@ and code-level detail for developers and AI agents working on the repo.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- **No more `via_device` warnings in Home Assistant's log.** From Home Assistant 2026.9 it warned that
+  the way the zones are put under their room stops working in 2027.8; they now use the way it asks.
+
+### 🔧 Technical notes
+
+- Integration: the zones' `DeviceInfo` no longer passes `via_device`, deprecated in Home Assistant
+  2026.9 and removed in 2027.8.0. `_link_zone_devices` sets each zone device's `via_device_id` to its
+  room's device once the platforms are set up, which works on every supported Home Assistant
+  (2026.5 on); a zone an older version linked is left as it is. Proven in
+  `tests_ha/test_zone_devices_under_the_room.py` on a fresh install and a seeded old one (2026.5 and
+  2026.9), where the old code logged the warning.
+
 ## [1.0.3] - 2026-10-09
 
 Integration and controller **1.0.3**.
