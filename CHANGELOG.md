@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the Advanced Automated Crop Steering System will be documented in this file.
+All notable changes to PHASE Steering (Crop Steering until 1.0.2) will be documented in this file.
 
 **Two views per release.** Each version leads with what changed and why it matters, written so
 anyone can follow it without knowing the internals, followed by **🔧 Technical notes**, the entity-
@@ -8,6 +8,35 @@ and code-level detail for developers and AI agents working on the repo.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+- **Crop Steering is now PHASE Steering**, short for Precision Hydration And Steering Engine, with
+  a new icon: the day's four phases around a drop of water. Nothing else changes: your rooms,
+  settings, strategies, history and automations carry on as they were.
+
+### 🔧 Technical notes
+
+- Names only. The integration (`manifest.json`, `hacs.json`), its sidebar entry (now
+  `mdi:water-circle`), the room's device, the zones' entity names (`PHASE Steering Zone N …`), the
+  setup wizard's default name, the setup and Repairs texts, the error codes, the dashboard, the
+  controller app (`PHASE Steering Controller`, its panel and `repository.yaml`) and the brand images.
+  The integration keeps the name in one place, `const.PRODUCT_NAME`.
+- Unchanged: the `crop_steering` domain, every entity id, the `f2_control` slug and the app's
+  options and `/data`, the sidebar's address, the strategy and feed recipe file formats and the
+  repository's address.
+- The room's device had two names, "Crop Steering System" from the sensors and "Crop Steering" from
+  the other platforms, whichever registered last; it has one, PHASE Steering. Home Assistant renames
+  the device and the entities' default names in place, and keeps any name the operator gave either.
+  From 2026.9 Home Assistant shows the device's name in front of each entity's, so a room's entities
+  read "PHASE Steering …" there.
+- Controller: the vitals notifications are titled "PHASE Steering vitals" where the app's
+  "Name in notifications" option was never changed. A room left at the wizard's default name
+  (PHASE Steering, or Crop Steering System before) is still left out of alerts
+  (`DEFAULT_ROOM_NAMES`).
+- Tests: `tests_ha/test_product_name.py` (a fresh install, and a seeded old install updated in
+  place: the device and names follow, no id moves, the operator's device name stays) and a real
+  wizard left at its default name in `tests_ha/test_alerts_name_the_zone.py`.
 
 ## [1.0.1] - 2026-10-08
 

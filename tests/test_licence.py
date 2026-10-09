@@ -1,4 +1,4 @@
-"""The MIT licence travels with every part a box installs, and the README credits where Crop
+"""The MIT licence travels with every part a box installs, and the README credits where PHASE
 Steering began.
 
 HACS installs only custom_components/crop_steering, the app's image is built from addons/f2_control
