@@ -93,7 +93,7 @@ describe("Help", () => {
   });
   it("links each release to its notes", () => {
     expect(releaseUrl("2.24.0")).toBe(
-      "https://github.com/Chill-Division/HA-Irrigation-Strategy/releases/tag/v2.24.0",
+      "https://github.com/Chill-Division/PHASE-Steering/releases/tag/v2.24.0",
     );
   });
 });
