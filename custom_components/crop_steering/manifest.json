@@ -1,6 +1,6 @@
 {
   "domain": "crop_steering",
-  "name": "PHASE Steering",
+  "name": "PHASE Control",
   "codeowners": [
     "@Chill-Division"
   ],
@@ -9,10 +9,10 @@
     "frontend",
     "http"
   ],
-  "documentation": "https://github.com/Chill-Division/PHASE-Steering",
+  "documentation": "https://github.com/Chill-Division/PHASE-Control",
   "integration_type": "hub",
   "iot_class": "calculated",
-  "issue_tracker": "https://github.com/Chill-Division/PHASE-Steering/issues",
+  "issue_tracker": "https://github.com/Chill-Division/PHASE-Control/issues",
   "requirements": [],
   "version": "1.0.2"
 }

@@ -1,4 +1,4 @@
-"""Named-stage recipes for PHASE Steering.
+"""Named-stage recipes for PHASE Control.
 
 A recipe is a small data table (growth stage -> the handful of setpoints that
 change by stage). Applying a stage writes that row into the EXISTING per-zone

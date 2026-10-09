@@ -1,4 +1,4 @@
-"""PHASE Steering number entities."""
+"""PHASE Control number entities."""
 
 from __future__ import annotations
 
@@ -550,7 +550,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up PHASE Steering number entities."""
+    """Set up PHASE Control number entities."""
     numbers = []
 
     # Build a seed map {entity_key: parsed_value} from the config entry's
@@ -674,7 +674,7 @@ async def async_setup_entry(
 
 
 class CropSteeringNumber(NumberEntity, RestoreEntity):
-    """PHASE Steering number entity with state restoration."""
+    """PHASE Control number entity with state restoration."""
 
     def __init__(
         self,

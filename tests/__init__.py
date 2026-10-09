@@ -1,1 +1,1 @@
-"""Tests for PHASE Steering."""
+"""Tests for PHASE Control."""

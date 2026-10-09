@@ -33,7 +33,7 @@ def _zones_published(fake):
 
 
 async def test_app_first_then_the_wizard_a_one_zone_tent_gets_one_zone(hass, controller_for):
-    _seed(hass)  # the tent's switch and probes exist in Home Assistant; PHASE Steering is not set up
+    _seed(hass)  # the tent's switch and probes exist in Home Assistant; PHASE Control is not set up
     c, fake, _clock = controller_for(dict(SHIPPED))
     room = c.rooms[0]
     assert room.zones == {} and c._default_provisional

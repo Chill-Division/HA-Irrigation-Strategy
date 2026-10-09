@@ -1,15 +1,15 @@
-"""Constants for the PHASE Steering integration."""
+"""Constants for the PHASE Control integration."""
 
 DOMAIN = "crop_steering"
 
 # The product's name wherever Home Assistant shows it: the sidebar, the room's device, the zones'
 # entity names and the setup wizard's default name. PHASE: Precision Hydration And Steering Engine.
 # Nothing is found by it: the domain, every entity id and the controller app's slug stay as they were.
-PRODUCT_NAME = "PHASE Steering"
+PRODUCT_NAME = "PHASE Control"
 
 # Where a Repairs card's "Learn more" link goes: every card carries a CS code, explained there.
 REPAIRS_DOCS_URL = (
-    "https://github.com/Chill-Division/PHASE-Steering/blob/main/docs/ERROR_CODES.md"
+    "https://github.com/Chill-Division/PHASE-Control/blob/main/docs/ERROR_CODES.md"
 )
 
 # Configuration keys

@@ -1,4 +1,4 @@
-"""PHASE Steering select entities."""
+"""PHASE Control select entities."""
 
 from __future__ import annotations
 
@@ -72,7 +72,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up PHASE Steering select entities."""
+    """Set up PHASE Control select entities."""
     selects = []
 
     # Add main select entities
@@ -143,7 +143,7 @@ async def async_setup_entry(
 
 
 class CropSteeringSelect(SelectEntity, RestoreEntity):
-    """PHASE Steering select entity with state restoration."""
+    """PHASE Control select entity with state restoration."""
 
     def __init__(
         self,
