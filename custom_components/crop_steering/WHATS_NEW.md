@@ -21,7 +21,7 @@ people who build the system:
 `tests/test_whats_new.py` checks the shape and the plain words, and that the newest section is the
 version being released.
 
-## Unreleased
+## 1.0.3 - 2026-10-09
 
 - PHASE Steering is now PHASE Control, and Help says what PHASE stands for.
 
