@@ -43,7 +43,7 @@ MOISTURE_RANGES = {
 
 
 # Software version - single source of truth
-SOFTWARE_VERSION = "1.0.3"
+SOFTWARE_VERSION = "1.0.2"
 
 # Crop steering phases (P0-P3 only, Manual removed)
 PHASES = ["P0", "P1", "P2", "P3"]

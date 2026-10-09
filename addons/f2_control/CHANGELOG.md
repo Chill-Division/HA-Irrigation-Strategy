@@ -1,7 +1,3 @@
-# 1.0.3
-
-Pair with integration 1.0.3.
-
 # 1.0.2
 
 Pair with integration 1.0.2.
