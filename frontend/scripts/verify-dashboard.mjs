@@ -584,7 +584,7 @@ try {
       mimeType: "application/json",
       buffer: Buffer.from("{}"),
     });
-    await expectVisible(note.getByText("That file isn't a Crop Steering feed recipe."));
+    await expectVisible(note.getByText("That file isn't a PHASE Steering feed recipe."));
     assert.equal(await cards.count(), before + 2);
     await axe("feed recipes from a template and a recipe file");
     await page.setViewportSize({ width: 390, height: 844 });
@@ -1075,7 +1075,7 @@ try {
     assert.match((await cells())[0], litres);
   });
   await check("what's new: once after an update, on a desktop and a phone, and from Help", async () => {
-    const dialog = page.getByRole("dialog", { name: "What’s new in Crop Steering", exact: true });
+    const dialog = page.getByRole("dialog", { name: "What’s new in PHASE Steering", exact: true });
     const versions = () => dialog.locator("section h3").allInnerTexts();
     // Every other check opens the demo as a new installation: nothing to catch up on.
     await go("overview");
@@ -1232,7 +1232,7 @@ try {
     });
     await expectVisible(card);
     await page.waitForTimeout(300);
-    const whatsNew = page.getByRole("dialog", { name: "What’s new in Crop Steering", exact: true });
+    const whatsNew = page.getByRole("dialog", { name: "What’s new in PHASE Steering", exact: true });
     assert.equal(await whatsNew.count(), 0, "no What's new with the tour");
     await card.getByRole("button", { name: "Close the tour", exact: true }).click();
     await card.waitFor({ state: "detached" });

@@ -33,7 +33,7 @@ describe("error codes", () => {
       ["CS-102.", "CS-102"],
       ["Code CS-101. What it means and what to do", "CS-101"],
       ["Zone 2: moisture reading hasn't changed (CS-101)", "CS-101"],
-      ["Crop Steering: irrigation strategy is holding its zones (CS-606)", "CS-606"],
+      ["PHASE Steering: irrigation strategy is holding its zones (CS-606)", "CS-606"],
       // A body names another code on the way; it ends with its own.
       ["It latches a hardware hold (CS-301) … Code CS-302. What it means and what to do", "CS-302"],
     ]) {

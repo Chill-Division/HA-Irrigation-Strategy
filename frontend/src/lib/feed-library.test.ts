@@ -237,7 +237,7 @@ describe("recipe files", () => {
     ["not json", "isn't JSON"],
     [
       JSON.stringify({ format: "crop-steering-plan", version: 1, recipe: {} }),
-      "isn't a Crop Steering",
+      "isn't a PHASE Steering",
     ],
     [
       JSON.stringify({

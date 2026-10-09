@@ -52,9 +52,9 @@ function thirdPartyLicences(): Plugin {
         add(fileURLToPath(new URL(`./node_modules/${name}`, import.meta.url)));
       const entries = [...packages.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
       const source =
-        "Third-party software in the Crop Steering dashboard\n\n" +
+        "Third-party software in the PHASE Steering dashboard\n\n" +
         "The dashboard (dashboard.html) is built from these open-source packages, each used under its\n" +
-        "licence, which follows its name. Crop Steering itself is under the MIT licence in LICENSE.\n" +
+        "licence, which follows its name. PHASE Steering itself is under the MIT licence in LICENSE.\n" +
         entries.map(([, { title, text }]) => `\n${RULE}\n${title}\n${RULE}\n\n${text}\n`).join("");
       this.emitFile({ type: "asset", fileName: "THIRD_PARTY_LICENSES.txt", source });
     },

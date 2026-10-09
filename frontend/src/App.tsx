@@ -189,7 +189,7 @@ export default function App() {
   const pageLabel =
     section.tabs.length > 1 && tab ? `${section.label} › ${tab.label}` : section.label;
   useEffect(() => {
-    document.title = `${pageLabel} · ${controller.room.room.name} · Crop Steering`;
+    document.title = `${pageLabel} · ${controller.room.room.name} · PHASE Steering`;
   }, [pageLabel, controller.room.room.name]);
   async function refresh() {
     setRefreshing(true);
@@ -217,7 +217,10 @@ export default function App() {
           <BrandGlyph />
         </span>
         <span>
-          Crop Steering<small>Irrigation control</small>
+          <span className="brand-name">
+            <b>PHASE</b> Steering
+          </span>
+          <small>Irrigation control</small>
         </span>
       </a>
       <div className="room-selector">
@@ -494,7 +497,7 @@ export default function App() {
           </div>
         </main>
         <footer className="page-footer">
-          <span>Crop Steering</span>
+          <span>PHASE Steering</span>
           <span>{controller.room.room.name} · Controller-reported data</span>
         </footer>
       </div>

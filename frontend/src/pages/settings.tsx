@@ -277,7 +277,7 @@ export function Settings({
               <p className="small muted mt-3">
                 {water.available
                   ? `For ${controller.room.room.name}: everyone who opens it sees water today this way, and the controller’s vitals notification follows it. `
-                  : "This needs the updated Crop Steering integration. "}
+                  : "This needs the updated PHASE Steering integration. "}
                 Per plant is each zone’s water today, and its daily limit, divided by its plant
                 count from Rooms &amp; hardware, as if every plant got the same. Water use over the
                 grow stays in litres per zone.
@@ -329,7 +329,7 @@ export function Settings({
             <p className="small muted mt-3">
               {predictions.entityId
                 ? "Under each zone, what the controller will do next, as each zone's Next: line on Overview says it: for example “shot when VWC < 61% (now 58%) · P3 by 22:00”."
-                : "This needs the updated Crop Steering integration. Until then the controller includes them."}
+                : "This needs the updated PHASE Steering integration. Until then the controller includes them."}
             </p>
           </div>
         </section>

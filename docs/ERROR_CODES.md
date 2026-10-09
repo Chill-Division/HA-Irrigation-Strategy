@@ -2,11 +2,11 @@
 
 <!-- Generated from docs/error-codes.json by scripts/render_error_codes.py. Edit the JSON. -->
 
-Every alert from the Crop Steering controller app, and every Crop Steering card under
+Every alert from the PHASE Steering controller app, and every PHASE Steering card under
 **Settings → Repairs**, ends with a code such as **CS-101** (the controller's regular status
 summary has none). Find the code below for what it
 means, what happens to watering meanwhile, the likely causes and what to do. The same list is
-in the Crop Steering sidebar under **Help → Error codes**.
+in the PHASE Steering sidebar under **Help → Error codes**.
 
 Most notifications are raised again, at most every 30 minutes, for as long as their cause lasts,
 and after 5 minutes when their code changes. A few are said once: CS-301 once per fault
@@ -120,7 +120,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 - Find the sensor named in the notification under Settings → Developer tools → States and check what it reads.
 - Check the probe's device is powered and online.
-- In Crop Steering → Settings → Rooms & hardware, check the zone's moisture sensor is the probe you expect.
+- In PHASE Steering → Settings → Rooms & hardware, check the zone's moisture sensor is the probe you expect.
 - If the notification says the reading is stamped in the future, set the clocks of the Home Assistant host and the controller app right.
 
 <a id="cs-103"></a>
@@ -141,7 +141,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 **Suggested fixes**
 
 - Check the probe's calibration in its own integration.
-- In Crop Steering → Settings → Rooms & hardware, check the zone's moisture sensor is the moisture reading in %, not another entity from the same device.
+- In PHASE Steering → Settings → Rooms & hardware, check the zone's moisture sensor is the moisture reading in %, not another entity from the same device.
 
 <a id="cs-104"></a>
 
@@ -160,7 +160,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **Suggested fixes**
 
-- Map an EC probe to the zone in Crop Steering → Settings → Rooms & hardware, if the zone has one.
+- Map an EC probe to the zone in PHASE Steering → Settings → Rooms & hardware, if the zone has one.
 - Check the probe is online and its reading moves.
 
 ## Watering held (CS-2xx)
@@ -205,7 +205,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **Suggested fixes**
 
-- In Crop Steering → Settings → Rooms & hardware, map the missing switch, or change the plumbing to what the room really has. The detail in the notification says which.
+- In PHASE Steering → Settings → Rooms & hardware, map the missing switch, or change the plumbing to what the room really has. The detail in the notification says which.
 - If it names a layout the controller doesn't know, update the controller app.
 - The hold clears by itself once the corrected setup is taken on (see CS-201).
 
@@ -226,7 +226,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **Suggested fixes**
 
-- Check the Crop Steering integration is loaded (Settings → Devices & services).
+- Check the PHASE Steering integration is loaded (Settings → Devices & services).
 - Set Maximum shot duration to at least 5 seconds.
 - If Repairs shows CS-605, follow it: until the setting is back where the controller looks, shots are capped at 900 seconds.
 
@@ -247,7 +247,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **Suggested fixes**
 
-- Set the zone's pot size, plant count, drippers per plant and dripper flow in Crop Steering → Settings → Rooms & hardware.
+- Set the zone's pot size, plant count, drippers per plant and dripper flow in PHASE Steering → Settings → Rooms & hardware.
 - Check the controller app's flow_lps and substrate_l options are above 0.
 
 <a id="cs-205"></a>
@@ -334,7 +334,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **Suggested fixes**
 
-- Switch the named switch back on in Home Assistant (it is hidden: Settings → Entities, with hidden entities shown), then switch watering on in Crop Steering → Overview.
+- Switch the named switch back on in Home Assistant (it is hidden: Settings → Entities, with hidden entities shown), then switch watering on in PHASE Steering → Overview.
 - Change an automation that switches System Enabled or Auto Irrigation Enabled off to switch the room's Watering switch (its engine switch) off instead.
 
 ## Pumps and valves (CS-3xx)
@@ -381,7 +381,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 **Suggested fixes**
 
 - Switch the pump on and off by hand in Home Assistant to check it responds.
-- Check the pump mapped in Crop Steering → Settings → Rooms & hardware.
+- Check the pump mapped in PHASE Steering → Settings → Rooms & hardware.
 - If CS-301 was raised too, follow it.
 
 <a id="cs-303"></a>
@@ -402,7 +402,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 **Suggested fixes**
 
 - Switch the valve on and off by hand in Home Assistant to check it responds.
-- Check the main-line valve mapped in Crop Steering → Settings → Rooms & hardware.
+- Check the main-line valve mapped in PHASE Steering → Settings → Rooms & hardware.
 - If CS-301 was raised too, follow it.
 
 <a id="cs-304"></a>
@@ -423,7 +423,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 **Suggested fixes**
 
 - Switch the valve on and off by hand in Home Assistant to check it responds.
-- Check the zone's valve mapped in Crop Steering → Settings → Rooms & hardware.
+- Check the zone's valve mapped in PHASE Steering → Settings → Rooms & hardware.
 - If CS-301 was raised too, follow it.
 
 <a id="cs-305"></a>
@@ -565,7 +565,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **Likely causes**
 
-- The Crop Steering integration hasn't loaded, or has been removed.
+- The PHASE Steering integration hasn't loaded, or has been removed.
 - An entity id was changed in Settings.
 - The room was created while Home Assistant was still running an older integration, so its settings were registered under other ids (see CS-605).
 
@@ -716,7 +716,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **Suggested fixes**
 
-- Map a moisture probe to the zone in Crop Steering → Settings → Rooms & hardware (or Configure).
+- Map a moisture probe to the zone in PHASE Steering → Settings → Rooms & hardware (or Configure).
 
 <a id="cs-604"></a>
 
@@ -754,7 +754,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 **Suggested fixes**
 
 - One or two listed: change the id back under Settings → Devices & services → Entities → the entity → the cog.
-- Nearly all listed: delete the Crop Steering entry, restart Home Assistant, and add it again.
+- Nearly all listed: delete the PHASE Steering entry, restart Home Assistant, and add it again.
 - Nothing is renamed for you: an id you chose on purpose is yours to keep.
 
 <a id="cs-606"></a>
@@ -775,7 +775,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **Suggested fixes**
 
-- Open Irrigation strategy → Schedule in the Crop Steering sidebar and read the reason.
+- Open Irrigation strategy → Schedule in the PHASE Steering sidebar and read the reason.
 - If it stays in error, fix the cause, then disarm the strategy and arm it again.
 
 <a id="cs-607"></a>
@@ -816,7 +816,7 @@ setup change (CS-201) and a hardware hold (CS-301, CS-308, CS-309) are still rep
 
 **Suggested fixes**
 
-- Refill the tank, then press Refilled in Crop Steering → Feed → Stock tanks.
+- Refill the tank, then press Refilled in PHASE Steering → Feed → Stock tanks.
 - Or set the level you read off the tank. The card clears itself once every tank is above its low mark.
 
 ## Reservoir and nutrient batches (CS-7xx)

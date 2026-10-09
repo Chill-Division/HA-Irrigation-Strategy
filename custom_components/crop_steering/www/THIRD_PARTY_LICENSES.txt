@@ -1,7 +1,7 @@
-Third-party software in the Crop Steering dashboard
+Third-party software in the PHASE Steering dashboard
 
 The dashboard (dashboard.html) is built from these open-source packages, each used under its
-licence, which follows its name. Crop Steering itself is under the MIT licence in LICENSE.
+licence, which follows its name. PHASE Steering itself is under the MIT licence in LICENSE.
 
 ================================================================================
 @floating-ui/core 1.8.0 (MIT)

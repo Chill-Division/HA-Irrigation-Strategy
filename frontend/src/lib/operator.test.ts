@@ -53,7 +53,7 @@ describe("workspace response transport", () => {
       });
     const { client } = insideHomeAssistant(send);
     await expect(client.operator("feed_get", { room_id: "room:" })).rejects.toThrow(
-      /updated Crop Steering/,
+      /updated PHASE Steering/,
     );
   });
   it("outside Home Assistant, a refusal points at Home Assistant's log", async () => {
@@ -103,7 +103,7 @@ describe("workspace response transport", () => {
     const callApi = vi.fn().mockResolvedValue([]),
       callService = vi.fn();
     const client = new HaClient("http://ha.test", "", { callApi, callService } as HassSession);
-    await expect(client.operator("strategy_save", {})).rejects.toThrow(/updated Crop Steering/);
+    await expect(client.operator("strategy_save", {})).rejects.toThrow(/updated PHASE Steering/);
     await expect(client.operator("execute_irrigation_shot" as OperatorAction, {})).rejects.toThrow(
       /Unsupported/,
     );

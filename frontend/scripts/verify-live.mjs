@@ -451,7 +451,7 @@ try {
   );
   await check("what's new: an update shows it once, and the integration is told", async () => {
     // Every check above ran against an integration without What's new: no window, no error.
-    const dialog = page.getByRole("dialog", { name: "What’s new in Crop Steering", exact: true });
+    const dialog = page.getByRole("dialog", { name: "What’s new in PHASE Steering", exact: true });
     assert.equal(await dialog.count(), 0);
     whatsNew = {
       version: "2.25.0",

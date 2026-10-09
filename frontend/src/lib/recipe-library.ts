@@ -105,7 +105,7 @@ export function importRecipePlan(raw: string): GrowPlan {
   try {
     plan = parsePlanImport(raw);
   } catch {
-    throw new Error("Choose a valid version 1 Crop Steering strategy export.");
+    throw new Error("Choose a valid version 1 PHASE Steering strategy export.");
   }
   if (plan.profiles.length > 64)
     throw new Error("A saved strategy can contain at most 64 endpoint profiles.");

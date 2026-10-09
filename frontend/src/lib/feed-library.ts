@@ -291,7 +291,7 @@ export function importRecipe(raw: string): PortableRecipe {
   }
   const f = file as { format?: unknown; version?: unknown; recipe?: unknown };
   if (f?.format !== FILE_FORMAT || f.version !== 1 || typeof f.recipe !== "object" || !f.recipe)
-    throw new Error("That file isn't a Crop Steering feed recipe.");
+    throw new Error("That file isn't a PHASE Steering feed recipe.");
   const r = f.recipe as { name?: unknown; strength?: unknown; doses?: unknown; ec?: unknown };
   const name = typeof r.name === "string" ? r.name.trim().replace(/\s+/g, " ") : "";
   if (!name || name.length > NAME_LEN)
