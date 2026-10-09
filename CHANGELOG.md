@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Overview and Home Assistant's notification now name it and say what it read (still on, or
   unavailable), with its code, CS-301, in one card instead of three. While it holds the room, every
   zone reads "Blocked: hardware fault (CS-301)" instead of its phase, such as "Optimal".
+- **The Schedule page explains how it works with Today.** It shows how a schedule and Today's targets
+  take turns and which one is in charge, and Today says when a schedule is armed or running.
 
 ### 🔧 Technical notes
 
@@ -47,6 +49,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `tests_ha/test_hardware_fault_names_the_switch.py` (2026.5 and 2026.9) and `room-status.test.ts`.
   The controller tests' fake Home Assistant keeps a switch's attributes when it switches, as Home
   Assistant does.
+- Dashboard: `lib/schedule-words.ts` says, from `strategy.py` and `strategy_runtime.py`, what each
+  schedule status means: Not armed, Armed, Running, Disarming, Held. Schedule's status card says
+  it, with when an arm or disarm takes effect (`armed_after`, `disarm_after`), above four steps
+  with the current one marked and "What takes priority"; its arm and disarm dialogs and notices
+  name Today's targets instead of "legacy setpoints". Today's description and note follow the
+  schedule's status. The demo publishes its schedule's status as
+  `sensor.crop_steering_<prefix>strategy_plan`, as the integration does. Nothing changes in how the
+  integration or the controller runs a schedule.
 
 ## [1.0.3] - 2026-10-09
 

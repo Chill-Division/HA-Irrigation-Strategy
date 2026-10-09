@@ -16,6 +16,7 @@ import {
 import { AutoBadge, AutoSetpointsControl, AutoZoneChip } from "@/components/room-controls";
 import { SettingHelp } from "@/components/setting-help";
 import { managedBy } from "@/lib/auto-setpoints";
+import { TODAY_IDLE, scheduleStatus, todayMeaning } from "@/lib/schedule-words";
 import { levelWarning } from "@/lib/level-order";
 import {
   fieldHint,
@@ -73,6 +74,11 @@ export function Strategy({
     if (selectedZone !== undefined) setZoneId(String(selectedZone));
   }, [selectedZone]);
   const planEngaged = controller.room.strategy.engaged;
+  // The controller can require the schedule before its sensor says so: that is a running one.
+  const reported = scheduleStatus(controller.room.strategy.status);
+  const scheduleState =
+    planEngaged && !["active", "disarming", "error"].includes(reported) ? "active" : reported;
+  const scheduleNote = todayMeaning(scheduleState);
   const allSettings = controller.room.settings;
   const zone = controller.room.zones.find((z) => String(z.id) === zoneId);
   const fields =
@@ -211,7 +217,7 @@ export function Strategy({
     <>
       <Heading
         title="Today’s targets"
-        description="Current zone targets and their daily curve. When a schedule is active, it owns these targets; use Schedule to change upcoming days."
+        description={scheduleNote ? "The room’s targets and their daily curve." : TODAY_IDLE}
         action={
           <div className="heading-actions">
             <AutoSetpointsControl controller={controller} />
@@ -230,12 +236,14 @@ export function Strategy({
           </div>
         }
       />
-      {planEngaged && (
-        <div className="workspace-message">
-          The active schedule owns today’s targets. Edit its dated targets in Schedule.{" "}
-          <Button asChild variant="outline">
-            <a href="#/grow-plan">Open schedule</a>
-          </Button>
+      {scheduleNote && (
+        <div className="workspace-message schedule-note" role="status">
+          <p>{scheduleNote}</p>
+          {planEngaged && (
+            <Button asChild variant="outline">
+              <a href="#/grow-plan">Open schedule</a>
+            </Button>
+          )}
         </div>
       )}
       {!planEngaged && (

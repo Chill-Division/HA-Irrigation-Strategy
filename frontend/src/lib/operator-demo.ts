@@ -142,6 +142,30 @@ export class OperatorDemo {
       limits: { max_zones: 24 },
     });
   }
+  /** The strategy's status where Home Assistant shows it (strategy.py `_publish`), so Today says
+   * what an armed demo schedule means as it would on a live room. */
+  private publishStrategy(roomId: string, doc: StrategyDocument) {
+    const room = discoverRooms(this.getStates()).find((r) => r.id === roomId);
+    if (!room) return;
+    const id = "sensor.crop_steering_" + room.prefix + "strategy_plan";
+    const states = this.getStates();
+    this.updateStates({
+      ...states,
+      [id]: {
+        entity_id: id,
+        state: doc.status,
+        attributes: {
+          friendly_name: "Irrigation strategy",
+          room_id: roomId,
+          snapshot_version: 1,
+          revision: doc.revision,
+          enabled: ["active", "disarming", "error"].includes(doc.status),
+          status: doc.status,
+          zones: [],
+        },
+      },
+    });
+  }
   private plan(roomId: string): StrategyDocument {
     const existing = this.plans.get(roomId);
     const room = discoverRooms(this.getStates()).find((r) => r.id === roomId);
@@ -331,11 +355,13 @@ export class OperatorDemo {
         if (errors.length) throw new Error(errors.join(" "));
         doc.status = "armed";
         doc.revision++;
+        this.publishStrategy(String(data.room_id), doc);
         result = doc;
       }
       if (action === "strategy_disarm") {
         doc.status = doc.status === "active" ? "disarming" : "draft";
         doc.revision++;
+        this.publishStrategy(String(data.room_id), doc);
         result = doc;
       }
     } else {

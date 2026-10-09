@@ -24,6 +24,7 @@ version being released.
 ## Unreleased
 
 - When a pump or valve doesn’t switch off, the alert now names it and says what it read.
+- The Schedule page now explains how a schedule and Today’s targets take turns, and which one is in charge.
 
 ## 1.0.3 - 2026-10-09
 

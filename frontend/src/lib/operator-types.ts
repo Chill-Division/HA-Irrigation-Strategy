@@ -92,6 +92,9 @@ export interface StrategyDocument {
   capabilities: { strategy_snapshot_version: number; controller_supported: boolean };
   catalog: Record<string, Record<string, ParameterLimit>>;
   preview?: { date: string; zones: PlanZonePreview[] };
+  /** When a pending arm or disarm takes effect: the first lights-on after it was asked for. */
+  armed_after?: string | null;
+  disarm_after?: string | null;
 }
 export interface SetupZone {
   id: number;

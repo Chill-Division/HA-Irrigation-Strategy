@@ -960,7 +960,7 @@ try {
         document.revision++;
         await lp
           .locator(".plan-state")
-          .filter({ hasText: /^active$/i })
+          .filter({ hasText: /^Running$/ })
           .waitFor({ state: "visible" });
         assert.equal(
           await lp.locator("#preview-grow-day").inputValue(),
