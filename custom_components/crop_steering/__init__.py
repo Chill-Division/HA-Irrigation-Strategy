@@ -131,6 +131,30 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     return True
 
 
+def _link_zone_devices(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Put each zone's device under its room's, as Home Assistant's device pages show it.
+
+    The zones' DeviceInfo did this with `via_device` until Home Assistant 2026.9 deprecated it,
+    warning once per platform that it stops working in 2027.8.0. The device registry's own
+    `via_device_id` does the same on every Home Assistant this integration supports, and a zone an
+    older version linked already is left as it is.
+    """
+    from homeassistant.helpers import device_registry as dr
+
+    registry = dr.async_get(hass)
+    devices = dr.async_entries_for_config_entry(registry, entry.entry_id)
+    room = next((d for d in devices if (DOMAIN, entry.entry_id) in d.identifiers), None)
+    if room is None:
+        return
+    zone = f"{entry.entry_id}_zone_"
+    for device in devices:
+        if device.via_device_id != room.id and any(
+            domain == DOMAIN and str(key).startswith(zone)
+            for domain, key in device.identifiers
+        ):
+            registry.async_update_device(device.id, via_device_id=room.id)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up PHASE Control from a config entry."""
     _LOGGER.info("Setting up PHASE Control")
@@ -179,6 +203,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    _link_zone_devices(hass, entry)
 
     # Set up services
     await async_setup_services(hass)
