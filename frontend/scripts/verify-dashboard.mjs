@@ -1532,6 +1532,39 @@ try {
       await expectVisible(page.getByRole("heading", { name: "Today’s targets", exact: true }));
     },
   );
+  await check("Schedule and Today say which of them is in charge", async () => {
+    await go("strategy");
+    await expectVisible(page.getByRole("heading", { name: "Today’s targets", exact: true }));
+    // No schedule armed: Today runs the room, and says so.
+    await expectVisible(
+      page.getByText(
+        "The targets the room runs on, and their daily curve. A schedule takes over only once it’s armed.",
+      ),
+    );
+    // Schedule: four steps with the current one marked; arming it moves the step and tells Today.
+    await openView("Irrigation strategy", "Schedule");
+    const current = page.locator('.schedule-steps [aria-current="step"] strong');
+    assert.equal(await page.locator(".schedule-steps li").count(), 4);
+    assert.equal(await current.innerText(), "Not armed");
+    await page.getByRole("button", { name: "Arm strategy", exact: true }).click();
+    await page.getByRole("button", { name: "Arm for next lights-on", exact: true }).click();
+    await page.getByRole("dialog").waitFor({ state: "hidden" });
+    await expectVisible(page.locator(".plan-state").getByText("Armed", { exact: true }));
+    assert.equal(await current.innerText(), "Armed");
+    await axe("Schedule, how it works with Today");
+    await openView("Irrigation strategy", "Today");
+    await expectVisible(page.locator(".schedule-note").getByText(/^A schedule is armed\./));
+    await axe("Today with a schedule armed");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await noOverflow();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    // Leave the demo as it was.
+    await openView("Irrigation strategy", "Schedule");
+    await page.getByRole("button", { name: "Disarm strategy", exact: true }).click();
+    await page.getByRole("button", { name: "Confirm disarm", exact: true }).click();
+    await page.getByRole("dialog").waitFor({ state: "hidden" });
+    assert.equal(await current.innerText(), "Not armed");
+  });
   await check("keyboard skip retains page and browser history works", async () => {
     await go("water");
     await page.getByRole("link", { name: "Skip to content" }).focus();

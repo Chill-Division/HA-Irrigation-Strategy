@@ -32,6 +32,14 @@ import {
   useSensorContext,
 } from "@/components/sensor-context";
 import { planFileName } from "@/lib/recipe-library";
+import {
+  HOW_IT_WORKS,
+  PRIORITY_NOTES,
+  STATUS_NAMES,
+  lightsOnText,
+  scheduleMeaning,
+  scheduleStatus,
+} from "@/lib/schedule-words";
 import { fieldCapacitySuggestion, referenceLines, suggestedDraft } from "@/lib/sensor-context";
 import { syncPlanZones } from "@/lib/sync-plan-zones";
 import type { Controller } from "@/lib/types";
@@ -167,6 +175,7 @@ export function GrowPlanner({
   const params = interpolate(profile, currentBlock?.bias ?? 50, limits);
   const errors = plan && document ? planErrors(plan, document.catalog) : [];
   const editable = document?.status === "draft";
+  const status = scheduleStatus(document?.status);
   const connected = ["live", "demo"].includes(controller.connection);
   const disabled = busy || !editable || !connected;
   const activeZoneIds = controller.room.zones.map((zone) => zone.id);
@@ -343,10 +352,12 @@ export function GrowPlanner({
       setReview(null);
       setNotice(
         review === "save"
-          ? "Draft saved to Home Assistant. It is not active."
+          ? "Draft saved to Home Assistant. It changes nothing until you arm it."
           : review === "activate"
-            ? "Strategy armed for the next lights-on boundary."
-            : "Strategy disarm requested; active targets remain until the next boundary.",
+            ? `Armed: it takes over from Today’s targets ${lightsOnText(result.armed_after)}.`
+            : result.status === "draft"
+              ? "Disarmed: the room carries on with Today’s targets."
+              : `Disarming: it hands back to Today’s targets ${lightsOnText(result.disarm_after)}.`,
       );
     } catch (e) {
       setError(errorText(e));
@@ -416,7 +427,7 @@ export function GrowPlanner({
     <>
       <Heading
         title="Scheduled targets"
-        description="Schedule changes to today’s targets by date, for each zone. Saving a draft does not activate it; an active schedule controls the targets shown in Today."
+        description="Plan each zone’s targets by date. A schedule steers the room only once it’s armed; until then the room runs on Today’s targets."
         action={
           <div className="workspace-actions">
             <Button variant="outline" onClick={exportPlan} disabled={!plan}>
@@ -506,9 +517,15 @@ export function GrowPlanner({
             <div>
               <span className="eyebrow">Strategy status</span>
               <strong className="plan-state">
-                {document.status}
+                {STATUS_NAMES[status]}
                 {dirty ? " · unsaved changes" : ""}
               </strong>
+              <p className="plan-meaning">
+                {scheduleMeaning(
+                  status,
+                  status === "armed" ? document.armed_after : document.disarm_after,
+                )}
+              </p>
               <p className="muted small">
                 Revision {document.revision} ·{" "}
                 {controller.demo ? "Isolated sample strategy" : "Stored in Home Assistant"}
@@ -569,6 +586,32 @@ export function GrowPlanner({
               )}
             </div>
           </section>
+          <section className="panel workspace-card schedule-explainer">
+            <h2>How the schedule and Today work together</h2>
+            <ol className="schedule-steps">
+              {HOW_IT_WORKS.map((step) => {
+                const current = step.status.includes(status);
+                return (
+                  <li
+                    key={step.title}
+                    className={current ? "current" : undefined}
+                    aria-current={current ? "step" : undefined}
+                  >
+                    <strong>{step.title}</strong>
+                    <span>{step.text}</span>
+                  </li>
+                );
+              })}
+            </ol>
+            <details>
+              <summary>What takes priority</summary>
+              <ul>
+                {PRIORITY_NOTES.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+            </details>
+          </section>
           {zoneMismatch && (
             <div className="workspace-message">
               <p>
@@ -593,8 +636,8 @@ export function GrowPlanner({
           )}
           {!editable && (
             <div className="workspace-message">
-              This strategy is {document.status}. Disarm it before editing. Active targets change
-              only at the next lights-on boundary.
+              Disarm the schedule to edit it. One that hasn’t started yet stops at once; a running
+              one stops at the next lights-on.
             </div>
           )}
           {!!errors.length && (
@@ -1101,8 +1144,10 @@ export function GrowPlanner({
               {review === "save"
                 ? "Saving stores a draft and does not change active irrigation."
                 : review === "activate"
-                  ? "The validated strategy will become eligible at the next local lights-on boundary. It never enables pumps or the engine."
-                  : "Active targets remain until the next lights-on boundary, then the controller returns to legacy setpoints."}
+                  ? "It takes over from Today’s targets at the next lights-on. Arming never switches watering on."
+                  : document?.active.zones.length || document?.status === "error"
+                    ? "It keeps running until the next lights-on. From then the room runs on the targets set on Today."
+                    : "It hasn’t started, so it stops at once and the room carries on with the targets set on Today."}
             </DialogDescription>
           </DialogHeader>
           {review === "save" && (
