@@ -5,7 +5,7 @@
 ![HACS](https://img.shields.io/badge/HACS-Custom-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-**PHASE** stands for **Precision Hydration And Steering Engine**. It was called Crop Steering before 1.0.2, and PHASE Steering in 1.0.2.
+**PHASE** stands for **Precision Hydration And Steering Engine**.
 
 PHASE Control waters a grow room automatically. Every minute it reads each zone's moisture and EC probes, decides whether the zone needs a shot and how big, and runs your pump and valves to deliver it, through the four-phase day that crop-steering growers use. It runs inside [Home Assistant](https://www.home-assistant.io/) with the probes, pumps and valves you already have, on your own hardware: no cloud account, no subscription.
 
@@ -50,6 +50,10 @@ More in the [screenshots](https://github.com/Chill-Division/PHASE-Control/blob/m
 ## Install
 
 PHASE Control comes in two parts, and watering needs both: the **integration** keeps your rooms, settings and strategies and adds the PHASE Control page to the sidebar, but never switches anything; the **controller app** reads the probes and runs the pump and valves.
+
+| [How to install](https://www.youtube.com/watch?v=Lor93_c-ibU) (2:28) | [How to upgrade](https://www.youtube.com/watch?v=pDjWWWM_XBQ) (1:17) |
+| --- | --- |
+| [![How to install PHASE Control, a video on YouTube](https://i.ytimg.com/vi/Lor93_c-ibU/hqdefault.jpg)](https://www.youtube.com/watch?v=Lor93_c-ibU) | [![How to upgrade PHASE Control, a video on YouTube](https://i.ytimg.com/vi/pDjWWWM_XBQ/hqdefault.jpg)](https://www.youtube.com/watch?v=pDjWWWM_XBQ) |
 
 1. **Download the integration with HACS**, then restart Home Assistant.
    [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Chill-Division&repository=PHASE-Control&category=integration)
