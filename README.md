@@ -5,7 +5,7 @@
 ![HACS](https://img.shields.io/badge/HACS-Custom-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-**PHASE** stands for **Precision Hydration And Steering Engine**. It was called Crop Steering before 1.0.2, and PHASE Steering in 1.0.2.
+**PHASE** stands for **Precision Hydration And Steering Engine**.
 
 PHASE Control waters a grow room automatically. Every minute it reads each zone's moisture and EC probes, decides whether the zone needs a shot and how big, and runs your pump and valves to deliver it, through the four-phase day that crop-steering growers use. It runs inside [Home Assistant](https://www.home-assistant.io/) with the probes, pumps and valves you already have, on your own hardware: no cloud account, no subscription.
 
