@@ -51,6 +51,10 @@ More in the [screenshots](https://github.com/Chill-Division/PHASE-Control/blob/m
 
 PHASE Control comes in two parts, and watering needs both: the **integration** keeps your rooms, settings and strategies and adds the PHASE Control page to the sidebar, but never switches anything; the **controller app** reads the probes and runs the pump and valves.
 
+| [How to install](https://www.youtube.com/watch?v=Lor93_c-ibU) (2:28) | [How to upgrade](https://www.youtube.com/watch?v=pDjWWWM_XBQ) (1:17) |
+| --- | --- |
+| [![How to install PHASE Control, a video on YouTube](https://i.ytimg.com/vi/Lor93_c-ibU/hqdefault.jpg)](https://www.youtube.com/watch?v=Lor93_c-ibU) | [![How to upgrade PHASE Control, a video on YouTube](https://i.ytimg.com/vi/pDjWWWM_XBQ/hqdefault.jpg)](https://www.youtube.com/watch?v=pDjWWWM_XBQ) |
+
 1. **Download the integration with HACS**, then restart Home Assistant.
    [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Chill-Division&repository=PHASE-Control&category=integration)
 2. **Add PHASE Control** and name your first room.
